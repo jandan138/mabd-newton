@@ -112,6 +112,7 @@ bootstrap/provenance until method and experiment records prove more.
 Create `.gitignore` with:
 
 ```gitignore
+.worktrees/
 __pycache__/
 *.py[cod]
 *.egg-info/
