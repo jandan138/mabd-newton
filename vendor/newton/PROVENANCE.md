@@ -39,7 +39,7 @@ changes reproduction evidence.
 Run:
 
 ```bash
-PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 ```
 
 Expected output path begins with this repository and contains:

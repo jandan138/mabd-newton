@@ -2,21 +2,40 @@
 
 ## Canonical Local Runtime
 
-Use the already-created Newton Python environment from the reference project:
+Use the project-owned Newton Python environment cloned from the reference
+project's clean Newton environment:
 
 ```text
-/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310
+/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310
 ```
 
 Canonical interpreter:
 
 ```text
-/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python
 ```
 
-This environment already contains Newton runtime dependencies such as
-`warp-lang==1.13.0`, `PyYAML`, and the importer stack validated by
+This environment was cloned from
+`/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310` on
+2026-05-16 and contains Newton runtime dependencies such as
+`warp-lang==1.13.0`, `PyYAML==6.0.3`, and the importer stack validated by
 `physics-primitive-agent`.
+
+Clone command used on this machine:
+
+```bash
+/cpfs/user/zhuzihou/conda-managed/miniforge3/bin/conda create -y \
+  -p /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310 \
+  --clone /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310
+```
+
+The target was then synchronized with:
+
+```bash
+rsync -a --delete \
+  /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/ \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/
+```
 
 ## Non-Pollution Rule
 
@@ -32,7 +51,7 @@ instead of running `pip install -e .` during normal validation.
 ## Commands
 
 ```bash
-MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python
 PYTHONPATH=src:vendor/newton "$MABD_PYTHON" scripts/validate_docs.py
 PYTHONPATH=src:vendor/newton "$MABD_PYTHON" -m unittest discover -s tests
 PYTHONPATH=vendor/newton "$MABD_PYTHON" -c "import newton; print(newton.__file__)"

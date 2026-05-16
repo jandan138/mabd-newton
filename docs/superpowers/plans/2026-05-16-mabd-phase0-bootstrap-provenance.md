@@ -103,11 +103,11 @@ bootstrap/provenance until method and experiment records prove more.
 
 ## Commands
 
-- Canonical Python: `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python`
+- Canonical Python: `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python`
 - Do not install into the ambient DSW Python or mutate the shared Newton environment during routine validation.
-- Validate docs and provenance: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py`
-- Run tests: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests`
-- Check vendored Newton import: `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"`
+- Validate docs and provenance: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py`
+- Run tests: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests`
+- Check vendored Newton import: `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"`
 - Whitespace check: `git diff --check`
 ```
 
@@ -238,7 +238,7 @@ REQUIRED_REPORT_KEYS = frozenset(ClaimReport.__dataclass_fields__)
 Run:
 
 ```bash
-MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python
 "$MABD_PYTHON" -m py_compile src/mabd_reproduction/__init__.py src/mabd_reproduction/reporting.py
 git diff --check
 ```
@@ -575,21 +575,40 @@ Create `docs/operations/environment.md` with:
 
 ## Canonical Local Runtime
 
-Use the already-created Newton Python environment from the reference project:
+Use the project-owned Newton Python environment cloned from the reference
+project's clean Newton environment:
 
 ```text
-/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310
+/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310
 ```
 
 Canonical interpreter:
 
 ```text
-/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python
 ```
 
-This environment already contains Newton runtime dependencies such as
-`warp-lang==1.13.0`, `PyYAML`, and the importer stack validated by
+This environment was cloned from
+`/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310` on
+2026-05-16 and contains Newton runtime dependencies such as
+`warp-lang==1.13.0`, `PyYAML==6.0.3`, and the importer stack validated by
 `physics-primitive-agent`.
+
+Clone command used on this machine:
+
+```bash
+/cpfs/user/zhuzihou/conda-managed/miniforge3/bin/conda create -y \
+  -p /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310 \
+  --clone /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310
+```
+
+The target was then synchronized with:
+
+```bash
+rsync -a --delete \
+  /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/ \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/
+```
 
 ## Non-Pollution Rule
 
@@ -603,7 +622,7 @@ instead of running `pip install -e .` during normal validation.
 ## Commands
 
 ```bash
-MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python
 PYTHONPATH=src:vendor/newton "$MABD_PYTHON" scripts/validate_docs.py
 PYTHONPATH=src:vendor/newton "$MABD_PYTHON" -m unittest discover -s tests
 PYTHONPATH=vendor/newton "$MABD_PYTHON" -c "import newton; print(newton.__file__)"
@@ -626,7 +645,7 @@ interpreter path, command, indexes, package versions, and reason in
 Run:
 
 ```bash
-MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python
 "$MABD_PYTHON" - <<'PY'
 from pathlib import Path
 import yaml
@@ -725,7 +744,7 @@ changes reproduction evidence.
 Run:
 
 ```bash
-PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 ```
 
 Expected output path begins with this repository and contains:
@@ -743,7 +762,7 @@ Run:
 test -f vendor/newton/newton/solvers.py
 test -f vendor/newton/LICENSE.md
 test ! -d vendor/newton/.git
-PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 ```
 
 Expected: tests exit `0`; import path contains `vendor/newton/newton/__init__.py`.
@@ -847,7 +866,7 @@ if __name__ == "__main__":
 Run:
 
 ```bash
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
 test ! -f scripts/validate_docs.py
 ```
 
@@ -1027,8 +1046,8 @@ if __name__ == "__main__":
 Run:
 
 ```bash
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
 ```
 
 Expected output contains:
@@ -1060,9 +1079,9 @@ Expected: commit succeeds.
 Run:
 
 ```bash
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
-PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 git diff --check
 git status --short --branch
 ```
@@ -1094,9 +1113,9 @@ scene, timing, or comparative baseline claim.
 ## Commands
 
 ```bash
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
-PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 git diff --check
 git status --short --branch
 ```
@@ -1143,8 +1162,8 @@ state tests, co-rotated stiffness, polar/no-polar modes, and invariants.
 Run:
 
 ```bash
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
 git diff --check
 ```
 
@@ -1172,9 +1191,9 @@ Expected: commit succeeds.
 Run:
 
 ```bash
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
-PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 git diff --check
 git status --short --branch
 git log --oneline -5

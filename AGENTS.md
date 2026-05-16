@@ -37,9 +37,9 @@ bootstrap/provenance until method and experiment records prove more.
 
 ## Commands
 
-- Canonical Python: `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python`
+- Canonical Python: `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python`
 - Do not install into the ambient DSW Python or mutate the shared Newton environment during routine validation.
-- Validate docs and provenance: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py`
-- Run tests: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests`
-- Check vendored Newton import: `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"`
+- Validate docs and provenance: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py`
+- Run tests: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests`
+- Check vendored Newton import: `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"`
 - Whitespace check: `git diff --check`
