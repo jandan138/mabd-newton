@@ -329,6 +329,40 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase13_configured_spinning_box_lane_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        normalized_text = " ".join(text.split())
+
+        self.assertIn("Phase 13 verifies a config-driven single-body spinning-box", text)
+        self.assertIn("per-scene config schema", normalized_text)
+        self.assertIn("report remains `incomplete`", normalized_text)
+        self.assertIn("Phase 13 does not verify the paper spinning-box experiment", text)
+        self.assertIn("RBD baselines", normalized_text)
+        self.assertIn("any passed `experiment.*` claim", normalized_text)
+
+    def test_phase13_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-17-phase13-configured-spinning-box.md").read_text()
+
+        for snippet in (
+            "## Status",
+            "passed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit:",
+            "implementation commits:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Metrics And Thresholds",
+            "Report validation rejects `status=passed`",
+            "No `experiment.*` claim is passed in this phase.",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -358,7 +392,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

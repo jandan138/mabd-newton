@@ -31,6 +31,9 @@
 - This repository contains Phase 12 full-schema claim report JSON validation
   and a single-body spinning-box M-ABD development report lane after the Phase
   12 record is created.
+- This repository contains Phase 13 config-driven single-body spinning-box
+  per-scene config validation and M-ABD development report generation after the
+  Phase 13 record is created.
 
 ## Intended
 
@@ -132,6 +135,12 @@
 - Phase 12 does not verify the paper spinning-box experiment, paper timing,
   RK4/RBD/analytic baselines, rendered output, paper trajectory agreement, or
   any passed `experiment.*` claim.
+- Phase 13 verifies a config-driven single-body spinning-box M-ABD development
+  lane, per-scene config schema validation, experiment-matrix alignment, and
+  config-backed report generation. The report remains `incomplete`.
+- Phase 13 does not verify the paper spinning-box experiment, RBD baselines,
+  paper timing, rendered output, paper trajectory agreement, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
