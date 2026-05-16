@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -160,6 +161,86 @@ def volume_weighted_force(rest_points: Any, forces: Any, volumes: Any) -> np.nda
     for point, force, volume in zip(points, force_arr, volume_arr, strict=True):
         out += float(volume) * (point_jacobian(point).T @ force)
     return out
+
+
+@dataclass(frozen=True)
+class PointPlanePenaltyContact:
+    rest_point: np.ndarray
+    world_point: np.ndarray
+    plane_normal: np.ndarray
+    plane_offset: float
+    signed_distance: float
+    penetration_depth: float
+    normal_velocity: float
+    force: np.ndarray
+    generalized_force: np.ndarray
+    active: bool
+
+
+def affine_force_from_point_force(rest_point: Any, force: Any) -> np.ndarray:
+    """Map a world-space point force to affine generalized force by virtual work."""
+
+    return point_jacobian(rest_point).T @ _as_vec3(force, "force")
+
+
+def evaluate_point_plane_penalty_contact(
+    q: Any,
+    qd: Any,
+    rest_point: Any,
+    *,
+    plane_normal: Any,
+    plane_offset: float,
+    stiffness: float,
+    damping: float = 0.0,
+) -> PointPlanePenaltyContact:
+    """Evaluate a single point-plane normal penalty force in affine coordinates.
+
+    The plane convention is ``normal dot x >= plane_offset``. Penetrating points
+    receive an explicit normal penalty force. This is an oracle for scene force
+    assembly, not collision detection or a full contact solve.
+    """
+
+    q_arr = _as_q(q)
+    qd_arr = _as_q(qd, "qd")
+    point = _as_vec3(rest_point, "rest_point")
+    normal = _as_vec3(plane_normal, "plane_normal")
+    normal_norm = float(np.linalg.norm(normal))
+    if normal_norm == 0.0:
+        raise ValueError("plane_normal must be nonzero")
+    normal = normal / normal_norm
+
+    stiffness_float = float(stiffness)
+    damping_float = float(damping)
+    if stiffness_float < 0.0:
+        raise ValueError("stiffness must be nonnegative")
+    if damping_float < 0.0:
+        raise ValueError("damping must be nonnegative")
+
+    J = point_jacobian(point)
+    world_point = J @ q_arr
+    world_velocity = J @ qd_arr
+    offset = float(plane_offset)
+    signed_distance = float(normal @ world_point - offset)
+    penetration_depth = max(0.0, -signed_distance)
+    active = penetration_depth > 0.0
+    normal_velocity = float(normal @ world_velocity)
+    normal_magnitude = 0.0
+    if active:
+        normal_magnitude = stiffness_float * penetration_depth + damping_float * max(0.0, -normal_velocity)
+    force = normal * normal_magnitude
+    generalized_force = J.T @ force
+    return PointPlanePenaltyContact(
+        rest_point=point.copy(),
+        world_point=world_point,
+        plane_normal=normal,
+        plane_offset=offset,
+        signed_distance=signed_distance,
+        penetration_depth=penetration_depth,
+        normal_velocity=normal_velocity,
+        force=force,
+        generalized_force=generalized_force,
+        active=active,
+    )
 
 
 def lame_parameters(young_modulus: float, poisson_ratio: float) -> tuple[float, float]:
@@ -357,6 +438,8 @@ def affine_force_from_wrench(A: Any, wrench: Any) -> np.ndarray:
 
 
 __all__ = [
+    "PointPlanePenaltyContact",
+    "affine_force_from_point_force",
     "affine_force_from_wrench",
     "affine_points",
     "apply_no_polar_increment_rotation",
@@ -367,6 +450,7 @@ __all__ = [
     "co_rotated_linear_elastic_affine_force",
     "co_rotated_linear_elastic_energy",
     "element_jacobian",
+    "evaluate_point_plane_penalty_contact",
     "generalized_mass_matrix",
     "lame_parameters",
     "linear_elastic_energy",

@@ -148,6 +148,22 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("reports/generated/environment-readiness/local/readiness.json", environment_text)
         self.assertIn("smoke_passed", environment_text)
 
+    def test_phase9_point_contact_force_claim_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        claims = {claim["claim_id"]: claim for claim in data["claims"]}
+        claim = claims["method.force_mapping.point_load_penalty_contact"]
+
+        self.assertEqual(claim["reproduction_status"], "passed")
+        self.assertIn("point load J^T f", claim["expected_value"])
+        self.assertIn("not collision detection", claim["conflict_note"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        normalized_text = " ".join(text.split())
+        self.assertIn("Phase 9 verifies point-load affine generalized force mapping", text)
+        self.assertIn("inward-only contact damping", normalized_text)
+        self.assertIn("Phase 9 does not verify collision detection", text)
+        self.assertIn("full contact handling", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -177,7 +193,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4/5/6/7/8/9 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

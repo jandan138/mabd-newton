@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8 documentation, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9 documentation, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -36,6 +36,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-16-phase6-experiment-matrix.md",
     "docs/records/2026-05-16-phase7-joint-limits.md",
     "docs/records/2026-05-16-phase8-environment-readiness.md",
+    "docs/records/2026-05-16-phase9-point-contact-forces.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -141,6 +142,10 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md must explicitly state Phase 8 environment readiness evidence")
     if "Phase 8 does not verify solver behavior" not in text or "paper experiments" not in text:
         fail("claim-boundaries.md must bound Phase 8 solver and experiment evidence")
+    if "Phase 9 verifies point-load affine generalized force mapping" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 9 point force evidence")
+    if "Phase 9 does not verify collision detection" not in text or "friction" not in text:
+        fail("claim-boundaries.md must bound Phase 9 contact evidence")
 
 
 def validate_paper_claims() -> None:
@@ -184,6 +189,7 @@ def validate_paper_claims() -> None:
         "method.single_body.affine_kinematics",
         "method.single_body.corotated_stiffness",
         "method.joints.universal",
+        "method.force_mapping.point_load_penalty_contact",
         "method.kkt.residual_corrected_rhs",
         "method.topology.chain_block_tridiagonal",
         "method.topology.tree_traversal_dense_dual_oracle",
@@ -215,6 +221,8 @@ def validate_paper_claims() -> None:
         + (ROOT / "docs/records/2026-05-16-phase5-corotated-stiffness.md").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "docs/records/2026-05-16-phase7-joint-limits.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-16-phase9-point-contact-forces.md").read_text(encoding="utf-8")
     )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
@@ -289,7 +297,7 @@ def main() -> int:
     validate_experiment_contracts()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8/9 docs/provenance validation passed")
     return 0
 
 

@@ -47,6 +47,13 @@ claims:
     unit: "identity"
     conflict_note: "none"
     reproduction_status: passed
+  - claim_id: method.force_mapping.point_load_penalty_contact
+    source_path: "/tmp/mabd-paper/source/sections/singleabd.tex and /tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "eq:abd_dof external-force virtual work and implicit collision penalty text"
+    expected_value: "point load J^T f and simple point-plane penalty generalized force"
+    unit: "oracle"
+    conflict_note: "CPU oracle force mapping only; not collision detection, friction, broadphase, or a full contact solver"
+    reproduction_status: passed
   - claim_id: method.joints.ball
     source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
     source_line: "ball joint control point constraints"

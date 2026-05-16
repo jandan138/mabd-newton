@@ -33,6 +33,89 @@ class MABDSingleBodyPublicTests(unittest.TestCase):
 
         self.assertTrue(np.allclose(J @ q, A @ rest_point + t))
 
+    def test_point_force_mapping_obeys_virtual_work(self) -> None:
+        rest_point = np.array([0.4, -0.2, 0.7])
+        force = np.array([3.0, -1.5, 2.0])
+        dq = np.linspace(-0.3, 0.4, 12)
+
+        generalized = mabd.affine_force_from_point_force(rest_point, force)
+
+        self.assertTrue(np.allclose(generalized, mabd.point_jacobian(rest_point).T @ force))
+        self.assertAlmostEqual(float(generalized @ dq), float(force @ (mabd.point_jacobian(rest_point) @ dq)))
+
+    def test_point_plane_penalty_contact_maps_normal_force_to_affine_force(self) -> None:
+        q = mabd.pack_q(np.eye(3), np.array([0.0, -0.08, 0.0]))
+        qd = np.zeros(12)
+        rest_point = np.array([0.25, 0.02, -0.1])
+        normal = np.array([0.0, 1.0, 0.0])
+
+        contact = mabd.evaluate_point_plane_penalty_contact(
+            q,
+            qd,
+            rest_point,
+            plane_normal=normal,
+            plane_offset=0.0,
+            stiffness=100.0,
+        )
+
+        self.assertTrue(contact.active)
+        self.assertAlmostEqual(contact.signed_distance, -0.06)
+        self.assertAlmostEqual(contact.penetration_depth, 0.06)
+        self.assertTrue(np.allclose(contact.force, np.array([0.0, 6.0, 0.0])))
+        self.assertTrue(np.allclose(contact.generalized_force, mabd.point_jacobian(rest_point).T @ contact.force))
+
+    def test_point_plane_penalty_contact_is_inactive_above_plane(self) -> None:
+        q = mabd.pack_q(np.eye(3), np.array([0.0, 0.2, 0.0]))
+        qd = np.zeros(12)
+
+        contact = mabd.evaluate_point_plane_penalty_contact(
+            q,
+            qd,
+            np.array([0.0, 0.1, 0.0]),
+            plane_normal=np.array([0.0, 2.0, 0.0]),
+            plane_offset=0.0,
+            stiffness=50.0,
+            damping=2.0,
+        )
+
+        self.assertFalse(contact.active)
+        self.assertAlmostEqual(contact.penetration_depth, 0.0)
+        self.assertTrue(np.allclose(contact.force, np.zeros(3)))
+        self.assertTrue(np.allclose(contact.generalized_force, np.zeros(12)))
+        self.assertTrue(np.allclose(contact.plane_normal, np.array([0.0, 1.0, 0.0])))
+
+    def test_point_plane_penalty_contact_damps_only_inward_normal_velocity(self) -> None:
+        q = mabd.pack_q(np.eye(3), np.array([0.0, -0.05, 0.0]))
+        rest_point = np.zeros(3)
+        inward_qd = np.zeros(12)
+        inward_qd[10] = -0.2
+        outward_qd = np.zeros(12)
+        outward_qd[10] = 0.2
+
+        inward = mabd.evaluate_point_plane_penalty_contact(
+            q,
+            inward_qd,
+            rest_point,
+            plane_normal=np.array([0.0, 1.0, 0.0]),
+            plane_offset=0.0,
+            stiffness=100.0,
+            damping=10.0,
+        )
+        outward = mabd.evaluate_point_plane_penalty_contact(
+            q,
+            outward_qd,
+            rest_point,
+            plane_normal=np.array([0.0, 1.0, 0.0]),
+            plane_offset=0.0,
+            stiffness=100.0,
+            damping=10.0,
+        )
+
+        self.assertAlmostEqual(inward.normal_velocity, -0.2)
+        self.assertAlmostEqual(outward.normal_velocity, 0.2)
+        self.assertAlmostEqual(float(inward.force[1]), 7.0)
+        self.assertAlmostEqual(float(outward.force[1]), 5.0)
+
     def test_volume_weighted_force_matches_jacobian_transpose(self) -> None:
         rest_points = np.array([[0.0, 0.0, 0.0], [1.0, -2.0, 0.5]])
         forces = np.array([[3.0, 4.0, 5.0], [-1.0, 2.0, -3.0]])

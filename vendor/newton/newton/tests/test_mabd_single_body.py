@@ -11,12 +11,14 @@ import newton
 from newton._src.solvers.mabd import (
     SingleBodyABDHessianCache,
     SingleBodyABDPrecompute,
+    affine_force_from_point_force,
     affine_force_from_wrench,
     apply_no_polar_increment_rotation,
     apply_no_polar_rhs_rotation,
     co_rotated_generalized_stiffness_matrix,
     co_rotated_linear_elastic_affine_force,
     co_rotated_linear_elastic_energy,
+    evaluate_point_plane_penalty_contact,
     generalized_mass_matrix,
     lame_parameters,
     linear_elastic_energy,
@@ -75,6 +77,12 @@ class TestMABDSingleBodyInternal(unittest.TestCase):
         )
         self.assertTrue(np.allclose(volume_weighted_force(rest_points, forces, volumes), expected))
 
+        point_force = np.array([3.0, -1.5, 2.0])
+        dq = np.linspace(-0.3, 0.4, 12)
+        generalized = affine_force_from_point_force(rest_points[2], point_force)
+        self.assertTrue(np.allclose(generalized, point_jacobian(rest_points[2]).T @ point_force))
+        self.assertAlmostEqual(float(generalized @ dq), float(point_force @ (point_jacobian(rest_points[2]) @ dq)))
+
         bar_j = volume_weighted_jacobian(rest_points[None, :, :], np.array([1.0 / 6.0]))
         aggregated_force = np.arange(12, dtype=float) + 1.0
         self.assertTrue(
@@ -83,6 +91,39 @@ class TestMABDSingleBodyInternal(unittest.TestCase):
                 bar_j.T @ aggregated_force,
             )
         )
+
+    def test_point_plane_penalty_contact_oracle(self) -> None:
+        rest_point = np.array([0.25, 0.02, -0.1])
+        q = pack_q(np.eye(3), np.array([0.0, -0.08, 0.0]))
+        qd = np.zeros(12)
+
+        active = evaluate_point_plane_penalty_contact(
+            q,
+            qd,
+            rest_point,
+            plane_normal=np.array([0.0, 2.0, 0.0]),
+            plane_offset=0.0,
+            stiffness=100.0,
+        )
+
+        self.assertTrue(active.active)
+        self.assertAlmostEqual(active.signed_distance, -0.06)
+        self.assertAlmostEqual(active.penetration_depth, 0.06)
+        self.assertTrue(np.allclose(active.plane_normal, np.array([0.0, 1.0, 0.0])))
+        self.assertTrue(np.allclose(active.force, np.array([0.0, 6.0, 0.0])))
+        self.assertTrue(np.allclose(active.generalized_force, point_jacobian(rest_point).T @ active.force))
+
+        inactive = evaluate_point_plane_penalty_contact(
+            pack_q(np.eye(3), np.array([0.0, 0.2, 0.0])),
+            qd,
+            np.array([0.0, 0.1, 0.0]),
+            plane_normal=np.array([0.0, 1.0, 0.0]),
+            plane_offset=0.0,
+            stiffness=100.0,
+        )
+        self.assertFalse(inactive.active)
+        self.assertTrue(np.allclose(inactive.force, np.zeros(3)))
+        self.assertTrue(np.allclose(inactive.generalized_force, np.zeros(12)))
 
     def test_elasticity_rotation_twist_and_cache_oracles(self) -> None:
         A = np.array([[1.1, 0.2, 0.0], [0.0, 0.9, -0.1], [0.05, 0.0, 1.2]])

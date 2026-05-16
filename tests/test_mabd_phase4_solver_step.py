@@ -141,6 +141,30 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertTrue(np.allclose(result.q[0], q + expected_dq, atol=1.0e-12))
         self.assertTrue(np.allclose(result.qd[0], expected_dq / dt, atol=1.0e-12))
 
+    def test_dense_cpu_step_accepts_point_contact_generalized_force(self) -> None:
+        q = mabd.pack_q(np.eye(3), np.array([0.0, -0.05, 0.0]))
+        qd = np.zeros(12)
+        dt = 0.1
+        contact = mabd.evaluate_point_plane_penalty_contact(
+            q,
+            qd,
+            np.zeros(3),
+            plane_normal=np.array([0.0, 1.0, 0.0]),
+            plane_offset=0.0,
+            stiffness=20.0,
+        )
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(bodies=[_body()], external_forces=[contact.generalized_force]),
+        )
+
+        self.assertTrue(contact.active)
+        self.assertAlmostEqual(float(contact.force[1]), 1.0)
+        self.assertTrue(np.allclose(result.q[0], q + dt * dt * contact.generalized_force, atol=1.0e-12))
+
     def test_dense_cpu_step_enforces_ball_joint_residual_correction(self) -> None:
         q_a = _identity_q((0.2, 0.0, 0.0))
         q_b = _identity_q()

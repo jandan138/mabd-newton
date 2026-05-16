@@ -22,6 +22,8 @@
   oracle tests after the Phase 7 record is created.
 - This repository contains Phase 8 cloned-environment readiness checks after
   the Phase 8 record is created.
+- This repository contains Phase 9 point-load and point-plane penalty contact
+  force-mapping CPU oracle tests after the Phase 9 record is created.
 
 ## Intended
 
@@ -94,6 +96,14 @@
 - Phase 8 does not verify solver behavior, method correctness, scene dynamics,
   rendered output, timing, comparative baselines, dependency freshness, or
   paper experiments.
+- Phase 9 verifies point-load affine generalized force mapping via `J^T f`,
+  simple frictionless point-plane normal penalty force mapping, inward-only
+  contact damping, and use of the resulting generalized force through the
+  configured CPU oracle external-force path.
+- Phase 9 does not verify collision detection, broadphase, narrowphase,
+  friction, full contact handling, general inequality constraints, production
+  `SolverMABD.step()` contact input, actuation/controller behavior, paper
+  scenes, timing, or comparative baselines.
 
 ## Forbidden Claims
 
