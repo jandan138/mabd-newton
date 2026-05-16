@@ -3,19 +3,21 @@
 
 from __future__ import annotations
 
+import numpy as np
 import warp as wp
 
 from ...core.types import override
 from ...sim import Contacts, Control, Model, ModelBuilder, State
 from ..solver import SolverBase
+from .step_oracle import MABDCPUOracleConfig, MABDCPUOracleStepResult, solve_cpu_oracle_step
 
 
 class SolverMABD(SolverBase):
-    """Phase 1 shell for Multi-Affine-Body Dynamics.
+    """Multi-Affine-Body Dynamics solver shell with configured CPU oracle stepping.
 
     This class registers M-ABD model/state storage and owns invalidation of dense
-    single-body caches. Full time stepping, joints, and contact are added in later
-    phases and are intentionally not claimed here.
+    single-body caches. Phase 4 adds a guarded CPU oracle step path for tests and
+    records; full contacts, scenes, and Warp kernels are intentionally unclaimed.
     """
 
     MABD_BODY_FREQUENCY = "mabd:body"
@@ -25,6 +27,45 @@ class SolverMABD(SolverBase):
         super().__init__(model=model)
         self.model_version = 0
         self.hessian_caches = []
+        self.cpu_oracle_config: MABDCPUOracleConfig | None = None
+        self.last_step_result: MABDCPUOracleStepResult | None = None
+
+    def configure_cpu_oracle(self, config: MABDCPUOracleConfig | None) -> None:
+        self.cpu_oracle_config = config
+        self.last_step_result = None
+
+    @staticmethod
+    def _read_mabd_state(state: State) -> tuple[tuple[np.ndarray, ...], tuple[np.ndarray, ...]]:
+        q0 = state.mabd.q0.numpy().copy()
+        q1 = state.mabd.q1.numpy().copy()
+        q2 = state.mabd.q2.numpy().copy()
+        t = state.mabd.t.numpy().copy()
+        qd0 = state.mabd.qd0.numpy().copy()
+        qd1 = state.mabd.qd1.numpy().copy()
+        qd2 = state.mabd.qd2.numpy().copy()
+        td = state.mabd.td.numpy().copy()
+        count = q0.shape[0]
+        q = tuple(np.concatenate((q0[i], q1[i], q2[i], t[i])).astype(float, copy=False) for i in range(count))
+        qd = tuple(np.concatenate((qd0[i], qd1[i], qd2[i], td[i])).astype(float, copy=False) for i in range(count))
+        return q, qd
+
+    @staticmethod
+    def _write_mabd_state(state: State, q: tuple[np.ndarray, ...], qd: tuple[np.ndarray, ...]) -> None:
+        q_arr = np.asarray(q, dtype=np.float32)
+        qd_arr = np.asarray(qd, dtype=np.float32)
+        expected_shape = (state.mabd.q0.numpy().shape[0], 12)
+        if q_arr.shape != expected_shape:
+            raise ValueError(f"q output must have shape {expected_shape}, got {q_arr.shape}")
+        if qd_arr.shape != expected_shape:
+            raise ValueError(f"qd output must have shape {expected_shape}, got {qd_arr.shape}")
+        state.mabd.q0.assign(q_arr[:, 0:3])
+        state.mabd.q1.assign(q_arr[:, 3:6])
+        state.mabd.q2.assign(q_arr[:, 6:9])
+        state.mabd.t.assign(q_arr[:, 9:12])
+        state.mabd.qd0.assign(qd_arr[:, 0:3])
+        state.mabd.qd1.assign(qd_arr[:, 3:6])
+        state.mabd.qd2.assign(qd_arr[:, 6:9])
+        state.mabd.td.assign(qd_arr[:, 9:12])
 
     @override
     def step(
@@ -35,10 +76,21 @@ class SolverMABD(SolverBase):
         contacts: Contacts | None,
         dt: float,
     ) -> None:
-        raise NotImplementedError(
-            "SolverMABD Phase 1 exposes verified single-body ABD oracles; "
-            "time stepping is implemented in later phases."
-        )
+        if self.cpu_oracle_config is None:
+            raise NotImplementedError(
+                "SolverMABD.step() requires configure_cpu_oracle(...) in Phase 4; "
+                "production Warp/contact stepping is not implemented yet."
+            )
+        if control is not None:
+            raise NotImplementedError("SolverMABD Phase 4 CPU oracle step does not support Control input")
+        if contacts is not None:
+            raise NotImplementedError("SolverMABD Phase 4 CPU oracle step does not support Contacts input")
+        q, qd = self._read_mabd_state(state_in)
+        result = solve_cpu_oracle_step(q=q, qd=qd, dt=dt, config=self.cpu_oracle_config)
+        if state_out is not state_in:
+            state_out.assign(state_in)
+        self._write_mabd_state(state_out, result.q, result.qd)
+        self.last_step_result = result
 
     @override
     def notify_model_changed(self, flags: int) -> None:

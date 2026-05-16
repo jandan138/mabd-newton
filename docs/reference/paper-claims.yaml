@@ -117,6 +117,13 @@ claims:
     unit: "algorithm"
     conflict_note: "classification supports solver routing; it is not scene evidence"
     reproduction_status: passed
+  - claim_id: method.solver.configured_cpu_step
+    source_path: "/tmp/mabd-paper/source/sections/singleabd.tex and /tmp/mabd-paper/source/sections/solver.tex"
+    source_line: "singleabd implicit Euler/Newton system and dual KKT footnote"
+    expected_value: "explicitly configured CPU oracle SolverMABD.step performs one small-system implicit-Euler/Newton KKT update and custom state I/O"
+    unit: "algorithm"
+    conflict_note: "not an unconfigured production step, contact path, scene, timing, or Warp kernel claim"
+    reproduction_status: passed
   - claim_id: experiment.single_body.rolling_spinning
     source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
     source_line: "single-body ABD vs RBD rolling and spinning tests"

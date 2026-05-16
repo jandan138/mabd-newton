@@ -12,6 +12,8 @@
   tests after the Phase 2 record is created.
 - This repository contains Phase 3 topology solver CPU oracle tests after the
   Phase 3 record is created.
+- This repository contains Phase 4 configured CPU `SolverMABD.step()` oracle
+  tests after the Phase 4 record is created.
 
 ## Intended
 
@@ -48,6 +50,14 @@
 - Phase 3 does not verify `SolverMABD.step()`, paper ABD-ABA performance,
   paper tree elimination, paper graph Gauss-Seidel schedule identity, contact,
   joint limits, actuation, paper experiments, timing, or comparative baselines.
+- Phase 4 verifies explicitly configured CPU oracle `SolverMABD.step()` state
+  I/O, one small-system implicit-Euler/Newton affine update, dense dual KKT with
+  residual-corrected lower RHS, rest-stiffness RHS sign, and guarded
+  two-body/in-place state writes through unit tests.
+- Phase 4 does not verify unconfigured production `SolverMABD.step()`, contact,
+  collision, joint limits, actuation, robot controls, Warp kernels, GPU paths,
+  multi-step paper scenes, convergence/timing claims, paper ABD-ABA performance,
+  paper graph schedules, external baselines, or comparative reports.
 
 ## Forbidden Claims
 

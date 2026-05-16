@@ -81,6 +81,20 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("graph Gauss-Seidel", text)
         self.assertIn("Phase 3 does not verify `SolverMABD.step()`", text)
 
+    def test_phase4_configured_step_claim_is_in_manifest_and_records(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        claims = {claim["claim_id"]: claim for claim in data["claims"]}
+        claim = claims["method.solver.configured_cpu_step"]
+
+        self.assertEqual(claim["reproduction_status"], "passed")
+        self.assertIn("configured CPU", claim["expected_value"])
+        self.assertIn("not an unconfigured production step", claim["conflict_note"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        self.assertIn("Phase 4 verifies explicitly configured CPU oracle", text)
+        self.assertIn("unconfigured production `SolverMABD.step()`", text)
+        self.assertIn("Warp kernels", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -110,7 +124,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

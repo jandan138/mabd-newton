@@ -63,6 +63,13 @@ from .single_body import (
     solve_single_body_delta,
 )
 from .solver_mabd import SolverMABD
+from .step_oracle import (
+    MABDCPUOracleBody,
+    MABDCPUOracleConfig,
+    MABDCPUOracleConstraint,
+    MABDCPUOracleStepResult,
+    solve_cpu_oracle_step,
+)
 from .topology_solvers import (
     ConstraintGraphClassification,
     ReconstructedConstraintGraph,
@@ -85,6 +92,10 @@ __all__ = [
     "JointEvaluation",
     "JointGradientMode",
     "KKTLowerRHSMode",
+    "MABDCPUOracleBody",
+    "MABDCPUOracleConfig",
+    "MABDCPUOracleConstraint",
+    "MABDCPUOracleStepResult",
     "MABDJointSpec",
     "MABDJointType",
     "ReconstructedConstraintGraph",
@@ -128,6 +139,7 @@ __all__ = [
     "recover_primal_from_dual",
     "rigid_embedding_E",
     "solve_chain_block_tridiagonal_kkt",
+    "solve_cpu_oracle_step",
     "solve_dense_dual_kkt",
     "solve_dense_primal_kkt",
     "solve_graph_block_gauss_seidel_kkt",
