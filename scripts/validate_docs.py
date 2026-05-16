@@ -333,6 +333,12 @@ def validate_phase11_record() -> None:
         "random seed: not applicable",
         "thresholds:",
         "## Artifacts",
+        "stored Newton `mabd:control` rows can be converted into CPU-oracle actuation",
+        "specs.",
+        "`actuation_specs_from_model(model)` extracts enabled `mabd:control` rows",
+        "`MABDActuationSpec` values",
+        "Disabled control rows are skipped by default",
+        "Extracted specs can be passed to `MABDCPUOracleConfig.actuations`",
         "method.actuation.affine_control_forces",
     )
     for snippet in required_snippets:
@@ -344,6 +350,8 @@ def validate_phase11_record() -> None:
         "Phase 11 verifies time-varying controller updates",
         "Phase 11 verifies robot inverse kinematics",
         "Phase 11 verifies Franka pick-and-place",
+        "Phase 11 verifies contact-rich grasping",
+        "Phase 11 verifies paper scenes",
         "Phase 11 verifies timing",
         "Phase 11 verifies comparative baselines",
     )

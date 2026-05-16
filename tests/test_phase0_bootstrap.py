@@ -274,6 +274,12 @@ class Phase0BootstrapTests(unittest.TestCase):
             "random seed: not applicable",
             "thresholds:",
             "## Artifacts",
+            "stored Newton `mabd:control` rows can be converted into CPU-oracle actuation",
+            "specs.",
+            "`actuation_specs_from_model(model)` extracts enabled `mabd:control` rows",
+            "`MABDActuationSpec` values",
+            "Disabled control rows are skipped by default",
+            "Extracted specs can be passed to `MABDCPUOracleConfig.actuations`",
             "method.actuation.affine_control_forces",
         ):
             self.assertIn(snippet, text)
