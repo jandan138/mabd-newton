@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7 documentation, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8 documentation, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -35,11 +35,14 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-16-phase5-corotated-stiffness.md",
     "docs/records/2026-05-16-phase6-experiment-matrix.md",
     "docs/records/2026-05-16-phase7-joint-limits.md",
+    "docs/records/2026-05-16-phase8-environment-readiness.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
     "configs/experiments/README.md",
     "configs/experiments/paper_experiment_matrix.yaml",
+    "scripts/env/readiness_check.py",
+    "tests/test_environment_readiness.py",
     "vendor/newton/PROVENANCE.md",
     "vendor/newton/LICENSE.md",
     "vendor/newton/newton/solvers.py",
@@ -85,6 +88,9 @@ def validate_environment_contract() -> None:
         "physics-primitive-newton-py310",
         "Non-Pollution Rule",
         "rsync -a --delete",
+        "readiness_check.py",
+        "reports/generated/environment-readiness/local/readiness.json",
+        "smoke_passed",
     ):
         if snippet not in text:
             fail(f"environment.md missing {snippet}")
@@ -131,6 +137,10 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md must explicitly state Phase 7 joint-limit evidence")
     if "generic inequality-constrained M-ABD KKT" not in text or "joint-limit parameter extraction from scenes" not in text:
         fail("claim-boundaries.md must bound Phase 7 inequality and scene evidence")
+    if "Phase 8 verifies the cloned M-ABD Newton environment contract" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 8 environment readiness evidence")
+    if "Phase 8 does not verify solver behavior" not in text or "paper experiments" not in text:
+        fail("claim-boundaries.md must bound Phase 8 solver and experiment evidence")
 
 
 def validate_paper_claims() -> None:
@@ -279,7 +289,7 @@ def main() -> int:
     validate_experiment_contracts()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed")
     return 0
 
 

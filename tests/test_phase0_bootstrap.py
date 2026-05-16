@@ -136,6 +136,18 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("generic inequality-constrained M-ABD KKT", text)
         self.assertIn("joint-limit parameter extraction from scenes", text)
 
+    def test_phase8_environment_readiness_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        self.assertIn("Phase 8 verifies the cloned M-ABD Newton environment contract", text)
+        self.assertIn("vendored Newton import resolution", text)
+        self.assertIn("Phase 8 does not verify solver behavior", text)
+        self.assertIn("paper experiments", text)
+
+        environment_text = (ROOT / "docs/operations/environment.md").read_text()
+        self.assertIn("scripts/env/readiness_check.py", environment_text)
+        self.assertIn("reports/generated/environment-readiness/local/readiness.json", environment_text)
+        self.assertIn("smoke_passed", environment_text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -165,7 +177,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3/4/5/6/7 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

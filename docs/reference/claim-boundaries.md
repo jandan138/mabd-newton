@@ -20,6 +20,8 @@
   matrices after the Phase 6 record is created.
 - This repository contains Phase 7 joint-limit clamp and explicit dual RHS CPU
   oracle tests after the Phase 7 record is created.
+- This repository contains Phase 8 cloned-environment readiness checks after
+  the Phase 8 record is created.
 
 ## Intended
 
@@ -85,6 +87,13 @@
 - Phase 7 does not verify generic inequality-constrained M-ABD KKT, contact,
   collision, production stepping, joint-limit parameter extraction from scenes,
   actuation, paper experiments, timing, or comparative baselines.
+- Phase 8 verifies the cloned M-ABD Newton environment contract, interpreter
+  isolation from the reference `physics-primitive-agent` environment and
+  ambient DSW Python, vendored Newton import resolution, required runtime
+  package imports, and readiness JSON writing through diagnostic tests.
+- Phase 8 does not verify solver behavior, method correctness, scene dynamics,
+  rendered output, timing, comparative baselines, dependency freshness, or
+  paper experiments.
 
 ## Forbidden Claims
 

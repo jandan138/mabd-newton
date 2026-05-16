@@ -61,6 +61,34 @@ The import check must print a path under this repository's `vendor/newton`
 directory. If it imports `/cpfs/user/zhuzihou/dev/newton`, the `PYTHONPATH` is
 wrong for this repo.
 
+## Machine-Checkable Readiness
+
+Phase 8 adds a diagnostic readiness command that proves the cloned environment
+contract before scene runs or benchmark records cite the interpreter:
+
+```bash
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  scripts/env/readiness_check.py \
+  --output reports/generated/environment-readiness/local/readiness.json
+```
+
+The command checks that:
+
+- the interpreter lives under
+  `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310`;
+- it is not the reference environment at
+  `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310`;
+- it is not the ambient `/usr/bin` or Isaac/DSW Python;
+- `newton` imports from this repository's `vendor/newton` tree;
+- required runtime modules such as `yaml` and `warp` import from the cloned
+  environment.
+
+Status `smoke_passed` is environment evidence only. It does not prove solver
+behavior, method correctness, scene dynamics, timing, or paper experiment
+reproduction. Generated readiness JSON under `reports/generated/` is not
+committed.
+
 ## Dependency Changes
 
 Dependency installation is an explicit environment-maintenance action, not part
