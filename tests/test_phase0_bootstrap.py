@@ -40,6 +40,8 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("experiment.ragdoll_on_net", claim_ids)
         universal = next(c for c in data["claims"] if c["claim_id"] == "method.joints.universal")
         self.assertIn("inconsistent", universal["conflict_note"])
+        corotated = next(c for c in data["claims"] if c["claim_id"] == "method.single_body.corotated_stiffness")
+        self.assertEqual(corotated["reproduction_status"], "intended")
 
     def test_claim_boundaries_refuse_method_claims_at_phase0(self) -> None:
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
@@ -77,7 +79,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

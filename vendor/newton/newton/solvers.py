@@ -405,11 +405,13 @@ from ._src.solvers import (
     SolverFeatherstone,
     SolverImplicitMPM,
     SolverKamino,
+    SolverMABD,
     SolverMuJoCo,
     SolverSemiImplicit,
     SolverStyle3D,
     SolverVBD,
     SolverXPBD,
+    mabd,
     style3d,
 )
 
@@ -421,11 +423,13 @@ __all__ = [
     "SolverFeatherstone",
     "SolverImplicitMPM",
     "SolverKamino",
+    "SolverMABD",
     "SolverMuJoCo",
     "SolverNotifyFlags",
     "SolverSemiImplicit",
     "SolverStyle3D",
     "SolverVBD",
     "SolverXPBD",
+    "mabd",
     "style3d",
 ]

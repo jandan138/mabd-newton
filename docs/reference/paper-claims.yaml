@@ -25,7 +25,7 @@ claims:
     expected_value: "x_i = A xbar_i + t with q in R12"
     unit: "equation"
     conflict_note: "none"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: method.single_body.corotated_stiffness
     source_path: "/tmp/mabd-paper/source/sections/singleabd.tex"
     source_line: "rest generalized stiffness and co-rotated force assembly"
@@ -39,14 +39,14 @@ claims:
     expected_value: "polar and no-polar rotation handling supported"
     unit: "algorithm"
     conflict_note: "none"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: method.single_body.twist_wrench_maps
     source_path: "/tmp/mabd-paper/source/sections/singleabd.tex"
     source_line: "G(A), E(A), and virtual-work force mapping"
     expected_value: "G(A)E(A)=I and spatial wrench maps to affine generalized force"
     unit: "identity"
     conflict_note: "none"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: method.joints.ball
     source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
     source_line: "ball joint control point constraints"

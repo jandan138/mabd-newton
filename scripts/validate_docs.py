@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import os
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +21,7 @@ REQUIRED_PATHS = (
     "docs/reference/claim-boundaries.md",
     "docs/reference/paper-claims.yaml",
     "docs/records/README.md",
+    "docs/records/2026-05-16-phase1-single-body-abd.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "configs/experiments/README.md",
@@ -82,6 +82,8 @@ def validate_claim_boundaries() -> None:
             fail(f"claim-boundaries.md missing {heading}")
     if "No method-level M-ABD result is verified at Phase 0." not in text:
         fail("claim-boundaries.md must explicitly deny Phase 0 method verification")
+    if "full FEM rest-stiffness precomputation" not in text:
+        fail("claim-boundaries.md must explicitly bound Phase 1 stiffness evidence")
 
 
 def validate_paper_claims() -> None:
@@ -132,6 +134,15 @@ def validate_paper_claims() -> None:
         if claim_id not in seen:
             fail(f"paper-claims.yaml missing required claim {claim_id}")
 
+    corotated = next(c for c in claims if c["claim_id"] == "method.single_body.corotated_stiffness")
+    if corotated["reproduction_status"] == "passed":
+        fail("method.single_body.corotated_stiffness must not pass before full FEM K_A_bar evidence exists")
+
+    record_text = (ROOT / "docs/records/2026-05-16-phase1-single-body-abd.md").read_text(encoding="utf-8")
+    for claim in claims:
+        if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
+            fail(f"passed claim {claim['claim_id']} is not cited in the Phase 1 record")
+
 
 def validate_provenance() -> None:
     text = (ROOT / "vendor/newton/PROVENANCE.md").read_text(encoding="utf-8")
@@ -173,7 +184,7 @@ def main() -> int:
     validate_paper_claims()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0 docs/provenance validation passed")
+    print("Phase 0/1 docs/provenance validation passed")
     return 0
 
 

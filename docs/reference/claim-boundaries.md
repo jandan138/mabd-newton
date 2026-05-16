@@ -6,6 +6,8 @@
   "M-ABD: Scalable, Efficient, and Robust Multi-Affine-Body Dynamics".
 - This repository contains Phase 0 provenance, manifests, validation scripts,
   and bootstrap tests after the Phase 0 record is created.
+- This repository contains Phase 1 single-body M-ABD CPU oracle tests and a
+  `newton.solvers.SolverMABD` shell after the Phase 1 record is created.
 
 ## Intended
 
@@ -19,6 +21,13 @@
 
 - No method-level M-ABD result is verified at Phase 0.
 - No experiment, timing, or comparative baseline result is verified at Phase 0.
+- Phase 1 verifies single-body affine kinematics, dense generalized mass and
+  Hessian helpers, volume-weighted `bar J` force mapping, polar/no-polar block
+  maps, twist/wrench maps, and Hessian cache invalidation through unit tests
+  only.
+- Phase 1 does not verify time stepping, joints, contact, topology solvers,
+  full FEM rest-stiffness precomputation, paper experiments, timing, or
+  comparative baselines.
 
 ## Forbidden Claims
 
