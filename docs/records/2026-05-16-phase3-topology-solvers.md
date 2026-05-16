@@ -95,6 +95,7 @@ No experiment config is used in Phase 3. The tested behavior is encoded in:
 - worktree: `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase3-topology-solvers`
 - branch: `phase3-topology-solvers`
 - base commit: `6d61cc6`
+- implementation commit: `ada7271`
 
 ## Vendored Newton
 
