@@ -72,6 +72,83 @@ class ExperimentRunnerTests(unittest.TestCase):
                     vendored_newton_commit="test-newton",
                 )
 
+    def test_run_experiment_cli_writes_report_and_summary(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "cli_report.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--config",
+                    str(CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.spinning_box")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
+
+    def test_run_experiment_cli_rejects_unknown_claim(self) -> None:
+        import os
+        import subprocess
+        import sys
+
+        import yaml
+
+        with TemporaryDirectory() as tmpdir:
+            bad_config = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+            bad_config["claim_id"] = "experiment.unknown"
+            bad_path = Path(tmpdir) / "bad.yaml"
+            bad_path.write_text(yaml.safe_dump(bad_config), encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--config",
+                    str(bad_path),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(Path(tmpdir) / "bad_report.json"),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("experiment.single_body.spinning_box", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
