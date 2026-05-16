@@ -14,6 +14,7 @@ from .affine_math import (
     apply_polar_increment_rotation,
     apply_polar_rhs_rotation,
     generalized_mass_matrix,
+    rest_generalized_stiffness_matrix,
 )
 
 
@@ -52,6 +53,21 @@ class SingleBodyABDPrecompute:
             masses=mass_arr.copy(),
             mass_matrix=mass_matrix,
             stiffness_matrix=0.5 * (K + K.T),
+        )
+
+    @classmethod
+    def from_linear_elastic_points(
+        cls,
+        rest_points: Any,
+        masses: Any,
+        young_modulus: float,
+        poisson_ratio: float,
+        volume: float,
+    ) -> SingleBodyABDPrecompute:
+        return cls.from_points(
+            rest_points,
+            masses,
+            stiffness_matrix=rest_generalized_stiffness_matrix(young_modulus, poisson_ratio, volume),
         )
 
     def hessian(self, dt: float) -> np.ndarray:

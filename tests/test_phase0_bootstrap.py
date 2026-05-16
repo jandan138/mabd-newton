@@ -41,7 +41,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         universal = next(c for c in data["claims"] if c["claim_id"] == "method.joints.universal")
         self.assertIn("inconsistent", universal["conflict_note"])
         corotated = next(c for c in data["claims"] if c["claim_id"] == "method.single_body.corotated_stiffness")
-        self.assertEqual(corotated["reproduction_status"], "intended")
+        self.assertEqual(corotated["reproduction_status"], "passed")
         ball = next(c for c in data["claims"] if c["claim_id"] == "method.joints.ball")
         universal = next(c for c in data["claims"] if c["claim_id"] == "method.joints.universal")
         kkt = next(c for c in data["claims"] if c["claim_id"] == "method.kkt.residual_corrected_rhs")
@@ -95,6 +95,19 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("unconfigured production `SolverMABD.step()`", text)
         self.assertIn("Warp kernels", text)
 
+    def test_phase5_corotated_stiffness_claim_is_in_manifest_and_records(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        claims = {claim["claim_id"]: claim for claim in data["claims"]}
+        claim = claims["method.single_body.corotated_stiffness"]
+
+        self.assertEqual(claim["reproduction_status"], "passed")
+        self.assertIn("K_A_bar", claim["expected_value"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        self.assertIn("Phase 5 verifies linear-elastic rest generalized stiffness", text)
+        self.assertIn("co-rotated affine elastic force", text)
+        self.assertIn("Phase 5 does not verify unconfigured production `SolverMABD.step()`", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -124,7 +137,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3/4 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4/5 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,9 @@ from newton._src.solvers.mabd import (
     affine_force_from_wrench,
     apply_no_polar_increment_rotation,
     apply_no_polar_rhs_rotation,
+    co_rotated_generalized_stiffness_matrix,
+    co_rotated_linear_elastic_affine_force,
+    co_rotated_linear_elastic_energy,
     generalized_mass_matrix,
     lame_parameters,
     linear_elastic_energy,
@@ -22,6 +25,7 @@ from newton._src.solvers.mabd import (
     paper_rigid_embedding_E,
     point_jacobian,
     polar_rotation,
+    rest_generalized_stiffness_matrix,
     rigid_embedding_E,
     solve_single_body_delta,
     tetra_volume,
@@ -88,6 +92,25 @@ class TestMABDSingleBodyInternal(unittest.TestCase):
         self.assertEqual(linear_elastic_gradient(np.eye(3), 20.0, 0.25).shape, (3, 3))
         self.assertGreater(linear_elastic_energy(A, 20.0, 0.25), 0.0)
 
+        K = rest_generalized_stiffness_matrix(80.0, 0.25, 0.35)
+        q_rest = pack_q(np.eye(3), np.array([0.2, -0.1, 0.4]))
+        direction = np.linspace(-0.2, 0.3, 12)
+        direction[9:12] = np.array([0.5, -0.25, 0.75])
+        eps = 1.0e-6
+
+        def energy_at(q: np.ndarray) -> float:
+            A_q, _t = unpack_q(q)
+            return linear_elastic_energy(A_q, 80.0, 0.25, 0.35)
+
+        fd_curvature = (
+            energy_at(q_rest + eps * direction)
+            - 2.0 * energy_at(q_rest)
+            + energy_at(q_rest - eps * direction)
+        ) / (eps * eps)
+        self.assertTrue(np.allclose(K, K.T, atol=1.0e-12))
+        self.assertTrue(np.allclose(K[9:12], np.zeros((3, 12))))
+        self.assertAlmostEqual(float(direction @ K @ direction), float(fd_curvature), places=5)
+
         R = polar_rotation(A)
         self.assertTrue(np.allclose(R.T @ R, np.eye(3), atol=1.0e-12))
         blocks = np.arange(12, dtype=float) + 1.0
@@ -117,9 +140,34 @@ class TestMABDSingleBodyInternal(unittest.TestCase):
         self.assertFalse(np.allclose(twist_map_G(A_diag) @ paper_rigid_embedding_E(A_diag), np.eye(6)))
         self.assertTrue(np.allclose(twist_map_G(A_diag) @ rigid_embedding_E(A_diag), np.eye(6), atol=1.0e-10))
 
+        pure_rotation_force = co_rotated_linear_elastic_affine_force(R, 80.0, 0.25, 1.7)
+        self.assertAlmostEqual(co_rotated_linear_elastic_energy(R, 80.0, 0.25, 1.7), 0.0, places=12)
+        self.assertTrue(np.allclose(pure_rotation_force, np.zeros(12), atol=1.0e-12))
+        self.assertGreater(np.linalg.norm(linear_elastic_gradient(R, 80.0, 0.25, 1.7)), 1.0)
+
+        D = np.kron(np.eye(4), R)
+        K_bar = rest_generalized_stiffness_matrix(50.0, 0.2, 0.9)
+        self.assertTrue(
+            np.allclose(co_rotated_generalized_stiffness_matrix(R, K_bar), D @ K_bar @ D.T, atol=1.0e-12)
+        )
+
         rest_points = np.array(
             [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
         )
+        linear_pre = SingleBodyABDPrecompute.from_linear_elastic_points(
+            rest_points,
+            np.full(4, 0.25),
+            60.0,
+            0.2,
+            1.0 / 6.0,
+        )
+        self.assertTrue(
+            np.allclose(
+                linear_pre.stiffness_matrix,
+                rest_generalized_stiffness_matrix(60.0, 0.2, 1.0 / 6.0),
+            )
+        )
+
         pre = SingleBodyABDPrecompute.from_points(rest_points, np.full(4, 0.25), stiffness_matrix=np.eye(12))
         cache = SingleBodyABDHessianCache(pre)
         self.assertIs(cache.factor(0.01, "cpu", 0), cache.factor(0.01, "cpu", 0))

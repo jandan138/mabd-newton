@@ -32,7 +32,7 @@ claims:
     expected_value: "H_A_bar = M_A / h^2 + K_A_bar and volume-weighted Jbar^T f"
     unit: "equation"
     conflict_note: "none"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: method.single_body.no_polar_mode
     source_path: "/tmp/mabd-paper/source/sections/singleabd.tex"
     source_line: "polar and no-polar normalized block variants"

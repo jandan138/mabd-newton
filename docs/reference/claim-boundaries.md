@@ -14,6 +14,8 @@
   Phase 3 record is created.
 - This repository contains Phase 4 configured CPU `SolverMABD.step()` oracle
   tests after the Phase 4 record is created.
+- This repository contains Phase 5 rest generalized stiffness and co-rotated
+  single-body material oracle tests after the Phase 5 record is created.
 
 ## Intended
 
@@ -58,6 +60,15 @@
   collision, joint limits, actuation, robot controls, Warp kernels, GPU paths,
   multi-step paper scenes, convergence/timing claims, paper ABD-ABA performance,
   paper graph schedules, external baselines, or comparative reports.
+- Phase 5 verifies linear-elastic rest generalized stiffness `K_A_bar`,
+  finite-difference energy curvature agreement, co-rotated affine elastic force
+  vanishing on pure rotations, block-rotated generalized stiffness, and
+  `SingleBodyABDPrecompute.from_linear_elastic_points(...)` wiring through CPU
+  oracle tests.
+- Phase 5 does not verify unconfigured production `SolverMABD.step()`, contact,
+  collision, joint limits, actuation, robot controls, Warp kernels, GPU paths,
+  multi-step paper scenes, convergence/timing claims, paper ABD-ABA performance,
+  external baselines, or comparative reports.
 
 ## Forbidden Claims
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4 documentation, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3/4/5 documentation, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-16-phase2-joints-kkt.md",
     "docs/records/2026-05-16-phase3-topology-solvers.md",
     "docs/records/2026-05-16-phase4-configured-cpu-step.md",
+    "docs/records/2026-05-16-phase5-corotated-stiffness.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "configs/experiments/README.md",
@@ -105,6 +106,12 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md must explicitly state Phase 4 configured step evidence")
     if "unconfigured production `SolverMABD.step()`" not in text or "Warp kernels" not in text:
         fail("claim-boundaries.md must bound Phase 4 production step evidence")
+    if "Phase 5 verifies linear-elastic rest generalized stiffness `K_A_bar`" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 5 corotated stiffness evidence")
+    if "co-rotated affine elastic force" not in text or "SingleBodyABDPrecompute.from_linear_elastic_points" not in text:
+        fail("claim-boundaries.md must bound Phase 5 material oracle evidence")
+    if "Phase 5 does not verify unconfigured production `SolverMABD.step()`" not in text:
+        fail("claim-boundaries.md must bound Phase 5 production step evidence")
 
 
 def validate_paper_claims() -> None:
@@ -146,6 +153,7 @@ def validate_paper_claims() -> None:
 
     for claim_id in (
         "method.single_body.affine_kinematics",
+        "method.single_body.corotated_stiffness",
         "method.joints.universal",
         "method.kkt.residual_corrected_rhs",
         "method.topology.chain_block_tridiagonal",
@@ -162,8 +170,8 @@ def validate_paper_claims() -> None:
             fail(f"paper-claims.yaml missing required claim {claim_id}")
 
     corotated = next(c for c in claims if c["claim_id"] == "method.single_body.corotated_stiffness")
-    if corotated["reproduction_status"] == "passed":
-        fail("method.single_body.corotated_stiffness must not pass before full FEM K_A_bar evidence exists")
+    if corotated["reproduction_status"] != "passed":
+        fail("method.single_body.corotated_stiffness must pass after Phase 5 K_A_bar evidence exists")
 
     record_text = (
         (ROOT / "docs/records/2026-05-16-phase1-single-body-abd.md").read_text(encoding="utf-8")
@@ -173,6 +181,8 @@ def validate_paper_claims() -> None:
         + (ROOT / "docs/records/2026-05-16-phase3-topology-solvers.md").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "docs/records/2026-05-16-phase4-configured-cpu-step.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-16-phase5-corotated-stiffness.md").read_text(encoding="utf-8")
     )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
@@ -219,7 +229,7 @@ def main() -> int:
     validate_paper_claims()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5 docs/provenance validation passed")
     return 0
 
 

@@ -41,6 +41,18 @@ def _skew(value: np.ndarray) -> np.ndarray:
     return np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
 
 
+def _block_diag4(R: np.ndarray) -> np.ndarray:
+    return np.kron(np.eye(4), R)
+
+
+def _pack_A_gradient(grad: np.ndarray) -> np.ndarray:
+    out = np.zeros(12, dtype=float)
+    out[0:3] = grad[:, 0]
+    out[3:6] = grad[:, 1]
+    out[6:9] = grad[:, 2]
+    return out
+
+
 def pack_q(A: Any, t: Any) -> np.ndarray:
     """Pack paper M-ABD state ``q = [q1, q2, q3, t]`` from affine map ``x = A xbar + t``."""
 
@@ -192,6 +204,29 @@ def linear_elastic_gradient(
     return float(volume) * (mu * (A_arr + A_arr.T - 2.0 * eye) + lam * np.trace(A_arr - eye) * eye)
 
 
+def rest_generalized_stiffness_matrix(
+    young_modulus: float,
+    poisson_ratio: float,
+    volume: float = 1.0,
+) -> np.ndarray:
+    """Return the rest generalized stiffness ``K_A_bar`` for paper column-major ``q``.
+
+    The first nine rows/columns are the analytic linear-elastic material Hessian
+    with respect to ``A``. Translation columns are zero because the material
+    energy is translation invariant.
+    """
+
+    mu, lam = lame_parameters(young_modulus, poisson_ratio)
+    volume_float = float(volume)
+    K = np.zeros((12, 12), dtype=float)
+    for col in range(9):
+        dA = np.zeros((3, 3), dtype=float)
+        dA[col % 3, col // 3] = 1.0
+        dP = mu * (dA + dA.T) + lam * np.trace(dA) * np.eye(3)
+        K[:, col] = _pack_A_gradient(volume_float * dP)
+    return 0.5 * (K + K.T)
+
+
 def polar_rotation(A: Any) -> np.ndarray:
     A_arr = _as_mat33(A, "A")
     U, _singular_values, Vt = np.linalg.svd(A_arr)
@@ -239,6 +274,38 @@ def apply_no_polar_rhs_rotation(A: Any, blocks: Any) -> np.ndarray:
 def apply_no_polar_increment_rotation(A: Any, blocks: Any) -> np.ndarray:
     A_arr = _as_mat33(A, "A")
     return _apply_block_transform(A_arr, blocks, A_arr, preserve_norm=True)
+
+
+def co_rotated_linear_elastic_energy(
+    A: Any,
+    young_modulus: float,
+    poisson_ratio: float,
+    volume: float = 1.0,
+) -> float:
+    A_arr = _as_mat33(A, "A")
+    R = polar_rotation(A_arr)
+    return linear_elastic_energy(R.T @ A_arr, young_modulus, poisson_ratio, volume)
+
+
+def co_rotated_linear_elastic_affine_force(
+    A: Any,
+    young_modulus: float,
+    poisson_ratio: float,
+    volume: float = 1.0,
+) -> np.ndarray:
+    A_arr = _as_mat33(A, "A")
+    R = polar_rotation(A_arr)
+    local_gradient = linear_elastic_gradient(R.T @ A_arr, young_modulus, poisson_ratio, volume)
+    return -_pack_A_gradient(R @ local_gradient)
+
+
+def co_rotated_generalized_stiffness_matrix(A: Any, rest_stiffness_matrix: Any) -> np.ndarray:
+    A_arr = _as_mat33(A, "A")
+    K_bar = np.asarray(rest_stiffness_matrix, dtype=float)
+    if K_bar.shape != (12, 12):
+        raise ValueError(f"rest_stiffness_matrix must have shape (12, 12), got {K_bar.shape}")
+    D = _block_diag4(polar_rotation(A_arr))
+    return D @ K_bar @ D.T
 
 
 def twist_map_G(A: Any) -> np.ndarray:
@@ -296,6 +363,9 @@ __all__ = [
     "apply_no_polar_rhs_rotation",
     "apply_polar_increment_rotation",
     "apply_polar_rhs_rotation",
+    "co_rotated_generalized_stiffness_matrix",
+    "co_rotated_linear_elastic_affine_force",
+    "co_rotated_linear_elastic_energy",
     "element_jacobian",
     "generalized_mass_matrix",
     "lame_parameters",
@@ -306,6 +376,7 @@ __all__ = [
     "point_jacobian",
     "point_jacobians",
     "polar_rotation",
+    "rest_generalized_stiffness_matrix",
     "rigid_embedding_E",
     "tetra_volume",
     "twist_map_G",

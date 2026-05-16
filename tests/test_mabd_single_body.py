@@ -104,6 +104,62 @@ class MABDSingleBodyPublicTests(unittest.TestCase):
 
         self.assertTrue(np.allclose(grad, fd, atol=1.0e-7))
 
+    def test_rest_generalized_stiffness_matches_finite_difference_energy(self) -> None:
+        young = 80.0
+        poisson = 0.25
+        volume = 0.35
+        q_rest = mabd.pack_q(np.eye(3), np.array([0.2, -0.1, 0.4]))
+        direction = np.linspace(-0.2, 0.3, 12)
+        direction[9:12] = np.array([0.5, -0.25, 0.75])
+        eps = 1.0e-6
+
+        K = mabd.rest_generalized_stiffness_matrix(young, poisson, volume)
+
+        def energy_at(q: np.ndarray) -> float:
+            A, _t = mabd.unpack_q(q)
+            return mabd.linear_elastic_energy(A, young, poisson, volume)
+
+        fd_curvature = (
+            energy_at(q_rest + eps * direction)
+            - 2.0 * energy_at(q_rest)
+            + energy_at(q_rest - eps * direction)
+        ) / (eps * eps)
+        self.assertTrue(np.allclose(K, K.T, atol=1.0e-12))
+        self.assertTrue(np.allclose(K[9:12], np.zeros((3, 12))))
+        self.assertAlmostEqual(float(direction @ K @ direction), float(fd_curvature), places=5)
+
+    def test_corotated_elastic_force_vanishes_for_pure_rotation(self) -> None:
+        theta = 0.37
+        R = np.array(
+            [
+                [np.cos(theta), -np.sin(theta), 0.0],
+                [np.sin(theta), np.cos(theta), 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        )
+
+        force = mabd.co_rotated_linear_elastic_affine_force(R, 80.0, 0.25, 1.7)
+
+        self.assertAlmostEqual(mabd.co_rotated_linear_elastic_energy(R, 80.0, 0.25, 1.7), 0.0, places=12)
+        self.assertTrue(np.allclose(force, np.zeros(12), atol=1.0e-12))
+        self.assertGreater(np.linalg.norm(mabd.linear_elastic_gradient(R, 80.0, 0.25, 1.7)), 1.0)
+
+    def test_corotated_generalized_stiffness_matches_block_rotation_formula(self) -> None:
+        theta = -0.41
+        R = np.array(
+            [
+                [np.cos(theta), 0.0, np.sin(theta)],
+                [0.0, 1.0, 0.0],
+                [-np.sin(theta), 0.0, np.cos(theta)],
+            ]
+        )
+        K_bar = mabd.rest_generalized_stiffness_matrix(50.0, 0.2, 0.9)
+        D = np.kron(np.eye(4), R)
+
+        observed = mabd.co_rotated_generalized_stiffness_matrix(R, K_bar)
+
+        self.assertTrue(np.allclose(observed, D @ K_bar @ D.T, atol=1.0e-12))
+
     def test_polar_and_no_polar_block_rotations_preserve_expected_norms(self) -> None:
         A = np.array([[1.1, 0.2, 0.0], [0.0, 0.9, -0.1], [0.05, 0.0, 1.2]])
 
@@ -170,6 +226,22 @@ class MABDSingleBodyPublicTests(unittest.TestCase):
         self.assertIsNot(a, d)
         self.assertIsNot(a, e)
         self.assertTrue(np.allclose(a.solve(a.matrix @ np.ones(12)), np.ones(12)))
+
+    def test_linear_elastic_precompute_builds_rest_stiffness(self) -> None:
+        rest_points = np.array(
+            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        )
+        masses = np.full(4, 0.25)
+        young = 60.0
+        poisson = 0.2
+        volume = 1.0 / 6.0
+
+        pre = mabd.SingleBodyABDPrecompute.from_linear_elastic_points(rest_points, masses, young, poisson, volume)
+
+        self.assertTrue(
+            np.allclose(pre.stiffness_matrix, mabd.rest_generalized_stiffness_matrix(young, poisson, volume))
+        )
+        self.assertTrue(np.allclose(pre.mass_matrix, mabd.generalized_mass_matrix(rest_points, masses)))
 
     def test_single_body_delta_applies_paper_no_polar_algorithm(self) -> None:
         rest_points = np.array(
