@@ -96,6 +96,7 @@ is encoded in:
 - worktree: `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase4-solver-step`
 - branch: `phase4-solver-step`
 - base commit: `15732d2`
+- implementation commit: `e2cef9f`
 
 ## Vendored Newton
 
