@@ -290,6 +290,14 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         with self.assertRaisesRegex(NotImplementedError, "configure_cpu_oracle"):
             solver.step(model.state(), model.state(), None, None, 0.01)
 
+    def test_solver_step_rejects_newton_control_input(self) -> None:
+        model = _mabd_model()
+        solver = SolverMABD(model)
+        solver.configure_cpu_oracle(mabd.MABDCPUOracleConfig(bodies=[_body()]))
+
+        with self.assertRaisesRegex(NotImplementedError, "Control input"):
+            solver.step(model.state(), model.state(), model.control(), None, 0.01)
+
 
 if __name__ == "__main__":
     unittest.main()
