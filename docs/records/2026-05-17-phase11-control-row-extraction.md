@@ -21,6 +21,7 @@ contact-rich grasping, paper scenes, timing, or comparative baselines.
 - repo base commit: `0d2d15a`
 - plan commit: `8d2ca19`
 - implementation commit: `06fb7b3`
+- review hardening commit: `bb17d98`
 - paper source version: arXiv `2603.08079v2`
 - paper source paths:
   - `/tmp/mabd-paper/source/sections/singleabd.tex`
@@ -48,6 +49,7 @@ behavior is encoded in:
 - base commit: `0d2d15a`
 - plan commit: `8d2ca19`
 - implementation commit: `06fb7b3`
+- review hardening commit: `bb17d98`
 
 ## Vendored Newton
 
