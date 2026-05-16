@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -36,9 +37,26 @@ class RigidBaselineTests(unittest.TestCase):
         self.assertEqual(result.time_step_s, config.time_step_s)
         self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
         self.assertEqual(result.baseline_lane, "rbd_implicit_baseline")
-        self.assertLessEqual(result.linear_momentum_error, 1.0e-12)
-        self.assertLessEqual(result.angular_momentum_error, 1.0e-12)
-        self.assertLessEqual(result.energy_drift, 1.0e-12)
+        self.assertEqual(result.solver_name, "newton.solvers.SolverSemiImplicit")
+        self.assertEqual(result.newton_step_count, config.step_count)
+        np.testing.assert_allclose(result.final_position_m, [4.0, 0.0, 0.0], atol=1.0e-6)
+        self.assertFalse(np.allclose(result.final_rotation_xyzw, [0.0, 0.0, 0.0, 1.0]))
+        self.assertLessEqual(result.linear_momentum_error, 1.0e-6)
+        self.assertLessEqual(result.angular_momentum_error, 1.0e-3)
+        self.assertLessEqual(result.relative_energy_drift, 1.0e-5)
+
+    def test_spinning_box_rbd_properties_reject_bad_physical_values(self) -> None:
+        from mabd_reproduction.rigid_baselines import spinning_box_rbd_properties
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        for paper_values, pattern in (
+            ({**config.paper_values, "cube_size_m": 0.0}, "cube_size_m"),
+            ({**config.paper_values, "density": "nan kg/m^3"}, "density"),
+            ({**config.paper_values, "p0": [100.0, float("inf"), 0.0]}, "p0"),
+        ):
+            with self.subTest(pattern=pattern):
+                with self.assertRaisesRegex(ValueError, pattern):
+                    spinning_box_rbd_properties(replace(config, paper_values=paper_values))
 
     def test_write_spinning_box_rbd_baseline_report(self) -> None:
         from mabd_reproduction.rigid_baselines import write_spinning_box_rbd_baseline_report
@@ -56,11 +74,19 @@ class RigidBaselineTests(unittest.TestCase):
 
         self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
         self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(loaded.solver_mode, "newton_semimplicit_rbd_cpu_development")
         self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
         self.assertIn("development baseline", loaded.failure_reason)
+        self.assertEqual(loaded.observed["solver_name"], "newton.solvers.SolverSemiImplicit")
+        self.assertEqual(loaded.observed["newton_step_count"], config.step_count)
+        self.assertIn("linear_velocity_m_s", loaded.observed)
+        self.assertIn("angular_velocity_rad_s", loaded.observed)
+        self.assertIn("final_position_m", loaded.observed)
+        self.assertIn("final_rotation_xyzw", loaded.observed)
         self.assertIn("linear_momentum_error", loaded.observed)
         self.assertIn("angular_momentum_error", loaded.observed)
         self.assertIn("energy_drift", loaded.observed)
+        self.assertIn("relative_energy_drift", loaded.observed)
 
 
 if __name__ == "__main__":

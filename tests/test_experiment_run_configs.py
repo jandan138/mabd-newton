@@ -52,6 +52,10 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
         validate_spinning_box_config_against_matrix(config, matrix)
 
+        entry = next(item for item in matrix.experiments if item.claim_id == config.claim_id)
+        self.assertIn("rbd_implicit_baseline_report_incomplete", entry.blocking_reasons)
+        self.assertNotIn("rbd_implicit_baseline_adapter_missing", entry.blocking_reasons)
+
     def test_spinning_box_config_matrix_check_rejects_paper_value_drift(self) -> None:
         config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")

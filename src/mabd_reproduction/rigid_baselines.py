@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import sys
+from contextlib import redirect_stdout
 from dataclasses import dataclass
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +17,8 @@ from .reporting import ClaimReport, EvidenceStatus, write_claim_report
 
 @dataclass(frozen=True)
 class SpinningBoxRBDProperties:
+    cube_size_m: float
+    density_kg_m3: float
     mass_kg: float
     inertia_diag_kg_m2: np.ndarray
     linear_momentum_kg_m_s: np.ndarray
@@ -33,39 +38,56 @@ class SpinningBoxRBDBaselineResult:
     linear_momentum_error: float
     angular_momentum_error: float
     energy_drift: float
+    relative_energy_drift: float
     initial_energy: float
     final_energy: float
+    solver_name: str
+    newton_step_count: int
+    final_position_m: np.ndarray
+    final_rotation_xyzw: np.ndarray
+    final_linear_velocity_m_s: np.ndarray
+    final_angular_velocity_rad_s: np.ndarray
 
 
-def _paper_float(value: Any, name: str) -> float:
+def _paper_float(value: Any, name: str, *, positive: bool = False) -> float:
     if isinstance(value, bool):
         raise ValueError(f"{name} must be numeric")
     if isinstance(value, int | float):
-        return float(value)
-    if isinstance(value, str) and value:
+        result = float(value)
+    elif isinstance(value, str) and value:
         try:
-            return float(value.split()[0])
+            result = float(value.split()[0])
         except ValueError as exc:
             raise ValueError(f"{name} must start with a numeric value") from exc
-    raise ValueError(f"{name} must be numeric")
+    else:
+        raise ValueError(f"{name} must be numeric")
+    if not isfinite(result):
+        raise ValueError(f"{name} must be finite")
+    if positive and result <= 0.0:
+        raise ValueError(f"{name} must be positive")
+    return result
 
 
 def _paper_vector(value: Any, name: str) -> np.ndarray:
     vector = np.asarray(value, dtype=float)
     if vector.shape != (3,):
         raise ValueError(f"{name} must contain 3 numeric values")
+    if not np.all(np.isfinite(vector)):
+        raise ValueError(f"{name} must contain 3 finite numeric values")
     return vector
 
 
 def spinning_box_rbd_properties(config: SpinningBoxRunConfig) -> SpinningBoxRBDProperties:
-    cube_size_m = _paper_float(config.paper_values.get("cube_size_m"), "cube_size_m")
-    density_kg_m3 = _paper_float(config.paper_values.get("density"), "density")
+    cube_size_m = _paper_float(config.paper_values.get("cube_size_m"), "cube_size_m", positive=True)
+    density_kg_m3 = _paper_float(config.paper_values.get("density"), "density", positive=True)
     mass_kg = density_kg_m3 * cube_size_m**3
     inertia_scalar = (1.0 / 6.0) * mass_kg * cube_size_m**2
     inertia_diag = np.full(3, inertia_scalar, dtype=float)
     linear_momentum = _paper_vector(config.paper_values.get("p0"), "p0")
     angular_momentum = _paper_vector(config.paper_values.get("L0"), "L0")
     return SpinningBoxRBDProperties(
+        cube_size_m=cube_size_m,
+        density_kg_m3=density_kg_m3,
         mass_kg=mass_kg,
         inertia_diag_kg_m2=inertia_diag,
         linear_momentum_kg_m_s=linear_momentum,
@@ -81,10 +103,57 @@ def _rigid_energy(properties: SpinningBoxRBDProperties) -> float:
     return linear + angular
 
 
+def _run_newton_semimplicit_free_body(
+    config: SpinningBoxRunConfig,
+    properties: SpinningBoxRBDProperties,
+) -> tuple[np.ndarray, np.ndarray]:
+    with redirect_stdout(sys.stderr):
+        import newton
+        import warp as wp
+
+        inertia = wp.mat33(np.diag(properties.inertia_diag_kg_m2))
+        builder = newton.ModelBuilder(gravity=0.0)
+        body = builder.add_body(
+            xform=wp.transform(wp.vec3(0.0, 0.0, 0.0), wp.quat_identity()),
+            mass=properties.mass_kg,
+            inertia=inertia,
+            lock_inertia=True,
+            label="spinning_box_rbd_baseline",
+        )
+        model = builder.finalize(device="cpu")
+        state_in = model.state()
+        state_out = model.state()
+        body_qd = state_in.body_qd.numpy()
+        body_qd[body] = np.concatenate(
+            [properties.linear_velocity_m_s, properties.angular_velocity_rad_s]
+        ).astype(np.float32)
+        state_in.body_qd.assign(body_qd)
+
+        solver = newton.solvers.SolverSemiImplicit(model, angular_damping=0.0)
+        control = model.control()
+        for _step in range(config.step_count):
+            state_in.clear_forces()
+            solver.step(state_in, state_out, control, None, config.time_step_s)
+            state_in, state_out = state_out, state_in
+
+        final_q = np.asarray(state_in.body_q.numpy()[body], dtype=float)
+        final_qd = np.asarray(state_in.body_qd.numpy()[body], dtype=float)
+    return final_q, final_qd
+
+
 def run_spinning_box_rbd_baseline(config: SpinningBoxRunConfig) -> SpinningBoxRBDBaselineResult:
     properties = spinning_box_rbd_properties(config)
     initial_energy = _rigid_energy(properties)
-    final_energy = initial_energy
+    final_q, final_qd = _run_newton_semimplicit_free_body(config, properties)
+    final_linear_velocity = final_qd[:3]
+    final_angular_velocity = final_qd[3:]
+    final_linear_momentum = properties.mass_kg * final_linear_velocity
+    final_angular_momentum = properties.inertia_diag_kg_m2 * final_angular_velocity
+    final_energy = float(
+        0.5 * properties.mass_kg * (final_linear_velocity @ final_linear_velocity)
+        + 0.5 * (final_angular_velocity @ (properties.inertia_diag_kg_m2 * final_angular_velocity))
+    )
+    energy_drift = abs(final_energy - initial_energy)
     return SpinningBoxRBDBaselineResult(
         baseline_lane="rbd_implicit_baseline",
         status=EvidenceStatus.INCOMPLETE,
@@ -92,11 +161,22 @@ def run_spinning_box_rbd_baseline(config: SpinningBoxRunConfig) -> SpinningBoxRB
         time_step_s=config.time_step_s,
         mass_kg=properties.mass_kg,
         inertia_diag_kg_m2=properties.inertia_diag_kg_m2,
-        linear_momentum_error=0.0,
-        angular_momentum_error=0.0,
-        energy_drift=abs(final_energy - initial_energy),
+        linear_momentum_error=float(
+            np.linalg.norm(final_linear_momentum - properties.linear_momentum_kg_m_s)
+        ),
+        angular_momentum_error=float(
+            np.linalg.norm(final_angular_momentum - properties.angular_momentum_kg_m2_s)
+        ),
+        energy_drift=energy_drift,
+        relative_energy_drift=energy_drift / initial_energy,
         initial_energy=initial_energy,
         final_energy=final_energy,
+        solver_name="newton.solvers.SolverSemiImplicit",
+        newton_step_count=config.step_count,
+        final_position_m=final_q[:3],
+        final_rotation_xyzw=final_q[3:],
+        final_linear_velocity_m_s=final_linear_velocity,
+        final_angular_velocity_rad_s=final_angular_velocity,
     )
 
 
@@ -113,28 +193,38 @@ def write_spinning_box_rbd_baseline_report(
         claim_id=config.claim_id,
         scene_id=config.scene_id,
         asset_hashes={"primitive_cube": "not_applicable_procedural"},
-        solver_mode="rbd_implicit_cpu_development",
+        solver_mode="newton_semimplicit_rbd_cpu_development",
         backend="cpu_numpy",
         baseline_lane=result.baseline_lane,
         expected={
-            "paper_claim_status": "requires M-ABD/RBD comparison thresholds before pass",
+            "paper_claim_status": "requires paper-faithful RBD comparison thresholds before pass",
             "baseline_scope": "development_only",
+            "paper_lane_name": result.baseline_lane,
         },
         observed={
             "step_count": result.step_count,
             "time_step_s": result.time_step_s,
+            "solver_name": result.solver_name,
+            "newton_step_count": result.newton_step_count,
+            "cube_size_m": spinning_box_rbd_properties(config).cube_size_m,
+            "density_kg_m3": spinning_box_rbd_properties(config).density_kg_m3,
             "mass_kg": result.mass_kg,
             "inertia_diag_kg_m2": result.inertia_diag_kg_m2.tolist(),
+            "linear_velocity_m_s": result.final_linear_velocity_m_s.tolist(),
+            "angular_velocity_rad_s": result.final_angular_velocity_rad_s.tolist(),
+            "final_position_m": result.final_position_m.tolist(),
+            "final_rotation_xyzw": result.final_rotation_xyzw.tolist(),
             "linear_momentum_error": result.linear_momentum_error,
             "angular_momentum_error": result.angular_momentum_error,
             "energy_drift": result.energy_drift,
+            "relative_energy_drift": result.relative_energy_drift,
             "initial_energy": result.initial_energy,
             "final_energy": result.final_energy,
         },
         threshold={
-            "linear_momentum_error": 1.0e-12,
-            "angular_momentum_error": 1.0e-12,
-            "energy_drift": 1.0e-12,
+            "linear_momentum_error": 1.0e-6,
+            "angular_momentum_error": 1.0e-3,
+            "relative_energy_drift": 1.0e-5,
         },
         unit="json_report",
         status=result.status,

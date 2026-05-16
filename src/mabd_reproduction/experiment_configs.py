@@ -183,7 +183,10 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
     if missing:
         raise ExperimentRunConfigError("required_missing_lanes must be listed in required_lanes")
     for lane in config.required_missing_lanes:
-        if f"{lane}_adapter_missing" not in entry.blocking_reasons:
+        if (
+            f"{lane}_adapter_missing" not in entry.blocking_reasons
+            and f"{lane}_report_incomplete" not in entry.blocking_reasons
+        ):
             raise ExperimentRunConfigError("required_missing_lanes must match matrix blocking_reasons")
     if entry.reproduction_status != "blocked_by_baselines":
         raise ExperimentRunConfigError("matrix reproduction_status must remain blocked_by_baselines")

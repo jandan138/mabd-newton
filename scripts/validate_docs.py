@@ -729,6 +729,16 @@ def validate_experiment_contracts() -> None:
     if passed_experiments:
         fail("Phase 6 must not mark experiment claims passed: " + ", ".join(passed_experiments))
 
+    spinning_box = next(
+        experiment
+        for experiment in matrix.experiments
+        if experiment.claim_id == "experiment.single_body.spinning_box"
+    )
+    if "rbd_implicit_baseline_adapter_missing" in spinning_box.blocking_reasons:
+        fail("Phase 15 spinning-box matrix must not keep stale RBD adapter-missing blocker")
+    if "rbd_implicit_baseline_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 15 spinning-box matrix must record incomplete RBD baseline report blocker")
+
 
 def validate_phase13_config(
     config_path: str | Path = ROOT / "configs/experiments/single_body_spinning_box.yaml",
