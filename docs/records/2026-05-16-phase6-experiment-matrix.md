@@ -20,6 +20,8 @@ experiment claims:
 - `scripts/validate_docs.py` rejects missing experiment claim coverage, missing
   asset references, duplicate scenes, and any prematurely passed experiment
   claim
+- review hardening rejects string-coerced `supports_full_paper_evidence` values
+  and missing or malformed `blocking_reasons`
 
 This record does not verify scene dynamics, rendered images or videos, contact
 behavior, actuation behavior, external baseline runs, timing values, paper visual
@@ -52,7 +54,7 @@ Focused project tests:
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_contracts tests.test_phase0_bootstrap
 ```
 
-Observed: `Ran 12 tests in 9.021s` and `OK`.
+Observed after review hardening: `Ran 14 tests in 8.774s` and `OK`.
 
 Full project tests:
 
@@ -60,7 +62,7 @@ Full project tests:
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
 ```
 
-Observed: `Ran 54 tests in 9.116s` and `OK`.
+Observed after review hardening: `Ran 56 tests in 8.998s` and `OK`.
 
 Focused lint:
 

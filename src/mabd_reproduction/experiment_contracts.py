@@ -80,6 +80,13 @@ def _require_mapping(data: dict[str, Any], key: str) -> dict[str, Any]:
     return dict(value)
 
 
+def _require_bool(data: dict[str, Any], key: str) -> bool:
+    value = data.get(key)
+    if not isinstance(value, bool):
+        raise ExperimentMatrixError(f"{key} must be a boolean")
+    return value
+
+
 def _require_schema_version(data: dict[str, Any], path: Path) -> int:
     version = data.get("schema_version")
     if version != 1:
@@ -99,7 +106,7 @@ def _entry_from_mapping(data: Any) -> ExperimentEntry:
         asset_ids=_require_str_tuple(data, "asset_ids"),
         metrics=_require_str_tuple(data, "metrics"),
         reproduction_status=_require_str(data, "reproduction_status"),
-        blocking_reasons=tuple(data.get("blocking_reasons") or ()),
+        blocking_reasons=_require_str_tuple(data, "blocking_reasons"),
         output_report=_require_str(data, "output_report"),
     )
 
@@ -126,7 +133,7 @@ def _asset_from_mapping(data: Any) -> AssetEntry:
         license_status=_require_str(data, "license_status"),
         checksum=_require_str(data, "checksum"),
         reconstruction_status=_require_str(data, "reconstruction_status"),
-        supports_full_paper_evidence=bool(data.get("supports_full_paper_evidence")),
+        supports_full_paper_evidence=_require_bool(data, "supports_full_paper_evidence"),
         notes=_require_str(data, "notes"),
     )
 

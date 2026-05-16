@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 import yaml
@@ -50,6 +51,60 @@ class ExperimentContractTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ExperimentMatrixError, "missing experiment configs"):
             validate_experiment_matrix(trimmed, claims)
+
+    def test_asset_manifest_requires_boolean_support_flag(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "assets.yaml"
+            path.write_text(
+                yaml.safe_dump(
+                    {
+                        "schema_version": 1,
+                        "assets": [
+                            {
+                                "asset_id": "bad_asset",
+                                "source_type": "procedural",
+                                "source_uri": "procedural://bad",
+                                "license_status": "generated_by_reproduction",
+                                "checksum": "not_applicable_procedural",
+                                "reconstruction_status": "planned",
+                                "supports_full_paper_evidence": "false",
+                                "notes": "String booleans must not be coerced.",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ExperimentMatrixError, "supports_full_paper_evidence"):
+                load_asset_manifest(path)
+
+    def test_experiment_entries_require_blocking_reasons_list(self) -> None:
+        base_entry = {
+            "claim_id": "experiment.single_body.spinning_box",
+            "scene_id": "bad_scene",
+            "source_lines": ["/tmp/mabd-paper/source/sections/experiment.tex:40-55"],
+            "paper_values": {"h": "unknown_in_source"},
+            "required_lanes": ["mabd_newton"],
+            "asset_ids": ["primitive_cube"],
+            "metrics": ["energy_drift"],
+            "reproduction_status": "planned",
+            "output_report": "reports/experiment_matrix/bad_scene.json",
+        }
+        bad_values = (
+            base_entry,
+            {**base_entry, "blocking_reasons": "not_a_list"},
+        )
+        with TemporaryDirectory() as tmpdir:
+            for index, entry in enumerate(bad_values):
+                path = Path(tmpdir) / f"experiments_{index}.yaml"
+                path.write_text(
+                    yaml.safe_dump({"schema_version": 1, "experiments": [entry]}),
+                    encoding="utf-8",
+                )
+
+                with self.assertRaisesRegex(ExperimentMatrixError, "blocking_reasons"):
+                    load_experiment_matrix(path)
 
 
 if __name__ == "__main__":
