@@ -177,15 +177,15 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 git diff --check
 ```
 
-Implementation verification result:
+Review-hardening verification result:
 
 ```text
 ruff: All checks passed!
 docs: Phase 0/1/2/3/4/5/6/7/8/9 docs/provenance validation passed
-focused tests: Ran 40 tests in 8.870s, OK
-vendored internal tests: Ran 6 tests in 0.335s, OK
-full tests: Ran 75 tests in 14.528s, OK
-git diff --check: exit 0
+focused tests: Ran 43 tests in 9.282s, OK
+vendored internal tests: Ran 8 tests in 0.292s, OK
+full tests: Ran 78 tests in 14.374s, OK
+git diff --check and git status: clean
 ```
 
 ## Claim Impact
