@@ -52,6 +52,19 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         self.assertEqual(loaded.threshold, config.thresholds)
         self.assertEqual(loaded.status, config.report_status)
         self.assertEqual(loaded.failure_reason, config.failure_reason)
+        self.assertIn("linear_momentum_error", loaded.observed)
+        self.assertIn("angular_momentum_error", loaded.observed)
+        self.assertIn("final_linear_momentum_kg_m_s", loaded.observed)
+        self.assertIn("final_angular_momentum_kg_m2_s", loaded.observed)
+        self.assertIn("paper_spatial_twist", loaded.observed)
+        self.assertLessEqual(
+            loaded.observed["linear_momentum_error"],
+            loaded.threshold["linear_momentum_error"],
+        )
+        self.assertLessEqual(
+            loaded.observed["angular_momentum_error"],
+            loaded.threshold["angular_momentum_error"],
+        )
 
 
 if __name__ == "__main__":

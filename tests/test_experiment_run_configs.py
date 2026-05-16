@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import numpy as np
 import yaml
 
 from mabd_reproduction.experiment_configs import (
@@ -30,7 +31,15 @@ class ExperimentRunConfigTests(unittest.TestCase):
         return path
 
     def test_spinning_box_config_is_machine_checkable(self) -> None:
+        from newton.solvers import mabd
+
+        from mabd_reproduction.spinning_box_physics import (
+            abd_generalized_velocity_from_paper_momenta,
+            spinning_box_physical_properties,
+        )
+
         config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+        properties = spinning_box_physical_properties(config)
 
         self.assertEqual(config.schema_version, 1)
         self.assertEqual(config.claim_id, "experiment.single_body.spinning_box")
@@ -45,6 +54,20 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertEqual(config.mass_diagonal.shape, (12,))
         self.assertIn("energy_drift", config.thresholds)
         self.assertIn("generalized_momentum_delta_norm", config.thresholds)
+        np.testing.assert_allclose(
+            config.initial_qd,
+            abd_generalized_velocity_from_paper_momenta(config),
+            atol=1.0e-12,
+        )
+        np.testing.assert_allclose(
+            mabd.twist_map_G(np.eye(3)) @ config.initial_qd,
+            [0.0, 60000.0, 0.0, 100.0, 0.0, 0.0],
+            atol=1.0e-12,
+        )
+        np.testing.assert_allclose(properties.linear_momentum_kg_m_s, [100.0, 0.0, 0.0])
+        np.testing.assert_allclose(properties.angular_momentum_kg_m2_s, [0.0, 100.0, 0.0])
+        self.assertIn("linear_momentum_error", config.thresholds)
+        self.assertIn("angular_momentum_error", config.thresholds)
 
     def test_spinning_box_config_matches_experiment_matrix(self) -> None:
         config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")

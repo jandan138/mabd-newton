@@ -9,6 +9,10 @@ from newton.solvers import mabd
 
 from .experiment_configs import SpinningBoxRunConfig
 from .reporting import ClaimReport, EvidenceStatus, write_claim_report
+from .spinning_box_physics import (
+    abd_generalized_velocity_from_paper_momenta,
+    mabd_momentum_diagnostics,
+)
 
 
 def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOracleBody:
@@ -42,8 +46,13 @@ def write_spinning_box_development_report(
     q = mabd.pack_q(np.eye(3), np.zeros(3)) if config is None else config.initial_q.copy()
     qd = np.linspace(-0.2, 0.25, 12) if config is None else config.initial_qd.copy()
     mass_matrix = np.eye(12) if config is None else np.diag(config.mass_diagonal)
+    if config is not None:
+        expected_qd = abd_generalized_velocity_from_paper_momenta(config)
+        if not np.allclose(qd, expected_qd, rtol=0.0, atol=1.0e-9):
+            raise ValueError("single_body_spinning_box initial_qd must map paper p0/L0 to ABD velocity")
     initial_momentum = qd.copy()
     initial_energy = _kinetic_energy(qd, mass_matrix)
+    initial_diagnostics = mabd_momentum_diagnostics(config, q, qd) if config is not None else None
     oracle_config = mabd.MABDCPUOracleConfig(bodies=[_oracle_body(config)])
     for _step in range(step_count):
         result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=dt, config=oracle_config)
@@ -51,11 +60,29 @@ def write_spinning_box_development_report(
         qd = result.qd[0]
     energy_drift = abs(_kinetic_energy(qd, mass_matrix) - initial_energy)
     momentum_delta = float(np.linalg.norm(qd - initial_momentum))
+    final_diagnostics = mabd_momentum_diagnostics(config, q, qd) if config is not None else None
     thresholds = (
         {"energy_drift": 1.0e-12, "generalized_momentum_delta_norm": 1.0e-12}
         if config is None
         else config.thresholds
     )
+    observed = {
+        "step_count": step_count,
+        "time_step_s": dt,
+        "energy_drift": energy_drift,
+        "generalized_momentum_delta_norm": momentum_delta,
+    }
+    if initial_diagnostics is not None and final_diagnostics is not None:
+        observed.update(
+            {
+                "paper_spatial_twist": initial_diagnostics.spatial_twist.tolist(),
+                "final_spatial_twist": final_diagnostics.spatial_twist.tolist(),
+                "final_linear_momentum_kg_m_s": final_diagnostics.linear_momentum_kg_m_s.tolist(),
+                "final_angular_momentum_kg_m2_s": final_diagnostics.angular_momentum_kg_m2_s.tolist(),
+                "linear_momentum_error": final_diagnostics.linear_momentum_error,
+                "angular_momentum_error": final_diagnostics.angular_momentum_error,
+            }
+        )
     report = ClaimReport(
         claim_id="experiment.single_body.spinning_box",
         scene_id="single_body_spinning_box" if config is None else config.scene_id,
@@ -64,12 +91,7 @@ def write_spinning_box_development_report(
         backend="cpu_numpy",
         baseline_lane="mabd_newton" if config is None else config.baseline_lane,
         expected={"paper_claim_status": "requires comparative baseline lanes before pass"},
-        observed={
-            "step_count": step_count,
-            "time_step_s": dt,
-            "energy_drift": energy_drift,
-            "generalized_momentum_delta_norm": momentum_delta,
-        },
+        observed=observed,
         threshold=thresholds,
         unit="json_report",
         status=EvidenceStatus.INCOMPLETE if config is None else config.report_status,
