@@ -17,7 +17,7 @@ baselines, rendered outputs, or paper experiments.
 
 - repo base commit: `e13529d`
 - plan commit: `d5dc58a`
-- implementation commit: `IMPLEMENTATION_COMMIT_PENDING`
+- implementation commit: `d038a75`
 - reference project: `/cpfs/user/zhuzihou/dev/physics-primitive-agent`
 - reference environment:
   `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310`
@@ -83,10 +83,9 @@ Required checks:
 Generated readiness reports belong under
 `reports/generated/environment-readiness/local/` and are not committed.
 
-## Final Verification
+## Implementation Verification
 
-Final verification commands and outputs are filled after the implementation
-commit:
+Commands run before the implementation commit:
 
 ```bash
 /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check src/mabd_reproduction/environment.py scripts/env/readiness_check.py tests/test_environment_readiness.py tests/test_phase0_bootstrap.py scripts/validate_docs.py
@@ -97,8 +96,25 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 git diff --check
 ```
 
-Expected status before commit: all commands exit `0`, readiness JSON reports
-`status: smoke_passed`, and docs validation prints
+Observed results:
+
+```text
+ruff: All checks passed!
+readiness: "status": "smoke_passed"
+docs: Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed
+focused tests: Ran 16 tests in 13.760s, OK
+full tests: Ran 67 tests in 13.577s, OK
+git diff --check: exit 0
+```
+
+Docs validation after backfilling the implementation commit:
+
+```text
+Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed
+```
+
+Required status: all commands exit `0`, readiness JSON reports `status:
+smoke_passed`, and docs validation prints
 `Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed`.
 
 ## Claim Impact
