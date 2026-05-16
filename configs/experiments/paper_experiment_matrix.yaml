@@ -1,0 +1,387 @@
+schema_version: 1
+experiments:
+  - claim_id: experiment.single_body.rolling_spinning
+    scene_id: single_body_rolling_spinning
+    source_lines:
+      - /tmp/mabd-paper/source/sections/singleabd.tex:162-172
+      - /tmp/mabd-paper/source/sections/experiment.tex:48-55
+    paper_values:
+      h: "10 ms for rolling performance figure; additional step sizes in single-body comparisons"
+      duration: "10K steps for rolling cylinder performance figure"
+      material_E: "1E9 Pa for cube single-body benchmark"
+      density: "1E3 kg/m^3 for cube single-body benchmark"
+    required_lanes:
+      - mabd_newton
+      - rbd_implicit_baseline
+      - rbd_explicit_baseline
+    asset_ids:
+      - primitive_cylinder
+      - primitive_cube
+    metrics:
+      - total_simulation_time_ms
+      - linear_momentum_error
+      - angular_momentum_error
+      - energy_drift
+    reproduction_status: blocked_by_baselines
+    blocking_reasons:
+      - rbd_baseline_adapter_missing
+      - benchmark_protocol_not_recorded
+    output_report: reports/experiment_matrix/single_body_rolling_spinning.json
+  - claim_id: experiment.single_body.spinning_box
+    scene_id: single_body_spinning_box
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:40-55
+    paper_values:
+      cube_size_m: 0.1
+      density: "1E3 kg/m^3"
+      material_E: "1E9 Pa"
+      poisson_ratio: 0.3
+      p0: [100, 0, 0]
+      L0: [0, 100, 0]
+    required_lanes:
+      - mabd_newton
+      - rbd_implicit_baseline
+    asset_ids:
+      - primitive_cube
+    metrics:
+      - linear_momentum_error
+      - angular_momentum_error
+      - energy_drift
+    reproduction_status: blocked_by_baselines
+    blocking_reasons:
+      - rbd_implicit_baseline_adapter_missing
+    output_report: reports/experiment_matrix/single_body_spinning_box.json
+  - claim_id: experiment.single_body.t_handle
+    scene_id: single_body_t_handle
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:57-75
+    paper_values:
+      initial_angular_speed_rad_s: 3
+      reference_h_s: 0.0001
+      reference_integrator: RK4
+      asymmetry: subtle
+    required_lanes:
+      - mabd_newton
+      - rbd_rk4_reference
+    asset_ids:
+      - t_handle_procedural
+    metrics:
+      - flip_timing_error
+      - intermediate_axis_angular_velocity_waveform
+      - energy_loss
+    reproduction_status: planned
+    blocking_reasons:
+      - exact_t_handle_geometry_unknown
+    output_report: reports/experiment_matrix/single_body_t_handle.json
+  - claim_id: experiment.single_body.heavy_top
+    scene_id: single_body_heavy_top
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:65-75
+    paper_values:
+      tilt_deg: 5
+      angular_speed_rad_s: 10
+      reference_h_s: 0.0001
+    required_lanes:
+      - mabd_newton
+      - rbd_rk4_reference
+    asset_ids:
+      - heavy_top_procedural
+    metrics:
+      - precession_velocity_error
+      - nutation_angle_error
+      - energy_drift
+    reproduction_status: planned
+    blocking_reasons:
+      - exact_heavy_top_inertia_unknown
+    output_report: reports/experiment_matrix/single_body_heavy_top.json
+  - claim_id: experiment.single_body.physical_pendulum
+    scene_id: single_body_physical_pendulum
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:77-91
+    paper_values:
+      release_angle: horizontal
+      initial_velocity: zero
+      analytic_reference: elliptic_integral
+    required_lanes:
+      - mabd_newton
+      - analytic_reference
+      - rbd_implicit_baseline
+    asset_ids:
+      - physical_pendulum_procedural
+    metrics:
+      - pendulum_angle_error
+      - joint_force_error
+      - phase_drift
+    reproduction_status: planned
+    blocking_reasons:
+      - pendulum_geometry_unknown
+    output_report: reports/experiment_matrix/single_body_physical_pendulum.json
+  - claim_id: experiment.joints.heavy_end_chain
+    scene_id: joints_heavy_end_chain
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:97-106
+    paper_values:
+      h_s: 0.001
+      robustness_h_s: 0.01
+      iterations: 1
+      baselines: "MuJoCo equality, MuJoCo articulated, Bullet, PhysX"
+    required_lanes:
+      - mabd_newton
+      - mujoco_equality_baseline
+      - mujoco_articulated_baseline
+      - bullet_baseline
+      - physx_baseline
+    asset_ids:
+      - chain_procedural
+    metrics:
+      - max_constraint_residual
+      - chain_tension_oscillation
+      - baseline_failure_mode
+    reproduction_status: blocked_by_baselines
+    blocking_reasons:
+      - external_baseline_adapters_missing
+      - exact_chain_geometry_unknown
+    output_report: reports/experiment_matrix/joints_heavy_end_chain.json
+  - claim_id: experiment.joints.ball_joint_nets
+    scene_id: joints_ball_joint_nets
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:108-137
+      - /tmp/mabd-paper/source/sections/experiment.tex:23-23
+    paper_values:
+      net_sizes: ["10x10", "20x20", "50x50", "100x100"]
+      h_s: "1/30 for hanging/cylinder examples; 0.01 for large net scaling"
+      largest_links: "30K"
+      largest_constraints: "120K"
+      largest_time_ms: 84
+    required_lanes:
+      - mabd_newton
+      - mujoco_equality_baseline
+      - bullet_baseline
+      - physx_baseline
+      - vq_baseline
+    asset_ids:
+      - net_procedural
+      - primitive_cylinder
+    metrics:
+      - max_constraint_residual
+      - sag_profile
+      - drape_stability
+      - per_step_time_ms
+      - baseline_failure_mode
+    reproduction_status: blocked_by_baselines
+    blocking_reasons:
+      - external_baseline_adapters_missing
+      - contact_lane_missing
+    output_report: reports/experiment_matrix/joints_ball_joint_nets.json
+  - claim_id: experiment.joints.pulley
+    scene_id: joints_pulley
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:139-142
+      - /tmp/mabd-paper/source/sections/experiment.tex:166-180
+      - /tmp/mabd-paper/source/sections/experiment.tex:24-25
+    paper_values:
+      h_s: 0.01
+      chain_joints: "1.5K"
+      huge_links: "1,076,748"
+      huge_time_ms: 904
+    required_lanes:
+      - mabd_newton
+      - mujoco_baseline
+      - bullet_baseline
+      - physx_baseline
+    asset_ids:
+      - pulley_procedural
+    metrics:
+      - max_constraint_residual
+      - anchor_height_curve
+      - pulley_inertia_oscillation
+      - per_step_time_ms
+      - baseline_failure_mode
+    reproduction_status: blocked_by_baselines
+    blocking_reasons:
+      - external_baseline_adapters_missing
+      - exact_pulley_drive_cycle_unknown
+    output_report: reports/experiment_matrix/joints_pulley.json
+  - claim_id: experiment.hierarchy.trees
+    scene_id: hierarchy_trees
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:149-184
+      - /tmp/mabd-paper/source/sections/experiment.tex:26-27
+    paper_values:
+      willow_links: "21K"
+      pear_links: "29K"
+      h_s: 0.01
+      approximate_time_ms: 20
+      iterations: 1
+    required_lanes:
+      - mabd_newton
+    asset_ids:
+      - tree_skeletons_external
+    metrics:
+      - branch_residual
+      - wind_response_curve
+      - per_step_time_ms
+    reproduction_status: blocked_by_assets
+    blocking_reasons:
+      - tree_geometry_and_skeleton_source_missing
+    output_report: reports/experiment_matrix/hierarchy_trees.json
+  - claim_id: experiment.cloak
+    scene_id: cloak_net
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:157-191
+      - /tmp/mabd-paper/source/sections/experiment.tex:28-28
+    paper_values:
+      links: "11.7K"
+      h_s: 0.01
+      constraints: "48K"
+      time_ms: 33
+    required_lanes:
+      - mabd_newton
+      - mujoco_baseline
+      - bullet_baseline
+      - physx_baseline
+    asset_ids:
+      - cloak_avatar_external
+    metrics:
+      - contact_stability
+      - garment_motion_quality
+      - per_step_time_ms
+      - baseline_failure_mode
+    reproduction_status: blocked_by_assets
+    blocking_reasons:
+      - avatar_motion_and_cloak_asset_missing
+      - contact_lane_missing
+      - external_baseline_adapters_missing
+    output_report: reports/experiment_matrix/cloak_net.json
+  - claim_id: experiment.armadillo_coupling
+    scene_id: armadillo_coupling
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:170-174
+      - /tmp/mabd-paper/source/sections/experiment.tex:201-202
+      - /tmp/mabd-paper/source/sections/experiment.tex:29-29
+    paper_values:
+      links: "2.7K"
+      constraints: "10.8K"
+      h_s: 0.01
+      iterations: 7
+      time_ms: 116
+      material_E: "1E6"
+    required_lanes:
+      - mabd_newton
+      - fem_coupling_lane
+    asset_ids:
+      - armadillo_mesh_external
+      - net_procedural
+    metrics:
+      - coupled_constraint_residual
+      - fem_contact_response
+      - per_step_time_ms
+    reproduction_status: blocked_by_assets
+    blocking_reasons:
+      - armadillo_mesh_and_fem_discretization_missing
+      - fem_coupling_lane_missing
+    output_report: reports/experiment_matrix/armadillo_coupling.json
+  - claim_id: experiment.ragdoll_on_net
+    scene_id: ragdoll_on_net
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:191-198
+      - /tmp/mabd-paper/source/sections/experiment.tex:30-30
+    paper_values:
+      ragdolls: 27
+      ragdoll_links_each: 11
+      net_links: "1,160"
+      h_s: "1/200"
+      text_time_ms: 33
+      table_time_ms: 17
+      material_E: "1E6"
+    required_lanes:
+      - mabd_newton
+      - contact_lane
+    asset_ids:
+      - ragdoll_procedural
+      - net_procedural
+    metrics:
+      - max_constraint_residual
+      - contact_stability
+      - per_step_time_ms
+      - timing_conflict_report
+    reproduction_status: planned
+    blocking_reasons:
+      - contact_lane_missing
+      - table_text_timing_conflict_requires_separate_report
+    output_report: reports/experiment_matrix/ragdoll_on_net.json
+  - claim_id: experiment.mixed_joints.falling
+    scene_id: mixed_joints_falling
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:204-208
+      - /tmp/mabd-paper/source/sections/experiment.tex:31-31
+    paper_values:
+      jointed_pairs: 720
+      per_joint_type_pairs: 180
+      h_s: 0.01
+      time_ms: 54
+      material_E: "1E9"
+    required_lanes:
+      - mabd_newton
+      - contact_lane
+    asset_ids:
+      - bowl_container_procedural
+    metrics:
+      - max_constraint_residual
+      - stacking_stability
+      - per_step_time_ms
+    reproduction_status: planned
+    blocking_reasons:
+      - contact_lane_missing
+    output_report: reports/experiment_matrix/mixed_joints_falling.json
+  - claim_id: experiment.robot.franka
+    scene_id: robot_franka_pick_place
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:214-224
+    paper_values:
+      robot: Franka Panda
+      solver_iterations: 1
+      task: pick_and_place
+    required_lanes:
+      - mabd_newton
+      - ik_motion_planning_lane
+      - contact_lane
+    asset_ids:
+      - franka_robot_external
+    metrics:
+      - joint_integrity
+      - grasp_success
+      - stacking_stability
+      - contact_stability
+    reproduction_status: blocked_by_assets
+    blocking_reasons:
+      - franka_asset_and_motion_plan_missing
+      - actuation_mapping_missing
+      - contact_lane_missing
+    output_report: reports/experiment_matrix/robot_franka_pick_place.json
+  - claim_id: experiment.protein_chain
+    scene_id: protein_chain_reconstruction
+    source_lines:
+      - /tmp/mabd-paper/source/sections/experiment.tex:226-237
+      - /tmp/mabd-paper/source/sections/experiment.tex:32-32
+    paper_values:
+      pdb: 6VXX
+      trajectory_duration: "40 ns"
+      h_s: unknown_in_source
+      links: "14K"
+      constraints: "56K"
+      time_ms: 14
+    required_lanes:
+      - mabd_newton
+      - ik_keyframe_lane
+    asset_ids:
+      - protein_6vxx_external
+    metrics:
+      - marker_reconstruction_error
+      - topology_coherence
+      - per_step_time_ms
+    reproduction_status: blocked_by_assets
+    blocking_reasons:
+      - exact_marker_sequence_missing
+      - ik_keyframe_lane_missing
+    output_report: reports/experiment_matrix/protein_chain_reconstruction.json

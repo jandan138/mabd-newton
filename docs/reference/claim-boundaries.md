@@ -16,6 +16,8 @@
   tests after the Phase 4 record is created.
 - This repository contains Phase 5 rest generalized stiffness and co-rotated
   single-body material oracle tests after the Phase 5 record is created.
+- This repository contains Phase 6 machine-checkable experiment and asset
+  matrices after the Phase 6 record is created.
 
 ## Intended
 
@@ -69,6 +71,12 @@
   collision, joint limits, actuation, robot controls, Warp kernels, GPU paths,
   multi-step paper scenes, convergence/timing claims, paper ABD-ABA performance,
   external baselines, or comparative reports.
+- Phase 6 verifies only that every `experiment.*` paper claim has a
+  machine-checkable experiment matrix entry, required lane list, asset source
+  reference, metric list, blocking reason, and output report contract.
+- Phase 6 does not verify any scene dynamics, rendered image/video result,
+  contact behavior, actuation behavior, external baseline run, timing number,
+  paper visual match, or comparative report.
 
 ## Forbidden Claims
 

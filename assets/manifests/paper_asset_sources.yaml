@@ -1,0 +1,122 @@
+schema_version: 1
+assets:
+  - asset_id: primitive_cube
+    source_type: procedural
+    source_uri: procedural://unit-cube
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: available
+    supports_full_paper_evidence: true
+    notes: "Cube geometry can be generated from paper dimensions."
+  - asset_id: primitive_cylinder
+    source_type: procedural
+    source_uri: procedural://cylinder
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: available
+    supports_full_paper_evidence: true
+    notes: "Rolling cylinder/collider geometry is procedural; exact paper mesh is not required."
+  - asset_id: t_handle_procedural
+    source_type: procedural
+    source_uri: procedural://t-handle
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: planned
+    supports_full_paper_evidence: false
+    notes: "Mass asymmetry is described qualitatively; exact geometry parameters are still reconstructed."
+  - asset_id: heavy_top_procedural
+    source_type: procedural
+    source_uri: procedural://heavy-top
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: planned
+    supports_full_paper_evidence: false
+    notes: "Tilt and angular speed are in the paper; exact inertia geometry still needs reconstruction."
+  - asset_id: physical_pendulum_procedural
+    source_type: procedural
+    source_uri: procedural://physical-pendulum
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: planned
+    supports_full_paper_evidence: false
+    notes: "Analytic elliptic reference is specified; pendulum dimensions are not fully specified."
+  - asset_id: chain_procedural
+    source_type: procedural
+    source_uri: procedural://joint-chain
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: planned
+    supports_full_paper_evidence: false
+    notes: "Chain topology can be generated; coil release geometry and heavy-end mass need reconstruction."
+  - asset_id: net_procedural
+    source_type: procedural
+    source_uri: procedural://ball-joint-net
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: planned
+    supports_full_paper_evidence: false
+    notes: "Grid dimensions are specified for some cases; link geometry and collider placement need reconstruction."
+  - asset_id: pulley_procedural
+    source_type: procedural
+    source_uri: procedural://pulley-system
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: planned
+    supports_full_paper_evidence: false
+    notes: "Pulley topology is described, but exact rig geometry and drive cycle are not fully specified."
+  - asset_id: tree_skeletons_external
+    source_type: external_or_reconstructed
+    source_uri: unknown_in_source://willow-pear-tree-geometry
+    license_status: unknown_in_source
+    checksum: unknown_in_source
+    reconstruction_status: blocked_by_asset_source
+    supports_full_paper_evidence: false
+    notes: "Willow and pear geometries/skeleton extraction inputs are not included in the paper source."
+  - asset_id: cloak_avatar_external
+    source_type: external_or_reconstructed
+    source_uri: unknown_in_source://cloak-avatar
+    license_status: unknown_in_source
+    checksum: unknown_in_source
+    reconstruction_status: blocked_by_asset_source
+    supports_full_paper_evidence: false
+    notes: "Avatar motion and cloak geometry source are not available in the paper source."
+  - asset_id: armadillo_mesh_external
+    source_type: external_or_reconstructed
+    source_uri: unknown_in_source://neo-hookean-armadillo
+    license_status: unknown_in_source
+    checksum: unknown_in_source
+    reconstruction_status: blocked_by_asset_source
+    supports_full_paper_evidence: false
+    notes: "Armadillo mesh, FEM material discretization, and boundary twist schedule are not fully specified."
+  - asset_id: ragdoll_procedural
+    source_type: procedural
+    source_uri: procedural://ragdoll-on-net
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: planned
+    supports_full_paper_evidence: false
+    notes: "Counts are specified; exact ragdoll geometry, penalties, and contact setup require reconstruction."
+  - asset_id: bowl_container_procedural
+    source_type: procedural
+    source_uri: procedural://falling-joints-bowl
+    license_status: generated_by_reproduction
+    checksum: not_applicable_procedural
+    reconstruction_status: planned
+    supports_full_paper_evidence: false
+    notes: "Bowl collider and joint-pair instances can be reconstructed procedurally."
+  - asset_id: franka_robot_external
+    source_type: external_or_reconstructed
+    source_uri: unknown_in_source://franka-panda-pick-place
+    license_status: unknown_in_source
+    checksum: unknown_in_source
+    reconstruction_status: blocked_by_asset_source
+    supports_full_paper_evidence: false
+    notes: "Robot model, IK pipeline, objects, and motion plan are not included in the paper source."
+  - asset_id: protein_6vxx_external
+    source_type: external
+    source_uri: pdb://6VXX
+    license_status: external_database_license_required
+    checksum: unknown_in_source
+    reconstruction_status: blocked_by_asset_source
+    supports_full_paper_evidence: false
+    notes: "Paper cites SARS-CoV-2 Spike PDB 6VXX and a 40 ns sequence; exact trajectory data are not vendored."

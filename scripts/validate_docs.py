@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5 documentation, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3/4/5/6 documentation, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -9,6 +9,13 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+from mabd_reproduction.experiment_contracts import (
+    ExperimentMatrixError,
+    load_asset_manifest,
+    load_experiment_matrix,
+    validate_experiment_matrix,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,9 +33,12 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-16-phase3-topology-solvers.md",
     "docs/records/2026-05-16-phase4-configured-cpu-step.md",
     "docs/records/2026-05-16-phase5-corotated-stiffness.md",
+    "docs/records/2026-05-16-phase6-experiment-matrix.md",
     "reports/README.md",
     "assets/manifests/README.md",
+    "assets/manifests/paper_asset_sources.yaml",
     "configs/experiments/README.md",
+    "configs/experiments/paper_experiment_matrix.yaml",
     "vendor/newton/PROVENANCE.md",
     "vendor/newton/LICENSE.md",
     "vendor/newton/newton/solvers.py",
@@ -112,6 +122,10 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md must bound Phase 5 material oracle evidence")
     if "Phase 5 does not verify unconfigured production `SolverMABD.step()`" not in text:
         fail("claim-boundaries.md must bound Phase 5 production step evidence")
+    if "Phase 6 verifies only that every `experiment.*` paper claim" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 6 experiment matrix evidence")
+    if "does not verify any scene dynamics" not in text or "external baseline run" not in text:
+        fail("claim-boundaries.md must bound Phase 6 scene/baseline evidence")
 
 
 def validate_paper_claims() -> None:
@@ -189,6 +203,33 @@ def validate_paper_claims() -> None:
             fail(f"passed claim {claim['claim_id']} is not cited in a phase record")
 
 
+def validate_experiment_contracts() -> None:
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml")["claims"]
+    try:
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        manifest = load_asset_manifest(ROOT / "assets/manifests/paper_asset_sources.yaml")
+        validate_experiment_matrix(matrix, claims)
+    except ExperimentMatrixError as exc:
+        fail(f"experiment matrix validation failed: {exc}")
+
+    asset_ids = {asset.asset_id for asset in manifest.assets}
+    missing_assets = sorted(
+        {
+            asset_id
+            for experiment in matrix.experiments
+            for asset_id in experiment.asset_ids
+            if asset_id not in asset_ids
+        }
+    )
+    if missing_assets:
+        fail("experiment matrix references missing assets: " + ", ".join(missing_assets))
+
+    experiment_claims = [claim for claim in claims if str(claim["claim_id"]).startswith("experiment.")]
+    passed_experiments = [claim["claim_id"] for claim in experiment_claims if claim["reproduction_status"] == "passed"]
+    if passed_experiments:
+        fail("Phase 6 must not mark experiment claims passed: " + ", ".join(passed_experiments))
+
+
 def validate_provenance() -> None:
     text = (ROOT / "vendor/newton/PROVENANCE.md").read_text(encoding="utf-8")
     required_snippets = (
@@ -227,9 +268,10 @@ def main() -> int:
     validate_environment_contract()
     validate_claim_boundaries()
     validate_paper_claims()
+    validate_experiment_contracts()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6 docs/provenance validation passed")
     return 0
 
 

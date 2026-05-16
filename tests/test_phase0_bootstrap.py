@@ -108,6 +108,20 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("co-rotated affine elastic force", text)
         self.assertIn("Phase 5 does not verify unconfigured production `SolverMABD.step()`", text)
 
+    def test_phase6_experiment_matrix_keeps_scene_claims_unpassed(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        experiment_claims = [
+            claim for claim in data["claims"] if str(claim["claim_id"]).startswith("experiment.")
+        ]
+
+        self.assertGreaterEqual(len(experiment_claims), 15)
+        self.assertNotIn("passed", {claim["reproduction_status"] for claim in experiment_claims})
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        self.assertIn("Phase 6 verifies only that every `experiment.*` paper claim", text)
+        self.assertIn("does not verify any scene dynamics", text)
+        self.assertIn("external baseline run", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -137,7 +151,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3/4/5 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4/5/6 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":
