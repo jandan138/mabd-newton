@@ -16,7 +16,7 @@ behavior, paper scenes, timing, or comparative baselines.
 
 - repo base commit: `3aaab8e`
 - plan commit: `47cd16b`
-- implementation commit: `IMPLEMENTATION_COMMIT_PENDING`
+- implementation commit: `39030ef`
 - paper source version: arXiv `2603.08079v2`
 - paper source paths:
   - `/tmp/mabd-paper/source/sections/singleabd.tex`
@@ -99,9 +99,16 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 git diff --check
 ```
 
-Expected before implementation commit: all commands exit `0`, docs validation
-prints `Phase 0/1/2/3/4/5/6/7/8/9 docs/provenance validation passed`, and no
-experiment claim is marked `passed`.
+Implementation verification result:
+
+```text
+ruff: All checks passed!
+docs: Phase 0/1/2/3/4/5/6/7/8/9 docs/provenance validation passed
+focused tests: Ran 40 tests in 8.870s, OK
+vendored internal tests: Ran 6 tests in 0.335s, OK
+full tests: Ran 75 tests in 14.528s, OK
+git diff --check: exit 0
+```
 
 ## Claim Impact
 
