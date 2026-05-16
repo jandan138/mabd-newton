@@ -63,6 +63,13 @@ class ReportingContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "status"):
             validate_claim_report_mapping(mapping)
 
+    def test_report_validation_rejects_passed_experiment_claims(self) -> None:
+        mapping = _report().to_mapping()
+        mapping["status"] = EvidenceStatus.PASSED.value
+
+        with self.assertRaisesRegex(ValueError, "passed experiment"):
+            validate_claim_report_mapping(mapping)
+
 
 if __name__ == "__main__":
     unittest.main()

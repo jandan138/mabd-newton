@@ -80,8 +80,11 @@ def validate_claim_report_mapping(data: dict[str, Any]) -> ClaimReport:
     except ValueError as exc:
         allowed = sorted(status.value for status in EvidenceStatus)
         raise ValueError(f"status must be one of {allowed}") from exc
+    claim_id = _require_str(data, "claim_id")
+    if status == EvidenceStatus.PASSED and claim_id.startswith("experiment."):
+        raise ValueError("passed experiment reports require a dedicated evidence gate")
     return ClaimReport(
-        claim_id=_require_str(data, "claim_id"),
+        claim_id=claim_id,
         scene_id=_require_str(data, "scene_id"),
         asset_hashes=_require_str_mapping(data, "asset_hashes"),
         solver_mode=_require_str(data, "solver_mode"),
