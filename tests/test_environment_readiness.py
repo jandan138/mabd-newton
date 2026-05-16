@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -49,6 +51,51 @@ class EnvironmentReadinessTests(unittest.TestCase):
         self.assertIn("vendor/newton/newton/__init__.py", report["imports"]["newton"]["path"])
         self.assertEqual(report["packages"]["yaml"]["status"], "present")
         self.assertEqual(report["packages"]["warp"]["status"], "present")
+
+    def test_readiness_cli_rejects_ambient_invocation_python(self) -> None:
+        ambient = Path("/usr/bin/python3")
+        if not ambient.exists():
+            self.skipTest("ambient python path is not present on this machine")
+
+        result = subprocess.run(
+            [str(ambient), "scripts/env/readiness_check.py"],
+            cwd=ROOT,
+            env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('"status": "configuration_error"', result.stdout)
+        self.assertIn("current Python", result.stdout)
+
+    def test_readiness_report_rejects_shadowed_runtime_packages(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            project_root = Path(temp_dir)
+            (project_root / "src").mkdir()
+            (project_root / "src/yaml.py").write_text('__version__ = "fake-yaml"\n', encoding="utf-8")
+            (project_root / "src/warp.py").write_text('__version__ = "fake-warp"\n', encoding="utf-8")
+            (project_root / "vendor/newton/newton").mkdir(parents=True)
+            (project_root / "vendor/newton/newton/__init__.py").write_text(
+                '__version__ = "fake-newton"\n',
+                encoding="utf-8",
+            )
+
+            report = build_readiness_report(
+                project_root=project_root,
+                env_root=MABD_ENV_ROOT,
+                reference_env_root=REFERENCE_ENV_ROOT,
+                python_executable=MABD_PYTHON,
+                required_packages=("yaml", "warp"),
+            )
+
+        self.assertEqual(report["status"], "dependency_gap")
+        self.assertEqual(report["packages"]["yaml"]["status"], "shadowed")
+        self.assertEqual(report["packages"]["warp"]["status"], "shadowed")
+        self.assertFalse(report["packages"]["yaml"]["from_environment"])
+        self.assertFalse(report["packages"]["warp"]["from_environment"])
 
     def test_write_readiness_report_creates_parent_directory(self) -> None:
         report = {"status": "smoke_passed", "value": 1}

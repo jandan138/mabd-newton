@@ -18,6 +18,7 @@ baselines, rendered outputs, or paper experiments.
 - repo base commit: `e13529d`
 - plan commit: `d5dc58a`
 - implementation commit: `d038a75`
+- review hardening commit: `REVIEW_HARDENING_COMMIT_PENDING`
 - reference project: `/cpfs/user/zhuzihou/dev/physics-primitive-agent`
 - reference environment:
   `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310`
@@ -116,6 +117,39 @@ Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed
 Required status: all commands exit `0`, readiness JSON reports `status:
 smoke_passed`, and docs validation prints
 `Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed`.
+
+## Review Hardening
+
+Independent review found two readiness false positives:
+
+- `scripts/env/readiness_check.py` could be launched by ambient Python while
+  probing the canonical cloned Python and still report `smoke_passed`.
+- required packages were only checked for importability, so project-local
+  `yaml.py` or `warp.py` shadows could satisfy the gate.
+
+Hardening added regression tests and implementation checks that:
+
+- the current `sys.executable` resolves to the same cloned environment Python
+  as the probe interpreter;
+- ambient and reference current interpreters fail with `configuration_error`;
+- required package module paths must resolve under the cloned env root;
+- project-root package shadows are classified as `shadowed` and force
+  `dependency_gap`.
+
+Focused review-hardening command:
+
+```bash
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  -m unittest tests.test_environment_readiness
+```
+
+Focused review-hardening result:
+
+```text
+Ran 7 tests in 6.140s
+OK
+```
 
 ## Claim Impact
 
