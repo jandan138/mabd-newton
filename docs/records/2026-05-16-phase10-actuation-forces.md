@@ -22,7 +22,7 @@ baselines.
 
 - repo base commit: `042d451`
 - plan commit: `236b9bf`
-- implementation commit: pending before commit
+- implementation commit: `e87bb72`
 - paper source version: arXiv `2603.08079v2`
 - paper source paths:
   - `/tmp/mabd-paper/source/sections/singleabd.tex`
@@ -52,7 +52,7 @@ is encoded in:
 - branch: `phase10-actuation-forces`
 - base commit: `042d451`
 - plan commit: `236b9bf`
-- implementation commit: pending before commit
+- implementation commit: `e87bb72`
 
 ## Vendored Newton
 
