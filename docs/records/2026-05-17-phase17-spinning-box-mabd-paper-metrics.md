@@ -38,8 +38,7 @@ remain `incomplete`.
 - independent review: claim/spec review found missing exact
   docs/provenance commit and no overclaims; code/physics review found no
   findings.
-- review hardening commit: records the exact Phase 17 docs/provenance commit
-  required by the claim/spec review.
+- review hardening commit: `02a499d45e9388e675ab925f45a15fa96e4151b6`
 
 ## Vendored Newton
 
@@ -125,23 +124,45 @@ config/report tests: Ran 10 tests, OK
 comparison/runner tests: Ran 16 tests, OK
 ```
 
-## Verification
+## Final Verification
 
-Verification commands for the docs/provenance commit:
+Final verification commands:
 
 ```bash
+/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap
-/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check scripts/validate_docs.py tests/test_phase0_bootstrap.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_rigid_baselines tests.test_single_body_report_lane tests.test_spinning_box_comparison tests.test_experiment_runner tests.test_experiment_run_configs tests.test_phase0_bootstrap
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 git diff --check
 ```
 
-Expected result after this record is committed:
+Final verification result before this verification evidence commit:
 
 ```text
-docs: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17 docs/provenance validation passed
-phase0 bootstrap tests: OK
 ruff: All checks passed!
+docs: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17 docs/provenance validation passed
+focused public tests: Ran 60 tests, OK
+full public tests: Ran 141 tests, OK
+vendored Newton import:
+  /cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase17-spinning-box-mabd-paper-metrics/vendor/newton/newton/__init__.py
+git diff --check: clean
+independent claim/spec review: one provenance finding, fixed by `02a499d`
+independent code/physics review: no findings
+review hardening checks:
+  docs validator passed through Phase 17
+  tests.test_phase0_bootstrap: Ran 29 tests, OK
+  ruff: All checks passed!
+  git diff --check: clean
+```
+
+Expected final re-run after this verification evidence commit:
+
+```text
+ruff: All checks passed!
+docs validator passes through Phase 17
+focused and full public tests pass
+vendored Newton import resolves under vendor/newton
 git diff --check: clean
 ```
 
