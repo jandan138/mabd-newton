@@ -26,6 +26,8 @@
   force-mapping CPU oracle tests after the Phase 9 record is created.
 - This repository contains Phase 10 affine actuation/control force CPU oracle
   tests and `mabd:control` storage after the Phase 10 record is created.
+- This repository contains Phase 11 `mabd:control` model-row extraction tests
+  after the Phase 11 record is created.
 
 ## Intended
 
@@ -114,6 +116,13 @@
   kinematics, Franka pick-and-place, contact-rich grasping, wind/aerodynamic
   scene dynamics, closed-loop controllers, GPU/Warp control kernels, timing,
   paper scenes, or comparative baselines.
+- Phase 11 verifies extraction of enabled Newton `mabd:control` model rows into
+  `MABDActuationSpec` values, disabled-row filtering, bad body-reference
+  validation, and use of extracted specs in the configured CPU oracle actuation
+  path.
+- Phase 11 does not verify Newton `Control` object ingestion, time-varying
+  controller updates, robot inverse kinematics, Franka pick-and-place,
+  contact-rich grasping, paper scenes, timing, or comparative baselines.
 
 ## Forbidden Claims
 

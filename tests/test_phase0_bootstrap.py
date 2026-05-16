@@ -239,6 +239,45 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase11_control_row_extraction_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        normalized_text = " ".join(text.split())
+
+        self.assertIn("Phase 11 verifies extraction of enabled Newton `mabd:control` model rows", text)
+        self.assertIn("disabled-row filtering", normalized_text)
+        self.assertIn("bad body-reference validation", normalized_text)
+        self.assertIn("Phase 11 does not verify Newton `Control` object ingestion", text)
+        self.assertIn("time-varying controller updates", normalized_text)
+        self.assertIn("Franka pick-and-place", normalized_text)
+
+    def test_phase11_control_row_extraction_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-17-phase11-control-row-extraction.md").read_text()
+
+        for snippet in (
+            "## Status",
+            "passed",
+            "## Config Path",
+            "No experiment config is used in Phase 11",
+            "## Repository",
+            "plan commit: `8d2ca19`",
+            "implementation commit: `06fb7b3`",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status:",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:224",
+            "## Environment",
+            "mabd-newton-py310",
+            "## Metrics And Thresholds",
+            "random seed: not applicable",
+            "thresholds:",
+            "## Artifacts",
+            "method.actuation.affine_control_forces",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -268,7 +307,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3/4/5/6/7/8/9/10 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4/5/6/7/8/9/10/11 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

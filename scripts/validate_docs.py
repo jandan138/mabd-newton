@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10 docs, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11 docs, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -38,6 +38,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-16-phase8-environment-readiness.md",
     "docs/records/2026-05-16-phase9-point-contact-forces.md",
     "docs/records/2026-05-16-phase10-actuation-forces.md",
+    "docs/records/2026-05-17-phase11-control-row-extraction.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -178,6 +179,21 @@ def validate_claim_boundaries() -> None:
     for snippet in phase10_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 10 actuation evidence: {snippet}")
+    if "Phase 11 verifies extraction of enabled Newton `mabd:control` model rows" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 11 control-row extraction evidence")
+    phase11_non_claims = (
+        "Phase 11 does not verify Newton `Control` object ingestion",
+        "time-varying controller updates",
+        "robot inverse kinematics",
+        "Franka pick-and-place",
+        "contact-rich grasping",
+        "paper scenes",
+        "timing",
+        "comparative baselines",
+    )
+    for snippet in phase11_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 11 control extraction evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -293,6 +309,49 @@ def validate_phase10_claim(claims: list[dict[str, Any]]) -> None:
         fail("Phase 10 actuation claim must retain bounded conflict note")
 
 
+def validate_phase11_record() -> None:
+    text = (ROOT / "docs/records/2026-05-17-phase11-control-row-extraction.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "No experiment config is used in Phase 11",
+        "## Repository",
+        "plan commit: `8d2ca19`",
+        "implementation commit: `06fb7b3`",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status:",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:224",
+        "## Environment",
+        "mabd-newton-py310",
+        "## Metrics And Thresholds",
+        "random seed: not applicable",
+        "thresholds:",
+        "## Artifacts",
+        "method.actuation.affine_control_forces",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 11 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 11 verifies Newton `Control` object ingestion",
+        "Phase 11 verifies time-varying controller updates",
+        "Phase 11 verifies robot inverse kinematics",
+        "Phase 11 verifies Franka pick-and-place",
+        "Phase 11 verifies timing",
+        "Phase 11 verifies comparative baselines",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 11 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -373,6 +432,8 @@ def validate_paper_claims() -> None:
         + (ROOT / "docs/records/2026-05-16-phase9-point-contact-forces.md").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "docs/records/2026-05-16-phase10-actuation-forces.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-17-phase11-control-row-extraction.md").read_text(encoding="utf-8")
     )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
@@ -445,11 +506,12 @@ def main() -> int:
     validate_claim_boundaries()
     validate_phase9_record()
     validate_phase10_record()
+    validate_phase11_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8/9/10 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11 docs/provenance validation passed")
     return 0
 
 
