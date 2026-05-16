@@ -385,6 +385,7 @@ def validate_phase12_record() -> None:
         "## Repository",
         "plan commit: `f9df80e`",
         "implementation commits: `bf3e0fc`, `6d484da`",
+        "verification evidence commit: `99cb9e9`",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "local patch status:",

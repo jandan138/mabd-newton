@@ -22,6 +22,7 @@ baseline lanes.
 - repo base commit: `ebf3c3d`
 - plan commit: `f9df80e`
 - implementation commits: `bf3e0fc`, `6d484da`
+- verification evidence commit: `99cb9e9`
 - paper source version: arXiv `2603.08079v2`
 - paper source paths:
   - `/tmp/mabd-paper/source/sections/experiment.tex`
@@ -47,6 +48,7 @@ encoded in:
 - base commit: `ebf3c3d`
 - plan commit: `f9df80e`
 - implementation commits: `bf3e0fc`, `6d484da`
+- verification evidence commit: `99cb9e9`
 
 ## Vendored Newton
 
