@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11 docs, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12 docs, provenance, and claims."""
 
 from __future__ import annotations
 
@@ -39,6 +39,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-16-phase9-point-contact-forces.md",
     "docs/records/2026-05-16-phase10-actuation-forces.md",
     "docs/records/2026-05-17-phase11-control-row-extraction.md",
+    "docs/records/2026-05-17-phase12-single-body-report-lane.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -194,6 +195,19 @@ def validate_claim_boundaries() -> None:
     for snippet in phase11_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 11 control extraction evidence: {snippet}")
+    if "Phase 12 verifies full-schema `ClaimReport` JSON round trips" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 12 report-lane evidence")
+    phase12_non_claims = (
+        "Phase 12 does not verify the paper spinning-box experiment",
+        "paper timing",
+        "RK4/RBD/analytic baselines",
+        "rendered output",
+        "paper trajectory agreement",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase12_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 12 report-lane evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -360,6 +374,52 @@ def validate_phase11_record() -> None:
             fail(f"Phase 11 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase12_record() -> None:
+    text = (ROOT / "docs/records/2026-05-17-phase12-single-body-report-lane.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "No experiment config is used in Phase 12",
+        "## Repository",
+        "plan commit: `f9df80e`",
+        "implementation commits: `bf3e0fc`, `6d484da`",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status:",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "## Metrics And Thresholds",
+        "random seed: not applicable",
+        "thresholds:",
+        "## Artifacts",
+        "Full-schema `ClaimReport` JSON round trips",
+        "`write_spinning_box_development_report`",
+        "`EvidenceStatus.INCOMPLETE`",
+        "No `experiment.*` claim is passed in this phase.",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 12 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 12 verifies the paper spinning-box experiment",
+        "Phase 12 verifies paper timing",
+        "Phase 12 verifies RK4 baselines",
+        "Phase 12 verifies RBD baselines",
+        "Phase 12 verifies rendered output",
+        "Phase 12 passes experiment.single_body.spinning_box",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 12 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -442,6 +502,8 @@ def validate_paper_claims() -> None:
         + (ROOT / "docs/records/2026-05-16-phase10-actuation-forces.md").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "docs/records/2026-05-17-phase11-control-row-extraction.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-17-phase12-single-body-report-lane.md").read_text(encoding="utf-8")
     )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
@@ -515,11 +577,12 @@ def main() -> int:
     validate_phase9_record()
     validate_phase10_record()
     validate_phase11_record()
+    validate_phase12_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12 docs/provenance validation passed")
     return 0
 
 

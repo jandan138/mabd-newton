@@ -28,6 +28,9 @@
   tests and `mabd:control` storage after the Phase 10 record is created.
 - This repository contains Phase 11 `mabd:control` model-row extraction tests
   after the Phase 11 record is created.
+- This repository contains Phase 12 full-schema claim report JSON validation
+  and a single-body spinning-box M-ABD development report lane after the Phase
+  12 record is created.
 
 ## Intended
 
@@ -123,6 +126,12 @@
 - Phase 11 does not verify Newton `Control` object ingestion, time-varying
   controller updates, robot inverse kinematics, Franka pick-and-place,
   contact-rich grasping, paper scenes, timing, or comparative baselines.
+- Phase 12 verifies full-schema `ClaimReport` JSON round trips, required-key
+  validation, invalid-status rejection, and a deterministic single-body
+  spinning-box M-ABD development report that remains `incomplete`.
+- Phase 12 does not verify the paper spinning-box experiment, paper timing,
+  RK4/RBD/analytic baselines, rendered output, paper trajectory agreement, or
+  any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
