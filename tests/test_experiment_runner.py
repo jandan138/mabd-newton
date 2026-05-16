@@ -149,6 +149,29 @@ class ExperimentRunnerTests(unittest.TestCase):
                 )
             self.assertFalse(Path(output_report).exists())
 
+    def test_run_spinning_box_rbd_baseline_writes_explicit_output_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_rbd_baseline
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rbd_baseline.json"
+            result = run_spinning_box_rbd_baseline(
+                config_path=CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(loaded.source_commit, "test-source")
+        self.assertEqual(loaded.vendored_newton_commit, "test-newton")
+        self.assertIn("development baseline", loaded.failure_reason)
+
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
         import json
         import os
@@ -188,6 +211,83 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.source_commit, "cli-source")
         self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
+
+    def test_run_experiment_cli_writes_rbd_baseline_lane_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rbd_cli_report.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rbd_implicit_baseline",
+                    "--config",
+                    str(CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.spinning_box")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "rbd_implicit_baseline")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
+
+    def test_run_experiment_cli_rbd_baseline_requires_explicit_output(self) -> None:
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rbd_implicit_baseline",
+                    "--config",
+                    str(CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output-root",
+                    tmpdir,
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("rbd_implicit_baseline requires --output", result.stderr)
 
     def test_run_experiment_cli_rejects_unknown_claim(self) -> None:
         import os

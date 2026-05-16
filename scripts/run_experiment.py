@@ -8,11 +8,20 @@ import json
 import sys
 from pathlib import Path
 
-from mabd_reproduction.experiment_runner import run_spinning_box_experiment
+from mabd_reproduction.experiment_runner import (
+    run_spinning_box_experiment,
+    run_spinning_box_rbd_baseline,
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run one configured M-ABD experiment lane.")
+    parser.add_argument(
+        "--lane",
+        choices=("mabd_newton", "rbd_implicit_baseline"),
+        default="mabd_newton",
+        help="Experiment lane to run.",
+    )
     parser.add_argument("--config", required=True, help="Experiment config YAML path.")
     parser.add_argument(
         "--matrix",
@@ -34,7 +43,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     try:
-        result = run_spinning_box_experiment(
+        runner = (
+            run_spinning_box_rbd_baseline
+            if args.lane == "rbd_implicit_baseline"
+            else run_spinning_box_experiment
+        )
+        result = runner(
             config_path=Path(args.config),
             matrix_path=Path(args.matrix),
             output_path=Path(args.output) if args.output else None,

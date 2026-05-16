@@ -11,6 +11,7 @@ from .experiment_configs import (
 )
 from .experiment_contracts import load_experiment_matrix
 from .reporting import ClaimReport, EvidenceStatus
+from .rigid_baselines import write_spinning_box_rbd_baseline_report
 from .single_body_reports import write_spinning_box_development_report
 
 
@@ -86,4 +87,46 @@ def run_spinning_box_experiment(
     )
 
 
-__all__ = ["ExperimentRunResult", "run_spinning_box_experiment"]
+def run_spinning_box_rbd_baseline(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    if output_path is None:
+        raise ValueError("rbd_implicit_baseline requires --output")
+    if output_root is not None:
+        raise ValueError("rbd_implicit_baseline uses --output, not --output-root")
+
+    config = load_spinning_box_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_spinning_box_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError("Phase 15 RBD baseline runner requires incomplete report status")
+
+    report_path = Path(output_path)
+    report = write_spinning_box_rbd_baseline_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
+__all__ = [
+    "ExperimentRunResult",
+    "run_spinning_box_experiment",
+    "run_spinning_box_rbd_baseline",
+]
