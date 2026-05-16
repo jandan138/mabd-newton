@@ -1,0 +1,66 @@
+schema_version: 1
+claim_id: experiment.single_body.spinning_box
+scene_id: single_body_spinning_box
+source_lines:
+  - /tmp/mabd-paper/source/sections/experiment.tex:40-55
+asset_ids:
+  - primitive_cube
+baseline_lane: mabd_newton
+required_missing_lanes:
+  - rbd_implicit_baseline
+paper_values:
+  cube_size_m: 0.1
+  density: "1E3 kg/m^3"
+  material_E: "1E9 Pa"
+  poisson_ratio: 0.3
+  p0: [100, 0, 0]
+  L0: [0, 100, 0]
+simulation:
+  time_step_s: 0.01
+  step_count: 4
+  initial_q:
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    - 0.0
+    - 0.0
+    - 0.0
+  initial_qd:
+    - -0.2
+    - -0.1590909090909091
+    - -0.1181818181818182
+    - -0.07727272727272727
+    - -0.03636363636363636
+    - 0.004545454545454547
+    - 0.04545454545454547
+    - 0.08636363636363636
+    - 0.1272727272727273
+    - 0.16818181818181818
+    - 0.2090909090909091
+    - 0.25
+  mass_diagonal:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+report:
+  status: incomplete
+  failure_reason: full paper claim still requires rbd_implicit_baseline
+  output_report: reports/experiment_matrix/single_body_spinning_box.json
+  thresholds:
+    energy_drift: 1.0e-12
+    generalized_momentum_delta_norm: 1.0e-12
