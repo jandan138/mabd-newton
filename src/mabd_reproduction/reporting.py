@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 
-class EvidenceStatus(StrEnum):
+class EvidenceStatus(str, Enum):
     """Allowed machine-readable reproduction statuses."""
 
     PASSED = "passed"

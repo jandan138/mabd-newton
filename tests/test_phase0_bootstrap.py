@@ -1,0 +1,84 @@
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+import yaml
+
+from mabd_reproduction.reporting import EvidenceStatus, REQUIRED_REPORT_KEYS
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class Phase0BootstrapTests(unittest.TestCase):
+    def test_report_status_vocabulary_matches_spec(self) -> None:
+        self.assertEqual(
+            {status.value for status in EvidenceStatus},
+            {
+                "passed",
+                "failed",
+                "incomplete",
+                "not_verified",
+                "unsupported",
+                "qualitative_reconstruction",
+            },
+        )
+        self.assertIn("claim_id", REQUIRED_REPORT_KEYS)
+        self.assertIn("vendored_newton_commit", REQUIRED_REPORT_KEYS)
+
+    def test_claim_manifest_has_required_source_material(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        self.assertEqual(data["paper"]["arxiv_id"], "2603.08079")
+        self.assertEqual(data["paper"]["arxiv_version"], "v2")
+        self.assertGreaterEqual(len(data["claims"]), 20)
+        claim_ids = {claim["claim_id"] for claim in data["claims"]}
+        self.assertIn("method.joints.universal", claim_ids)
+        self.assertIn("experiment.ragdoll_on_net", claim_ids)
+        universal = next(c for c in data["claims"] if c["claim_id"] == "method.joints.universal")
+        self.assertIn("inconsistent", universal["conflict_note"])
+
+    def test_claim_boundaries_refuse_method_claims_at_phase0(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        self.assertIn("## Current", text)
+        self.assertIn("## Intended", text)
+        self.assertIn("## Verified", text)
+        self.assertIn("No method-level M-ABD result is verified at Phase 0.", text)
+
+    def test_vendored_newton_import_resolves_inside_repo(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import newton; print(newton.__file__)",
+            ],
+            cwd=ROOT,
+            env={**os.environ, "PYTHONPATH": str(ROOT / "vendor/newton")},
+            text=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertIn("vendor/newton/newton/__init__.py", result.stdout.replace("\\", "/"))
+
+    def test_docs_validator_accepts_phase0_contract(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "scripts/validate_docs.py"],
+            cwd=ROOT,
+            env={
+                **os.environ,
+                "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}",
+            },
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertIn("Phase 0 docs/provenance validation passed", result.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()
