@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -19,6 +21,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ExperimentRunConfigTests(unittest.TestCase):
+    def _config_mapping(self) -> dict:
+        return yaml.safe_load((ROOT / "configs/experiments/single_body_spinning_box.yaml").read_text())
+
+    def _write_config(self, tmpdir: str, mapping: dict) -> Path:
+        path = Path(tmpdir) / "single_body_spinning_box.yaml"
+        path.write_text(yaml.safe_dump(mapping), encoding="utf-8")
+        return path
+
     def test_spinning_box_config_is_machine_checkable(self) -> None:
         config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
 
@@ -42,15 +52,69 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
         validate_spinning_box_config_against_matrix(config, matrix)
 
+    def test_spinning_box_config_matrix_check_rejects_paper_value_drift(self) -> None:
+        config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        drifted = replace(config, paper_values={**config.paper_values, "p0": [0, 0, 0]})
+
+        with self.assertRaisesRegex(ExperimentRunConfigError, "paper_values"):
+            validate_spinning_box_config_against_matrix(drifted, matrix)
+
     def test_spinning_box_config_rejects_passed_experiment_status(self) -> None:
         with TemporaryDirectory() as tmpdir:
-            source = yaml.safe_load((ROOT / "configs/experiments/single_body_spinning_box.yaml").read_text())
+            source = self._config_mapping()
             source["report"]["status"] = "passed"
-            path = Path(tmpdir) / "bad.yaml"
-            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+            path = self._write_config(tmpdir, source)
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "passed experiment"):
                 load_spinning_box_config(path)
+
+    def test_spinning_box_config_rejects_implicit_scalar_coercions(self) -> None:
+        cases = (
+            ("time_step_s", "0.01"),
+            ("step_count", 4.5),
+        )
+        for key, value in cases:
+            with self.subTest(key=key, value=value):
+                source = self._config_mapping()
+                source["simulation"][key] = value
+                with TemporaryDirectory() as tmpdir:
+                    path = self._write_config(tmpdir, source)
+
+                    with self.assertRaisesRegex(ExperimentRunConfigError, key):
+                        load_spinning_box_config(path)
+
+    def test_spinning_box_config_rejects_non_finite_vectors(self) -> None:
+        source = self._config_mapping()
+        source["simulation"]["initial_qd"][0] = float("nan")
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, source)
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "initial_qd"):
+                load_spinning_box_config(path)
+
+    def test_spinning_box_config_rejects_coerced_thresholds(self) -> None:
+        source = self._config_mapping()
+        source["report"]["thresholds"]["energy_drift"] = "1.0e-12"
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, source)
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "thresholds"):
+                load_spinning_box_config(path)
+
+    def test_docs_validator_checks_phase13_config_contract(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        source = deepcopy(self._config_mapping())
+        source["report"]["status"] = "passed"
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, source)
+
+            with self.assertRaisesRegex(SystemExit, "passed experiment"):
+                validate_docs.validate_phase13_config(
+                    config_path=path,
+                    matrix_path=ROOT / "configs/experiments/paper_experiment_matrix.yaml",
+                )
 
 
 if __name__ == "__main__":

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
+from numbers import Integral, Real
 from pathlib import Path
 from typing import Any
 
@@ -72,21 +74,55 @@ def _require_float_mapping(data: dict[str, Any], key: str) -> dict[str, float]:
     for item_key, item_value in mapping.items():
         if not isinstance(item_key, str):
             raise ExperimentRunConfigError(f"{key} keys must be strings")
-        result[item_key] = float(item_value)
+        if not isinstance(item_value, Real) or isinstance(item_value, bool):
+            raise ExperimentRunConfigError(f"{key} values must be finite numeric values")
+        value = float(item_value)
+        if not isfinite(value):
+            raise ExperimentRunConfigError(f"{key} values must be finite numeric values")
+        result[item_key] = value
     return result
 
 
 def _require_vector(data: dict[str, Any], key: str) -> np.ndarray:
     value = data.get(key)
-    vector = np.asarray(value, dtype=float)
-    if vector.shape != (12,):
+    if not isinstance(value, list) or len(value) != 12:
         raise ExperimentRunConfigError(f"{key} must contain 12 numeric values")
-    return vector
+    result: list[float] = []
+    for item in value:
+        if not isinstance(item, Real) or isinstance(item, bool):
+            raise ExperimentRunConfigError(f"{key} must contain 12 numeric values")
+        item_float = float(item)
+        if not isfinite(item_float):
+            raise ExperimentRunConfigError(f"{key} must contain 12 finite numeric values")
+        result.append(item_float)
+    return np.asarray(result, dtype=float)
+
+
+def _require_positive_float(data: dict[str, Any], key: str) -> float:
+    value = data.get(key)
+    if not isinstance(value, Real) or isinstance(value, bool):
+        raise ExperimentRunConfigError(f"{key} must be a finite positive number")
+    result = float(value)
+    if not isfinite(result) or result <= 0.0:
+        raise ExperimentRunConfigError(f"{key} must be a finite positive number")
+    return result
+
+
+def _require_positive_int(data: dict[str, Any], key: str) -> int:
+    value = data.get(key)
+    if not isinstance(value, Integral) or isinstance(value, bool):
+        raise ExperimentRunConfigError(f"{key} must be a positive integer")
+    result = int(value)
+    if result <= 0:
+        raise ExperimentRunConfigError(f"{key} must be a positive integer")
+    return result
 
 
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     config_path = Path(path)
     data = _read_mapping(config_path)
+    if not isinstance(data.get("schema_version"), int) or isinstance(data.get("schema_version"), bool):
+        raise ExperimentRunConfigError("schema_version must be 1")
     if data.get("schema_version") != 1:
         raise ExperimentRunConfigError("schema_version must be 1")
     claim_id = _require_str(data, "claim_id")
@@ -102,12 +138,8 @@ def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     if status == EvidenceStatus.PASSED:
         raise ExperimentRunConfigError("passed experiment configs require a dedicated evidence gate")
 
-    time_step_s = float(simulation.get("time_step_s"))
-    step_count = int(simulation.get("step_count"))
-    if time_step_s <= 0.0:
-        raise ExperimentRunConfigError("time_step_s must be positive")
-    if step_count <= 0:
-        raise ExperimentRunConfigError("step_count must be positive")
+    time_step_s = _require_positive_float(simulation, "time_step_s")
+    step_count = _require_positive_int(simulation, "step_count")
 
     return SpinningBoxRunConfig(
         schema_version=1,
@@ -141,6 +173,8 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
         raise ExperimentRunConfigError("source_lines must match experiment matrix")
     if config.asset_ids != entry.asset_ids:
         raise ExperimentRunConfigError("asset_ids must match experiment matrix")
+    if config.paper_values != entry.paper_values:
+        raise ExperimentRunConfigError("paper_values must match experiment matrix")
     if config.output_report != entry.output_report:
         raise ExperimentRunConfigError("output_report must match experiment matrix")
     if config.baseline_lane not in entry.required_lanes:
@@ -148,6 +182,13 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
     missing = set(config.required_missing_lanes) - set(entry.required_lanes)
     if missing:
         raise ExperimentRunConfigError("required_missing_lanes must be listed in required_lanes")
+    for lane in config.required_missing_lanes:
+        if f"{lane}_adapter_missing" not in entry.blocking_reasons:
+            raise ExperimentRunConfigError("required_missing_lanes must match matrix blocking_reasons")
+    if entry.reproduction_status != "blocked_by_baselines":
+        raise ExperimentRunConfigError("matrix reproduction_status must remain blocked_by_baselines")
+    if "energy_drift" not in entry.metrics or "energy_drift" not in config.thresholds:
+        raise ExperimentRunConfigError("energy_drift metric must be present in matrix and thresholds")
 
 
 __all__ = [

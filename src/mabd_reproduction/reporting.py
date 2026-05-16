@@ -113,8 +113,10 @@ def claim_report_to_mapping(report: ClaimReport) -> dict[str, Any]:
 
 def write_claim_report(report: ClaimReport, path: str | Path) -> None:
     report_path = Path(path)
+    mapping = report.to_mapping()
+    validate_claim_report_mapping(mapping)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(report.to_mapping(), indent=2, sort_keys=True) + "\n"
+    payload = json.dumps(mapping, indent=2, sort_keys=True) + "\n"
     report_path.write_text(payload, encoding="utf-8")
 
 

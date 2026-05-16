@@ -16,6 +16,11 @@ from mabd_reproduction.experiment_contracts import (
     load_experiment_matrix,
     validate_experiment_matrix,
 )
+from mabd_reproduction.experiment_configs import (
+    ExperimentRunConfigError,
+    load_spinning_box_config,
+    validate_spinning_box_config_against_matrix,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -602,6 +607,18 @@ def validate_experiment_contracts() -> None:
         fail("Phase 6 must not mark experiment claims passed: " + ", ".join(passed_experiments))
 
 
+def validate_phase13_config(
+    config_path: str | Path = ROOT / "configs/experiments/single_body_spinning_box.yaml",
+    matrix_path: str | Path = ROOT / "configs/experiments/paper_experiment_matrix.yaml",
+) -> None:
+    try:
+        config = load_spinning_box_config(config_path)
+        matrix = load_experiment_matrix(matrix_path)
+        validate_spinning_box_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 13 config validation failed: {exc}")
+
+
 def validate_provenance() -> None:
     text = (ROOT / "vendor/newton/PROVENANCE.md").read_text(encoding="utf-8")
     required_snippets = (
@@ -646,6 +663,7 @@ def main() -> int:
     validate_phase13_record()
     validate_paper_claims()
     validate_experiment_contracts()
+    validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13 docs/provenance validation passed")

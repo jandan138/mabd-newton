@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -69,6 +70,16 @@ class ReportingContractTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "passed experiment"):
             validate_claim_report_mapping(mapping)
+
+    def test_report_writer_rejects_passed_experiment_claims(self) -> None:
+        report = replace(_report(), status=EvidenceStatus.PASSED)
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "report.json"
+
+            with self.assertRaisesRegex(ValueError, "passed experiment"):
+                write_claim_report(report, path)
+            self.assertFalse(path.exists())
 
 
 if __name__ == "__main__":
