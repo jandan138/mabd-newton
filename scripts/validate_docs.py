@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0 documentation, provenance, and claim manifests."""
+"""Validate Phase 0/1/2 documentation, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ REQUIRED_PATHS = (
     "docs/reference/paper-claims.yaml",
     "docs/records/README.md",
     "docs/records/2026-05-16-phase1-single-body-abd.md",
+    "docs/records/2026-05-16-phase2-joints-kkt.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "configs/experiments/README.md",
@@ -84,6 +85,10 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md must explicitly deny Phase 0 method verification")
     if "full FEM rest-stiffness precomputation" not in text:
         fail("claim-boundaries.md must explicitly bound Phase 1 stiffness evidence")
+    if "Phase 2 verifies control tetrahedron" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 2 joint/KKT evidence")
+    if "skew-symmetrized joint-gradient" not in text or "performance path" not in text:
+        fail("claim-boundaries.md must bound Phase 2 gradient performance evidence")
 
 
 def validate_paper_claims() -> None:
@@ -138,10 +143,14 @@ def validate_paper_claims() -> None:
     if corotated["reproduction_status"] == "passed":
         fail("method.single_body.corotated_stiffness must not pass before full FEM K_A_bar evidence exists")
 
-    record_text = (ROOT / "docs/records/2026-05-16-phase1-single-body-abd.md").read_text(encoding="utf-8")
+    record_text = (
+        (ROOT / "docs/records/2026-05-16-phase1-single-body-abd.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-16-phase2-joints-kkt.md").read_text(encoding="utf-8")
+    )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
-            fail(f"passed claim {claim['claim_id']} is not cited in the Phase 1 record")
+            fail(f"passed claim {claim['claim_id']} is not cited in a phase record")
 
 
 def validate_provenance() -> None:
@@ -184,7 +193,7 @@ def main() -> int:
     validate_paper_claims()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1 docs/provenance validation passed")
+    print("Phase 0/1/2 docs/provenance validation passed")
     return 0
 
 

@@ -53,35 +53,35 @@ claims:
     expected_value: "rank 3 ball joint constraint"
     unit: "rank"
     conflict_note: "none"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: method.joints.hinge
     source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
     source_line: "hinge joint control point constraints"
     expected_value: "rank 5 hinge joint constraint"
     unit: "rank"
     conflict_note: "none"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: method.joints.universal
     source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
     source_line: "universal joint equation"
     expected_value: "rank 4 universal joint constraint"
     unit: "rank"
     conflict_note: "paper figure caption appears inconsistent with equation; reproduction follows equation"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: method.joints.prismatic
     source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
     source_line: "prismatic joint control point constraints"
     expected_value: "rank 5 prismatic joint constraint"
     unit: "rank"
     conflict_note: "none"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: method.kkt.residual_corrected_rhs
     source_path: "/tmp/mabd-paper/source/sections/solver.tex"
     source_line: "dual KKT lower RHS and footnote correction"
     expected_value: "support paper-simplified zero RHS and residual-corrected -C(q_n)"
     unit: "equation"
     conflict_note: "paper display and correction footnote differ"
-    reproduction_status: intended
+    reproduction_status: passed
   - claim_id: experiment.single_body.rolling_spinning
     source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
     source_line: "single-body ABD vs RBD rolling and spinning tests"

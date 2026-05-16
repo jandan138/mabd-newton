@@ -42,6 +42,12 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("inconsistent", universal["conflict_note"])
         corotated = next(c for c in data["claims"] if c["claim_id"] == "method.single_body.corotated_stiffness")
         self.assertEqual(corotated["reproduction_status"], "intended")
+        ball = next(c for c in data["claims"] if c["claim_id"] == "method.joints.ball")
+        universal = next(c for c in data["claims"] if c["claim_id"] == "method.joints.universal")
+        kkt = next(c for c in data["claims"] if c["claim_id"] == "method.kkt.residual_corrected_rhs")
+        self.assertEqual(ball["reproduction_status"], "passed")
+        self.assertEqual(universal["reproduction_status"], "passed")
+        self.assertEqual(kkt["reproduction_status"], "passed")
 
     def test_claim_boundaries_refuse_method_claims_at_phase0(self) -> None:
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
@@ -49,6 +55,9 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("## Intended", text)
         self.assertIn("## Verified", text)
         self.assertIn("No method-level M-ABD result is verified at Phase 0.", text)
+        self.assertIn("Phase 2 verifies control tetrahedron", text)
+        self.assertIn("skew-symmetrized joint-gradient", text)
+        self.assertIn("performance path", text)
 
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
@@ -79,7 +88,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

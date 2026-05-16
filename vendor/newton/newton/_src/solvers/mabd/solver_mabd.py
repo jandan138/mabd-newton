@@ -19,6 +19,7 @@ class SolverMABD(SolverBase):
     """
 
     MABD_BODY_FREQUENCY = "mabd:body"
+    MABD_CONSTRAINT_FREQUENCY = "mabd:constraint"
 
     def __init__(self, model: Model):
         super().__init__(model=model)
@@ -49,6 +50,7 @@ class SolverMABD(SolverBase):
     @override
     def register_custom_attributes(cls, builder: ModelBuilder) -> None:
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="body", namespace="mabd"))
+        builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="constraint", namespace="mabd"))
 
         model_attrs = (
             ModelBuilder.CustomAttribute(
@@ -161,7 +163,68 @@ class SolverMABD(SolverBase):
             ),
         )
 
-        for attr in (*model_attrs, *state_attrs):
+        constraint_attrs = (
+            ModelBuilder.CustomAttribute(
+                name="constraint_type",
+                frequency=cls.MABD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="body_a",
+                frequency=cls.MABD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=-1,
+                namespace="mabd",
+                references=cls.MABD_BODY_FREQUENCY,
+            ),
+            ModelBuilder.CustomAttribute(
+                name="body_b",
+                frequency=cls.MABD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=-1,
+                namespace="mabd",
+                references=cls.MABD_BODY_FREQUENCY,
+            ),
+            ModelBuilder.CustomAttribute(
+                name="rank",
+                frequency=cls.MABD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="gradient_mode",
+                frequency=cls.MABD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="axis0",
+                frequency=cls.MABD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 1.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="axis1",
+                frequency=cls.MABD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 1.0),
+                namespace="mabd",
+            ),
+        )
+
+        for attr in (*model_attrs, *state_attrs, *constraint_attrs):
             builder.add_custom_attribute(attr)
 
 

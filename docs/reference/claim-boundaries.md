@@ -8,6 +8,8 @@
   and bootstrap tests after the Phase 0 record is created.
 - This repository contains Phase 1 single-body M-ABD CPU oracle tests and a
   `newton.solvers.SolverMABD` shell after the Phase 1 record is created.
+- This repository contains Phase 2 control-point joint and dense KKT CPU oracle
+  tests after the Phase 2 record is created.
 
 ## Intended
 
@@ -28,6 +30,14 @@
 - Phase 1 does not verify time stepping, joints, contact, topology solvers,
   full FEM rest-stiffness precomputation, paper experiments, timing, or
   comparative baselines.
+- Phase 2 verifies control tetrahedron `q <-> y` maps, minimal-rank ball,
+  hinge, universal, and prismatic joint residuals, finite-difference joint
+  gradient oracle checks, `mabd:constraint` custom storage, and dense primal vs
+  dual KKT agreement including the residual-corrected lower RHS.
+- Phase 2 does not verify `SolverMABD.step()`, chain/tree/loop/graph topology
+  solvers, contact, joint limits, actuation, paper experiments, timing,
+  comparative baselines, or the lightweight skew-symmetrized joint-gradient
+  performance path.
 
 ## Forbidden Claims
 
