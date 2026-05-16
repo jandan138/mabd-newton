@@ -18,7 +18,7 @@ baselines, rendered outputs, or paper experiments.
 - repo base commit: `e13529d`
 - plan commit: `d5dc58a`
 - implementation commit: `d038a75`
-- review hardening commit: `REVIEW_HARDENING_COMMIT_PENDING`
+- review hardening commit: `b1297d7`
 - reference project: `/cpfs/user/zhuzihou/dev/physics-primitive-agent`
 - reference environment:
   `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310`
@@ -149,6 +149,17 @@ Focused review-hardening result:
 ```text
 Ran 7 tests in 6.140s
 OK
+```
+
+Review-hardening verification:
+
+```text
+ruff: All checks passed!
+readiness: "status": "smoke_passed"; package paths from cloned env
+docs: Phase 0/1/2/3/4/5/6/7/8 docs/provenance validation passed
+focused tests: Ran 18 tests in 14.293s, OK
+full tests: Ran 69 tests in 13.893s, OK
+git diff --check: exit 0
 ```
 
 ## Claim Impact
