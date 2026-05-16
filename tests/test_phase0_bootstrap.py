@@ -510,6 +510,47 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase17_spinning_box_mabd_paper_metrics_are_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        normalized_text = " ".join(text.split())
+
+        self.assertIn("Phase 17 verifies paper-value momentum metric reporting", text)
+        self.assertIn("M-ABD spinning-box development lane", normalized_text)
+        self.assertIn("paper p0/L0", normalized_text)
+        self.assertIn("Phase 17 does not verify the paper spinning-box experiment", text)
+        self.assertIn("paper-faithful implicit RBD baseline", normalized_text)
+        self.assertIn("paper timing", normalized_text)
+        self.assertIn("any passed `experiment.*` claim", normalized_text)
+
+    def test_phase17_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase17-spinning-box-mabd-paper-metrics.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status",
+            "passed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit:",
+            "implementation commits:",
+            "## Paper Source",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "## Metrics And Thresholds",
+            "paper_spatial_twist",
+            "linear_momentum_error",
+            "angular_momentum_error",
+            "spinning_box_comparison_report_incomplete",
+            "## Artifacts",
+            "`src/mabd_reproduction/spinning_box_physics.py`",
+            "`write_spinning_box_development_report`",
+            "No `experiment.*` claim is passed in this phase.",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -541,7 +582,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

@@ -44,6 +44,9 @@
   protocol report generation for the existing `mabd_newton` and
   `rbd_implicit_baseline` incomplete lanes after the Phase 16 record is
   created.
+- This repository contains Phase 17 paper-value momentum metric reporting for
+  the M-ABD single-body spinning-box development lane after the Phase 17
+  record is created.
 
 ## Intended
 
@@ -175,6 +178,15 @@
   metrics, writes an incomplete `spinning_box_comparison_protocol` report, and
   exposes explicit runner and CLI dispatch.
 - Phase 16 does not verify the paper spinning-box experiment,
+  paper-faithful implicit RBD baseline, paper-faithful affine collision, paper
+  timing, rendered output, paper trajectory agreement, generated report
+  artifacts as committed evidence, or any passed `experiment.*` claim.
+- Phase 17 verifies paper-value momentum metric reporting for the M-ABD
+  spinning-box development lane: paper p0/L0 parsing, ABD generalized
+  velocity initialization via the rigid embedding map, final spatial twist
+  extraction via the paper twist map, and `linear_momentum_error` /
+  `angular_momentum_error` fields consumed by the comparison protocol.
+- Phase 17 does not verify the paper spinning-box experiment,
   paper-faithful implicit RBD baseline, paper-faithful affine collision, paper
   timing, rendered output, paper trajectory agreement, generated report
   artifacts as committed evidence, or any passed `experiment.*` claim.

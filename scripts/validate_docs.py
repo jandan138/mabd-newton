@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16 docs and claims."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17 docs and claims."""
 
 from __future__ import annotations
 
@@ -49,6 +49,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase14-experiment-runner.md",
     "docs/records/2026-05-17-phase15-rbd-baseline-lane.md",
     "docs/records/2026-05-17-phase16-spinning-box-comparison-protocol.md",
+    "docs/records/2026-05-17-phase17-spinning-box-mabd-paper-metrics.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -275,6 +276,33 @@ def validate_claim_boundaries() -> None:
     for snippet in phase16_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 16 comparison evidence: {snippet}")
+    if "Phase 17 verifies paper-value momentum metric reporting" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 17 paper-momentum metric evidence")
+    phase17_required = (
+        "M-ABD single-body spinning-box development lane",
+        "paper p0/L0 parsing",
+        "ABD generalized velocity initialization",
+        "final spatial twist extraction",
+        "linear_momentum_error",
+        "angular_momentum_error",
+        "comparison protocol",
+    )
+    for snippet in phase17_required:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must describe Phase 17 metric evidence: {snippet}")
+    phase17_non_claims = (
+        "Phase 17 does not verify the paper spinning-box experiment",
+        "paper-faithful implicit RBD baseline",
+        "paper-faithful affine collision",
+        "paper timing",
+        "rendered output",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase17_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 17 paper-momentum evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -688,6 +716,57 @@ def validate_phase16_record() -> None:
             fail(f"Phase 16 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase17_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase17-spinning-box-mabd-paper-metrics.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit: `5cc171a`",
+        "implementation commits: `ebf7d86`, `da56334`, `ff24a68`",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "## Metrics And Thresholds",
+        "paper p0/L0",
+        "paper_spatial_twist",
+        "linear_momentum_error <= 1.0e-9",
+        "angular_momentum_error <= 1.0e-9",
+        "spinning_box_comparison_report_incomplete",
+        "## Artifacts",
+        "`src/mabd_reproduction/spinning_box_physics.py`",
+        "abd_generalized_velocity_from_paper_momenta",
+        "mabd_momentum_diagnostics",
+        "`write_spinning_box_development_report`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 17 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 17 verifies the paper spinning-box experiment",
+        "Phase 17 passes experiment.single_body.spinning_box",
+        "Phase 17 verifies paper-faithful implicit RBD baseline",
+        "Phase 17 verifies paper-faithful affine collision",
+        "Phase 17 verifies paper timing",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 17 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -878,12 +957,13 @@ def main() -> int:
     validate_phase14_record()
     validate_phase15_record()
     validate_phase16_record()
+    validate_phase17_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17 docs/provenance validation passed")
     return 0
 
 
