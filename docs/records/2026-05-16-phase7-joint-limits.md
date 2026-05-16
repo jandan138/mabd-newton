@@ -98,7 +98,7 @@ encoded in:
 - branch: `phase7-joint-limits`
 - base commit: `2fb91ff`
 - plan commit: `0565432`
-- implementation commit: `IMPLEMENTATION_COMMIT_PENDING`
+- implementation commit: `5aac3c3`
 
 ## Vendored Newton
 
