@@ -23,6 +23,7 @@ baseline lanes.
 - plan commit: `f9df80e`
 - implementation commits: `bf3e0fc`, `6d484da`
 - verification evidence commit: `99cb9e9`
+- review hardening commits: `b6442ae`, `b38269a`
 - paper source version: arXiv `2603.08079v2`
 - paper source paths:
   - `/tmp/mabd-paper/source/sections/experiment.tex`
@@ -49,6 +50,7 @@ encoded in:
 - plan commit: `f9df80e`
 - implementation commits: `bf3e0fc`, `6d484da`
 - verification evidence commit: `99cb9e9`
+- review hardening commits: `b6442ae`, `b38269a`
 
 ## Vendored Newton
 
@@ -83,7 +85,8 @@ encoded in:
 - random seed: not applicable; tests use deterministic arrays only
 - metrics: full-schema report required keys, invalid status rejection, JSON
   round trip, deterministic step count, energy drift, generalized momentum
-  delta norm, and incomplete report status
+  delta norm, incomplete report status, and rejection of passed experiment
+  reports without a dedicated evidence gate
 - thresholds: exact key/status equality, `energy_drift <= 1.0e-12`, and
   `generalized_momentum_delta_norm <= 1.0e-12`
 
@@ -142,10 +145,26 @@ reporting contracts plus bootstrap: Ran 20 tests, OK
 single-body report lane plus reporting contracts: Ran 4 tests, OK
 ```
 
+Review hardening RED result:
+
+```text
+test_report_validation_rejects_passed_experiment_claims:
+AssertionError: ValueError not raised
+```
+
+Review hardening GREEN result:
+
+```text
+reporting contracts: Ran 4 tests, OK
+single-body report lane plus reporting contracts: Ran 5 tests, OK
+```
+
 ## Verified Behavior
 
 - Full-schema `ClaimReport` JSON round trips preserve required fields.
 - Report validation rejects missing schema keys and unknown statuses.
+- Report validation rejects `status=passed` for `experiment.*` claim reports
+  until a dedicated evidence gate exists.
 - `write_spinning_box_development_report` writes a machine-checkable report for
   `experiment.single_body.spinning_box`.
 - The development report records `baseline_lane=mabd_newton` and
@@ -171,8 +190,8 @@ Final verification result:
 ```text
 ruff: All checks passed!
 docs: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12 docs/provenance validation passed
-focused public tests: Ran 23 tests, OK
-full public tests: Ran 99 tests, OK
+focused public tests: Ran 24 tests, OK
+full public tests: Ran 100 tests, OK
 vendored Newton import:
   /cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase12-single-body-report-lane/vendor/newton/newton/__init__.py
 git diff --check: clean
