@@ -44,6 +44,8 @@ def _resolve_output_path(
         return Path(output_path)
     configured = Path(configured_output_report)
     if output_root is not None:
+        if configured.is_absolute() or ".." in configured.parts:
+            raise ValueError("output_report must stay within output_root")
         return Path(output_root) / configured
     return configured
 
@@ -61,6 +63,8 @@ def run_spinning_box_experiment(
     config = load_spinning_box_config(config_path)
     matrix = load_experiment_matrix(matrix_path)
     validate_spinning_box_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError("Phase 14 experiment runner requires incomplete report status")
     report_path = _resolve_output_path(
         config.output_report,
         output_path=output_path,

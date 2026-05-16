@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import yaml
+
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 
 
@@ -13,6 +15,26 @@ MATRIX_PATH = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
 
 
 class ExperimentRunnerTests(unittest.TestCase):
+    def _write_config_with(self, tmpdir: str, **updates: object) -> Path:
+        config = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+        report_updates = updates.pop("report", None)
+        config.update(updates)
+        if isinstance(report_updates, dict):
+            config["report"].update(report_updates)
+        path = Path(tmpdir) / "single_body_spinning_box.yaml"
+        path.write_text(yaml.safe_dump(config), encoding="utf-8")
+        return path
+
+    def _write_matrix_with_output_report(self, tmpdir: str, output_report: str) -> Path:
+        matrix = yaml.safe_load(MATRIX_PATH.read_text(encoding="utf-8"))
+        for entry in matrix["experiments"]:
+            if entry["claim_id"] == "experiment.single_body.spinning_box":
+                entry["output_report"] = output_report
+                break
+        path = Path(tmpdir) / "paper_experiment_matrix.yaml"
+        path.write_text(yaml.safe_dump(matrix), encoding="utf-8")
+        return path
+
     def test_run_spinning_box_experiment_writes_override_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_experiment
 
@@ -72,6 +94,61 @@ class ExperimentRunnerTests(unittest.TestCase):
                     vendored_newton_commit="test-newton",
                 )
 
+    def test_run_spinning_box_experiment_requires_incomplete_status(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_experiment
+
+        with TemporaryDirectory() as tmpdir:
+            report_path = Path(tmpdir) / "failed_report.json"
+            config_path = self._write_config_with(tmpdir, report={"status": "failed"})
+
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                run_spinning_box_experiment(
+                    config_path=config_path,
+                    matrix_path=MATRIX_PATH,
+                    output_path=report_path,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+            self.assertFalse(report_path.exists())
+
+    def test_run_spinning_box_experiment_rejects_output_root_escape(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_experiment
+
+        with TemporaryDirectory() as tmpdir:
+            output_root = Path(tmpdir) / "root"
+            output_report = "../escaped.json"
+            config_path = self._write_config_with(tmpdir, report={"output_report": output_report})
+            matrix_path = self._write_matrix_with_output_report(tmpdir, output_report)
+
+            with self.assertRaisesRegex(ValueError, "output_report"):
+                run_spinning_box_experiment(
+                    config_path=config_path,
+                    matrix_path=matrix_path,
+                    output_root=output_root,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+            self.assertFalse((Path(tmpdir) / "escaped.json").exists())
+
+    def test_run_spinning_box_experiment_rejects_absolute_output_root_target(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_experiment
+
+        with TemporaryDirectory() as tmpdir:
+            output_root = Path(tmpdir) / "root"
+            output_report = (Path(tmpdir) / "absolute_report.json").as_posix()
+            config_path = self._write_config_with(tmpdir, report={"output_report": output_report})
+            matrix_path = self._write_matrix_with_output_report(tmpdir, output_report)
+
+            with self.assertRaisesRegex(ValueError, "output_report"):
+                run_spinning_box_experiment(
+                    config_path=config_path,
+                    matrix_path=matrix_path,
+                    output_root=output_root,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+            self.assertFalse(Path(output_report).exists())
+
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
         import json
         import os
@@ -117,13 +194,12 @@ class ExperimentRunnerTests(unittest.TestCase):
         import subprocess
         import sys
 
-        import yaml
-
         with TemporaryDirectory() as tmpdir:
             bad_config = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
             bad_config["claim_id"] = "experiment.unknown"
             bad_path = Path(tmpdir) / "bad.yaml"
             bad_path.write_text(yaml.safe_dump(bad_config), encoding="utf-8")
+            output_path = Path(tmpdir) / "bad_report.json"
             result = subprocess.run(
                 [
                     sys.executable,
@@ -133,7 +209,7 @@ class ExperimentRunnerTests(unittest.TestCase):
                     "--matrix",
                     str(MATRIX_PATH),
                     "--output",
-                    str(Path(tmpdir) / "bad_report.json"),
+                    str(output_path),
                     "--source-commit",
                     "cli-source",
                     "--vendored-newton-commit",
@@ -148,6 +224,7 @@ class ExperimentRunnerTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("experiment.single_body.spinning_box", result.stderr)
+        self.assertFalse(output_path.exists())
 
 
 if __name__ == "__main__":
