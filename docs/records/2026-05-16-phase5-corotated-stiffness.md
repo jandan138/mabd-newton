@@ -118,7 +118,7 @@ is encoded in:
 - branch: `phase5-corotated-stiffness`
 - base commit: `71f274c`
 - plan commit: `29cb626`
-- implementation commit: `IMPLEMENTATION_COMMIT_PENDING`
+- implementation commit: `f899318`
 
 ## Vendored Newton
 
