@@ -225,6 +225,7 @@ def validate_claim_boundaries() -> None:
         "paper timing",
         "rendered output",
         "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
         "any passed `experiment.*` claim",
     )
     for snippet in phase13_non_claims:
@@ -517,6 +518,8 @@ def validate_phase14_record() -> None:
         "## Repository",
         "plan commit:",
         "implementation commits:",
+        "verification evidence commit: `f4e4bd6`",
+        "review hardening commit: `ad42baf`",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "## Paper Source",
@@ -526,6 +529,7 @@ def validate_phase14_record() -> None:
         "## Artifacts",
         "`scripts/run_experiment.py`",
         "`run_spinning_box_experiment`",
+        "generated reports: not committed",
         "No `experiment.*` claim is passed in this phase.",
     )
     for snippet in required_snippets:

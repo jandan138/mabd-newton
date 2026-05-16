@@ -373,6 +373,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("Phase 14 verifies an executable config-driven experiment runner", text)
         self.assertIn("single-body spinning-box development report", normalized_text)
         self.assertIn("Phase 14 does not verify the paper spinning-box experiment", text)
+        self.assertIn("generated report artifacts as committed evidence", normalized_text)
         self.assertIn("any passed `experiment.*` claim", normalized_text)
 
     def test_phase14_record_has_required_evidence_fields(self) -> None:
@@ -386,6 +387,8 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Repository",
             "plan commit:",
             "implementation commits:",
+            "verification evidence commit:",
+            "review hardening commit:",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "## Paper Source",
@@ -395,6 +398,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Artifacts",
             "`scripts/run_experiment.py`",
             "`run_spinning_box_experiment`",
+            "generated reports: not committed",
             "No `experiment.*` claim is passed in this phase.",
         ):
             self.assertIn(snippet, text)
