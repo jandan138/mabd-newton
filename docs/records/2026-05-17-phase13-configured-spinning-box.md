@@ -21,6 +21,9 @@ paper evidence still requires at least the `rbd_implicit_baseline` lane.
 - repo base commit: `eaaba80`
 - plan commit: `7f68fd7`
 - implementation commits: `9dd5d10`, `bbb4836`
+- docs/provenance commit: `acffaf6`
+- verification evidence commit: `48d96c8`
+- review hardening commit: `d66cafb`
 - paper source version: arXiv `2603.08079v2`
 - paper source paths:
   - `/tmp/mabd-paper/source/sections/experiment.tex`
@@ -48,6 +51,9 @@ The config is validated against:
 - base commit: `eaaba80`
 - plan commit: `7f68fd7`
 - implementation commits: `9dd5d10`, `bbb4836`
+- docs/provenance commit: `acffaf6`
+- verification evidence commit: `48d96c8`
+- review hardening commit: `d66cafb`
 
 ## Vendored Newton
 
@@ -81,13 +87,16 @@ The config is validated against:
 
 - random seed: not applicable; tests use deterministic arrays only
 - metrics: per-scene config required keys, experiment matrix alignment,
-  invalid passed experiment config rejection, deterministic step count, energy
-  drift, generalized momentum delta norm, incomplete report status, and
-  config-backed report field propagation
+  paper-value alignment, blocking-lane alignment, invalid passed experiment
+  config rejection, write-time passed experiment report rejection, deterministic
+  step count, energy drift, generalized momentum delta norm, incomplete report
+  status, and config-backed report field propagation
 - thresholds: exact key/status equality, `energy_drift <= 1.0e-12`, and
   `generalized_momentum_delta_norm <= 1.0e-12`
 - Report validation rejects `status=passed` for experiment configs and reports
   until a dedicated evidence gate exists.
+- Config validation rejects implicit scalar coercions and non-finite vector or
+  threshold values.
 
 ## Artifacts
 
@@ -95,11 +104,14 @@ The config is validated against:
   `configs/experiments/single_body_spinning_box.yaml`
 - committed source:
   `src/mabd_reproduction/experiment_configs.py`
+- committed docs validator:
+  `scripts/validate_docs.py`
 - committed development lane:
   `src/mabd_reproduction/single_body_reports.py`
 - committed tests:
-  `tests/test_experiment_run_configs.py` and
-  `tests/test_single_body_report_lane.py`
+  `tests/test_experiment_run_configs.py`,
+  `tests/test_single_body_report_lane.py`, and
+  `tests/test_reporting_contracts.py`
 - committed evidence record:
   `docs/records/2026-05-17-phase13-configured-spinning-box.md`
 - generated reports: not committed; tests write JSON reports to temporary
@@ -155,15 +167,59 @@ experiment run configs: Ran 3 tests, OK
 single-body report lane plus config/reporting contracts: Ran 9 tests, OK
 ```
 
+Review hardening RED commands:
+
+```bash
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  -m unittest tests.test_reporting_contracts
+
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  -m unittest tests.test_experiment_run_configs
+
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  scripts/validate_docs.py
+
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  -m unittest tests.test_phase0_bootstrap
+```
+
+Review hardening RED result:
+
+```text
+report writer rejection: ValueError not raised
+experiment run configs: paper_values drift, scalar coercions, non-finite
+vector, coerced thresholds, and docs validator config gate failed
+docs validator: Phase 13 record missing docs/provenance commit evidence
+phase0 bootstrap: Phase 13 record missing commit-trail snippets
+```
+
+Review hardening GREEN result:
+
+```text
+reporting contracts: Ran 5 tests, OK
+experiment run configs: Ran 8 tests, OK
+focused Phase 13/contract/docs tests: Ran 36 tests, OK
+```
+
 ## Verified Behavior
 
 - `load_spinning_box_config` loads the per-scene spinning-box config into a
   typed object with deterministic 12-DOF initial state, step count, thresholds,
   and incomplete report status.
 - `validate_spinning_box_config_against_matrix` requires the config claim,
-  scene id, source lines, assets, output report, and lanes to match the
+  scene id, source lines, paper values, assets, output report, lanes, blocking
+  reasons, baseline-blocked status, and energy-drift metric to match the
   experiment matrix entry.
-- Config loading rejects `status=passed` for experiment configs.
+- Config loading rejects `status=passed` for experiment configs, implicit
+  scalar coercions, non-finite vector values, and coerced threshold values.
+- `scripts/validate_docs.py` loads the Phase 13 config and validates it against
+  the experiment matrix as part of the canonical docs/provenance gate.
+- `write_claim_report` rejects passed `experiment.*` reports before writing
+  JSON to disk.
 - `write_spinning_box_development_report(..., config=config)` propagates config
   scene id, timestep, step count, thresholds, status, and failure reason into
   the generated `ClaimReport`.
@@ -188,8 +244,8 @@ Final verification result:
 ```text
 ruff: All checks passed!
 docs: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13 docs/provenance validation passed
-focused public tests: Ran 30 tests, OK
-full public tests: Ran 106 tests, OK
+focused public tests: Ran 36 tests, OK
+full public tests: Ran 112 tests, OK
 vendored Newton import:
   /cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase13-configured-spinning-box/vendor/newton/newton/__init__.py
 git diff --check: clean
