@@ -31,6 +31,7 @@ remains `incomplete`.
 - base commit: `6bfaa63`
 - plan commit: `b3e5d53`
 - implementation commits: `a311f62`, `3029326`
+- docs/provenance commit: `1de8829`
 
 ## Vendored Newton
 
@@ -104,7 +105,13 @@ git diff --check
 Final verification result:
 
 ```text
-This section is refreshed after final verification commands run.
+ruff: All checks passed!
+docs: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14 docs/provenance validation passed
+focused public tests: Ran 43 tests, OK
+full public tests: Ran 119 tests, OK
+vendored Newton import:
+  /cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase14-experiment-runner/vendor/newton/newton/__init__.py
+git diff --check: clean
 ```
 
 ## Claim Impact
