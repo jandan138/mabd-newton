@@ -57,8 +57,17 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         self.assertEqual(loaded.backend, "report_protocol")
         self.assertEqual(loaded.observed["lane_statuses"]["mabd_newton"], "incomplete")
         self.assertEqual(loaded.observed["lane_statuses"]["rbd_implicit_baseline"], "incomplete")
-        self.assertIn("mabd_newton:linear_momentum_error", loaded.observed["missing_required_metrics"])
-        self.assertIn("mabd_newton:angular_momentum_error", loaded.observed["missing_required_metrics"])
+        self.assertNotIn("mabd_newton:linear_momentum_error", loaded.observed["missing_required_metrics"])
+        self.assertNotIn("mabd_newton:angular_momentum_error", loaded.observed["missing_required_metrics"])
+        self.assertNotIn("mabd_newton:energy_drift", loaded.observed["missing_required_metrics"])
+        self.assertLessEqual(
+            loaded.observed["lane_metrics"]["mabd_newton"]["linear_momentum_error"],
+            1.0e-9,
+        )
+        self.assertLessEqual(
+            loaded.observed["lane_metrics"]["mabd_newton"]["angular_momentum_error"],
+            1.0e-9,
+        )
         self.assertIn("required lane reports remain incomplete", loaded.failure_reason)
         self.assertEqual(loaded.threshold["required_lane_status"], "passed")
 

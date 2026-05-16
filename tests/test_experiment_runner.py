@@ -215,6 +215,8 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
         self.assertEqual(result.report.baseline_lane, "spinning_box_comparison_protocol")
         self.assertEqual(loaded.baseline_lane, "spinning_box_comparison_protocol")
+        self.assertNotIn("mabd_newton:linear_momentum_error", loaded.observed["missing_required_metrics"])
+        self.assertNotIn("mabd_newton:angular_momentum_error", loaded.observed["missing_required_metrics"])
 
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
         import json
