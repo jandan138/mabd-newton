@@ -1,0 +1,125 @@
+"""Multi-lane comparison reports for paper experiment claims."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from .experiment_configs import SpinningBoxRunConfig
+from .reporting import ClaimReport, EvidenceStatus, load_claim_report, write_claim_report
+
+
+SPINNING_BOX_REQUIRED_METRICS = (
+    "linear_momentum_error",
+    "angular_momentum_error",
+    "energy_drift",
+)
+
+
+def _require_lane_report(
+    path: str | Path,
+    *,
+    config: SpinningBoxRunConfig,
+    lane: str,
+) -> ClaimReport:
+    report = load_claim_report(path)
+    if report.claim_id != config.claim_id:
+        raise ValueError(f"{lane} report claim_id must be {config.claim_id}")
+    if report.scene_id != config.scene_id:
+        raise ValueError(f"{lane} report scene_id must be {config.scene_id}")
+    if report.baseline_lane != lane:
+        raise ValueError(f"{lane} report must have baseline_lane={lane}")
+    return report
+
+
+def _lane_metric_snapshot(report: ClaimReport) -> dict[str, Any]:
+    return {metric: report.observed.get(metric) for metric in SPINNING_BOX_REQUIRED_METRICS}
+
+
+def _missing_metrics(lane: str, report: ClaimReport) -> list[str]:
+    return [
+        f"{lane}:{metric}" for metric in SPINNING_BOX_REQUIRED_METRICS if metric not in report.observed
+    ]
+
+
+def write_spinning_box_comparison_report(
+    path: str | Path,
+    *,
+    config: SpinningBoxRunConfig,
+    mabd_report_path: str | Path,
+    rbd_report_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    mabd_report = _require_lane_report(mabd_report_path, config=config, lane="mabd_newton")
+    rbd_report = _require_lane_report(rbd_report_path, config=config, lane="rbd_implicit_baseline")
+    lane_statuses = {
+        "mabd_newton": mabd_report.status.value,
+        "rbd_implicit_baseline": rbd_report.status.value,
+    }
+    missing_required_metrics = _missing_metrics("mabd_newton", mabd_report) + _missing_metrics(
+        "rbd_implicit_baseline",
+        rbd_report,
+    )
+    incomplete_lanes = [
+        lane for lane, status in lane_statuses.items() if status != EvidenceStatus.PASSED.value
+    ]
+    blocking_reasons = [
+        *(f"{lane}_report_{lane_statuses[lane]}" for lane in incomplete_lanes),
+        *(f"{metric}_missing" for metric in missing_required_metrics),
+    ]
+    if rbd_report.solver_mode != "paper_faithful_implicit_rbd":
+        blocking_reasons.append("rbd_implicit_baseline_not_paper_faithful")
+    if not blocking_reasons:
+        blocking_reasons.append("experiment_pass_gate_not_enabled")
+
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={"primitive_cube": "not_applicable_procedural"},
+        solver_mode="spinning_box_multilane_comparison_development",
+        backend="report_protocol",
+        baseline_lane="spinning_box_comparison_protocol",
+        expected={
+            "paper_claim_status": "requires passed M-ABD and paper-faithful implicit RBD lanes",
+            "required_lanes": ["mabd_newton", "rbd_implicit_baseline"],
+            "required_metrics": list(SPINNING_BOX_REQUIRED_METRICS),
+            "source_lines": list(config.source_lines),
+        },
+        observed={
+            "lane_statuses": lane_statuses,
+            "lane_solver_modes": {
+                "mabd_newton": mabd_report.solver_mode,
+                "rbd_implicit_baseline": rbd_report.solver_mode,
+            },
+            "lane_metrics": {
+                "mabd_newton": _lane_metric_snapshot(mabd_report),
+                "rbd_implicit_baseline": _lane_metric_snapshot(rbd_report),
+            },
+            "missing_required_metrics": missing_required_metrics,
+            "blocking_reasons": blocking_reasons,
+        },
+        threshold={
+            "required_lane_status": EvidenceStatus.PASSED.value,
+            "required_metrics": list(SPINNING_BOX_REQUIRED_METRICS),
+            "paper_faithful_rbd_solver_mode": "paper_faithful_implicit_rbd",
+        },
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason="required lane reports remain incomplete or missing paper comparison metrics",
+        timing_distribution={"scope": "not_timed"},
+        raw_outputs={
+            "mabd_report": Path(mabd_report_path).as_posix(),
+            "rbd_report": Path(rbd_report_path).as_posix(),
+        },
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
+__all__ = ["SPINNING_BOX_REQUIRED_METRICS", "write_spinning_box_comparison_report"]
