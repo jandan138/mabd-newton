@@ -99,6 +99,7 @@ def validate_environment_contract() -> None:
 
 def validate_claim_boundaries() -> None:
     text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_text = " ".join(text.split())
     for heading in ("## Current", "## Intended", "## Verified", "## Forbidden Claims"):
         if heading not in text:
             fail(f"claim-boundaries.md missing {heading}")
@@ -144,8 +145,77 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md must bound Phase 8 solver and experiment evidence")
     if "Phase 9 verifies point-load affine generalized force mapping" not in text:
         fail("claim-boundaries.md must explicitly state Phase 9 point force evidence")
-    if "Phase 9 does not verify collision detection" not in text or "friction" not in text:
-        fail("claim-boundaries.md must bound Phase 9 contact evidence")
+    phase9_non_claims = (
+        "Phase 9 does not verify collision detection",
+        "broadphase",
+        "narrowphase",
+        "friction",
+        "full contact handling",
+        "production `SolverMABD.step()` contact input",
+        "actuation/controller behavior",
+        "paper scenes",
+        "timing",
+        "comparative baselines",
+    )
+    for snippet in phase9_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 9 contact evidence: {snippet}")
+
+
+def validate_phase9_record() -> None:
+    text = (ROOT / "docs/records/2026-05-16-phase9-point-contact-forces.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "No experiment config is used in Phase 9",
+        "## Repository",
+        "implementation commit: `39030ef`",
+        "review hardening commit:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status:",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "## Environment",
+        "mabd-newton-py310",
+        "## Metrics And Thresholds",
+        "random seed: not applicable",
+        "thresholds:",
+        "## Artifacts",
+        "raw artifacts: not applicable",
+        "method.force_mapping.point_load_penalty_contact",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 9 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 9 verifies collision detection",
+        "Phase 9 verifies friction",
+        "Phase 9 verifies production `SolverMABD.step()` contact",
+        "Phase 9 verifies paper scenes",
+        "Phase 9 verifies timing",
+        "Phase 9 verifies comparative baselines",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 9 record overclaims unsupported evidence: {snippet}")
+
+
+def validate_phase9_claim(claims: list[dict[str, Any]]) -> None:
+    claim = next(
+        (c for c in claims if c["claim_id"] == "method.force_mapping.point_load_penalty_contact"),
+        None,
+    )
+    if claim is None:
+        fail("paper-claims.yaml missing Phase 9 point contact force claim")
+    if claim["reproduction_status"] != "passed":
+        fail("method.force_mapping.point_load_penalty_contact must remain passed after Phase 9 evidence exists")
+    if "not collision detection" not in claim["conflict_note"] or "friction" not in claim["conflict_note"]:
+        fail("Phase 9 point contact claim must retain bounded conflict note")
 
 
 def validate_paper_claims() -> None:
@@ -208,6 +278,7 @@ def validate_paper_claims() -> None:
     corotated = next(c for c in claims if c["claim_id"] == "method.single_body.corotated_stiffness")
     if corotated["reproduction_status"] != "passed":
         fail("method.single_body.corotated_stiffness must pass after Phase 5 K_A_bar evidence exists")
+    validate_phase9_claim(claims)
 
     record_text = (
         (ROOT / "docs/records/2026-05-16-phase1-single-body-abd.md").read_text(encoding="utf-8")
@@ -293,6 +364,7 @@ def main() -> int:
     require_paths()
     validate_environment_contract()
     validate_claim_boundaries()
+    validate_phase9_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_provenance()

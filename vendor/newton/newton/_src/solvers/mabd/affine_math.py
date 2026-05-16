@@ -208,6 +208,7 @@ def evaluate_point_plane_penalty_contact(
     if normal_norm == 0.0:
         raise ValueError("plane_normal must be nonzero")
     normal = normal / normal_norm
+    offset = float(plane_offset) / normal_norm
 
     stiffness_float = float(stiffness)
     damping_float = float(damping)
@@ -219,7 +220,6 @@ def evaluate_point_plane_penalty_contact(
     J = point_jacobian(point)
     world_point = J @ q_arr
     world_velocity = J @ qd_arr
-    offset = float(plane_offset)
     signed_distance = float(normal @ world_point - offset)
     penetration_depth = max(0.0, -signed_distance)
     active = penetration_depth > 0.0

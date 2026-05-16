@@ -84,6 +84,57 @@ class MABDSingleBodyPublicTests(unittest.TestCase):
         self.assertTrue(np.allclose(contact.generalized_force, np.zeros(12)))
         self.assertTrue(np.allclose(contact.plane_normal, np.array([0.0, 1.0, 0.0])))
 
+    def test_point_plane_penalty_contact_rescales_offset_with_normal(self) -> None:
+        q = mabd.pack_q(np.eye(3), np.array([0.0, 0.75, 0.0]))
+
+        contact = mabd.evaluate_point_plane_penalty_contact(
+            q,
+            np.zeros(12),
+            np.zeros(3),
+            plane_normal=np.array([0.0, 2.0, 0.0]),
+            plane_offset=2.0,
+            stiffness=4.0,
+        )
+
+        self.assertTrue(contact.active)
+        self.assertTrue(np.allclose(contact.plane_normal, np.array([0.0, 1.0, 0.0])))
+        self.assertAlmostEqual(contact.plane_offset, 1.0)
+        self.assertAlmostEqual(contact.signed_distance, -0.25)
+        self.assertAlmostEqual(contact.penetration_depth, 0.25)
+        self.assertTrue(np.allclose(contact.force, np.array([0.0, 1.0, 0.0])))
+
+    def test_point_plane_penalty_contact_rejects_invalid_parameters(self) -> None:
+        q = mabd.pack_q(np.eye(3), np.zeros(3))
+
+        with self.assertRaisesRegex(ValueError, "plane_normal"):
+            mabd.evaluate_point_plane_penalty_contact(
+                q,
+                np.zeros(12),
+                np.zeros(3),
+                plane_normal=np.zeros(3),
+                plane_offset=0.0,
+                stiffness=1.0,
+            )
+        with self.assertRaisesRegex(ValueError, "stiffness"):
+            mabd.evaluate_point_plane_penalty_contact(
+                q,
+                np.zeros(12),
+                np.zeros(3),
+                plane_normal=np.array([0.0, 1.0, 0.0]),
+                plane_offset=0.0,
+                stiffness=-1.0,
+            )
+        with self.assertRaisesRegex(ValueError, "damping"):
+            mabd.evaluate_point_plane_penalty_contact(
+                q,
+                np.zeros(12),
+                np.zeros(3),
+                plane_normal=np.array([0.0, 1.0, 0.0]),
+                plane_offset=0.0,
+                stiffness=1.0,
+                damping=-1.0,
+            )
+
     def test_point_plane_penalty_contact_damps_only_inward_normal_velocity(self) -> None:
         q = mabd.pack_q(np.eye(3), np.array([0.0, -0.05, 0.0]))
         rest_point = np.zeros(3)

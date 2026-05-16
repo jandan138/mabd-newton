@@ -164,6 +164,32 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("Phase 9 does not verify collision detection", text)
         self.assertIn("full contact handling", text)
 
+    def test_phase9_point_contact_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-16-phase9-point-contact-forces.md").read_text()
+
+        for snippet in (
+            "## Status",
+            "passed",
+            "## Config Path",
+            "No experiment config is used in Phase 9",
+            "## Repository",
+            "implementation commit: `39030ef`",
+            "review hardening commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status:",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "## Environment",
+            "mabd-newton-py310",
+            "## Metrics And Thresholds",
+            "random seed: not applicable",
+            "thresholds:",
+            "## Artifacts",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [

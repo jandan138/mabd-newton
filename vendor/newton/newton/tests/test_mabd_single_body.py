@@ -125,6 +125,55 @@ class TestMABDSingleBodyInternal(unittest.TestCase):
         self.assertTrue(np.allclose(inactive.force, np.zeros(3)))
         self.assertTrue(np.allclose(inactive.generalized_force, np.zeros(12)))
 
+    def test_point_plane_penalty_contact_rescales_offset_with_normal(self) -> None:
+        contact = evaluate_point_plane_penalty_contact(
+            pack_q(np.eye(3), np.array([0.0, 0.75, 0.0])),
+            np.zeros(12),
+            np.zeros(3),
+            plane_normal=np.array([0.0, 2.0, 0.0]),
+            plane_offset=2.0,
+            stiffness=4.0,
+        )
+
+        self.assertTrue(contact.active)
+        self.assertTrue(np.allclose(contact.plane_normal, np.array([0.0, 1.0, 0.0])))
+        self.assertAlmostEqual(contact.plane_offset, 1.0)
+        self.assertAlmostEqual(contact.signed_distance, -0.25)
+        self.assertAlmostEqual(contact.penetration_depth, 0.25)
+        self.assertTrue(np.allclose(contact.force, np.array([0.0, 1.0, 0.0])))
+
+    def test_point_plane_penalty_contact_rejects_invalid_parameters(self) -> None:
+        q = pack_q(np.eye(3), np.zeros(3))
+
+        with self.assertRaisesRegex(ValueError, "plane_normal"):
+            evaluate_point_plane_penalty_contact(
+                q,
+                np.zeros(12),
+                np.zeros(3),
+                plane_normal=np.zeros(3),
+                plane_offset=0.0,
+                stiffness=1.0,
+            )
+        with self.assertRaisesRegex(ValueError, "stiffness"):
+            evaluate_point_plane_penalty_contact(
+                q,
+                np.zeros(12),
+                np.zeros(3),
+                plane_normal=np.array([0.0, 1.0, 0.0]),
+                plane_offset=0.0,
+                stiffness=-1.0,
+            )
+        with self.assertRaisesRegex(ValueError, "damping"):
+            evaluate_point_plane_penalty_contact(
+                q,
+                np.zeros(12),
+                np.zeros(3),
+                plane_normal=np.array([0.0, 1.0, 0.0]),
+                plane_offset=0.0,
+                stiffness=1.0,
+                damping=-1.0,
+            )
+
     def test_elasticity_rotation_twist_and_cache_oracles(self) -> None:
         A = np.array([[1.1, 0.2, 0.0], [0.0, 0.9, -0.1], [0.05, 0.0, 1.2]])
         mu, lam = lame_parameters(20.0, 0.25)
