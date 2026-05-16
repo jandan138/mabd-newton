@@ -36,6 +36,7 @@ Phase 0 exit criteria:
 - Create `src/mabd_reproduction/__init__.py`: package version and public package marker.
 - Create `src/mabd_reproduction/reporting.py`: small dataclass/status contract used by tests and future reports.
 - Create `scripts/validate_docs.py`: repository validator for Phase 0 docs, claim manifest, provenance, and import isolation.
+- Create `docs/operations/environment.md`: local validation environment contract that avoids mutating shared interpreters.
 - Create `tests/test_phase0_bootstrap.py`: unit tests for validator, report statuses, YAML manifest, and vendored Newton import resolution.
 - Create `docs/reference/claim-boundaries.md`: current/intended/verified claim source of truth.
 - Create `docs/reference/paper-claims.yaml`: claim traceability manifest seeded from the paper source review.
@@ -102,10 +103,11 @@ bootstrap/provenance until method and experiment records prove more.
 
 ## Commands
 
-- Install locally: `python -m pip install -e ".[dev]"`
-- Validate docs and provenance: `python scripts/validate_docs.py`
-- Run tests: `python -m unittest discover -s tests`
-- Check vendored Newton import: `PYTHONPATH=vendor/newton python -c "import newton; print(newton.__file__)"`
+- Canonical Python: `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python`
+- Do not install into the ambient DSW Python or mutate the shared Newton environment during routine validation.
+- Validate docs and provenance: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py`
+- Run tests: `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests`
+- Check vendored Newton import: `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"`
 - Whitespace check: `git diff --check`
 ```
 
@@ -159,6 +161,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "ruff>=0.4",
+]
+newton = [
+    "warp-lang>=1.13.0",
 ]
 
 [tool.setuptools.package-dir]
@@ -233,7 +238,8 @@ REQUIRED_REPORT_KEYS = frozenset(ClaimReport.__dataclass_fields__)
 Run:
 
 ```bash
-python -m py_compile src/mabd_reproduction/__init__.py src/mabd_reproduction/reporting.py
+MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+"$MABD_PYTHON" -m py_compile src/mabd_reproduction/__init__.py src/mabd_reproduction/reporting.py
 git diff --check
 ```
 
@@ -260,6 +266,7 @@ Expected: commit succeeds.
 - Create: `reports/README.md`
 - Create: `assets/manifests/README.md`
 - Create: `configs/experiments/README.md`
+- Create: `docs/operations/environment.md`
 
 - [ ] **Step 1: Write claim-boundary source of truth**
 
@@ -559,12 +566,68 @@ Paper-missing values must be represented as `unknown_in_source` or
 `not_applicable`.
 ```
 
-- [ ] **Step 4: Validate YAML syntax**
+- [ ] **Step 4: Write environment contract**
+
+Create `docs/operations/environment.md` with:
+
+```markdown
+# Environment Contract
+
+## Canonical Local Runtime
+
+Use the already-created Newton Python environment from the reference project:
+
+```text
+/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310
+```
+
+Canonical interpreter:
+
+```text
+/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+```
+
+This environment already contains Newton runtime dependencies such as
+`warp-lang==1.13.0`, `PyYAML`, and the importer stack validated by
+`physics-primitive-agent`.
+
+## Non-Pollution Rule
+
+Routine validation in this repository must not install packages into the ambient
+Isaac/DSW Python, the shared reference Newton environment, or the local vendored
+Newton tree.
+
+Use `PYTHONPATH` to point at this repository's source and vendored Newton copy
+instead of running `pip install -e .` during normal validation.
+
+## Commands
+
+```bash
+MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+PYTHONPATH=src:vendor/newton "$MABD_PYTHON" scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton "$MABD_PYTHON" -m unittest discover -s tests
+PYTHONPATH=vendor/newton "$MABD_PYTHON" -c "import newton; print(newton.__file__)"
+```
+
+The import check must print a path under this repository's `vendor/newton`
+directory. If it imports `/cpfs/user/zhuzihou/dev/newton`, the `PYTHONPATH` is
+wrong for this repo.
+
+## Dependency Changes
+
+Dependency installation is an explicit environment-maintenance action, not part
+of Phase 0 validation. If a future phase needs dependency mutation, record the
+interpreter path, command, indexes, package versions, and reason in
+`docs/records/` before using the mutated environment for evidence.
+```
+
+- [ ] **Step 5: Validate YAML syntax**
 
 Run:
 
 ```bash
-python - <<'PY'
+MABD_PYTHON=/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python
+"$MABD_PYTHON" - <<'PY'
 from pathlib import Path
 import yaml
 data = yaml.safe_load(Path("docs/reference/paper-claims.yaml").read_text())
@@ -581,12 +644,12 @@ Expected output contains:
 paper claim manifest ok
 ```
 
-- [ ] **Step 5: Commit reference docs**
+- [ ] **Step 6: Commit reference docs**
 
 Run:
 
 ```bash
-git add docs/reference docs/records/README.md reports/README.md assets/manifests/README.md configs/experiments/README.md
+git add docs/reference docs/records/README.md docs/operations/environment.md reports/README.md assets/manifests/README.md configs/experiments/README.md
 git commit -m "docs: add M-ABD claim and artifact manifests"
 ```
 
@@ -662,7 +725,7 @@ changes reproduction evidence.
 Run:
 
 ```bash
-PYTHONPATH=vendor/newton python -c "import newton; print(newton.__file__)"
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 ```
 
 Expected output path begins with this repository and contains:
@@ -680,7 +743,7 @@ Run:
 test -f vendor/newton/newton/solvers.py
 test -f vendor/newton/LICENSE.md
 test ! -d vendor/newton/.git
-PYTHONPATH=vendor/newton python -c "import newton; print(newton.__file__)"
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 ```
 
 Expected: tests exit `0`; import path contains `vendor/newton/newton/__init__.py`.
@@ -713,6 +776,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import unittest
+import os
 from pathlib import Path
 
 import yaml
@@ -765,7 +829,7 @@ class Phase0BootstrapTests(unittest.TestCase):
                 "import newton; print(newton.__file__)",
             ],
             cwd=ROOT,
-            env={"PYTHONPATH": str(ROOT / "vendor/newton")},
+            env={**os.environ, "PYTHONPATH": str(ROOT / "vendor/newton")},
             text=True,
             check=True,
             stdout=subprocess.PIPE,
@@ -783,7 +847,7 @@ if __name__ == "__main__":
 Run:
 
 ```bash
-python -m unittest discover -s tests
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
 test ! -f scripts/validate_docs.py
 ```
 
@@ -963,8 +1027,8 @@ if __name__ == "__main__":
 Run:
 
 ```bash
-python scripts/validate_docs.py
-python -m unittest discover -s tests
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
 ```
 
 Expected output contains:
@@ -996,9 +1060,9 @@ Expected: commit succeeds.
 Run:
 
 ```bash
-python scripts/validate_docs.py
-python -m unittest discover -s tests
-PYTHONPATH=vendor/newton python -c "import newton; print(newton.__file__)"
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 git diff --check
 git status --short --branch
 ```
@@ -1030,9 +1094,9 @@ scene, timing, or comparative baseline claim.
 ## Commands
 
 ```bash
-python scripts/validate_docs.py
-python -m unittest discover -s tests
-PYTHONPATH=vendor/newton python -c "import newton; print(newton.__file__)"
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 git diff --check
 git status --short --branch
 ```
@@ -1079,8 +1143,8 @@ state tests, co-rotated stiffness, polar/no-polar modes, and invariants.
 Run:
 
 ```bash
-python scripts/validate_docs.py
-python -m unittest discover -s tests
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
 git diff --check
 ```
 
@@ -1108,9 +1172,9 @@ Expected: commit succeeds.
 Run:
 
 ```bash
-python scripts/validate_docs.py
-python -m unittest discover -s tests
-PYTHONPATH=vendor/newton python -c "import newton; print(newton.__file__)"
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 git diff --check
 git status --short --branch
 git log --oneline -5
