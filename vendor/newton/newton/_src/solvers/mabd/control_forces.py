@@ -63,6 +63,24 @@ def _as_q_blocks(values: Any, name: str) -> tuple[np.ndarray, ...]:
     return tuple(block.astype(float, copy=True) for block in blocks)
 
 
+def _vec3_rows(value: Any, name: str, count: int) -> np.ndarray:
+    rows = np.asarray(value.numpy(), dtype=float)
+    if rows.shape != (count, 3):
+        raise ValueError(f"{name} must have shape ({count}, 3), got {rows.shape}")
+    return rows
+
+
+def _scalar_rows(value: Any, name: str, count: int, dtype: Any) -> np.ndarray:
+    rows = np.asarray(value.numpy(), dtype=dtype)
+    if rows.shape != (count,):
+        raise ValueError(f"{name} must have shape ({count},), got {rows.shape}")
+    return rows
+
+
+def _pack_rows(q0: np.ndarray, q1: np.ndarray, q2: np.ndarray, t: np.ndarray) -> tuple[np.ndarray, ...]:
+    return tuple(np.concatenate((q0[row], q1[row], q2[row], t[row])).astype(float, copy=True) for row in range(len(t)))
+
+
 def evaluate_affine_pd_control(
     q: Any,
     qd: Any,
@@ -119,9 +137,59 @@ def assemble_control_generalized_forces(
     return tuple(forces)
 
 
+def actuation_specs_from_model(model: Any, *, enabled_only: bool = True) -> tuple[MABDActuationSpec, ...]:
+    row_count = int(model.get_custom_frequency_count("mabd:control"))
+    if row_count == 0:
+        return ()
+    body_count = int(model.get_custom_frequency_count("mabd:body"))
+    namespace = model.mabd
+    control_body = _scalar_rows(namespace.control_body, "control_body", row_count, int)
+    control_enabled = _scalar_rows(namespace.control_enabled, "control_enabled", row_count, int)
+    stiffness = _scalar_rows(namespace.control_stiffness, "control_stiffness", row_count, float)
+    damping = _scalar_rows(namespace.control_damping, "control_damping", row_count, float)
+    target_q = _pack_rows(
+        _vec3_rows(namespace.control_target_q0, "control_target_q0", row_count),
+        _vec3_rows(namespace.control_target_q1, "control_target_q1", row_count),
+        _vec3_rows(namespace.control_target_q2, "control_target_q2", row_count),
+        _vec3_rows(namespace.control_target_t, "control_target_t", row_count),
+    )
+    target_qd = _pack_rows(
+        _vec3_rows(namespace.control_target_qd0, "control_target_qd0", row_count),
+        _vec3_rows(namespace.control_target_qd1, "control_target_qd1", row_count),
+        _vec3_rows(namespace.control_target_qd2, "control_target_qd2", row_count),
+        _vec3_rows(namespace.control_target_td, "control_target_td", row_count),
+    )
+    feedforward = _pack_rows(
+        _vec3_rows(namespace.control_feedforward_q0, "control_feedforward_q0", row_count),
+        _vec3_rows(namespace.control_feedforward_q1, "control_feedforward_q1", row_count),
+        _vec3_rows(namespace.control_feedforward_q2, "control_feedforward_q2", row_count),
+        _vec3_rows(namespace.control_feedforward_t, "control_feedforward_t", row_count),
+    )
+
+    specs: list[MABDActuationSpec] = []
+    for row in range(row_count):
+        if enabled_only and int(control_enabled[row]) == 0:
+            continue
+        body_id = int(control_body[row])
+        if not 0 <= body_id < body_count:
+            raise ValueError(f"control row {row} body {body_id} is outside [0, {body_count})")
+        specs.append(
+            MABDActuationSpec(
+                body_id=body_id,
+                target_q=target_q[row],
+                target_qd=target_qd[row],
+                stiffness=float(stiffness[row]),
+                damping=float(damping[row]),
+                feedforward_force=feedforward[row],
+            )
+        )
+    return tuple(specs)
+
+
 __all__ = [
     "MABDActuationSpec",
     "MABDControlEvaluation",
+    "actuation_specs_from_model",
     "assemble_control_generalized_forces",
     "evaluate_affine_pd_control",
 ]

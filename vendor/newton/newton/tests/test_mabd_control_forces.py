@@ -7,11 +7,14 @@ import unittest
 
 import numpy as np
 
+import newton
 from newton._src.solvers.mabd import (
     MABDActuationSpec,
+    actuation_specs_from_model,
     assemble_control_generalized_forces,
     evaluate_affine_pd_control,
 )
+from newton.solvers import SolverMABD
 from newton.tests.unittest_utils import get_test_devices, wp
 
 
@@ -91,6 +94,46 @@ class TestMABDControlForcesInternal(unittest.TestCase):
                 np.zeros(12),
                 MABDActuationSpec(body_id=0, stiffness=-1.0),
             )
+
+    def test_actuation_specs_from_model_reads_control_row(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        body_id = builder.add_body()
+        builder.add_custom_values(
+            **{
+                "mabd:body_index": body_id,
+                "mabd:young_modulus": 1.0,
+                "mabd:poisson_ratio": 0.25,
+                "mabd:density": 1.0,
+                "mabd:polar_mode": 0,
+            }
+        )
+        builder.add_custom_values(
+            **{
+                "mabd:control_body": 0,
+                "mabd:control_enabled": 1,
+                "mabd:control_stiffness": 0.0,
+                "mabd:control_damping": 0.0,
+                "mabd:control_target_q0": wp.vec3(1.0, 0.0, 0.0),
+                "mabd:control_target_q1": wp.vec3(0.0, 1.0, 0.0),
+                "mabd:control_target_q2": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:control_target_t": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:control_target_qd0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:control_target_qd1": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:control_target_qd2": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:control_target_td": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:control_feedforward_q0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:control_feedforward_q1": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:control_feedforward_q2": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:control_feedforward_t": wp.vec3(1.0, 2.0, 3.0),
+            }
+        )
+
+        specs = actuation_specs_from_model(builder.finalize())
+
+        self.assertEqual(len(specs), 1)
+        self.assertEqual(specs[0].body_id, 0)
+        self.assertTrue(np.allclose(specs[0].feedforward_force[9:12], [1.0, 2.0, 3.0]))
 
 
 devices = get_test_devices()

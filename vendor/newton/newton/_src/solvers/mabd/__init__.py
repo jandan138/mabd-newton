@@ -36,6 +36,7 @@ from .affine_math import (
 from .control_forces import (
     MABDActuationSpec,
     MABDControlEvaluation,
+    actuation_specs_from_model,
     assemble_control_generalized_forces,
     evaluate_affine_pd_control,
 )
@@ -124,6 +125,7 @@ __all__ = [
     "SolverMABD",
     "TopologyDualInputs",
     "TopologyKKTResult",
+    "actuation_specs_from_model",
     "affine_force_from_point_force",
     "affine_force_from_wrench",
     "affine_points",
