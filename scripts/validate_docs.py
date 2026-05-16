@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14 docs, provenance, and claims."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15 docs, provenance, and claims."""
 
 from __future__ import annotations
 
@@ -47,6 +47,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase12-single-body-report-lane.md",
     "docs/records/2026-05-17-phase13-configured-spinning-box.md",
     "docs/records/2026-05-17-phase14-experiment-runner.md",
+    "docs/records/2026-05-17-phase15-rbd-baseline-lane.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -244,6 +245,19 @@ def validate_claim_boundaries() -> None:
     for snippet in phase14_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 14 runner evidence: {snippet}")
+    if "Phase 15 verifies a Newton-only CPU development RBD implicit baseline lane" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 15 RBD baseline evidence")
+    phase15_non_claims = (
+        "Phase 15 does not verify the paper spinning-box experiment",
+        "paper-faithful affine collision",
+        "RK4 or analytic baselines",
+        "paper timing",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase15_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 15 RBD baseline evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -548,6 +562,55 @@ def validate_phase14_record() -> None:
             fail(f"Phase 14 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase15_record() -> None:
+    text = (ROOT / "docs/records/2026-05-17-phase15-rbd-baseline-lane.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit:",
+        "implementation commits:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "## Metrics And Thresholds",
+        "linear_momentum_error",
+        "angular_momentum_error",
+        "energy_drift",
+        "## Artifacts",
+        "`src/mabd_reproduction/rigid_baselines.py`",
+        "`run_spinning_box_rbd_baseline`",
+        "`--lane rbd_implicit_baseline`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 15 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 15 verifies the paper spinning-box experiment",
+        "Phase 15 verifies paper-faithful affine collision",
+        "Phase 15 verifies RK4 baselines",
+        "Phase 15 verifies analytic baselines",
+        "Phase 15 verifies paper timing",
+        "Phase 15 passes experiment.single_body.spinning_box",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 15 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -722,12 +785,13 @@ def main() -> int:
     validate_phase12_record()
     validate_phase13_record()
     validate_phase14_record()
+    validate_phase15_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15 docs/provenance validation passed")
     return 0
 
 

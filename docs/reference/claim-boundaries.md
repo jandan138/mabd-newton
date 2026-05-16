@@ -36,6 +36,9 @@
   Phase 13 record is created.
 - This repository contains Phase 14 executable config-driven single-body
   spinning-box development report runner after the Phase 14 record is created.
+- This repository contains Phase 15 Newton-only CPU development RBD implicit
+  baseline lane and CLI dispatch for the single-body spinning-box config after
+  the Phase 15 record is created.
 
 ## Intended
 
@@ -150,6 +153,15 @@
 - Phase 14 does not verify the paper spinning-box experiment, RBD baselines,
   paper timing, rendered output, paper trajectory agreement, generated report
   artifacts as committed evidence, or any passed `experiment.*` claim.
+- Phase 15 verifies a Newton-only CPU development RBD implicit baseline lane
+  for the single-body spinning-box config, including deterministic cube mass
+  and inertia from the paper values, conservation diagnostics, incomplete claim
+  report writing, and explicit CLI dispatch through
+  `--lane rbd_implicit_baseline`.
+- Phase 15 does not verify the paper spinning-box experiment, paper-faithful
+  affine collision, RK4 or analytic baselines, rendered output, paper
+  trajectory agreement, paper timing, generated report artifacts as committed
+  evidence, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
