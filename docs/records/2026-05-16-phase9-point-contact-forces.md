@@ -21,7 +21,7 @@ behavior, paper scenes, timing, or comparative baselines.
 - repo base commit: `3aaab8e`
 - plan commit: `47cd16b`
 - implementation commit: `39030ef`
-- review hardening commit: `REVIEW_HARDENING_COMMIT_PENDING`
+- review hardening commit: `1bafd8d`
 - paper source version: arXiv `2603.08079v2`
 - paper source paths:
   - `/tmp/mabd-paper/source/sections/singleabd.tex`
@@ -51,7 +51,7 @@ force-mapping behavior is encoded in:
 - base commit: `3aaab8e`
 - plan commit: `47cd16b`
 - implementation commit: `39030ef`
-- review hardening commit: `REVIEW_HARDENING_COMMIT_PENDING`
+- review hardening commit: `1bafd8d`
 
 ## Vendored Newton
 
