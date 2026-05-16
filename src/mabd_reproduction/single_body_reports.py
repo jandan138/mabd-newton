@@ -7,22 +7,26 @@ from pathlib import Path
 import numpy as np
 from newton.solvers import mabd
 
+from .experiment_configs import SpinningBoxRunConfig
 from .reporting import ClaimReport, EvidenceStatus, write_claim_report
 
 
-def _oracle_body() -> mabd.MABDCPUOracleBody:
+def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOracleBody:
+    mass_matrix = np.eye(12)
+    if config is not None:
+        mass_matrix = np.diag(config.mass_diagonal)
     return mabd.MABDCPUOracleBody(
         precompute=mabd.SingleBodyABDPrecompute(
             rest_points=np.zeros((4, 3), dtype=float),
             masses=np.ones(4, dtype=float),
-            mass_matrix=np.eye(12),
+            mass_matrix=mass_matrix,
             stiffness_matrix=np.zeros((12, 12), dtype=float),
         )
     )
 
 
-def _kinetic_energy(qd: np.ndarray) -> float:
-    return float(0.5 * qd @ qd)
+def _kinetic_energy(qd: np.ndarray, mass_matrix: np.ndarray) -> float:
+    return float(0.5 * qd @ mass_matrix @ qd)
 
 
 def write_spinning_box_development_report(
@@ -31,27 +35,34 @@ def write_spinning_box_development_report(
     source_commit: str,
     vendored_newton_commit: str,
     paper_source_version: str = "2603.08079v2",
+    config: SpinningBoxRunConfig | None = None,
 ) -> ClaimReport:
-    dt = 0.01
-    step_count = 4
-    q = mabd.pack_q(np.eye(3), np.zeros(3))
-    qd = np.linspace(-0.2, 0.25, 12)
+    dt = 0.01 if config is None else config.time_step_s
+    step_count = 4 if config is None else config.step_count
+    q = mabd.pack_q(np.eye(3), np.zeros(3)) if config is None else config.initial_q.copy()
+    qd = np.linspace(-0.2, 0.25, 12) if config is None else config.initial_qd.copy()
+    mass_matrix = np.eye(12) if config is None else np.diag(config.mass_diagonal)
     initial_momentum = qd.copy()
-    initial_energy = _kinetic_energy(qd)
-    config = mabd.MABDCPUOracleConfig(bodies=[_oracle_body()])
+    initial_energy = _kinetic_energy(qd, mass_matrix)
+    oracle_config = mabd.MABDCPUOracleConfig(bodies=[_oracle_body(config)])
     for _step in range(step_count):
-        result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=dt, config=config)
+        result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=dt, config=oracle_config)
         q = result.q[0]
         qd = result.qd[0]
-    energy_drift = abs(_kinetic_energy(qd) - initial_energy)
+    energy_drift = abs(_kinetic_energy(qd, mass_matrix) - initial_energy)
     momentum_delta = float(np.linalg.norm(qd - initial_momentum))
+    thresholds = (
+        {"energy_drift": 1.0e-12, "generalized_momentum_delta_norm": 1.0e-12}
+        if config is None
+        else config.thresholds
+    )
     report = ClaimReport(
         claim_id="experiment.single_body.spinning_box",
-        scene_id="single_body_spinning_box",
+        scene_id="single_body_spinning_box" if config is None else config.scene_id,
         asset_hashes={"primitive_cube": "not_applicable_procedural"},
         solver_mode="mabd_cpu_oracle_development",
         backend="cpu_numpy",
-        baseline_lane="mabd_newton",
+        baseline_lane="mabd_newton" if config is None else config.baseline_lane,
         expected={"paper_claim_status": "requires comparative baseline lanes before pass"},
         observed={
             "step_count": step_count,
@@ -59,10 +70,12 @@ def write_spinning_box_development_report(
             "energy_drift": energy_drift,
             "generalized_momentum_delta_norm": momentum_delta,
         },
-        threshold={"energy_drift": 1.0e-12, "generalized_momentum_delta_norm": 1.0e-12},
+        threshold=thresholds,
         unit="json_report",
-        status=EvidenceStatus.INCOMPLETE,
-        failure_reason="full paper claim still requires rbd_implicit_baseline",
+        status=EvidenceStatus.INCOMPLETE if config is None else config.report_status,
+        failure_reason="full paper claim still requires rbd_implicit_baseline"
+        if config is None
+        else config.failure_reason,
         timing_distribution={"step_count": step_count, "scope": "not_timed"},
         raw_outputs={"time_series": "not_written"},
         plot_paths={},
