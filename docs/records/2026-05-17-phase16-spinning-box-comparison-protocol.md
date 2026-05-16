@@ -36,7 +36,8 @@ remains `incomplete`.
 - plan commit: `a3a722a`
 - implementation commits: `30ede4d`, `ec2a39c`
 - docs/provenance commit: recorded by this Phase 16 docs commit
-- review hardening commit: pending independent review
+- independent review: claim/spec review no findings; code/CLI review no findings
+- review hardening commit: not required
 
 ## Vendored Newton
 
@@ -134,7 +135,15 @@ git diff --check
 Final verification result:
 
 ```text
-pending final Phase 16 verification after independent review
+ruff: All checks passed!
+docs: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16 docs/provenance validation passed
+focused public tests: Ran 51 tests, OK
+full public tests: Ran 138 tests, OK
+vendored Newton import:
+  /cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase16-spinning-box-comparison-protocol/vendor/newton/newton/__init__.py
+git diff --check: clean
+independent claim/spec review: no findings
+independent code/CLI review: no findings
 ```
 
 ## Claim Impact
