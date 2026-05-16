@@ -79,7 +79,7 @@ RBD baseline report remains `incomplete`.
   - `angular_velocity_rad_s=[0.0, 60000.0, 0.0]`
 - solver mode: `newton_semimplicit_rbd_cpu_development`
 - solver name: `newton.solvers.SolverSemiImplicit`
-- Newton step count: `400`
+- Newton step count: `4`
 - report metrics: `linear_momentum_error`, `angular_momentum_error`,
   `energy_drift`, `relative_energy_drift`, `step_count`, `time_step_s`,
   `final_position_m`, `final_rotation_xyzw`, `final_linear_velocity_m_s`,

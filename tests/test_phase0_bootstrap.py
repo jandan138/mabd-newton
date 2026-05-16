@@ -440,6 +440,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Metrics And Thresholds",
             "newton_semimplicit_rbd_cpu_development",
             "newton.solvers.SolverSemiImplicit",
+            "Newton step count: `4`",
             "linear_momentum_error",
             "angular_momentum_error",
             "relative_energy_drift",

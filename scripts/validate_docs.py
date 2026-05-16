@@ -588,6 +588,7 @@ def validate_phase15_record() -> None:
         "## Metrics And Thresholds",
         "newton_semimplicit_rbd_cpu_development",
         "newton.solvers.SolverSemiImplicit",
+        "Newton step count: `4`",
         "linear_momentum_error",
         "angular_momentum_error",
         "relative_energy_drift",
@@ -605,6 +606,7 @@ def validate_phase15_record() -> None:
 
     forbidden_snippets = (
         "Phase 15 verifies the paper spinning-box experiment",
+        "Phase 15 verifies paper-faithful implicit RBD baseline",
         "Phase 15 verifies paper-faithful affine collision",
         "Phase 15 verifies RK4 baselines",
         "Phase 15 verifies analytic baselines",
