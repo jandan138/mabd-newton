@@ -230,6 +230,52 @@ class MABDPhase2JointAndKKTTests(unittest.TestCase):
         self.assertTrue(np.allclose(J @ corrected.dq, lower_rhs, atol=1.0e-10))
         self.assertFalse(np.allclose(zero_rhs.dq, corrected.dq))
 
+    def test_joint_limit_clamps_out_of_range_dof_and_penalty_rhs(self) -> None:
+        lower = -0.25
+        upper = 0.5
+        stiffness = 40.0
+
+        low = mabd.evaluate_joint_limit(-0.4, lower, upper, stiffness)
+        inside = mabd.evaluate_joint_limit(0.1, lower, upper, stiffness)
+        high = mabd.evaluate_joint_limit(0.8, lower, upper, stiffness)
+
+        self.assertTrue(low.active)
+        self.assertAlmostEqual(low.clamped_theta, lower)
+        self.assertAlmostEqual(low.violation, -0.15)
+        self.assertAlmostEqual(low.penalty_rhs, stiffness * (-0.15))
+        self.assertFalse(inside.active)
+        self.assertAlmostEqual(inside.penalty_rhs, 0.0)
+        self.assertTrue(high.active)
+        self.assertAlmostEqual(high.clamped_theta, upper)
+        self.assertAlmostEqual(high.violation, 0.3)
+        self.assertAlmostEqual(high.penalty_rhs, stiffness * 0.3)
+
+    def test_joint_limit_penalty_rhs_adds_selected_dual_rows(self) -> None:
+        base = np.array([0.0, -0.2, 0.4])
+        evaluations = [
+            mabd.evaluate_joint_limit(0.8, -0.1, 0.5, 10.0),
+            mabd.evaluate_joint_limit(0.0, -0.1, 0.5, 10.0),
+        ]
+
+        observed = mabd.apply_joint_limit_penalty_rhs(base, row_indices=[1, 2], evaluations=evaluations)
+
+        expected = base.copy()
+        expected[1] += 3.0
+        self.assertTrue(np.allclose(observed, expected))
+        self.assertTrue(np.allclose(base, [0.0, -0.2, 0.4]))
+
+    def test_joint_limit_penalty_rhs_changes_dense_kkt_target(self) -> None:
+        H = np.eye(2)
+        J = np.array([[1.0, 0.0]])
+        f = np.zeros(2)
+        limit = mabd.evaluate_joint_limit(0.75, -0.5, 0.25, stiffness=2.0)
+        lower_rhs = mabd.apply_joint_limit_penalty_rhs(np.zeros(1), row_indices=[0], evaluations=[limit])
+
+        result = mabd.solve_dense_dual_kkt(H, J, f, lower_rhs=lower_rhs)
+
+        self.assertAlmostEqual(float(lower_rhs[0]), 1.0)
+        self.assertTrue(np.allclose(J @ result.dq, lower_rhs))
+
     def test_solver_registers_constraint_frequency_rows(self) -> None:
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)

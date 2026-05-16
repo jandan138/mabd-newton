@@ -122,6 +122,20 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("does not verify any scene dynamics", text)
         self.assertIn("external baseline run", text)
 
+    def test_phase7_joint_limit_claim_is_in_manifest_and_records(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        claims = {claim["claim_id"]: claim for claim in data["claims"]}
+        claim = claims["method.joint_limits.strain_clamp_penalty"]
+
+        self.assertEqual(claim["reproduction_status"], "passed")
+        self.assertIn("theta clamp", claim["expected_value"])
+        self.assertIn("not a generic inequality-constrained KKT solver", claim["conflict_note"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        self.assertIn("Phase 7 verifies scalar joint-limit strain clamping", text)
+        self.assertIn("generic inequality-constrained M-ABD KKT", text)
+        self.assertIn("joint-limit parameter extraction from scenes", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -151,7 +165,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3/4/5/6 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4/5/6/7 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

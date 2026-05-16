@@ -124,6 +124,13 @@ claims:
     unit: "algorithm"
     conflict_note: "not an unconfigured production step, contact path, scene, timing, or Warp kernel claim"
     reproduction_status: passed
+  - claim_id: method.joint_limits.strain_clamp_penalty
+    source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
+    source_line: "joint limit strain-limiting clamp and dual-space penalty RHS"
+    expected_value: "theta clamp plus k(theta - theta_hat) dual RHS"
+    unit: "algorithm"
+    conflict_note: "CPU oracle evidence only; not a generic inequality-constrained KKT solver"
+    reproduction_status: passed
   - claim_id: experiment.single_body.rolling_spinning
     source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
     source_line: "single-body ABD vs RBD rolling and spinning tests"

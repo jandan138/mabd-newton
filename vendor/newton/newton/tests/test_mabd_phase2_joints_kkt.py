@@ -89,6 +89,36 @@ class MABDPhase2InternalTests(unittest.TestCase):
         self.assertTrue(np.allclose(primal.dlambda, dual.dlambda, atol=1.0e-10))
         self.assertTrue(np.allclose(J @ dual.dq, lower_rhs, atol=1.0e-10))
 
+    def test_joint_limit_clamp_and_dual_rhs_oracle(self) -> None:
+        low = mabd.evaluate_joint_limit(-0.4, -0.25, 0.5, 40.0)
+        high = mabd.evaluate_joint_limit(0.8, -0.25, 0.5, 40.0)
+        inside = mabd.evaluate_joint_limit(0.1, -0.25, 0.5, 40.0)
+
+        self.assertTrue(low.active)
+        self.assertAlmostEqual(low.clamped_theta, -0.25)
+        self.assertAlmostEqual(low.penalty_rhs, -6.0)
+        self.assertTrue(high.active)
+        self.assertAlmostEqual(high.clamped_theta, 0.5)
+        self.assertAlmostEqual(high.penalty_rhs, 12.0)
+        self.assertFalse(inside.active)
+
+        base = np.zeros(2)
+        lower_rhs = mabd.apply_joint_limit_penalty_rhs(base, row_indices=[0, 1], evaluations=[low, inside])
+        self.assertTrue(np.allclose(lower_rhs, [-6.0, 0.0]))
+        self.assertTrue(np.allclose(base, np.zeros(2)))
+
+    def test_joint_limit_penalty_rhs_changes_dense_kkt_target(self) -> None:
+        H = np.eye(2)
+        J = np.array([[1.0, 0.0]])
+        f = np.zeros(2)
+        limit = mabd.evaluate_joint_limit(0.75, -0.5, 0.25, stiffness=2.0)
+        lower_rhs = mabd.apply_joint_limit_penalty_rhs(np.zeros(1), row_indices=[0], evaluations=[limit])
+
+        result = mabd.solve_dense_dual_kkt(H, J, f, lower_rhs=lower_rhs)
+
+        self.assertAlmostEqual(float(lower_rhs[0]), 1.0)
+        self.assertTrue(np.allclose(J @ result.dq, lower_rhs))
+
 
 if __name__ == "__main__":
     unittest.main()

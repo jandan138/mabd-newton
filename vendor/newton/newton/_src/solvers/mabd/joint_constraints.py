@@ -43,6 +43,18 @@ class JointEvaluation:
     gradient_mode: JointGradientMode
 
 
+@dataclass(frozen=True)
+class JointLimitEvaluation:
+    theta: float
+    lower: float
+    upper: float
+    stiffness: float
+    clamped_theta: float
+    violation: float
+    penalty_rhs: float
+    active: bool
+
+
 def _as_q(value: Any, name: str) -> np.ndarray:
     arr = np.asarray(value, dtype=float)
     if arr.shape != (12,):
@@ -258,13 +270,62 @@ def evaluate_joint(
     )
 
 
+def evaluate_joint_limit(theta: float, lower: float, upper: float, stiffness: float) -> JointLimitEvaluation:
+    theta_float = float(theta)
+    lower_float = float(lower)
+    upper_float = float(upper)
+    stiffness_float = float(stiffness)
+    if lower_float > upper_float:
+        raise ValueError("joint limit lower must be <= upper")
+    if stiffness_float < 0.0:
+        raise ValueError("joint limit stiffness must be non-negative")
+    clamped = min(max(theta_float, lower_float), upper_float)
+    active = clamped != theta_float
+    violation = theta_float - clamped
+    penalty_rhs = stiffness_float * violation if active else 0.0
+    return JointLimitEvaluation(
+        theta=theta_float,
+        lower=lower_float,
+        upper=upper_float,
+        stiffness=stiffness_float,
+        clamped_theta=clamped,
+        violation=violation,
+        penalty_rhs=penalty_rhs,
+        active=active,
+    )
+
+
+def apply_joint_limit_penalty_rhs(
+    base_lower_rhs: Any,
+    row_indices: Any,
+    evaluations: Any,
+) -> np.ndarray:
+    out = np.asarray(base_lower_rhs, dtype=float).copy()
+    if out.ndim != 1:
+        raise ValueError(f"base_lower_rhs must be one-dimensional, got {out.shape}")
+    rows = [int(row) for row in row_indices]
+    limit_evaluations = list(evaluations)
+    if len(rows) != len(limit_evaluations):
+        raise ValueError("row_indices and evaluations must have the same length")
+    for row, evaluation in zip(rows, limit_evaluations, strict=True):
+        if row < 0 or row >= out.shape[0]:
+            raise ValueError(f"joint limit row index {row} is out of range for lower_rhs size {out.shape[0]}")
+        if not isinstance(evaluation, JointLimitEvaluation):
+            raise TypeError("evaluations must contain JointLimitEvaluation values")
+        out[row] += evaluation.penalty_rhs
+    return out
+
+
 __all__ = [
     "JointEvaluation",
     "JointGradientMode",
+    "JointLimitEvaluation",
     "MABDJointSpec",
     "MABDJointType",
+    "apply_joint_limit_penalty_rhs",
     "ball_joint",
     "evaluate_joint",
+    "evaluate_joint_limit",
     "hinge_joint",
     "joint_residual",
     "prismatic_joint",

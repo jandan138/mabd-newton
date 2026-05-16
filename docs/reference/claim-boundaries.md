@@ -18,6 +18,8 @@
   single-body material oracle tests after the Phase 5 record is created.
 - This repository contains Phase 6 machine-checkable experiment and asset
   matrices after the Phase 6 record is created.
+- This repository contains Phase 7 joint-limit clamp and explicit dual RHS CPU
+  oracle tests after the Phase 7 record is created.
 
 ## Intended
 
@@ -77,6 +79,12 @@
 - Phase 6 does not verify any scene dynamics, rendered image/video result,
   contact behavior, actuation behavior, external baseline run, timing number,
   paper visual match, or comparative report.
+- Phase 7 verifies scalar joint-limit strain clamping, nearest-range
+  `theta_hat` selection, explicit `k(theta - theta_hat)` dual RHS composition,
+  and dense KKT lower-RHS effect through CPU oracle tests.
+- Phase 7 does not verify generic inequality-constrained M-ABD KKT, contact,
+  collision, production stepping, joint-limit parameter extraction from scenes,
+  actuation, paper experiments, timing, or comparative baselines.
 
 ## Forbidden Claims
 

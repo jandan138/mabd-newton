@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6 documentation, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3/4/5/6/7 documentation, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -34,6 +34,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-16-phase4-configured-cpu-step.md",
     "docs/records/2026-05-16-phase5-corotated-stiffness.md",
     "docs/records/2026-05-16-phase6-experiment-matrix.md",
+    "docs/records/2026-05-16-phase7-joint-limits.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -126,6 +127,10 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md must explicitly state Phase 6 experiment matrix evidence")
     if "does not verify any scene dynamics" not in text or "external baseline run" not in text:
         fail("claim-boundaries.md must bound Phase 6 scene/baseline evidence")
+    if "Phase 7 verifies scalar joint-limit strain clamping" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 7 joint-limit evidence")
+    if "generic inequality-constrained M-ABD KKT" not in text or "joint-limit parameter extraction from scenes" not in text:
+        fail("claim-boundaries.md must bound Phase 7 inequality and scene evidence")
 
 
 def validate_paper_claims() -> None:
@@ -176,6 +181,7 @@ def validate_paper_claims() -> None:
         "method.topology.graph_gauss_seidel",
         "method.topology.graph_classification_reconstruction",
         "method.solver.configured_cpu_step",
+        "method.joint_limits.strain_clamp_penalty",
         "experiment.ragdoll_on_net",
         "experiment.robot.franka",
         "experiment.protein_chain",
@@ -197,6 +203,8 @@ def validate_paper_claims() -> None:
         + (ROOT / "docs/records/2026-05-16-phase4-configured-cpu-step.md").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "docs/records/2026-05-16-phase5-corotated-stiffness.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-16-phase7-joint-limits.md").read_text(encoding="utf-8")
     )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
@@ -271,7 +279,7 @@ def main() -> int:
     validate_experiment_contracts()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7 docs/provenance validation passed")
     return 0
 
 
