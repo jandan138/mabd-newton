@@ -167,7 +167,13 @@ git diff --check
 Final verification result:
 
 ```text
-pending before final verification refresh
+ruff: All checks passed!
+docs: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12 docs/provenance validation passed
+focused public tests: Ran 23 tests, OK
+full public tests: Ran 99 tests, OK
+vendored Newton import:
+  /cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase12-single-body-report-lane/vendor/newton/newton/__init__.py
+git diff --check: clean
 ```
 
 ## Claim Impact
