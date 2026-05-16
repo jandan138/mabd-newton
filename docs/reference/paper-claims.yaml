@@ -1,0 +1,189 @@
+paper:
+  title: "M-ABD: Scalable, Efficient, and Robust Multi-Affine-Body Dynamics"
+  arxiv_id: "2603.08079"
+  arxiv_version: "v2"
+  siggraph_url: "https://s2026.conference-schedule.org/presentation/?id=papers_116&sess=sess102"
+  pdf_url: "https://arxiv.org/pdf/2603.08079"
+  tex_source_url: "https://arxiv.org/e-print/2603.08079"
+  pdf_sha256: "a594e79093673c60fc59ad14f9b71f29a8f7f8e7b1c3d9c73efe6f5814cc6ec0"
+  tex_source_sha256: "73ec398956c606dec2f8f40f0d38b9d5370e11b27830775e1b3765fe0efc563f"
+  local_pdf: "/tmp/mabd-paper/mabd.pdf"
+  local_tex_source: "/tmp/mabd-paper/source"
+manifest_version: 1
+status_vocabulary:
+  - intended
+  - passed
+  - failed
+  - incomplete
+  - not_verified
+  - unsupported
+  - qualitative_reconstruction
+claims:
+  - claim_id: method.single_body.affine_kinematics
+    source_path: "/tmp/mabd-paper/source/sections/singleabd.tex"
+    source_line: "ABD kinematics and affine state definition"
+    expected_value: "x_i = A xbar_i + t with q in R12"
+    unit: "equation"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: method.single_body.corotated_stiffness
+    source_path: "/tmp/mabd-paper/source/sections/singleabd.tex"
+    source_line: "rest generalized stiffness and co-rotated force assembly"
+    expected_value: "H_A_bar = M_A / h^2 + K_A_bar and volume-weighted Jbar^T f"
+    unit: "equation"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: method.single_body.no_polar_mode
+    source_path: "/tmp/mabd-paper/source/sections/singleabd.tex"
+    source_line: "polar and no-polar normalized block variants"
+    expected_value: "polar and no-polar rotation handling supported"
+    unit: "algorithm"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: method.single_body.twist_wrench_maps
+    source_path: "/tmp/mabd-paper/source/sections/singleabd.tex"
+    source_line: "G(A), E(A), and virtual-work force mapping"
+    expected_value: "G(A)E(A)=I and spatial wrench maps to affine generalized force"
+    unit: "identity"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: method.joints.ball
+    source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
+    source_line: "ball joint control point constraints"
+    expected_value: "rank 3 ball joint constraint"
+    unit: "rank"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: method.joints.hinge
+    source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
+    source_line: "hinge joint control point constraints"
+    expected_value: "rank 5 hinge joint constraint"
+    unit: "rank"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: method.joints.universal
+    source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
+    source_line: "universal joint equation"
+    expected_value: "rank 4 universal joint constraint"
+    unit: "rank"
+    conflict_note: "paper figure caption appears inconsistent with equation; reproduction follows equation"
+    reproduction_status: intended
+  - claim_id: method.joints.prismatic
+    source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
+    source_line: "prismatic joint control point constraints"
+    expected_value: "rank 5 prismatic joint constraint"
+    unit: "rank"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: method.kkt.residual_corrected_rhs
+    source_path: "/tmp/mabd-paper/source/sections/solver.tex"
+    source_line: "dual KKT lower RHS and footnote correction"
+    expected_value: "support paper-simplified zero RHS and residual-corrected -C(q_n)"
+    unit: "equation"
+    conflict_note: "paper display and correction footnote differ"
+    reproduction_status: intended
+  - claim_id: experiment.single_body.rolling_spinning
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "single-body ABD vs RBD rolling and spinning tests"
+    expected_value: "rolling/spinning timing and behavior metrics"
+    unit: "scene"
+    conflict_note: "full comparative evidence requires baseline lanes"
+    reproduction_status: intended
+  - claim_id: experiment.single_body.spinning_box
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "spinning box diagnostics"
+    expected_value: "momentum and energy diagnostics"
+    unit: "scene"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: experiment.single_body.t_handle
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "T-handle intermediate-axis instability"
+    expected_value: "flip timing and angular-velocity waveform"
+    unit: "scene"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: experiment.single_body.heavy_top
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "heavy top"
+    expected_value: "precession and nutation curve"
+    unit: "scene"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: experiment.single_body.physical_pendulum
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "physical pendulum"
+    expected_value: "angle and joint-force comparison to analytic reference"
+    unit: "scene"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: experiment.joints.heavy_end_chain
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "heavy-end chain robustness"
+    expected_value: "stable constrained chain under heavy end load"
+    unit: "scene"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: experiment.joints.ball_joint_nets
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "hanging ball-joint nets and scaling"
+    expected_value: "20x20, 50x50, and 100x100 net scaling"
+    unit: "scene"
+    conflict_note: "assets and exact parameters must be sourced or reconstructed"
+    reproduction_status: intended
+  - claim_id: experiment.joints.pulley
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "pulley and huge pulley"
+    expected_value: "pulley and huge pulley stress tests"
+    unit: "scene"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: experiment.hierarchy.trees
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "willow and pear tree tests"
+    expected_value: "hierarchical tree tests"
+    unit: "scene"
+    conflict_note: "scene asset availability must be proven by manifest"
+    reproduction_status: intended
+  - claim_id: experiment.cloak
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "net cloak scene"
+    expected_value: "net cloak dynamics"
+    unit: "scene"
+    conflict_note: "asset availability must be proven by manifest"
+    reproduction_status: intended
+  - claim_id: experiment.armadillo_coupling
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "armadillo coupling scene"
+    expected_value: "coupled armadillo simulation"
+    unit: "scene"
+    conflict_note: "asset availability must be proven by manifest"
+    reproduction_status: intended
+  - claim_id: experiment.ragdoll_on_net
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "ragdoll-on-net scene and Table 1 timing"
+    expected_value: "ragdoll-on-net dynamics and timing"
+    unit: "scene"
+    conflict_note: "Table 1 and experiment text report different ragdoll timings; separate timing claims required in Phase 4/5"
+    reproduction_status: intended
+  - claim_id: experiment.mixed_joints.falling
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "falling mixed joints"
+    expected_value: "ball, universal, hinge, and prismatic pairs"
+    unit: "scene"
+    conflict_note: "none"
+    reproduction_status: intended
+  - claim_id: experiment.robot.franka
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "Franka pick-and-place"
+    expected_value: "robot-like actuation mapping and pick-place scene"
+    unit: "scene"
+    conflict_note: "requires tested actuation mapping before verification"
+    reproduction_status: intended
+  - claim_id: experiment.protein_chain
+    source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "protein chain reconstruction"
+    expected_value: "protein chain reconstruction scene"
+    unit: "scene"
+    conflict_note: "asset/source availability must be proven by manifest"
+    reproduction_status: intended
