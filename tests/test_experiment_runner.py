@@ -35,6 +35,28 @@ class ExperimentRunnerTests(unittest.TestCase):
         path.write_text(yaml.safe_dump(matrix), encoding="utf-8")
         return path
 
+    def _write_spinning_box_lane_inputs(self, tmpdir: str) -> tuple[Path, Path]:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+        from mabd_reproduction.rigid_baselines import write_spinning_box_rbd_baseline_report
+        from mabd_reproduction.single_body_reports import write_spinning_box_development_report
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        mabd_path = Path(tmpdir) / "mabd.json"
+        rbd_path = Path(tmpdir) / "rbd.json"
+        write_spinning_box_development_report(
+            mabd_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        write_spinning_box_rbd_baseline_report(
+            rbd_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        return mabd_path, rbd_path
+
     def test_run_spinning_box_experiment_writes_override_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_experiment
 
@@ -172,6 +194,28 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.vendored_newton_commit, "test-newton")
         self.assertIn("development baseline", loaded.failure_reason)
 
+    def test_run_spinning_box_comparison_writes_explicit_output_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_comparison
+
+        with TemporaryDirectory() as tmpdir:
+            mabd_path, rbd_path = self._write_spinning_box_lane_inputs(tmpdir)
+            output_path = Path(tmpdir) / "comparison.json"
+            result = run_spinning_box_comparison(
+                config_path=CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                mabd_report_path=mabd_path,
+                rbd_report_path=rbd_path,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "spinning_box_comparison_protocol")
+        self.assertEqual(loaded.baseline_lane, "spinning_box_comparison_protocol")
+
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
         import json
         import os
@@ -288,6 +332,82 @@ class ExperimentRunnerTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("rbd_implicit_baseline requires --output", result.stderr)
+
+    def test_run_experiment_cli_writes_spinning_box_comparison_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            mabd_path, rbd_path = self._write_spinning_box_lane_inputs(tmpdir)
+            output_path = Path(tmpdir) / "comparison_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "spinning_box_comparison",
+                    "--config",
+                    str(CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--mabd-report",
+                    str(mabd_path),
+                    "--rbd-report",
+                    str(rbd_path),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["baseline_lane"], "spinning_box_comparison_protocol")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(loaded.source_commit, "cli-source")
+
+    def test_run_experiment_cli_comparison_requires_input_reports(self) -> None:
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "spinning_box_comparison",
+                    "--config",
+                    str(CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(Path(tmpdir) / "comparison.json"),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("spinning_box_comparison requires --mabd-report and --rbd-report", result.stderr)
 
     def test_run_experiment_cli_rejects_unknown_claim(self) -> None:
         import os
