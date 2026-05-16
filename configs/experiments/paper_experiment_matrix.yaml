@@ -50,7 +50,7 @@ experiments:
     reproduction_status: blocked_by_baselines
     blocking_reasons:
       - rbd_implicit_baseline_report_incomplete
-      - paper_comparison_protocol_not_recorded
+      - spinning_box_comparison_report_incomplete
     output_report: reports/experiment_matrix/single_body_spinning_box.json
   - claim_id: experiment.single_body.t_handle
     scene_id: single_body_t_handle

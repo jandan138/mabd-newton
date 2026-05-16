@@ -40,6 +40,10 @@
   free-rigid development baseline lane for the required
   `rbd_implicit_baseline` single-body spinning-box lane and CLI dispatch after
   the Phase 15 record is created.
+- This repository contains Phase 16 machine-checkable spinning-box comparison
+  protocol report generation for the existing `mabd_newton` and
+  `rbd_implicit_baseline` incomplete lanes after the Phase 16 record is
+  created.
 
 ## Intended
 
@@ -165,6 +169,15 @@
   or analytic baselines, rendered output, paper trajectory agreement, paper
   timing, generated report artifacts as committed evidence, or any passed
   `experiment.*` claim.
+- Phase 16 verifies a machine-checkable spinning-box comparison protocol that
+  consumes the existing `mabd_newton` and `rbd_implicit_baseline` lane reports,
+  validates lane identity, records lane status and missing paper comparison
+  metrics, writes an incomplete `spinning_box_comparison_protocol` report, and
+  exposes explicit runner and CLI dispatch.
+- Phase 16 does not verify the paper spinning-box experiment,
+  paper-faithful implicit RBD baseline, paper-faithful affine collision, paper
+  timing, rendered output, paper trajectory agreement, generated report
+  artifacts as committed evidence, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -173,6 +186,7 @@
 - A Newton `SolverSemiImplicit` free-rigid development lane is a paper-faithful
   implicit RBD baseline.
 - A rigid `body_q` proxy is paper-faithful affine collision.
+- A spinning-box comparison protocol report is a passed paper experiment.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

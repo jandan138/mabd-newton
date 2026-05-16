@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15 docs, provenance, and claims."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16 docs and claims."""
 
 from __future__ import annotations
 
@@ -48,6 +48,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase13-configured-spinning-box.md",
     "docs/records/2026-05-17-phase14-experiment-runner.md",
     "docs/records/2026-05-17-phase15-rbd-baseline-lane.md",
+    "docs/records/2026-05-17-phase16-spinning-box-comparison-protocol.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -259,6 +260,21 @@ def validate_claim_boundaries() -> None:
     for snippet in phase15_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 15 RBD baseline evidence: {snippet}")
+    if "Phase 16 verifies a machine-checkable spinning-box comparison protocol" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 16 comparison protocol evidence")
+    phase16_non_claims = (
+        "Phase 16 does not verify the paper spinning-box experiment",
+        "paper-faithful implicit RBD baseline",
+        "paper-faithful affine collision",
+        "paper timing",
+        "rendered output",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase16_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 16 comparison evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -620,6 +636,58 @@ def validate_phase15_record() -> None:
             fail(f"Phase 15 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase16_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase16-spinning-box-comparison-protocol.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "## Repository",
+        "plan commit: `a3a722a`",
+        "implementation commits: `30ede4d`, `ec2a39c`",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "## Metrics And Thresholds",
+        "spinning_box_comparison_protocol",
+        "spinning_box_comparison_report_incomplete",
+        "spinning_box_multilane_comparison_development",
+        "report_protocol",
+        "mabd_newton",
+        "rbd_implicit_baseline",
+        "required lane reports remain incomplete",
+        "## Artifacts",
+        "`src/mabd_reproduction/comparison_reports.py`",
+        "`run_spinning_box_comparison`",
+        "`--lane spinning_box_comparison`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 16 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 16 verifies the paper spinning-box experiment",
+        "Phase 16 passes experiment.single_body.spinning_box",
+        "Phase 16 verifies paper-faithful implicit RBD baseline",
+        "Phase 16 verifies paper timing",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 16 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -747,6 +815,10 @@ def validate_experiment_contracts() -> None:
         fail("Phase 15 spinning-box matrix must not keep stale RBD adapter-missing blocker")
     if "rbd_implicit_baseline_report_incomplete" not in spinning_box.blocking_reasons:
         fail("Phase 15 spinning-box matrix must record incomplete RBD baseline report blocker")
+    if "paper_comparison_protocol_not_recorded" in spinning_box.blocking_reasons:
+        fail("Phase 16 spinning-box matrix must not keep stale missing-comparison-protocol blocker")
+    if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 16 spinning-box matrix must record incomplete comparison report blocker")
 
 
 def validate_phase13_config(
@@ -805,12 +877,13 @@ def main() -> int:
     validate_phase13_record()
     validate_phase14_record()
     validate_phase15_record()
+    validate_phase16_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16 docs/provenance validation passed")
     return 0
 
 

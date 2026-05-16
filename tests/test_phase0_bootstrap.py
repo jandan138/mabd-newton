@@ -456,6 +456,60 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase16_spinning_box_comparison_protocol_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        normalized_text = " ".join(text.split())
+
+        self.assertIn("Phase 16 verifies a machine-checkable spinning-box comparison protocol", text)
+        self.assertIn("spinning_box_comparison_protocol", normalized_text)
+        self.assertIn("mabd_newton", normalized_text)
+        self.assertIn("rbd_implicit_baseline", normalized_text)
+        self.assertIn("Phase 16 does not verify the paper spinning-box experiment", text)
+        self.assertIn("paper-faithful implicit RBD baseline", normalized_text)
+        self.assertIn("paper timing", normalized_text)
+        self.assertIn("any passed `experiment.*` claim", normalized_text)
+
+    def test_phase16_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase16-spinning-box-comparison-protocol.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status",
+            "passed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "configs/experiments/paper_experiment_matrix.yaml",
+            "## Repository",
+            "plan commit:",
+            "implementation commits:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "## Metrics And Thresholds",
+            "spinning_box_comparison_protocol",
+            "spinning_box_comparison_report_incomplete",
+            "spinning_box_multilane_comparison_development",
+            "report_protocol",
+            "mabd_newton",
+            "rbd_implicit_baseline",
+            "required lane reports remain incomplete",
+            "## Artifacts",
+            "`src/mabd_reproduction/comparison_reports.py`",
+            "`run_spinning_box_comparison`",
+            "`--lane spinning_box_comparison`",
+            "generated reports: not committed",
+            "No `experiment.*` claim is passed in this phase.",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -486,7 +540,10 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
-            "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15 docs/provenance validation passed",
+            (
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16 "
+                "docs/provenance validation passed"
+            ),
             result.stdout,
         )
 
