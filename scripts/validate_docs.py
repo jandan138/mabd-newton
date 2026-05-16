@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13 docs, provenance, and claims."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14 docs, provenance, and claims."""
 
 from __future__ import annotations
 
@@ -46,12 +46,14 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase11-control-row-extraction.md",
     "docs/records/2026-05-17-phase12-single-body-report-lane.md",
     "docs/records/2026-05-17-phase13-configured-spinning-box.md",
+    "docs/records/2026-05-17-phase14-experiment-runner.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
     "configs/experiments/README.md",
     "configs/experiments/paper_experiment_matrix.yaml",
     "configs/experiments/single_body_spinning_box.yaml",
+    "scripts/run_experiment.py",
     "scripts/env/readiness_check.py",
     "tests/test_environment_readiness.py",
     "vendor/newton/PROVENANCE.md",
@@ -228,6 +230,19 @@ def validate_claim_boundaries() -> None:
     for snippet in phase13_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 13 configured-lane evidence: {snippet}")
+    if "Phase 14 verifies an executable config-driven experiment runner" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 14 runner evidence")
+    phase14_non_claims = (
+        "Phase 14 does not verify the paper spinning-box experiment",
+        "RBD baselines",
+        "paper timing",
+        "rendered output",
+        "paper trajectory agreement",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase14_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 14 runner evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -491,6 +506,44 @@ def validate_phase13_record() -> None:
             fail(f"Phase 13 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase14_record() -> None:
+    text = (ROOT / "docs/records/2026-05-17-phase14-experiment-runner.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit:",
+        "implementation commits:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Artifacts",
+        "`scripts/run_experiment.py`",
+        "`run_spinning_box_experiment`",
+        "No `experiment.*` claim is passed in this phase.",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 14 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 14 verifies the paper spinning-box experiment",
+        "Phase 14 verifies RBD baselines",
+        "Phase 14 verifies paper timing",
+        "Phase 14 verifies rendered output",
+        "Phase 14 passes experiment.single_body.spinning_box",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 14 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -664,12 +717,13 @@ def main() -> int:
     validate_phase11_record()
     validate_phase12_record()
     validate_phase13_record()
+    validate_phase14_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14 docs/provenance validation passed")
     return 0
 
 

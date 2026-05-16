@@ -34,6 +34,8 @@
 - This repository contains Phase 13 config-driven single-body spinning-box
   per-scene config validation and M-ABD development report generation after the
   Phase 13 record is created.
+- This repository contains Phase 14 executable config-driven single-body
+  spinning-box development report runner after the Phase 14 record is created.
 
 ## Intended
 
@@ -141,6 +143,13 @@
 - Phase 13 does not verify the paper spinning-box experiment, RBD baselines,
   paper timing, rendered output, paper trajectory agreement, or any passed
   `experiment.*` claim.
+- Phase 14 verifies an executable config-driven experiment runner for the
+  single-body spinning-box development report, including CLI output override,
+  config-output-root resolution, report summary JSON, and config/matrix
+  validation before writing.
+- Phase 14 does not verify the paper spinning-box experiment, RBD baselines,
+  paper timing, rendered output, paper trajectory agreement, generated report
+  artifacts as committed evidence, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
