@@ -303,7 +303,11 @@ def apply_joint_limit_penalty_rhs(
     out = np.asarray(base_lower_rhs, dtype=float).copy()
     if out.ndim != 1:
         raise ValueError(f"base_lower_rhs must be one-dimensional, got {out.shape}")
-    rows = [int(row) for row in row_indices]
+    rows = []
+    for row in row_indices:
+        if isinstance(row, bool) or not isinstance(row, (int, np.integer)):
+            raise TypeError("joint limit row index must be an integer")
+        rows.append(int(row))
     limit_evaluations = list(evaluations)
     if len(rows) != len(limit_evaluations):
         raise ValueError("row_indices and evaluations must have the same length")

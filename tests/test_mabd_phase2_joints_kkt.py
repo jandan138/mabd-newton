@@ -276,6 +276,12 @@ class MABDPhase2JointAndKKTTests(unittest.TestCase):
         self.assertAlmostEqual(float(lower_rhs[0]), 1.0)
         self.assertTrue(np.allclose(J @ result.dq, lower_rhs))
 
+    def test_joint_limit_penalty_rhs_rejects_non_integral_rows(self) -> None:
+        limit = mabd.evaluate_joint_limit(0.75, -0.5, 0.25, stiffness=2.0)
+
+        with self.assertRaisesRegex(TypeError, "row index"):
+            mabd.apply_joint_limit_penalty_rhs(np.zeros(2), row_indices=[1.9], evaluations=[limit])
+
     def test_solver_registers_constraint_frequency_rows(self) -> None:
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)

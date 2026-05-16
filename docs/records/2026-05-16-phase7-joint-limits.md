@@ -14,6 +14,8 @@ Phase 7 adds CPU oracle evidence for the paper's joint-limit treatment:
 - explicit dual-space penalty RHS is `k(theta - theta_hat)`
 - selected KKT lower-RHS entries receive the penalty through a copy-preserving
   composition helper
+- review hardening rejects non-integral row indices instead of silently
+  truncating them
 - dense dual KKT tests show the composed lower RHS changes the solved
   constraint target
 
@@ -58,7 +60,7 @@ Focused project/bootstrap tests:
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_phase2_joints_kkt tests.test_phase0_bootstrap
 ```
 
-Observed: `Ran 24 tests in 8.987s` and `OK`.
+Observed after review hardening: `Ran 25 tests in 9.330s` and `OK`.
 
 Full project tests:
 
@@ -66,7 +68,7 @@ Full project tests:
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
 ```
 
-Observed: `Ran 60 tests in 9.374s` and `OK`.
+Observed after review hardening: `Ran 61 tests in 9.136s` and `OK`.
 
 Focused lint:
 
