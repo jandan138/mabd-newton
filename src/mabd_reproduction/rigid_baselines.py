@@ -5,26 +5,16 @@ from __future__ import annotations
 import sys
 from contextlib import redirect_stdout
 from dataclasses import dataclass
-from math import isfinite
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 
 from .experiment_configs import SpinningBoxRunConfig
 from .reporting import ClaimReport, EvidenceStatus, write_claim_report
+from .spinning_box_physics import SpinningBoxPhysicalProperties, spinning_box_physical_properties
 
 
-@dataclass(frozen=True)
-class SpinningBoxRBDProperties:
-    cube_size_m: float
-    density_kg_m3: float
-    mass_kg: float
-    inertia_diag_kg_m2: np.ndarray
-    linear_momentum_kg_m_s: np.ndarray
-    angular_momentum_kg_m2_s: np.ndarray
-    linear_velocity_m_s: np.ndarray
-    angular_velocity_rad_s: np.ndarray
+SpinningBoxRBDProperties = SpinningBoxPhysicalProperties
 
 
 @dataclass(frozen=True)
@@ -49,52 +39,8 @@ class SpinningBoxRBDBaselineResult:
     final_angular_velocity_rad_s: np.ndarray
 
 
-def _paper_float(value: Any, name: str, *, positive: bool = False) -> float:
-    if isinstance(value, bool):
-        raise ValueError(f"{name} must be numeric")
-    if isinstance(value, int | float):
-        result = float(value)
-    elif isinstance(value, str) and value:
-        try:
-            result = float(value.split()[0])
-        except ValueError as exc:
-            raise ValueError(f"{name} must start with a numeric value") from exc
-    else:
-        raise ValueError(f"{name} must be numeric")
-    if not isfinite(result):
-        raise ValueError(f"{name} must be finite")
-    if positive and result <= 0.0:
-        raise ValueError(f"{name} must be positive")
-    return result
-
-
-def _paper_vector(value: Any, name: str) -> np.ndarray:
-    vector = np.asarray(value, dtype=float)
-    if vector.shape != (3,):
-        raise ValueError(f"{name} must contain 3 numeric values")
-    if not np.all(np.isfinite(vector)):
-        raise ValueError(f"{name} must contain 3 finite numeric values")
-    return vector
-
-
 def spinning_box_rbd_properties(config: SpinningBoxRunConfig) -> SpinningBoxRBDProperties:
-    cube_size_m = _paper_float(config.paper_values.get("cube_size_m"), "cube_size_m", positive=True)
-    density_kg_m3 = _paper_float(config.paper_values.get("density"), "density", positive=True)
-    mass_kg = density_kg_m3 * cube_size_m**3
-    inertia_scalar = (1.0 / 6.0) * mass_kg * cube_size_m**2
-    inertia_diag = np.full(3, inertia_scalar, dtype=float)
-    linear_momentum = _paper_vector(config.paper_values.get("p0"), "p0")
-    angular_momentum = _paper_vector(config.paper_values.get("L0"), "L0")
-    return SpinningBoxRBDProperties(
-        cube_size_m=cube_size_m,
-        density_kg_m3=density_kg_m3,
-        mass_kg=mass_kg,
-        inertia_diag_kg_m2=inertia_diag,
-        linear_momentum_kg_m_s=linear_momentum,
-        angular_momentum_kg_m2_s=angular_momentum,
-        linear_velocity_m_s=linear_momentum / mass_kg,
-        angular_velocity_rad_s=angular_momentum / inertia_diag,
-    )
+    return spinning_box_physical_properties(config)
 
 
 def _rigid_energy(properties: SpinningBoxRBDProperties) -> float:

@@ -27,6 +27,29 @@ class RigidBaselineTests(unittest.TestCase):
         np.testing.assert_allclose(props.linear_velocity_m_s, [100.0, 0.0, 0.0])
         np.testing.assert_allclose(props.angular_velocity_rad_s, [0.0, 60000.0, 0.0])
 
+    def test_shared_spinning_box_physics_maps_paper_momenta_to_abd_velocity(self) -> None:
+        from newton.solvers import mabd
+
+        from mabd_reproduction.spinning_box_physics import (
+            abd_generalized_velocity_from_paper_momenta,
+            spinning_box_physical_properties,
+        )
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        properties = spinning_box_physical_properties(config)
+        qd = abd_generalized_velocity_from_paper_momenta(config)
+
+        self.assertEqual(qd.shape, (12,))
+        np.testing.assert_allclose(properties.mass_kg, 1.0)
+        np.testing.assert_allclose(properties.inertia_diag_kg_m2, [1.0 / 600.0] * 3)
+        np.testing.assert_allclose(properties.linear_velocity_m_s, [100.0, 0.0, 0.0])
+        np.testing.assert_allclose(properties.angular_velocity_rad_s, [0.0, 60000.0, 0.0])
+        np.testing.assert_allclose(
+            mabd.twist_map_G(np.eye(3)) @ qd,
+            [0.0, 60000.0, 0.0, 100.0, 0.0, 0.0],
+            atol=1.0e-12,
+        )
+
     def test_run_spinning_box_rbd_baseline_is_deterministic_and_incomplete(self) -> None:
         from mabd_reproduction.rigid_baselines import run_spinning_box_rbd_baseline
 
