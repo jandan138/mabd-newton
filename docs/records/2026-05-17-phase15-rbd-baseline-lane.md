@@ -8,16 +8,19 @@ passed
 
 ## Scope
 
-Phase 15 adds a Newton-only CPU development RBD implicit baseline lane for the
-single-body spinning-box config. The lane computes deterministic rigid-cube
-mass, inertia, velocity, angular velocity, and conservation diagnostics from
-the paper values, writes a full-schema `ClaimReport`, and is dispatchable from
-`scripts/run_experiment.py` with `--lane rbd_implicit_baseline`.
+Phase 15 adds a Newton `SolverSemiImplicit` CPU free-rigid development baseline
+for the required single-body spinning-box `rbd_implicit_baseline` lane. The lane
+computes deterministic rigid-cube mass, inertia, velocity, and angular velocity
+from the paper values, executes vendored Newton steps on CPU, records final
+pose/velocity and conservation diagnostics, writes a full-schema `ClaimReport`,
+and is dispatchable from `scripts/run_experiment.py` with
+`--lane rbd_implicit_baseline`.
 
 This phase does not verify the paper spinning-box experiment, paper-faithful
-affine collision, RK4 or analytic baselines, paper timing, rendered output,
-paper trajectory agreement, committed generated report artifacts, or any passed
-`experiment.*` claim. The generated RBD baseline report remains `incomplete`.
+implicit RBD baseline, paper-faithful affine collision, RK4 or analytic
+baselines, paper timing, rendered output, paper trajectory agreement, committed
+generated report artifacts, or any passed `experiment.*` claim. The generated
+RBD baseline report remains `incomplete`.
 
 ## Config Path
 
@@ -32,7 +35,8 @@ paper trajectory agreement, committed generated report artifacts, or any passed
 - base commit: `186d001`
 - plan commit: `c5191a9`
 - implementation commits: `f075116`, `4564ea1`
-- docs/provenance commit: recorded by this Phase 15 docs commit
+- docs/provenance commit: `5fc77d9`
+- review hardening commit: `5d7bc28`
 
 ## Vendored Newton
 
@@ -55,7 +59,8 @@ paper trajectory agreement, committed generated report artifacts, or any passed
 - Python: `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python`
 - reference clone source:
   `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310`
-- Backend: CPU NumPy deterministic baseline through project code
+- Backend: CPU Newton `SolverSemiImplicit` through vendored Newton/Warp with
+  NumPy diagnostics
 - readiness check:
   `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py --output reports/generated/environment-readiness/local/readiness.json`
 - readiness status: `smoke_passed`
@@ -72,13 +77,25 @@ paper trajectory agreement, committed generated report artifacts, or any passed
   - `inertia_diag_kg_m2=[0.0016666666666666668, 0.0016666666666666668, 0.0016666666666666668]`
   - `linear_velocity_m_s=[100.0, 0.0, 0.0]`
   - `angular_velocity_rad_s=[0.0, 60000.0, 0.0]`
+- solver mode: `newton_semimplicit_rbd_cpu_development`
+- solver name: `newton.solvers.SolverSemiImplicit`
+- Newton step count: `400`
 - report metrics: `linear_momentum_error`, `angular_momentum_error`,
-  `energy_drift`, `step_count`, `time_step_s`
-- thresholds: `linear_momentum_error <= 1.0e-12`,
-  `angular_momentum_error <= 1.0e-12`, `energy_drift <= 1.0e-12`
-- observed deterministic conservation diagnostics:
-  `linear_momentum_error=0.0`, `angular_momentum_error=0.0`,
-  `energy_drift=0.0`
+  `energy_drift`, `relative_energy_drift`, `step_count`, `time_step_s`,
+  `final_position_m`, `final_rotation_xyzw`, `final_linear_velocity_m_s`,
+  `final_angular_velocity_rad_s`
+- thresholds: `linear_momentum_error <= 1.0e-6`,
+  `angular_momentum_error <= 1.0e-3`,
+  `relative_energy_drift <= 1.0e-5`
+- observed deterministic Newton diagnostics:
+  - `linear_momentum_error=2.842170943040401e-14`
+  - `angular_momentum_error=5.2083333372365814e-05`
+  - `energy_drift=3.1250008158385754`
+  - `relative_energy_drift=1.03993371575327e-06`
+  - `final_position_m=[4.0, 0.0, 0.0]`
+  - `final_rotation_xyzw=[0.0, -0.013332884758710861, 0.0, 0.9999111294746399]`
+  - `final_linear_velocity_m_s=[100.0, 0.0, 0.0]`
+  - `final_angular_velocity_rad_s=[0.0, 60000.03125, -0.0]`
 
 ## Artifacts
 
@@ -88,12 +105,15 @@ paper trajectory agreement, committed generated report artifacts, or any passed
 - committed CLI: `scripts/run_experiment.py`
 - committed tests: `tests/test_rigid_baselines.py`,
   `tests/test_experiment_runner.py`
+- committed matrix blocker:
+  `rbd_implicit_baseline_report_incomplete`
 - generated reports: not committed; tests write JSON reports to temporary
   directories only
 - `run_spinning_box_rbd_baseline` requires explicit `--output` so generated
   baseline artifacts are intentional.
 - `scripts/run_experiment.py --lane rbd_implicit_baseline` validates the config
-  and matrix before writing an incomplete report.
+  and matrix before writing an incomplete
+  `newton_semimplicit_rbd_cpu_development` report.
 - No `experiment.*` claim is passed in this phase.
 
 ## TDD Evidence
@@ -114,6 +134,23 @@ rigid baseline tests: Ran 3 tests, OK
 experiment runner tests: Ran 11 tests, OK
 ```
 
+Review hardening RED result:
+
+```text
+rigid baseline review tests: missing solver fields, bad physical values not rejected, stale solver_mode
+experiment matrix review test: stale rbd_implicit_baseline_adapter_missing blocker
+runner CLI review test: Warp stdout polluted JSON summary parsing
+```
+
+Review hardening GREEN result:
+
+```text
+rigid baseline tests: Ran 4 tests, OK
+experiment runner tests: Ran 11 tests, OK
+experiment run config tests: Ran 8 tests, OK
+docs validator: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15 docs/provenance validation passed
+```
+
 ## Final Verification
 
 Final verification commands:
@@ -121,7 +158,7 @@ Final verification commands:
 ```bash
 /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_rigid_baselines tests.test_experiment_runner tests.test_phase0_bootstrap
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_rigid_baselines tests.test_experiment_runner tests.test_experiment_run_configs tests.test_experiment_contracts tests.test_phase0_bootstrap
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
 PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
 git diff --check
@@ -132,8 +169,8 @@ Final verification result:
 ```text
 ruff: All checks passed!
 docs: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15 docs/provenance validation passed
-focused public tests: Ran 39 tests, OK
-full public tests: Ran 130 tests, OK
+focused public tests: Ran 53 tests, OK
+full public tests: Ran 131 tests, OK
 vendored Newton import:
   /cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase15-rbd-baseline-lane/vendor/newton/newton/__init__.py
 git diff --check: clean

@@ -245,10 +245,11 @@ def validate_claim_boundaries() -> None:
     for snippet in phase14_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 14 runner evidence: {snippet}")
-    if "Phase 15 verifies a Newton-only CPU development RBD implicit baseline lane" not in text:
+    if "Phase 15 verifies a Newton `SolverSemiImplicit` CPU free-rigid" not in text:
         fail("claim-boundaries.md must explicitly state Phase 15 RBD baseline evidence")
     phase15_non_claims = (
         "Phase 15 does not verify the paper spinning-box experiment",
+        "paper-faithful implicit RBD baseline",
         "paper-faithful affine collision",
         "RK4 or analytic baselines",
         "paper timing",
@@ -573,6 +574,7 @@ def validate_phase15_record() -> None:
         "## Repository",
         "plan commit:",
         "implementation commits:",
+        "review hardening commit:",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "## Paper Source",
@@ -584,9 +586,12 @@ def validate_phase15_record() -> None:
         "physics-primitive-newton-py310",
         "smoke_passed",
         "## Metrics And Thresholds",
+        "newton_semimplicit_rbd_cpu_development",
+        "newton.solvers.SolverSemiImplicit",
         "linear_momentum_error",
         "angular_momentum_error",
-        "energy_drift",
+        "relative_energy_drift",
+        "rbd_implicit_baseline_report_incomplete",
         "## Artifacts",
         "`src/mabd_reproduction/rigid_baselines.py`",
         "`run_spinning_box_rbd_baseline`",

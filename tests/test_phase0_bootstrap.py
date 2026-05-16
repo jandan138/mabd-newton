@@ -407,10 +407,11 @@ class Phase0BootstrapTests(unittest.TestCase):
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
         normalized_text = " ".join(text.split())
 
-        self.assertIn("Phase 15 verifies a Newton-only CPU development RBD implicit baseline lane", text)
+        self.assertIn("Phase 15 verifies a Newton `SolverSemiImplicit` CPU free-rigid", text)
         self.assertIn("deterministic cube mass and inertia", normalized_text)
         self.assertIn("--lane rbd_implicit_baseline", normalized_text)
         self.assertIn("Phase 15 does not verify the paper spinning-box experiment", text)
+        self.assertIn("paper-faithful implicit RBD baseline", normalized_text)
         self.assertIn("paper-faithful affine collision", normalized_text)
         self.assertIn("any passed `experiment.*` claim", normalized_text)
 
@@ -425,6 +426,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Repository",
             "plan commit:",
             "implementation commits:",
+            "review hardening commit:",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "## Paper Source",
@@ -436,9 +438,12 @@ class Phase0BootstrapTests(unittest.TestCase):
             "physics-primitive-newton-py310",
             "smoke_passed",
             "## Metrics And Thresholds",
+            "newton_semimplicit_rbd_cpu_development",
+            "newton.solvers.SolverSemiImplicit",
             "linear_momentum_error",
             "angular_momentum_error",
-            "energy_drift",
+            "relative_energy_drift",
+            "rbd_implicit_baseline_report_incomplete",
             "## Artifacts",
             "`src/mabd_reproduction/rigid_baselines.py`",
             "`run_spinning_box_rbd_baseline`",

@@ -36,8 +36,9 @@
   Phase 13 record is created.
 - This repository contains Phase 14 executable config-driven single-body
   spinning-box development report runner after the Phase 14 record is created.
-- This repository contains Phase 15 Newton-only CPU development RBD implicit
-  baseline lane and CLI dispatch for the single-body spinning-box config after
+- This repository contains Phase 15 Newton `SolverSemiImplicit` CPU
+  free-rigid development baseline lane for the required
+  `rbd_implicit_baseline` single-body spinning-box lane and CLI dispatch after
   the Phase 15 record is created.
 
 ## Intended
@@ -153,20 +154,24 @@
 - Phase 14 does not verify the paper spinning-box experiment, RBD baselines,
   paper timing, rendered output, paper trajectory agreement, generated report
   artifacts as committed evidence, or any passed `experiment.*` claim.
-- Phase 15 verifies a Newton-only CPU development RBD implicit baseline lane
-  for the single-body spinning-box config, including deterministic cube mass
-  and inertia from the paper values, conservation diagnostics, incomplete claim
-  report writing, and explicit CLI dispatch through
-  `--lane rbd_implicit_baseline`.
-- Phase 15 does not verify the paper spinning-box experiment, paper-faithful
-  affine collision, RK4 or analytic baselines, rendered output, paper
-  trajectory agreement, paper timing, generated report artifacts as committed
-  evidence, or any passed `experiment.*` claim.
+- Phase 15 verifies a Newton `SolverSemiImplicit` CPU free-rigid development
+  baseline for the required single-body spinning-box `rbd_implicit_baseline`
+  lane, including deterministic cube mass and inertia from the paper values,
+  real vendored-Newton stepping, final pose/velocity capture, conservation
+  diagnostics, incomplete claim report writing, and explicit CLI dispatch
+  through `--lane rbd_implicit_baseline`.
+- Phase 15 does not verify the paper spinning-box experiment,
+  paper-faithful implicit RBD baseline, paper-faithful affine collision, RK4
+  or analytic baselines, rendered output, paper trajectory agreement, paper
+  timing, generated report artifacts as committed evidence, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
 - Unmodified Newton already supports M-ABD.
 - Existing Newton rigid-body solvers are equivalent to the M-ABD method.
+- A Newton `SolverSemiImplicit` free-rigid development lane is a paper-faithful
+  implicit RBD baseline.
 - A rigid `body_q` proxy is paper-faithful affine collision.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
