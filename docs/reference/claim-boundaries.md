@@ -24,6 +24,8 @@
   the Phase 8 record is created.
 - This repository contains Phase 9 point-load and point-plane penalty contact
   force-mapping CPU oracle tests after the Phase 9 record is created.
+- This repository contains Phase 10 affine actuation/control force CPU oracle
+  tests and `mabd:control` storage after the Phase 10 record is created.
 
 ## Intended
 
@@ -104,6 +106,14 @@
   friction, full contact handling, general inequality constraints, production
   `SolverMABD.step()` contact input, actuation/controller behavior, paper
   scenes, timing, or comparative baselines.
+- Phase 10 verifies scene-script affine target, damping, and feedforward
+  control-force assembly into M-ABD generalized forces, summation with existing
+  external forces in the configured CPU oracle path, validation of bad control
+  specs, and Newton `mabd:control` custom storage rows.
+- Phase 10 does not verify Newton `Control` object ingestion, robot inverse
+  kinematics, Franka pick-and-place, contact-rich grasping, wind/aerodynamic
+  scene dynamics, closed-loop controllers, GPU/Warp control kernels, timing,
+  paper scenes, or comparative baselines.
 
 ## Forbidden Claims
 
@@ -111,6 +121,8 @@
 - Existing Newton rigid-body solvers are equivalent to the M-ABD method.
 - A rigid `body_q` proxy is paper-faithful affine collision.
 - The project implements generic inequality-constrained M-ABD KKT.
+- Scene-script affine control force assembly is a full robot-control or
+  closed-loop actuation reproduction.
 - Comparative baselines are reproduced before their adapters, configs, raw logs,
   and reports exist.
 - CPU timings are paper-comparable without matching benchmark protocol and

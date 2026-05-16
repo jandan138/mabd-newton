@@ -1,11 +1,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 The Newton Developers
 # SPDX-License-Identifier: Apache-2.0
 
+from . import mabd
 from .featherstone import SolverFeatherstone
 from .flags import SolverNotifyFlags
 from .implicit_mpm import SolverImplicitMPM
 from .kamino import SolverKamino
-from . import mabd
 from .mabd import SolverMABD
 from .mujoco import SolverMuJoCo
 from .semi_implicit import SolverSemiImplicit

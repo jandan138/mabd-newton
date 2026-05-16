@@ -33,6 +33,12 @@ from .affine_math import (
     volume_weighted_force,
     volume_weighted_jacobian,
 )
+from .control_forces import (
+    MABDActuationSpec,
+    MABDControlEvaluation,
+    assemble_control_generalized_forces,
+    evaluate_affine_pd_control,
+)
 from .control_points import (
     ControlTetrahedron,
     block_diag4,
@@ -103,10 +109,12 @@ __all__ = [
     "JointGradientMode",
     "JointLimitEvaluation",
     "KKTLowerRHSMode",
+    "MABDActuationSpec",
     "MABDCPUOracleBody",
     "MABDCPUOracleConfig",
     "MABDCPUOracleConstraint",
     "MABDCPUOracleStepResult",
+    "MABDControlEvaluation",
     "MABDJointSpec",
     "MABDJointType",
     "PointPlanePenaltyContact",
@@ -124,6 +132,7 @@ __all__ = [
     "apply_no_polar_rhs_rotation",
     "apply_polar_increment_rotation",
     "apply_polar_rhs_rotation",
+    "assemble_control_generalized_forces",
     "assemble_dense_dual_kkt",
     "assemble_dense_primal_kkt",
     "assemble_topology_dual_inputs",
@@ -138,6 +147,7 @@ __all__ = [
     "control_point_transform",
     "control_points_from_q",
     "element_jacobian",
+    "evaluate_affine_pd_control",
     "evaluate_joint",
     "evaluate_joint_limit",
     "evaluate_point_plane_penalty_contact",

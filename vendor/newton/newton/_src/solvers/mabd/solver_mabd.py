@@ -22,6 +22,7 @@ class SolverMABD(SolverBase):
 
     MABD_BODY_FREQUENCY = "mabd:body"
     MABD_CONSTRAINT_FREQUENCY = "mabd:constraint"
+    MABD_CONTROL_FREQUENCY = "mabd:control"
 
     def __init__(self, model: Model):
         super().__init__(model=model)
@@ -103,6 +104,7 @@ class SolverMABD(SolverBase):
     def register_custom_attributes(cls, builder: ModelBuilder) -> None:
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="body", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="constraint", namespace="mabd"))
+        builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="control", namespace="mabd"))
 
         model_attrs = (
             ModelBuilder.CustomAttribute(
@@ -276,7 +278,139 @@ class SolverMABD(SolverBase):
             ),
         )
 
-        for attr in (*model_attrs, *state_attrs, *constraint_attrs):
+        control_attrs = (
+            ModelBuilder.CustomAttribute(
+                name="control_body",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=-1,
+                namespace="mabd",
+                references=cls.MABD_BODY_FREQUENCY,
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_enabled",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_stiffness",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.float32,
+                default=0.0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_damping",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.float32,
+                default=0.0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_target_q0",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(1.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_target_q1",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 1.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_target_q2",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 1.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_target_t",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_target_qd0",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_target_qd1",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_target_qd2",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_target_td",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_feedforward_q0",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_feedforward_q1",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_feedforward_q2",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="control_feedforward_t",
+                frequency=cls.MABD_CONTROL_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+        )
+
+        for attr in (*model_attrs, *state_attrs, *constraint_attrs, *control_attrs):
             builder.add_custom_attribute(attr)
 
 

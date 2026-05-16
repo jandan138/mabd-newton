@@ -165,6 +165,39 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertAlmostEqual(float(contact.force[1]), 1.0)
         self.assertTrue(np.allclose(result.q[0], q + dt * dt * contact.generalized_force, atol=1.0e-12))
 
+    def test_dense_cpu_step_adds_actuation_forces_to_external_forces(self) -> None:
+        q = _identity_q((0.2, -0.1, 0.3))
+        qd = np.zeros(12)
+        dt = 0.1
+        external_force = np.full(12, 0.25)
+        target_q = q.copy()
+        target_q[9:12] += np.array([0.5, 0.0, -0.25])
+        feedforward = np.zeros(12)
+        feedforward[11] = -0.1
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body()],
+                external_forces=[external_force],
+                actuations=[
+                    mabd.MABDActuationSpec(
+                        body_id=0,
+                        target_q=target_q,
+                        stiffness=2.0,
+                        feedforward_force=feedforward,
+                    )
+                ],
+            ),
+        )
+
+        expected_force = external_force.copy()
+        expected_force[9] += 1.0
+        expected_force[11] += -0.5 - 0.1
+        self.assertTrue(np.allclose(result.q[0], q + dt * dt * expected_force, atol=1.0e-12))
+
     def test_dense_cpu_step_enforces_ball_joint_residual_correction(self) -> None:
         q_a = _identity_q((0.2, 0.0, 0.0))
         q_b = _identity_q()

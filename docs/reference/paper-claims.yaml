@@ -54,6 +54,13 @@ claims:
     unit: "oracle"
     conflict_note: "CPU oracle force mapping only; not collision detection, friction, broadphase, or a full contact solver"
     reproduction_status: passed
+  - claim_id: method.actuation.affine_control_forces
+    source_path: "/tmp/mabd-paper/source/sections/singleabd.tex and /tmp/mabd-paper/source/sections/experiment.tex"
+    source_line: "singleabd.tex:23-26 and experiment.tex:51,184,224"
+    expected_value: "scene-script affine target, damping, and feedforward controls assemble to ABD generalized forces"
+    unit: "oracle"
+    conflict_note: "CPU oracle force assembly only; not Newton Control object ingestion, robot IK, Franka scene, contact-rich grasping, timing, or baseline evidence"
+    reproduction_status: passed
   - claim_id: method.joints.ball
     source_path: "/tmp/mabd-paper/source/sections_a/multiabd.tex"
     source_line: "ball joint control point constraints"

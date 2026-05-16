@@ -45,9 +45,11 @@ class Phase0BootstrapTests(unittest.TestCase):
         ball = next(c for c in data["claims"] if c["claim_id"] == "method.joints.ball")
         universal = next(c for c in data["claims"] if c["claim_id"] == "method.joints.universal")
         kkt = next(c for c in data["claims"] if c["claim_id"] == "method.kkt.residual_corrected_rhs")
+        control = next(c for c in data["claims"] if c["claim_id"] == "method.actuation.affine_control_forces")
         self.assertEqual(ball["reproduction_status"], "passed")
         self.assertEqual(universal["reproduction_status"], "passed")
         self.assertEqual(kkt["reproduction_status"], "passed")
+        self.assertEqual(control["reproduction_status"], "passed")
 
     def test_claim_boundaries_refuse_method_claims_at_phase0(self) -> None:
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
@@ -190,6 +192,53 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase10_actuation_force_claim_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        claims = {claim["claim_id"]: claim for claim in data["claims"]}
+        claim = claims["method.actuation.affine_control_forces"]
+
+        self.assertEqual(claim["reproduction_status"], "passed")
+        self.assertIn("feedforward controls", claim["expected_value"])
+        self.assertIn("not Newton Control object ingestion", claim["conflict_note"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        normalized_text = " ".join(text.split())
+        self.assertIn("Phase 10 verifies scene-script affine target", text)
+        self.assertIn("mabd:control", text)
+        self.assertIn("Phase 10 does not verify Newton `Control` object ingestion", text)
+        self.assertIn("Franka pick-and-place", normalized_text)
+        self.assertIn("closed-loop controllers", normalized_text)
+
+    def test_phase10_actuation_force_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-16-phase10-actuation-forces.md").read_text()
+
+        for snippet in (
+            "## Status",
+            "passed",
+            "## Config Path",
+            "No experiment config is used in Phase 10",
+            "## Repository",
+            "plan commit: `236b9bf`",
+            "implementation commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status:",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:51",
+            "experiment.tex:184",
+            "experiment.tex:224",
+            "## Environment",
+            "mabd-newton-py310",
+            "## Metrics And Thresholds",
+            "random seed: not applicable",
+            "thresholds:",
+            "## Artifacts",
+            "method.actuation.affine_control_forces",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -219,7 +268,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2/3/4/5/6/7/8/9 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3/4/5/6/7/8/9/10 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

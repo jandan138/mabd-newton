@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 
 from .affine_math import pack_q
+from .control_forces import MABDActuationSpec, assemble_control_generalized_forces
 from .dense_kkt import solve_dense_dual_kkt
 from .joint_constraints import JointGradientMode, MABDJointSpec, evaluate_joint, joint_residual
 from .single_body import SingleBodyABDPrecompute
@@ -42,6 +43,7 @@ class MABDCPUOracleConfig:
     bodies: tuple[MABDCPUOracleBody, ...] | list[MABDCPUOracleBody]
     constraints: tuple[MABDCPUOracleConstraint, ...] | list[MABDCPUOracleConstraint] = field(default_factory=tuple)
     external_forces: tuple[np.ndarray, ...] | list[np.ndarray] | None = None
+    actuations: tuple[MABDActuationSpec, ...] | list[MABDActuationSpec] = field(default_factory=tuple)
     topology: str = "dense"
     graph_schedule: tuple[tuple[int, ...], ...] | None = None
     residual_correction: bool = True
@@ -245,7 +247,13 @@ def solve_cpu_oracle_step(
     if len(q_blocks) != len(qd_blocks):
         raise ValueError(f"q and qd must contain the same number of bodies, got {len(q_blocks)} and {len(qd_blocks)}")
     bodies = _validate_config(config, len(q_blocks))
-    external_forces = _as_external_forces(config, len(q_blocks))
+    base_external_forces = _as_external_forces(config, len(q_blocks))
+    external_forces = assemble_control_generalized_forces(
+        q_blocks,
+        qd_blocks,
+        actuations=config.actuations,
+        base_external_forces=base_external_forces,
+    )
     hessians, rhs = _step_body_systems(q_blocks, qd_blocks, dt_float, bodies, external_forces)
     if not tuple(config.constraints):
         return _unconstrained_step(q_blocks, dt_float, hessians, rhs)

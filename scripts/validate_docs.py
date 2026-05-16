@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9 documentation, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10 docs, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -37,6 +37,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-16-phase7-joint-limits.md",
     "docs/records/2026-05-16-phase8-environment-readiness.md",
     "docs/records/2026-05-16-phase9-point-contact-forces.md",
+    "docs/records/2026-05-16-phase10-actuation-forces.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -160,6 +161,23 @@ def validate_claim_boundaries() -> None:
     for snippet in phase9_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 9 contact evidence: {snippet}")
+    if "Phase 10 verifies scene-script affine target" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 10 actuation evidence")
+    phase10_non_claims = (
+        "Phase 10 does not verify Newton `Control` object ingestion",
+        "robot inverse kinematics",
+        "Franka pick-and-place",
+        "contact-rich grasping",
+        "wind/aerodynamic scene dynamics",
+        "closed-loop controllers",
+        "GPU/Warp control kernels",
+        "timing",
+        "paper scenes",
+        "comparative baselines",
+    )
+    for snippet in phase10_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 10 actuation evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -218,6 +236,63 @@ def validate_phase9_claim(claims: list[dict[str, Any]]) -> None:
         fail("Phase 9 point contact claim must retain bounded conflict note")
 
 
+def validate_phase10_record() -> None:
+    text = (ROOT / "docs/records/2026-05-16-phase10-actuation-forces.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "No experiment config is used in Phase 10",
+        "## Repository",
+        "plan commit: `236b9bf`",
+        "implementation commit:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status:",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:51",
+        "experiment.tex:184",
+        "experiment.tex:224",
+        "## Environment",
+        "mabd-newton-py310",
+        "## Metrics And Thresholds",
+        "random seed: not applicable",
+        "thresholds:",
+        "## Artifacts",
+        "method.actuation.affine_control_forces",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 10 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 10 verifies Newton `Control` object ingestion",
+        "Phase 10 verifies robot inverse kinematics",
+        "Phase 10 verifies Franka pick-and-place",
+        "Phase 10 verifies timing",
+        "Phase 10 verifies comparative baselines",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 10 record overclaims unsupported evidence: {snippet}")
+
+
+def validate_phase10_claim(claims: list[dict[str, Any]]) -> None:
+    claim = next(
+        (c for c in claims if c["claim_id"] == "method.actuation.affine_control_forces"),
+        None,
+    )
+    if claim is None:
+        fail("paper-claims.yaml missing Phase 10 actuation force claim")
+    if claim["reproduction_status"] != "passed":
+        fail("method.actuation.affine_control_forces must pass after Phase 10 evidence exists")
+    if "not Newton Control object ingestion" not in claim["conflict_note"] or "Franka" not in claim["conflict_note"]:
+        fail("Phase 10 actuation claim must retain bounded conflict note")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -259,6 +334,7 @@ def validate_paper_claims() -> None:
         "method.single_body.affine_kinematics",
         "method.single_body.corotated_stiffness",
         "method.joints.universal",
+        "method.actuation.affine_control_forces",
         "method.force_mapping.point_load_penalty_contact",
         "method.kkt.residual_corrected_rhs",
         "method.topology.chain_block_tridiagonal",
@@ -279,6 +355,7 @@ def validate_paper_claims() -> None:
     if corotated["reproduction_status"] != "passed":
         fail("method.single_body.corotated_stiffness must pass after Phase 5 K_A_bar evidence exists")
     validate_phase9_claim(claims)
+    validate_phase10_claim(claims)
 
     record_text = (
         (ROOT / "docs/records/2026-05-16-phase1-single-body-abd.md").read_text(encoding="utf-8")
@@ -294,6 +371,8 @@ def validate_paper_claims() -> None:
         + (ROOT / "docs/records/2026-05-16-phase7-joint-limits.md").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "docs/records/2026-05-16-phase9-point-contact-forces.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-16-phase10-actuation-forces.md").read_text(encoding="utf-8")
     )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
@@ -365,11 +444,12 @@ def main() -> int:
     validate_environment_contract()
     validate_claim_boundaries()
     validate_phase9_record()
+    validate_phase10_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8/9 docs/provenance validation passed")
+    print("Phase 0/1/2/3/4/5/6/7/8/9/10 docs/provenance validation passed")
     return 0
 
 
