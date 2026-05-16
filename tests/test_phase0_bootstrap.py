@@ -59,6 +59,28 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("skew-symmetrized joint-gradient", text)
         self.assertIn("performance path", text)
 
+    def test_phase3_topology_claims_are_in_manifest_and_records(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        claims = {claim["claim_id"]: claim for claim in data["claims"]}
+        for claim_id in (
+            "method.topology.chain_block_tridiagonal",
+            "method.topology.tree_traversal_dense_dual_oracle",
+            "method.topology.loop_schur_complement",
+            "method.topology.graph_gauss_seidel",
+            "method.topology.graph_classification_reconstruction",
+        ):
+            self.assertIn(claim_id, claims)
+            self.assertEqual(claims[claim_id]["reproduction_status"], "passed")
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        self.assertIn("Phase 3 verifies chain block-tridiagonal", text)
+        self.assertIn("tree parent/postorder", text)
+        self.assertIn("traversal metadata", text)
+        self.assertIn("paper tree elimination", text)
+        self.assertIn("loop Schur complement", text)
+        self.assertIn("graph Gauss-Seidel", text)
+        self.assertIn("Phase 3 does not verify `SolverMABD.step()`", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -88,7 +110,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             stderr=subprocess.PIPE,
         )
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
-        self.assertIn("Phase 0/1/2 docs/provenance validation passed", result.stdout)
+        self.assertIn("Phase 0/1/2/3 docs/provenance validation passed", result.stdout)
 
 
 if __name__ == "__main__":

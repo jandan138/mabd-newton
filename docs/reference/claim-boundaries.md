@@ -10,6 +10,8 @@
   `newton.solvers.SolverMABD` shell after the Phase 1 record is created.
 - This repository contains Phase 2 control-point joint and dense KKT CPU oracle
   tests after the Phase 2 record is created.
+- This repository contains Phase 3 topology solver CPU oracle tests after the
+  Phase 3 record is created.
 
 ## Intended
 
@@ -38,6 +40,14 @@
   solvers, contact, joint limits, actuation, paper experiments, timing,
   comparative baselines, or the lightweight skew-symmetrized joint-gradient
   performance path.
+- Phase 3 verifies chain block-tridiagonal dual solve, tree parent/postorder
+  traversal metadata with dense-dual equivalence, loop Schur complement,
+  inferred explicit-schedule graph Gauss-Seidel reconstruction, deterministic
+  graph classification, and Newton custom-constraint graph reconstruction
+  through CPU oracle tests against dense dual solves.
+- Phase 3 does not verify `SolverMABD.step()`, paper ABD-ABA performance,
+  paper tree elimination, paper graph Gauss-Seidel schedule identity, contact,
+  joint limits, actuation, paper experiments, timing, or comparative baselines.
 
 ## Forbidden Claims
 

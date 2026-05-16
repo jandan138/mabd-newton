@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2 documentation, provenance, and claim manifests."""
+"""Validate Phase 0/1/2/3 documentation, provenance, and claim manifests."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ REQUIRED_PATHS = (
     "docs/records/README.md",
     "docs/records/2026-05-16-phase1-single-body-abd.md",
     "docs/records/2026-05-16-phase2-joints-kkt.md",
+    "docs/records/2026-05-16-phase3-topology-solvers.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "configs/experiments/README.md",
@@ -89,6 +90,16 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md must explicitly state Phase 2 joint/KKT evidence")
     if "skew-symmetrized joint-gradient" not in text or "performance path" not in text:
         fail("claim-boundaries.md must bound Phase 2 gradient performance evidence")
+    if "Phase 3 verifies chain block-tridiagonal" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 3 topology evidence")
+    if (
+        "tree parent/postorder" not in text
+        or "traversal metadata" not in text
+        or "paper tree elimination" not in text
+    ):
+        fail("claim-boundaries.md must bound Phase 3 tree topology evidence")
+    if "Phase 3 does not verify `SolverMABD.step()`" not in text:
+        fail("claim-boundaries.md must bound Phase 3 step evidence")
 
 
 def validate_paper_claims() -> None:
@@ -132,6 +143,11 @@ def validate_paper_claims() -> None:
         "method.single_body.affine_kinematics",
         "method.joints.universal",
         "method.kkt.residual_corrected_rhs",
+        "method.topology.chain_block_tridiagonal",
+        "method.topology.tree_traversal_dense_dual_oracle",
+        "method.topology.loop_schur_complement",
+        "method.topology.graph_gauss_seidel",
+        "method.topology.graph_classification_reconstruction",
         "experiment.ragdoll_on_net",
         "experiment.robot.franka",
         "experiment.protein_chain",
@@ -147,6 +163,8 @@ def validate_paper_claims() -> None:
         (ROOT / "docs/records/2026-05-16-phase1-single-body-abd.md").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "docs/records/2026-05-16-phase2-joints-kkt.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-16-phase3-topology-solvers.md").read_text(encoding="utf-8")
     )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
@@ -193,7 +211,7 @@ def main() -> int:
     validate_paper_claims()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2 docs/provenance validation passed")
+    print("Phase 0/1/2/3 docs/provenance validation passed")
     return 0
 
 

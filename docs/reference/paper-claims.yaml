@@ -82,6 +82,41 @@ claims:
     unit: "equation"
     conflict_note: "paper display and correction footnote differ"
     reproduction_status: passed
+  - claim_id: method.topology.chain_block_tridiagonal
+    source_path: "/tmp/mabd-paper/source/sections/solver.tex"
+    source_line: "subsec:joint_chain, eq:chain-Schur-blocks, eq:chain-btd"
+    expected_value: "chain dual block-tridiagonal solve matches dense dual oracle"
+    unit: "algorithm"
+    conflict_note: "unit evidence verifies algebraic equivalence, not paper timing"
+    reproduction_status: passed
+  - claim_id: method.topology.tree_traversal_dense_dual_oracle
+    source_path: "/tmp/mabd-paper/source/sections/solver.tex"
+    source_line: "subsec:tree and alg:aba traversal structure"
+    expected_value: "tree parent/postorder traversal metadata plus dense-dual-equivalent oracle solve"
+    unit: "algorithm"
+    conflict_note: "Phase 3 does not implement or claim the paper ABD-ABA tree elimination path"
+    reproduction_status: passed
+  - claim_id: method.topology.loop_schur_complement
+    source_path: "/tmp/mabd-paper/source/sections/solver.tex"
+    source_line: "Case III Joint loop and eq:loop"
+    expected_value: "declared loop-breaker Schur complement solve matches dense dual oracle"
+    unit: "algorithm"
+    conflict_note: "Schur RHS/back-substitution are inferred from displayed partition"
+    reproduction_status: passed
+  - claim_id: method.topology.graph_gauss_seidel
+    source_path: "/tmp/mabd-paper/source/sections/solver.tex"
+    source_line: "Case IV Joint graph"
+    expected_value: "explicit-schedule block Gauss-Seidel converges to dense dual oracle on controlled graph"
+    unit: "algorithm"
+    conflict_note: "paper graph schedule is underspecified; this is an inferred reconstruction"
+    reproduction_status: passed
+  - claim_id: method.topology.graph_classification_reconstruction
+    source_path: "/tmp/mabd-paper/source/sections/solver.tex"
+    source_line: "dual matrix sparsity and topology cases"
+    expected_value: "chain, tree, single-loop, and graph classification plus Newton custom graph reconstruction"
+    unit: "algorithm"
+    conflict_note: "classification supports solver routing; it is not scene evidence"
+    reproduction_status: passed
   - claim_id: experiment.single_body.rolling_spinning
     source_path: "/tmp/mabd-paper/source/sections/experiment.tex"
     source_line: "single-body ABD vs RBD rolling and spinning tests"
