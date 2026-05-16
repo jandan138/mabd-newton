@@ -90,7 +90,7 @@ Observed: exit 0 with no output.
 - branch: `phase6-experiment-matrix`
 - base commit: `a5d6546`
 - plan commit: `fc38a5a`
-- implementation commit: `IMPLEMENTATION_COMMIT_PENDING`
+- implementation commit: `fdb9095`
 
 ## Vendored Newton
 
