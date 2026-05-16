@@ -727,6 +727,7 @@ def validate_phase17_record() -> None:
         "## Repository",
         "plan commit: `5cc171a`",
         "implementation commits: `ebf7d86`, `da56334`, `ff24a68`",
+        "docs/provenance commit: `d25e3bd3b7b60655285d3d077e600c438737cd48`",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "## Paper Source",

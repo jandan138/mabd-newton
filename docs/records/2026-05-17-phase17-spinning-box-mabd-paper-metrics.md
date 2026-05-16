@@ -34,9 +34,12 @@ remain `incomplete`.
 - base commit: `12be437`
 - plan commit: `5cc171a`
 - implementation commits: `ebf7d86`, `da56334`, `ff24a68`
-- docs/provenance commit: recorded by this Phase 17 docs commit
-- independent review: pending final review checkpoint
-- review hardening commit: not required yet
+- docs/provenance commit: `d25e3bd3b7b60655285d3d077e600c438737cd48`
+- independent review: claim/spec review found missing exact
+  docs/provenance commit and no overclaims; code/physics review found no
+  findings.
+- review hardening commit: records the exact Phase 17 docs/provenance commit
+  required by the claim/spec review.
 
 ## Vendored Newton
 

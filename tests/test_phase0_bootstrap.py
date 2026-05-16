@@ -535,6 +535,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Repository",
             "plan commit:",
             "implementation commits:",
+            "docs/provenance commit: `d25e3bd3b7b60655285d3d077e600c438737cd48`",
             "## Paper Source",
             "experiment.tex:40-55",
             "## Environment",
