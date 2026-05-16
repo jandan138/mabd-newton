@@ -59,8 +59,8 @@ RBD baseline report remains `incomplete`.
 - Python: `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python`
 - reference clone source:
   `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310`
-- Backend: CPU Newton `SolverSemiImplicit` through vendored Newton/Warp with
-  NumPy diagnostics
+- Backend: `cpu_newton_warp`, using CPU Newton `SolverSemiImplicit` through
+  vendored Newton/Warp with NumPy diagnostics
 - readiness check:
   `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py --output reports/generated/environment-readiness/local/readiness.json`
 - readiness status: `smoke_passed`
@@ -86,6 +86,7 @@ RBD baseline report remains `incomplete`.
   `final_angular_velocity_rad_s`
 - thresholds: `linear_momentum_error <= 1.0e-6`,
   `angular_momentum_error <= 1.0e-3`,
+  `energy_drift <= 30.050000000000004`,
   `relative_energy_drift <= 1.0e-5`
 - observed deterministic Newton diagnostics:
   - `linear_momentum_error=2.842170943040401e-14`

@@ -75,6 +75,7 @@ class RigidBaselineTests(unittest.TestCase):
         self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
         self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
         self.assertEqual(loaded.solver_mode, "newton_semimplicit_rbd_cpu_development")
+        self.assertEqual(loaded.backend, "cpu_newton_warp")
         self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
         self.assertIn("development baseline", loaded.failure_reason)
         self.assertEqual(loaded.observed["solver_name"], "newton.solvers.SolverSemiImplicit")
@@ -87,6 +88,12 @@ class RigidBaselineTests(unittest.TestCase):
         self.assertIn("angular_momentum_error", loaded.observed)
         self.assertIn("energy_drift", loaded.observed)
         self.assertIn("relative_energy_drift", loaded.observed)
+        self.assertIn("energy_drift", loaded.threshold)
+        self.assertLessEqual(loaded.observed["energy_drift"], loaded.threshold["energy_drift"])
+        self.assertAlmostEqual(
+            loaded.threshold["energy_drift"],
+            loaded.observed["initial_energy"] * loaded.threshold["relative_energy_drift"],
+        )
 
 
 if __name__ == "__main__":

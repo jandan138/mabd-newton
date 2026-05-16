@@ -189,12 +189,13 @@ def write_spinning_box_rbd_baseline_report(
     paper_source_version: str = "2603.08079v2",
 ) -> ClaimReport:
     result = run_spinning_box_rbd_baseline(config)
+    relative_energy_threshold = 1.0e-5
     report = ClaimReport(
         claim_id=config.claim_id,
         scene_id=config.scene_id,
         asset_hashes={"primitive_cube": "not_applicable_procedural"},
         solver_mode="newton_semimplicit_rbd_cpu_development",
-        backend="cpu_numpy",
+        backend="cpu_newton_warp",
         baseline_lane=result.baseline_lane,
         expected={
             "paper_claim_status": "requires paper-faithful RBD comparison thresholds before pass",
@@ -224,7 +225,8 @@ def write_spinning_box_rbd_baseline_report(
         threshold={
             "linear_momentum_error": 1.0e-6,
             "angular_momentum_error": 1.0e-3,
-            "relative_energy_drift": 1.0e-5,
+            "energy_drift": result.initial_energy * relative_energy_threshold,
+            "relative_energy_drift": relative_energy_threshold,
         },
         unit="json_report",
         status=result.status,
