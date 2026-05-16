@@ -23,6 +23,7 @@ baselines.
 - repo base commit: `042d451`
 - plan commit: `236b9bf`
 - implementation commit: `e87bb72`
+- review hardening commit: `b0a38b6`
 - paper source version: arXiv `2603.08079v2`
 - paper source paths:
   - `/tmp/mabd-paper/source/sections/singleabd.tex`
@@ -53,6 +54,7 @@ is encoded in:
 - base commit: `042d451`
 - plan commit: `236b9bf`
 - implementation commit: `e87bb72`
+- review hardening commit: `b0a38b6`
 
 ## Vendored Newton
 
@@ -184,6 +186,8 @@ public focused Phase 4/10 tests: Ran 14 tests, OK
   oracle external-force RHS path as other generalized forces.
 - `SolverMABD.register_custom_attributes(...)` registers `mabd:control`
   custom-frequency rows and target/damping/feedforward control attributes.
+- `SolverMABD.step(...)` still rejects non-`None` Newton `Control` input; Phase
+  10 actuations are routed only through `MABDCPUOracleConfig.actuations`.
 
 ## Final Verification
 
@@ -204,9 +208,9 @@ Final verification result:
 ```text
 ruff: All checks passed!
 docs: Phase 0/1/2/3/4/5/6/7/8/9/10 docs/provenance validation passed
-focused public tests: Ran 29 tests, OK
+focused public tests: Ran 30 tests, OK
 vendored internal tests: Ran 3 tests, OK
-full public tests: Ran 86 tests, OK
+full public tests: Ran 87 tests, OK
 vendored Newton import: vendor/newton/newton/__init__.py
 git diff --check: clean
 ```
