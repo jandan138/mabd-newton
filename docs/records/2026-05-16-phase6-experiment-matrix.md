@@ -93,6 +93,7 @@ Observed: exit 0 with no output.
 - base commit: `a5d6546`
 - plan commit: `fc38a5a`
 - implementation commit: `fdb9095`
+- review hardening commit: `e754917`
 
 ## Vendored Newton
 
