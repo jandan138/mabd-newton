@@ -1,0 +1,41 @@
+---
+import LearnLayout from "../../layouts/LearnLayout.astro";
+import {
+  availableLessons,
+  lessonModulePath,
+  lessonModules,
+  type LessonModule,
+} from "../../lib/lessonModules";
+
+export async function getStaticPaths() {
+  return availableLessons.map((lesson) => ({
+    params: { slug: lesson.slug },
+    props: { lesson },
+  }));
+}
+
+const { lesson } = Astro.props;
+const modulePath = lessonModulePath(lesson.slug);
+const moduleLoader = lessonModules[modulePath];
+const loadedModule = await moduleLoader() as LessonModule;
+const Content = loadedModule.default;
+const frontmatter = loadedModule.frontmatter;
+const repoEvidence = frontmatter.repoEvidence ?? [];
+---
+
+<LearnLayout
+  title={frontmatter.title}
+  description={frontmatter.description}
+  currentSlug={lesson.slug}
+  lessons={availableLessons}
+>
+  <section class="repo-evidence-card">
+    <p class="repo-evidence-card__status">{frontmatter.claimStatus}</p>
+    <h2>{frontmatter.module}</h2>
+    <p>{frontmatter.description}</p>
+    {repoEvidence.length > 0 && (
+      <p>Repository evidence paths: {repoEvidence.map((path) => <code>{path}</code>)}</p>
+    )}
+  </section>
+  <Content />
+</LearnLayout>

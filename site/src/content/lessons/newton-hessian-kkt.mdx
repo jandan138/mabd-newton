@@ -1,0 +1,90 @@
+---
+title: "Newton、Hessian 与 KKT"
+description: "从残差、Jacobian 和 Hessian 走到带约束动力学中的 KKT 块系统。"
+module: "Numerics"
+order: 9
+status: "complete"
+claimStatus: "conceptual"
+repoEvidence: []
+---
+
+import ConceptCard from "../../components/ConceptCard.astro";
+import ProblemCard from "../../components/ProblemCard.astro";
+import StepFlow from "../../components/StepFlow.astro";
+import CompareGrid from "../../components/CompareGrid.astro";
+import PseudoCode from "../../components/PseudoCode.astro";
+import PitfallCard from "../../components/PitfallCard.astro";
+import RememberBox from "../../components/RememberBox.astro";
+import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+
+<ProblemCard title="它解决的问题">
+隐式积分和约束通常给出非线性方程。Newton 方法负责反复线性化并修正未知量；KKT 系统负责把运动方程和约束方程放进同一个线性系统里求。
+</ProblemCard>
+
+## 残差就是“还差多少”
+
+如果目标是找到 `x` 使 `r(x) = 0`，那么 `r` 就是残差。Newton 方法在当前猜测 `x_k` 附近用 Jacobian `J = partial r / partial x` 做线性近似：`r(x_k + dx) approx r(x_k) + J dx`。令近似残差为零，就得到修正方程 `J dx = -r`。
+
+<ConceptCard title="Newton 像在山坡上校准地图">
+你站在弯曲山坡上，想找海拔为零的点。Newton 不知道整座山的形状，只看脚下坡度，画一张局部直线地图，然后走一步。走完再重新量坡度，直到高度残差足够小。
+</ConceptCard>
+
+<StepFlow title="Newton 迭代">
+  <li>给未知量一个初始猜测。</li>
+  <li>计算残差 `r`，判断还差多少。</li>
+  <li>计算 Jacobian 或由能量二阶导得到 Hessian。</li>
+  <li>解线性系统得到增量 `dx`，更新未知量。</li>
+  <li>重复直到残差或增量足够小。</li>
+</StepFlow>
+
+<PseudoCode title="Newton 残差求解">
+{`x = initial_guess
+for iter in range(max_iters):
+    r = residual(x)
+    if norm(r) < tolerance:
+        break
+    J = jacobian(residual, x)
+    dx = solve(J, -r)
+    x = x + dx`}
+</PseudoCode>
+
+## Hessian 与约束
+
+当方程来自能量最小化时，一阶导数是梯度，二阶导数是 Hessian。Hessian 可以理解为局部曲率，也常对应刚度矩阵：曲率越大，系统越抗拒某个方向的变化。
+
+约束会额外要求 `C(q) = 0`，例如两个关节点必须重合。拉格朗日乘子 `lambda` 可以看成约束力的强度：它不直接描述位置，而描述为了满足约束需要施加多大的约束反力。
+
+<ConceptCard title="KKT 是同一张谈判桌">
+KKT 系统像把“物体想怎么动”和“约束不允许怎么动”放到同一张谈判桌。左上角的块描述运动或刚度，右上和左下的约束 Jacobian 描述规则，`lambda` 则是规则给出的约束力筹码。
+</ConceptCard>
+
+<PseudoCode title="典型 KKT 块结构">
+{`# Unknowns: motion increment dq and Lagrange multipliers lambda
+# H: Hessian or effective system matrix
+# G: constraint Jacobian
+# g: motion residual
+# c: constraint residual
+
+[ H   G.T ] [ dq     ] = [ -g ]
+[ G    0  ] [ lambda ]   [ -c ]`}
+</PseudoCode>
+
+<CompareGrid title="三个矩阵角色">
+  <article><h4>Jacobian</h4><p>一阶变化率：输入变一点，残差或约束怎么变。</p></article>
+  <article><h4>Hessian</h4><p>二阶曲率：能量局部像多硬的碗。</p></article>
+  <article><h4>KKT 矩阵</h4><p>把运动未知量和约束乘子合并求解。</p></article>
+</CompareGrid>
+
+<PitfallCard title="KKT 的 lambda 不是随手添加的修正量">
+`lambda` 是和约束方程一起求出的对偶变量。它的符号、单位和物理解释依赖约束写法；只看数值大小而不看约束 Jacobian，容易误读约束力。
+</PitfallCard>
+
+<RepoEvidenceCard title="本页解释数值求解基础" status="本课为 conceptual" />
+
+<RememberBox title="核心记忆">
+  <ul>
+    <li>残差表示方程还没满足多少。</li>
+    <li>Newton 用局部线性系统反复修正未知量。</li>
+    <li>KKT 把运动方程、约束方程和约束力放进同一个块系统。</li>
+  </ul>
+</RememberBox>

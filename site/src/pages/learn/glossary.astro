@@ -1,0 +1,33 @@
+---
+import LearnLayout from "../../layouts/LearnLayout.astro";
+import { glossary } from "../../data/glossary";
+import { availableLessons } from "../../lib/lessonModules";
+
+const terms = Object.entries(glossary).sort(([left], [right]) => left.localeCompare(right));
+const navLessons = availableLessons;
+---
+
+<LearnLayout
+  title="术语表"
+  description="用工程读者能快速定位的方式解释 ABD/M-ABD 学习路径中的核心术语。"
+  lessons={navLessons}
+>
+  <section class="problem-card">
+    <h2>怎么使用</h2>
+    <p>
+      先把术语当作读论文和读仓库记录时的索引：看到公式、组件或记录名称时，回到这里确认它描述的是数学对象、物理概念、数值方法还是证据来源。
+    </p>
+  </section>
+
+  <section>
+    <h2>核心术语</h2>
+    <div class="compare-grid__items">
+      {terms.map(([term, definition]) => (
+        <article>
+          <h3>{term}</h3>
+          <p>{definition}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</LearnLayout>

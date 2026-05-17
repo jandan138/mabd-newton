@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+---
+
+<section class="step-flow">
+  {title && <h3>{title}</h3>}
+  <ol class="step-flow__list">
+    <slot />
+  </ol>
+</section>

@@ -1,0 +1,83 @@
+---
+title: "隐式时间积分"
+description: "用硬弹簧类比比较显式欧拉和隐式欧拉，理解为什么大步长需要解方程。"
+module: "Numerics"
+order: 8
+status: "complete"
+claimStatus: "conceptual"
+repoEvidence: []
+---
+
+import ConceptCard from "../../components/ConceptCard.astro";
+import ProblemCard from "../../components/ProblemCard.astro";
+import StepFlow from "../../components/StepFlow.astro";
+import CompareGrid from "../../components/CompareGrid.astro";
+import PseudoCode from "../../components/PseudoCode.astro";
+import PitfallCard from "../../components/PitfallCard.astro";
+import RememberBox from "../../components/RememberBox.astro";
+import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+
+<ProblemCard title="它解决的问题">
+动力学方程告诉我们加速度来自力，但程序每一帧只能前进一步。时间积分就是把连续运动变成离散更新；隐式积分的重点是让硬系统在较大步长下更稳。
+</ProblemCard>
+
+## 硬弹簧为什么麻烦
+
+想象一个小球被很硬的弹簧拉住。显式欧拉像“先按当前弹簧力冲出去，再下帧再看情况”。如果步长太大，小球可能直接越过平衡点很远，下一帧又被更大的力拉回，数值上会爆振。
+
+<ConceptCard title="显式看现在，隐式看将来">
+显式欧拉用当前状态 `q_n`、`v_n` 计算力；隐式欧拉要求下一时刻 `q_{n+1}`、`v_{n+1}` 自己满足方程。它像开车过弯：显式只看车头现在朝哪，隐式会问“如果我一步开到那里，轮胎力和速度是否一致”。
+</ConceptCard>
+
+<ConceptCard title="运动方程最小底座">
+很多模拟方程都可以先压成一句话：`M qdd = tau_external + tau_material + tau_constraint`。`M` 是广义质量矩阵，描述每个 `q` 分量加速起来有多“重”；`tau` 是已经映射到 `q` 空间的广义力；材料力常可理解为能量对 `q` 的负梯度，推动形变回到低能量状态。隐式残差就是把这条连续方程离散后，检查下一帧状态是否同时满足惯性和力平衡。
+</ConceptCard>
+
+<CompareGrid title="显式与隐式">
+  <article><h4>显式 Euler</h4><p>便宜，直接更新；对硬弹簧和大步长敏感。</p></article>
+  <article><h4>隐式 Euler</h4><p>每步要求解方程；通常更适合刚度高的系统。</p></article>
+  <article><h4>工程取舍</h4><p>显式像一次估计，隐式像一次带校验的计划。</p></article>
+</CompareGrid>
+
+<PseudoCode title="显式欧拉更新">
+{`# known: q, v at time n
+f = force(q, v)
+a = inv(M) @ f
+q_next = q + h * v
+v_next = v + h * a`}
+</PseudoCode>
+
+<PseudoCode title="隐式欧拉残差求解">
+{`# unknown: q_next, v_next
+def residual(q_next, v_next):
+    r_v = M @ (v_next - v) - h * force(q_next, v_next)
+    r_q = q_next - q - h * v_next
+    return concat(r_v, r_q)
+
+q_next, v_next = solve_equations(residual, initial_guess=(q, v))`}
+</PseudoCode>
+
+## 为什么要解方程
+
+隐式公式右边含有未知的下一时刻状态，所以不能直接代数更新。程序需要找一组 `q_next, v_next`，让残差接近零。步长越大，当前状态对下一状态的预测越不可靠，越需要这种“先猜，再检查方程，再修正”的过程。
+
+<StepFlow title="一帧隐式步长的心智模型">
+  <li>从当前状态出发，给下一状态一个初始猜测。</li>
+  <li>把猜测放入力模型和积分公式，计算残差。</li>
+  <li>用线性化或 Newton 方法修正猜测。</li>
+  <li>残差足够小时，接受这个下一状态。</li>
+</StepFlow>
+
+<PitfallCard title="隐式不是自动正确">
+隐式积分改善的是数值稳定性，不等于物理模型、碰撞、约束和求解精度都正确。残差、收敛阈值、线性化和步长选择仍然需要证据支持。
+</PitfallCard>
+
+<RepoEvidenceCard title="本页解释时间积分基础" status="本课为 conceptual" />
+
+<RememberBox title="核心记忆">
+  <ul>
+    <li>显式欧拉用当前力直接前进。</li>
+    <li>隐式欧拉要求下一状态满足方程，因此每步要解残差。</li>
+    <li>硬弹簧和大步长常常把“直接估计”变成“求解问题”。</li>
+  </ul>
+</RememberBox>

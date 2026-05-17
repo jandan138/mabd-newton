@@ -1,0 +1,66 @@
+---
+title: "为什么需要仿射体"
+description: "用粒子、刚体、FEM、ABD 和 M-ABD 的对比理解仿射体的建模位置。"
+module: "Orientation"
+order: 2
+status: "complete"
+claimStatus: "conceptual"
+repoEvidence: []
+---
+
+import ConceptCard from "../../components/ConceptCard.astro";
+import ProblemCard from "../../components/ProblemCard.astro";
+import StepFlow from "../../components/StepFlow.astro";
+import CompareGrid from "../../components/CompareGrid.astro";
+import PseudoCode from "../../components/PseudoCode.astro";
+import PitfallCard from "../../components/PitfallCard.astro";
+import RememberBox from "../../components/RememberBox.astro";
+import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+
+<ProblemCard title="它解决的问题">
+很多物体既不像单个粒子那样简单，也不总是完全刚硬；但把它们切成大量 FEM 单元又可能太重。仿射体提供一个中间表示：一个物体用少量自由度表达整体平移、旋转、拉伸和剪切。
+</ProblemCard>
+
+## 从一个立方体开始
+
+想象你手里拿着一个软橡胶立方体。它可以被拿起来、转动，也可以被轻轻拉长或推成斜的平行六面体。不同模拟方法对这个立方体的“可变形程度”和“计算成本”有不同选择。
+
+<CompareGrid title="常见建模方式对比">
+  <article><h4>粒子</h4><p>只跟踪点的位置和速度。适合沙粒、喷雾或质点系统，但没有天然的形状。</p></article>
+  <article><h4>RBD</h4><p>刚体立方体可以移动和旋转，不能拉伸或剪切。它像木块：形状被锁死。</p></article>
+  <article><h4>FEM</h4><p>立方体被切成许多小四面体。表达细节更强，但状态更多、求解更重。</p></article>
+  <article><h4>ABD</h4><p>立方体仍是一个对象，但用一个 3x3 矩阵表达旋转、拉伸和剪切。</p></article>
+  <article><h4>M-ABD</h4><p>多个仿射体通过约束连接，形成链、树、环或更一般的拓扑。</p></article>
+</CompareGrid>
+
+<ConceptCard title="仿射体像一个可变形印章">
+刚体像一枚硬印章：你可以移动和旋转它，印出来的图案大小和角度只随整体姿态变化。仿射体像一枚软印章：除了移动和旋转，还能被整体压扁、拉长或斜着推。它不描述每个局部皱褶，但能用少量数字表达重要的大尺度形变。
+</ConceptCard>
+
+<PseudoCode title="仿射体如何映射点">
+{`x_world = A @ x_rest + t`}
+</PseudoCode>
+
+这里的 `x_rest` 是物体自己坐标系中的点，`A` 是 3x3 线性变换，`t` 是平移。只要给每个静止点套同一个 `A` 和 `t`，整个物体就被一起移动和变形。
+
+<StepFlow title="从简单到复杂">
+  <li><strong>粒子：</strong>一个点，状态很少，但没有体积形状。</li>
+  <li><strong>刚体：</strong>一个形状，只有平移和旋转，适合硬物体。</li>
+  <li><strong>FEM：</strong>许多单元，细节丰富，但求解成本更高。</li>
+  <li><strong>ABD：</strong>一个整体仿射变换，介于刚体和细网格变形之间。</li>
+  <li><strong>M-ABD：</strong>把多个仿射体组织起来，并处理它们之间的约束。</li>
+</StepFlow>
+
+<PitfallCard title="中间表示不是万能替代品">
+ABD 的优势是用较少自由度表达整体形变；它并不自动拥有 FEM 的局部细节，也不等于本仓库已经完成 M-ABD 方法实现。具体能力必须看实现、测试和记录。
+</PitfallCard>
+
+<RepoEvidenceCard title="本页只建立建模位置" status="本课为 conceptual" />
+
+<RememberBox title="核心记忆">
+  <ul>
+    <li>粒子没有形状，刚体锁定形状，FEM 细分形状。</li>
+    <li>ABD 用 `A` 和 `t` 让一个对象整体移动、旋转、拉伸和剪切。</li>
+    <li>M-ABD 关注多个仿射体之间的约束和拓扑求解。</li>
+  </ul>
+</RememberBox>
