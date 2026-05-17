@@ -33,6 +33,13 @@ any passed `experiment.*` claim. The comparison report remains `incomplete`.
 - plan commit: `5af27323947b296b3ebf1956a5799d0906dfea03`
 - implementation commit: `947bbfa4ba1e3f5ed805585d41ba3a562039441a`
 - docs/provenance commit: `0dc83f269c4a72545c6e3fbe006ae334e4d41202`
+- review hardening commits: `6dd48d33fecaf33c970a0a6676ff8134467262fe`,
+  `df6bb3e94310178ed1fa5a9184fd02bf7f020fec`
+- independent review: claim/spec review found missing final provenance for
+  `6dd48d33fecaf33c970a0a6676ff8134467262fe`; code/protocol review found
+  invalid non-finite lane metric snapshots could leak bare `NaN` or
+  `Infinity` into comparison JSON. Phase 19 hardening records both issues and
+  normalizes invalid lane metric snapshots to JSON `null`.
 
 ## Vendored Newton
 
@@ -70,6 +77,7 @@ any passed `experiment.*` claim. The comparison report remains `incomplete`.
 - missing metric field: `missing_required_metrics`
 - invalid metric field: `invalid_required_metrics`
 - invalid metric blocker example: `mabd_newton:energy_drift_invalid`
+- invalid metric snapshot value: JSON `null`
 - finite difference field: `lane_metric_differences`
 - finite difference key:
   `mabd_newton_minus_rbd_implicit_baseline`
@@ -108,6 +116,15 @@ comparison tests: Ran 3 tests, OK
 phase bootstrap docs tests: Ran 33 tests, OK
 docs validator: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19 docs/provenance validation passed
 ruff docs/code slice: All checks passed!
+```
+
+Review-hardening focused result:
+
+```text
+comparison tests: Ran 3 tests, OK; invalid None, NaN, and Infinity metrics
+  are flagged as invalid, written as JSON null in lane metric snapshots, and
+  not emitted as bare NaN or Infinity tokens.
+ruff comparison slice: All checks passed!
 ```
 
 ## Claim Impact

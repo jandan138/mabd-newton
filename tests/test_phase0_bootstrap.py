@@ -624,6 +624,9 @@ class Phase0BootstrapTests(unittest.TestCase):
             "plan commit:",
             "implementation commit:",
             "docs/provenance commit: `0dc83f269c4a72545c6e3fbe006ae334e4d41202`",
+            "review hardening commits: `6dd48d33fecaf33c970a0a6676ff8134467262fe`,",
+            "`df6bb3e94310178ed1fa5a9184fd02bf7f020fec`",
+            "independent review:",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "## Paper Source",
@@ -637,11 +640,13 @@ class Phase0BootstrapTests(unittest.TestCase):
             "invalid_required_metrics",
             "lane_metric_differences",
             "mabd_newton:energy_drift_invalid",
+            "invalid metric snapshot value: JSON `null`",
             "## Artifacts",
             "`src/mabd_reproduction/comparison_reports.py`",
             "generated reports: not committed",
             "No `experiment.*` claim is passed in this phase.",
             "phase bootstrap docs tests: Ran 33 tests, OK",
+            "not emitted as bare NaN or Infinity tokens",
         ):
             self.assertIn(snippet, text)
 
