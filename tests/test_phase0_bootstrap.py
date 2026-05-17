@@ -3610,10 +3610,15 @@ class Phase0BootstrapTests(unittest.TestCase):
             "d102194",
             "Evidence record commit",
             "0200a67f22dc38b4af20db1215202cd838379766",
+            "Review hardening commit",
+            "1280ac4a3e15a6b5d9c8ffade2cb16980ab2d54c",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "Local patch status: locally patched",
+            "mabd:zero_stiffness_diagnostic",
+            "zero stiffness requires explicit diagnostic opt-in",
             "young_modulus == 0.0",
+            "Default `young_modulus == 0.0` without the diagnostic opt-in still raises",
             "## Implementation Evidence",
             "manual_cpu_oracle_config",
             "newton_model_derived",
@@ -3627,15 +3632,20 @@ class Phase0BootstrapTests(unittest.TestCase):
             "roll_out_physical_pendulum_mabd_model_derived",
             "KeyError: 'solver_model_config_source'",
             "ValueError: young_modulus must be positive",
+            "AssertionError: ValueError not raised",
             "## GREEN Evidence",
-            "Ran 37 tests",
+            "Ran 38 tests",
+            "test_solver_step_model_body_rejects_zero_young_modulus_without_diagnostic_opt_in",
+            "test_solver_step_model_body_allows_zero_young_modulus_with_diagnostic_opt_in",
+            "the formal physical-pendulum lane calls `SolverMABD.step()`",
             "## Report Artifacts",
             "single_body_physical_pendulum_mabd_newton.json",
             "single_body_physical_pendulum_comparison.json",
-            "source_commit = d102194",
+            "source_commit = 1280ac4",
             "## Claim Impact",
             "No `experiment.*` claim is passed",
             "Paper-faithful physical-pendulum geometry remains missing",
+            "Zero stiffness remains an explicit diagnostic opt-in",
             "Newton `Contacts` remain unimplemented",
             "Runtime Newton `Control` remains unverified",
             "GPU/Warp kernels remain unverified",
@@ -3689,7 +3699,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json"
         )
 
-        self.assertEqual(report.source_commit, "d102194")
+        self.assertEqual(report.source_commit, "1280ac4")
         self.assertEqual(report.status.value, "incomplete")
         self.assertEqual(report.observed["solver_model_config_source"], "newton_model_derived")
         self.assertEqual(report.expected["solver_model_config_source"], "newton_model_derived")

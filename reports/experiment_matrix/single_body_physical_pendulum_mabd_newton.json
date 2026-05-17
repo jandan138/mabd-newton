@@ -190,7 +190,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "mabd_cpu_oracle_physical_pendulum_newton_lane",
-  "source_commit": "d102194",
+  "source_commit": "1280ac4",
   "status": "incomplete",
   "threshold": {
     "max_abs_angle_error_rad": 2.0,

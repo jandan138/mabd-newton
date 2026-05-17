@@ -103,9 +103,9 @@
         "backend": "cpu_numpy_newton_only",
         "baseline_lane": "mabd_newton",
         "path": "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
-        "sha256": "582af417a66e4cc83020432fb285c64203dc1692f1a8bdc5132f9cea90590774",
+        "sha256": "e99b5b0bd3ed727494ab9a4b4af0e4e94900202c8537c16df153dfddc728cbf1",
         "solver_mode": "mabd_cpu_oracle_physical_pendulum_newton_lane",
-        "source_commit": "d102194",
+        "source_commit": "1280ac4",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       },
@@ -269,7 +269,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "physical_pendulum_multilane_comparison_development",
-  "source_commit": "d102194",
+  "source_commit": "1280ac4",
   "status": "incomplete",
   "threshold": {
     "max_mabd_rbd_abs_angle_delta_rad": 2.0

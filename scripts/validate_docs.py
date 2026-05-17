@@ -6574,11 +6574,16 @@ def validate_phase48_record() -> None:
         "d102194",
         "Evidence record commit",
         "0200a67f22dc38b4af20db1215202cd838379766",
+        "Review hardening commit",
+        "1280ac4a3e15a6b5d9c8ffade2cb16980ab2d54c",
         "## Vendored Newton",
         "https://github.com/newton-physics/newton.git",
         VENDORED_NEWTON_COMMIT,
         "Local patch status: locally patched",
+        "mabd:zero_stiffness_diagnostic",
+        "zero stiffness requires explicit diagnostic opt-in",
         "young_modulus == 0.0",
+        "Default `young_modulus == 0.0` without the diagnostic opt-in still raises",
         "## Environment",
         "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
         "does not mutate the shared Newton/reference environment",
@@ -6597,13 +6602,18 @@ def validate_phase48_record() -> None:
         "FAILED (errors=2)",
         "ValueError: young_modulus must be positive",
         "FAILED (errors=1)",
+        "AssertionError: ValueError not raised",
+        "FAILED (failures=1)",
         "## GREEN Evidence",
-        "Ran 37 tests",
+        "Ran 38 tests",
+        "test_solver_step_model_body_rejects_zero_young_modulus_without_diagnostic_opt_in",
+        "test_solver_step_model_body_allows_zero_young_modulus_with_diagnostic_opt_in",
+        "the formal physical-pendulum lane calls `SolverMABD.step()`",
         "OK",
         "## Report Artifacts",
         "single_body_physical_pendulum_mabd_newton.json",
         "single_body_physical_pendulum_comparison.json",
-        "source_commit = d102194",
+        "source_commit = 1280ac4",
         "blocking_reasons = [pendulum_geometry_unknown]",
         "## Verification Commands",
         "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
@@ -6618,6 +6628,7 @@ def validate_phase48_record() -> None:
         "Paper-faithful physical-pendulum geometry remains missing",
         "Newton `Contacts` remain unimplemented",
         "Runtime Newton `Control` remains unverified",
+        "Zero stiffness remains an explicit diagnostic opt-in",
         "GPU/Warp kernels remain unverified",
         "full paper reproduction remain incomplete",
     )
@@ -6734,10 +6745,10 @@ def validate_phase48_record() -> None:
         if report.status.value != "incomplete":
             fail(f"Phase 48 {report_name} report must remain incomplete")
 
-    if mabd.source_commit != "d102194":
-        fail("Phase 48 MABD Newton report source_commit must pin implementation commit d102194")
-    if comparison.source_commit != "d102194":
-        fail("Phase 48 comparison report source_commit must pin implementation commit d102194")
+    if mabd.source_commit != "1280ac4":
+        fail("Phase 48 MABD Newton report source_commit must pin review hardening commit 1280ac4")
+    if comparison.source_commit != "1280ac4":
+        fail("Phase 48 comparison report source_commit must pin review hardening commit 1280ac4")
     if mabd.baseline_lane != "mabd_newton":
         fail("Phase 48 MABD Newton report lane changed")
     if mabd.solver_mode != "mabd_cpu_oracle_physical_pendulum_newton_lane":
