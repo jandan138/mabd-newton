@@ -2762,6 +2762,127 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("joint-force blocker", str(context.exception))
 
+    def test_phase41_physical_pendulum_geometry_source_audit_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        physical_pendulum = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.physical_pendulum"
+        )
+        self.assertEqual(physical_pendulum["reproduction_status"], "intended")
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 41")
+        verified = claim_boundary_bullet(text, "Phase 41 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 41 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 41 physical-pendulum source-asset audit",
+        )
+
+        self.assertIn("physical-pendulum geometry source-asset audit", current)
+        self.assertIn("physical_pendulum_geometry_source_audit", verified)
+        self.assertIn("source_tree_paths", verified)
+        self.assertIn("scanned_tex_paths", verified)
+        self.assertIn("absence_findings", verified)
+        self.assertIn("source_assets_found_geometry_parameters_missing", verified)
+        self.assertIn("private author assets", non_claim)
+        self.assertIn("paper-faithful physical-pendulum geometry", non_claim)
+        self.assertIn("passed physical-pendulum experiment", forbidden)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+    def test_phase41_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase41-physical-pendulum-geometry-source-audit.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Repository",
+            "phase41-physical-pendulum-geometry-source-audit",
+            "## Paper Source Audit",
+            "physical_pendulum_geometry_source_audit",
+            "source_assets_found_geometry_parameters_missing",
+            "sections/experiment.tex",
+            "images/simple_pendulum/simple_pendulum.pdf",
+            "4b198ace42ff08d32dc266f1eca710987a2b6335d75878ee01b60498fed945cf",
+            "source_tree_path_count",
+            "scanned_tex_paths",
+            "sections_a/multiabd.tex",
+            "absence_findings.physical_pendulum_geometry_parameter_search.status",
+            "no_paper_faithful_physical_pendulum_geometry_parameters_found",
+            "physical_pendulum_geometry_parameters_missing_from_public_source_assets",
+            "raw_physical_pendulum_curve_data_missing_from_public_source_assets",
+            "physical_pendulum_private_author_assets_not_audited",
+            "retained blocker: `pendulum_geometry_unknown`",
+            "missing_paper_metrics = [`joint_force_error:paper_geometry_unknown`]",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains intended.",
+            "does not reconstruct paper-faithful physical-pendulum geometry",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_physical_pendulum_source_audit tests.test_phase0_bootstrap",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE41", text)
+        self.assertNotIn("phase41-working-tree", text)
+
+    def test_phase41_current_physical_pendulum_reports_retain_geometry_blocker(
+        self,
+    ) -> None:
+        config = yaml.safe_load(
+            (ROOT / "configs/experiments/single_body_physical_pendulum.yaml").read_text()
+        )
+        matrix = yaml.safe_load(
+            (ROOT / "configs/experiments/paper_experiment_matrix.yaml").read_text()
+        )
+        experiment = next(
+            item for item in matrix["experiments"] if item["claim_id"] == "experiment.single_body.physical_pendulum"
+        )
+        self.assertIn("pendulum_geometry_unknown", experiment["blocking_reasons"])
+        self.assertIn("pendulum_geometry_unknown", config["report"]["failure_reason"])
+
+        for report_path in (
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+        ):
+            report = load_claim_report(report_path)
+            self.assertEqual(report.status.value, "incomplete")
+            self.assertIs(report.observed["full_experiment_claim_passed"], False)
+            self.assertIn("pendulum_geometry_unknown", report.observed["blocking_reasons"])
+        comparison = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+        self.assertEqual(
+            comparison.observed["missing_paper_metrics"],
+            ["joint_force_error:paper_geometry_unknown"],
+        )
+
+    def test_phase41_validator_rejects_geometry_reconstructed_status(self) -> None:
+        import scripts.validate_docs as validate_docs
+        from mabd_reproduction.paper_source_audit import physical_pendulum_geometry_source_audit
+
+        actual = physical_pendulum_geometry_source_audit()
+        overclaimed = replace(
+            actual,
+            status="geometry_reconstructed",
+            missing_parameters=(),
+            blockers=(),
+        )
+
+        with patch.object(
+            validate_docs,
+            "physical_pendulum_geometry_source_audit",
+            return_value=overclaimed,
+        ):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase41_record()
+
+        self.assertIn("geometry source audit status", str(context.exception))
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [

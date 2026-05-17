@@ -5,9 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
+import re
 
 
 DEFAULT_PAPER_SOURCE_ROOT = Path("/tmp/mabd-paper/source")
+TEXT_SOURCE_SUFFIXES = frozenset((".bib", ".bst", ".cls", ".json", ".tex"))
 
 AUDITED_FILE_HASHES = {
     "sections/singleabd.tex": (
@@ -21,6 +23,15 @@ AUDITED_FILE_HASHES = {
     ),
     "images/cube/roll_cube.pdf": (
         "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80"
+    ),
+}
+
+PHYSICAL_PENDULUM_AUDITED_FILE_HASHES = {
+    "sections/experiment.tex": (
+        "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f"
+    ),
+    "images/simple_pendulum/simple_pendulum.pdf": (
+        "4b198ace42ff08d32dc266f1eca710987a2b6335d75878ee01b60498fed945cf"
     ),
 }
 
@@ -65,6 +76,36 @@ class VelocitySemanticsSourceAudit:
         }
 
 
+@dataclass(frozen=True)
+class PhysicalPendulumGeometrySourceAudit:
+    source_root: str
+    file_hashes: dict[str, str]
+    source_tree_paths: tuple[str, ...]
+    scanned_text_paths: tuple[str, ...]
+    scanned_tex_paths: tuple[str, ...]
+    positive_findings: dict[str, dict[str, object]]
+    absence_findings: dict[str, dict[str, object]]
+    figure_pdf: dict[str, object]
+    missing_parameters: tuple[str, ...]
+    blockers: tuple[str, ...]
+    status: str
+
+    def to_report(self) -> dict[str, object]:
+        return {
+            "source_root": self.source_root,
+            "file_hashes": dict(self.file_hashes),
+            "source_tree_paths": list(self.source_tree_paths),
+            "scanned_text_paths": list(self.scanned_text_paths),
+            "scanned_tex_paths": list(self.scanned_tex_paths),
+            "positive_findings": dict(self.positive_findings),
+            "absence_findings": dict(self.absence_findings),
+            "figure_pdf": dict(self.figure_pdf),
+            "missing_parameters": list(self.missing_parameters),
+            "blockers": list(self.blockers),
+            "status": self.status,
+        }
+
+
 def file_sha256(path: Path) -> str:
     digest = sha256()
     with path.open("rb") as handle:
@@ -93,6 +134,24 @@ def _read_lines(source_root: Path, relative_path: str) -> list[str]:
 def _discover_tex_paths(source_root: Path) -> tuple[str, ...]:
     return tuple(
         sorted(path.relative_to(source_root).as_posix() for path in source_root.rglob("*.tex"))
+    )
+
+
+def _discover_source_tree_paths(source_root: Path) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            path.relative_to(source_root).as_posix()
+            for path in source_root.rglob("*")
+            if path.is_file()
+        )
+    )
+
+
+def _discover_text_paths(source_tree_paths: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(
+        path
+        for path in source_tree_paths
+        if Path(path).suffix.lower() in TEXT_SOURCE_SUFFIXES
     )
 
 
@@ -137,6 +196,28 @@ def _scan_uncommented_tex(
     return hits
 
 
+def _read_text_asset(source_root: Path, relative_path: str) -> str:
+    return (source_root / relative_path).read_bytes().decode("utf-8", errors="ignore")
+
+
+def _scan_text_assets_for_patterns(
+    source_root: Path,
+    relative_paths: tuple[str, ...],
+    patterns: tuple[str, ...],
+) -> tuple[str, ...]:
+    hits: list[str] = []
+    for relative_path in relative_paths:
+        lines = _read_text_asset(source_root, relative_path).splitlines()
+        for line_number, line in enumerate(lines, start=1):
+            uncommented = _strip_tex_comment(line).strip()
+            if not uncommented:
+                continue
+            normalized = uncommented.lower()
+            if any(pattern.lower() in normalized for pattern in patterns):
+                hits.append(f"{relative_path}:{line_number}: {uncommented}")
+    return tuple(hits)
+
+
 def _negative_scan_finding(
     *,
     source_root: Path,
@@ -162,6 +243,269 @@ def _negative_scan_finding(
         line_start=None,
         line_end=None,
         evidence_text="no matching uncommented source line",
+    )
+
+
+def _required_file_hashes(
+    source_root: Path,
+    expected_hashes: dict[str, str],
+) -> dict[str, str]:
+    file_hashes: dict[str, str] = {}
+    for relative_path in expected_hashes:
+        path = source_root / relative_path
+        if not path.exists():
+            raise FileNotFoundError(f"required paper source file does not exist: {path}")
+        file_hashes[relative_path] = file_sha256(path)
+    return file_hashes
+
+
+def _physical_pendulum_pdf_image_paths(figure_pdf: Path) -> tuple[str, ...]:
+    text = figure_pdf.read_bytes().decode("latin-1", errors="ignore")
+    paths: list[str] = []
+    for match in re.finditer(
+        r"<stRef:filePath>(?P<path>.*?)</stRef:filePath>",
+        text,
+        flags=re.DOTALL,
+    ):
+        candidate = match.group("path").strip()
+        if "pendulum" in candidate.lower():
+            paths.append(candidate)
+    for match in re.finditer(
+        r"%%(?:DocumentFiles:|\+)(?P<path>[^\r\n]*pendulum\d+\.png)",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        paths.append(match.group("path").strip())
+    if not paths:
+        paths.extend(
+            match.group(0)
+            for match in re.finditer(r"pendulum\d+\.png", text, flags=re.IGNORECASE)
+        )
+    return tuple(dict.fromkeys(paths))
+
+
+def _physical_pendulum_geometry_absence_findings(
+    *,
+    source_root: Path,
+    source_tree_paths: tuple[str, ...],
+    scanned_text_paths: tuple[str, ...],
+    figure_image_paths: tuple[str, ...],
+) -> dict[str, dict[str, object]]:
+    query_terms = (
+        "body geometry",
+        "length scale",
+        "mass distribution",
+        "inertia tensor",
+        "raw angle curve data",
+        "raw joint force curve data",
+        "physical pendulum mesh",
+        "physical pendulum body",
+        "physical pendulum length",
+        "physical pendulum mass",
+        "physical pendulum inertia",
+        "pendulum15.png",
+    )
+    context_terms = (
+        "physical pendulum",
+        "fixed pivot",
+        "horizontal configuration",
+        "zero initial velocity",
+        "joint force",
+        "elliptic",
+        "pendulum15.png",
+    )
+    context_hits = list(
+        _scan_text_assets_for_patterns(source_root, scanned_text_paths, context_terms)
+    )
+    context_hits.extend(
+        f"images/simple_pendulum/simple_pendulum.pdf:metadata: {path}"
+        for path in figure_image_paths
+    )
+    candidate_hits = list(_scan_text_assets_for_patterns(source_root, scanned_text_paths, query_terms))
+    candidate_hits.extend(
+        f"images/simple_pendulum/simple_pendulum.pdf:metadata: {path}"
+        for path in figure_image_paths
+        if any(term.lower() in path.lower() for term in query_terms)
+    )
+    usable_parameter_disclosures = [
+        hit
+        for hit in candidate_hits
+        if "physical pendulum" in hit.lower()
+        and any(
+            term in hit.lower()
+            for term in ("body geometry", "length scale", "mass distribution", "inertia tensor")
+        )
+    ]
+    return {
+        "physical_pendulum_geometry_parameter_search": {
+            "status": "no_paper_faithful_physical_pendulum_geometry_parameters_found",
+            "query_terms": list(query_terms),
+            "searched_source_path_count": len(source_tree_paths),
+            "scanned_text_path_count": len(scanned_text_paths),
+            "context_hits": context_hits[:64],
+            "candidate_hits": candidate_hits[:64],
+            "usable_parameter_disclosures": usable_parameter_disclosures,
+        }
+    }
+
+
+def physical_pendulum_geometry_source_audit(
+    source_root: Path = DEFAULT_PAPER_SOURCE_ROOT,
+) -> PhysicalPendulumGeometrySourceAudit:
+    source_root = Path(source_root)
+    if not source_root.exists():
+        raise FileNotFoundError(
+            f"paper source root does not exist: {source_root}; "
+            "extract the paper source to /tmp/mabd-paper/source before running this audit"
+        )
+
+    file_hashes = _required_file_hashes(source_root, PHYSICAL_PENDULUM_AUDITED_FILE_HASHES)
+    source_tree_paths = _discover_source_tree_paths(source_root)
+    scanned_text_paths = _discover_text_paths(source_tree_paths)
+    scanned_tex_paths = _discover_tex_paths(source_root)
+    figure_relative_path = "images/simple_pendulum/simple_pendulum.pdf"
+    figure_image_paths = _physical_pendulum_pdf_image_paths(source_root / figure_relative_path)
+    absence_findings = _physical_pendulum_geometry_absence_findings(
+        source_root=source_root,
+        source_tree_paths=source_tree_paths,
+        scanned_text_paths=scanned_text_paths,
+        figure_image_paths=figure_image_paths,
+    )
+    positive_findings = {
+        finding.key: finding.to_report()
+        for finding in (
+            _line_window_finding(
+                source_root=source_root,
+                key="figure_pdf_included",
+                relative_path="sections/experiment.tex",
+                line_start=77,
+                line_end=83,
+                required_snippets=("images/simple_pendulum/simple_pendulum.pdf",),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="fixed_pivot",
+                relative_path="sections/experiment.tex",
+                line_start=77,
+                line_end=91,
+                required_snippets=("fixed pivot",),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="horizontal_release_zero_initial_velocity",
+                relative_path="sections/experiment.tex",
+                line_start=77,
+                line_end=91,
+                required_snippets=("horizontal configuration", "zero initial velocity"),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="gravity",
+                relative_path="sections/experiment.tex",
+                line_start=77,
+                line_end=91,
+                required_snippets=("under gravity",),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="elliptic_angle_reference",
+                relative_path="sections/experiment.tex",
+                line_start=77,
+                line_end=91,
+                required_snippets=("elliptic-integral", "\\theta(t)"),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="joint_force_magnitude_plot",
+                relative_path="sections/experiment.tex",
+                line_start=77,
+                line_end=91,
+                required_snippets=("magnitude of the joint force",),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="phase_drift",
+                relative_path="sections/experiment.tex",
+                line_start=77,
+                line_end=91,
+                required_snippets=("phase drift",),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="abd_rbd_comparison",
+                relative_path="sections/experiment.tex",
+                line_start=77,
+                line_end=91,
+                required_snippets=("ABD method", "implicit RBD baseline"),
+            ),
+        )
+    }
+
+    missing_parameters = (
+        "body_geometry",
+        "length_scale",
+        "mass_distribution",
+        "inertia_tensor",
+        "raw_angle_curve_data",
+        "raw_joint_force_curve_data",
+        "abd_timestep_values",
+        "rbd_timestep_values",
+        "exact_abd_numeric_outputs",
+        "exact_rbd_numeric_outputs",
+    )
+    usable_parameter_disclosures = absence_findings["physical_pendulum_geometry_parameter_search"][
+        "usable_parameter_disclosures"
+    ]
+    blockers = (
+        (
+            "physical_pendulum_geometry_parameters_missing_from_public_source_assets",
+            "raw_physical_pendulum_curve_data_missing_from_public_source_assets",
+            "physical_pendulum_private_author_assets_not_audited",
+        )
+        if not usable_parameter_disclosures
+        else (
+            "physical_pendulum_geometry_parameter_disclosure_found",
+            "physical_pendulum_manual_geometry_review_required",
+        )
+    )
+    hash_mismatches = tuple(
+        relative_path
+        for relative_path, expected in PHYSICAL_PENDULUM_AUDITED_FILE_HASHES.items()
+        if file_hashes[relative_path] != expected
+    )
+    missing_positive_evidence = tuple(
+        key for key, finding in positive_findings.items() if not finding["present"]
+    )
+    if hash_mismatches:
+        blockers = (*blockers, "paper_source_hash_mismatch")
+    if missing_positive_evidence:
+        blockers = (*blockers, "paper_source_required_snippet_missing")
+    status = (
+        "source_mentions_physical_pendulum_geometry_parameters_requiring_manual_review"
+        if usable_parameter_disclosures
+        else (
+            "source_assets_found_geometry_parameters_missing"
+            if not hash_mismatches and not missing_positive_evidence
+            else "source_assets_changed_or_required_physical_pendulum_facts_missing"
+        )
+    )
+
+    return PhysicalPendulumGeometrySourceAudit(
+        source_root=str(source_root),
+        file_hashes=file_hashes,
+        source_tree_paths=source_tree_paths,
+        scanned_text_paths=scanned_text_paths,
+        scanned_tex_paths=scanned_tex_paths,
+        positive_findings=positive_findings,
+        absence_findings=absence_findings,
+        figure_pdf={
+            "path": figure_relative_path,
+            "sha256": file_hashes[figure_relative_path],
+            "embedded_image_paths": list(figure_image_paths),
+        },
+        missing_parameters=missing_parameters,
+        blockers=blockers,
+        status=status,
     )
 
 
@@ -292,7 +636,10 @@ __all__ = [
     "AUDITED_FILE_HASHES",
     "DEFAULT_PAPER_SOURCE_ROOT",
     "PaperSourceFinding",
+    "PHYSICAL_PENDULUM_AUDITED_FILE_HASHES",
+    "PhysicalPendulumGeometrySourceAudit",
     "VelocitySemanticsSourceAudit",
     "file_sha256",
+    "physical_pendulum_geometry_source_audit",
     "velocity_semantics_source_audit",
 ]

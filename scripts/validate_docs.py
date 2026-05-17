@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-40 docs and provenance contracts."""
+"""Validate Phase 0-41 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -25,7 +25,10 @@ from mabd_reproduction.experiment_configs import (
     validate_physical_pendulum_config_against_matrix,
     validate_spinning_box_config_against_matrix,
 )
-from mabd_reproduction.paper_source_audit import velocity_semantics_source_audit
+from mabd_reproduction.paper_source_audit import (
+    physical_pendulum_geometry_source_audit,
+    velocity_semantics_source_audit,
+)
 from mabd_reproduction.reporting import load_claim_report
 from mabd_reproduction.spinning_box_physics import (
     spinning_box_contact_diagnostics,
@@ -85,6 +88,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase37-physical-pendulum-mabd-newton-lane.md",
     "docs/records/2026-05-17-phase39-physical-pendulum-timing-source-audit.md",
     "docs/records/2026-05-17-phase40-physical-pendulum-joint-force-reference.md",
+    "docs/records/2026-05-17-phase41-physical-pendulum-geometry-source-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -103,6 +107,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-17-mabd-phase39-physical-pendulum-timing-source-audit.md",
     "docs/superpowers/specs/2026-05-17-phase40-physical-pendulum-joint-force-reference-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase40-physical-pendulum-joint-force-reference.md",
+    "docs/superpowers/specs/2026-05-17-phase41-physical-pendulum-geometry-source-audit-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase41-physical-pendulum-geometry-source-audit.md",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -142,10 +148,12 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase37-working-tree",
     "phase39-working-tree",
     "phase40-working-tree",
+    "phase41-working-tree",
     "pending branch-local",
     "<implementation-commit>",
     "TO_BE_BACKFILLED_PHASE39",
     "TO_BE_BACKFILLED_PHASE40",
+    "TO_BE_BACKFILLED_PHASE41",
 }
 
 
@@ -4673,6 +4681,222 @@ def validate_phase40_record() -> None:
         fail("paper-claims.yaml missing physical-pendulum claim")
 
 
+def validate_phase41_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase41-physical-pendulum-geometry-source-audit.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Repository",
+        "phase41-physical-pendulum-geometry-source-audit",
+        "## Paper Source Audit",
+        "physical_pendulum_geometry_source_audit",
+        "source_assets_found_geometry_parameters_missing",
+        "sections/experiment.tex",
+        "images/simple_pendulum/simple_pendulum.pdf",
+        "4b198ace42ff08d32dc266f1eca710987a2b6335d75878ee01b60498fed945cf",
+        "source_tree_path_count",
+        "scanned_tex_paths",
+        "sections_a/multiabd.tex",
+        "absence_findings.physical_pendulum_geometry_parameter_search.status",
+        "no_paper_faithful_physical_pendulum_geometry_parameters_found",
+        "physical_pendulum_geometry_parameters_missing_from_public_source_assets",
+        "raw_physical_pendulum_curve_data_missing_from_public_source_assets",
+        "physical_pendulum_private_author_assets_not_audited",
+        "retained blocker: `pendulum_geometry_unknown`",
+        "missing_paper_metrics = [`joint_force_error:paper_geometry_unknown`]",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.physical_pendulum` remains intended.",
+        "does not reconstruct paper-faithful physical-pendulum geometry",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_physical_pendulum_source_audit tests.test_phase0_bootstrap",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 41 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE41", "phase41-working-tree", "<implementation-commit>"):
+        if placeholder in text:
+            fail("Phase 41 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "physical-pendulum experiment passed",
+        "paper geometry reconstructed",
+        "paper-faithful physical-pendulum geometry implemented",
+        "joint-force waveform agreement passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 41 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 41 physical-pendulum geometry source-asset audit",
+        "Phase 41 verifies `physical_pendulum_geometry_source_audit`",
+        "`source_tree_paths`",
+        "`scanned_tex_paths`",
+        "`absence_findings`",
+        "source_assets_found_geometry_parameters_missing",
+        "Phase 41 does not verify private author assets",
+        "paper-faithful physical-pendulum geometry",
+        "Phase 41 physical-pendulum source-asset audit",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 41 claim boundary missing: {snippet}")
+
+    audit = physical_pendulum_geometry_source_audit(PAPER_SOURCE_ROOT)
+    if audit.status != "source_assets_found_geometry_parameters_missing":
+        fail(f"Phase 41 geometry source audit status changed: {audit.status}")
+    expected_hashes = {
+        "sections/experiment.tex": (
+            "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f"
+        ),
+        "images/simple_pendulum/simple_pendulum.pdf": (
+            "4b198ace42ff08d32dc266f1eca710987a2b6335d75878ee01b60498fed945cf"
+        ),
+    }
+    for relative_path, expected_hash in expected_hashes.items():
+        if audit.file_hashes.get(relative_path) != expected_hash:
+            fail(f"Phase 41 source hash changed: {relative_path}")
+    if len(audit.source_tree_paths) < 30:
+        fail("Phase 41 source-tree inventory is unexpectedly small")
+    for relative_path in (
+        "sections/experiment.tex",
+        "sections_a/multiabd.tex",
+        "ref.bib",
+        "images/simple_pendulum/simple_pendulum.pdf",
+    ):
+        if relative_path not in audit.source_tree_paths:
+            fail(f"Phase 41 source-tree inventory missing: {relative_path}")
+    for relative_path in ("sections/experiment.tex", "sections_a/multiabd.tex"):
+        if relative_path not in audit.scanned_tex_paths:
+            fail(f"Phase 41 scanned_tex_paths missing: {relative_path}")
+    for key in (
+        "fixed_pivot",
+        "horizontal_release_zero_initial_velocity",
+        "elliptic_angle_reference",
+        "joint_force_magnitude_plot",
+    ):
+        finding = audit.positive_findings.get(key)
+        if not isinstance(finding, dict) or finding.get("present") is not True:
+            fail(f"Phase 41 positive source finding missing: {key}")
+        if finding.get("path") != "sections/experiment.tex":
+            fail(f"Phase 41 positive source finding path changed: {key}")
+        if finding.get("line_start") != 77 or finding.get("line_end") != 91:
+            fail(f"Phase 41 positive source finding window changed: {key}")
+    figure_paths = audit.figure_pdf.get("embedded_image_paths")
+    if not isinstance(figure_paths, list) or not any("pendulum15.png" in path for path in figure_paths):
+        fail("Phase 41 figure PDF embedded image paths changed")
+    absence = audit.absence_findings.get("physical_pendulum_geometry_parameter_search")
+    if not isinstance(absence, dict):
+        fail("Phase 41 missing geometry absence finding")
+    if absence.get("status") != "no_paper_faithful_physical_pendulum_geometry_parameters_found":
+        fail("Phase 41 geometry absence finding status changed")
+    if absence.get("usable_parameter_disclosures") != []:
+        fail("Phase 41 geometry absence finding found usable parameter disclosures")
+    if int(absence.get("searched_source_path_count", 0)) != len(audit.source_tree_paths):
+        fail("Phase 41 source-tree search count changed")
+    for term in ("body geometry", "mass distribution", "inertia tensor"):
+        if term not in absence.get("query_terms", []):
+            fail(f"Phase 41 geometry absence query term missing: {term}")
+    context_hits = absence.get("context_hits")
+    if not isinstance(context_hits, list) or not any("physical pendulum" in str(hit) for hit in context_hits):
+        fail("Phase 41 geometry absence context hits changed")
+    for parameter in (
+        "body_geometry",
+        "mass_distribution",
+        "inertia_tensor",
+        "raw_joint_force_curve_data",
+    ):
+        if parameter not in audit.missing_parameters:
+            fail(f"Phase 41 missing parameter changed: {parameter}")
+    for blocker in (
+        "physical_pendulum_geometry_parameters_missing_from_public_source_assets",
+        "raw_physical_pendulum_curve_data_missing_from_public_source_assets",
+        "physical_pendulum_private_author_assets_not_audited",
+    ):
+        if blocker not in audit.blockers:
+            fail(f"Phase 41 source audit blocker missing: {blocker}")
+
+    try:
+        config = load_physical_pendulum_config(
+            ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 41 physical-pendulum config validation failed: {exc}")
+
+    matrix_claim = next(
+        (
+            experiment
+            for experiment in matrix.experiments
+            if experiment.claim_id == "experiment.single_body.physical_pendulum"
+        ),
+        None,
+    )
+    if matrix_claim is None:
+        fail("Phase 41 matrix missing physical-pendulum experiment")
+    if "pendulum_geometry_unknown" not in matrix_claim.blocking_reasons:
+        fail("Phase 41 matrix must retain pendulum_geometry_unknown")
+    if "pendulum_geometry_unknown" not in config.failure_reason:
+        fail("Phase 41 analytic config report must retain geometry failure reason")
+
+    report_paths = {
+        "analytic_reference": config.output_report,
+        "mabd_development": config.mabd_development.output_report,
+        "mabd_newton": config.mabd_newton.output_report,
+        "rbd_implicit_baseline": config.rbd_baseline.output_report,
+        "comparison": config.comparison.output_report,
+    }
+    reports = {
+        name: load_claim_report(ROOT / path)
+        for name, path in report_paths.items()
+    }
+    for name, report in reports.items():
+        if report.status.value != "incomplete":
+            fail(f"Phase 41 {name} report must remain incomplete")
+        if report.observed.get("full_experiment_claim_passed") is not False:
+            fail(f"Phase 41 {name} report must not pass full experiment claim")
+        blockers = report.observed.get("blocking_reasons")
+        if not isinstance(blockers, list):
+            fail(f"Phase 41 {name} blockers must be a list")
+        if "pendulum_geometry_unknown" not in blockers:
+            fail(f"Phase 41 {name} must retain pendulum_geometry_unknown")
+
+    comparison = reports["comparison"]
+    if comparison.observed.get("missing_paper_metrics") != [
+        "joint_force_error:paper_geometry_unknown"
+    ]:
+        fail("Phase 41 comparison missing_paper_metrics changed")
+    if "physical_pendulum_comparison_pass_gate_not_enabled" not in comparison.observed.get(
+        "blocking_reasons", []
+    ):
+        fail("Phase 41 comparison pass gate blocker missing")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_physical_pendulum = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.physical_pendulum":
+            found_physical_pendulum = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 41 must keep physical-pendulum experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 41 must not pass experiment.* claims")
+    if not found_physical_pendulum:
+        fail("paper-claims.yaml missing physical-pendulum claim")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -4929,13 +5153,14 @@ def main() -> int:
     validate_phase38_record()
     validate_phase39_record()
     validate_phase40_record()
+    validate_phase41_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41 "
         "docs/provenance validation passed"
     )
     return 0

@@ -511,6 +511,24 @@
   paper joint-force waveform, the full physical-pendulum experiment, rendered
   output, runtime performance, generated videos or raw simulation logs, or any
   passed `experiment.*` claim.
+- This repository contains Phase 41 physical-pendulum geometry source-asset
+  audit evidence after the Phase 41 record is created.
+- Phase 41 verifies `physical_pendulum_geometry_source_audit` against the local
+  arXiv v2 paper source tree, including `source_tree_paths`,
+  `scanned_text_paths`, `scanned_tex_paths`, source hashes for
+  `sections/experiment.tex` and
+  `images/simple_pendulum/simple_pendulum.pdf`, positive findings from
+  `sections/experiment.tex:77-91`, embedded `pendulum*.png` figure metadata,
+  `absence_findings.physical_pendulum_geometry_parameter_search.status =
+  no_paper_faithful_physical_pendulum_geometry_parameters_found`, audit status
+  `source_assets_found_geometry_parameters_missing`, retained missing
+  parameters such as `body_geometry`, `mass_distribution`, `inertia_tensor`,
+  and `raw_joint_force_curve_data`, and retained blockers for public source
+  geometry parameters, raw curve data, and private author assets.
+- Phase 41 does not verify private author assets, absence of unpublished author
+  code, paper-faithful physical-pendulum geometry, raw curve data, the full
+  physical-pendulum experiment, rendered output, runtime performance, generated
+  videos or raw simulation logs, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -566,6 +584,11 @@
   physical-pendulum experiment, paper-faithful pendulum geometry result, paper
   joint-force waveform reproduction, rendered result, runtime performance
   reproduction, or any passed `experiment.*` claim.
+- Phase 41 physical-pendulum source-asset audit is not a passed
+  physical-pendulum experiment, proof that private author assets do not exist,
+  paper-faithful physical-pendulum geometry reconstruction, paper joint-force
+  waveform reproduction, rendered result, runtime performance reproduction, or
+  any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
