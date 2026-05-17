@@ -32,8 +32,7 @@ any passed `experiment.*` claim. The comparison report remains `incomplete`.
 - base commit: `cd85b64`
 - plan commit: `5af27323947b296b3ebf1956a5799d0906dfea03`
 - implementation commit: `947bbfa4ba1e3f5ed805585d41ba3a562039441a`
-- docs/provenance commit: pending exact commit hash follow-up after this
-  record is first committed.
+- docs/provenance commit: `0dc83f269c4a72545c6e3fbe006ae334e4d41202`
 
 ## Vendored Newton
 
@@ -106,8 +105,9 @@ GREEN result:
 
 ```text
 comparison tests: Ran 3 tests, OK
-phase bootstrap docs tests: expected to pass after Phase 19 docs/validator
-are committed with this record.
+phase bootstrap docs tests: Ran 33 tests, OK
+docs validator: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19 docs/provenance validation passed
+ruff docs/code slice: All checks passed!
 ```
 
 ## Claim Impact

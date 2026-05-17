@@ -883,6 +883,7 @@ def validate_phase19_record() -> None:
         "## Repository",
         "plan commit: `5af27323947b296b3ebf1956a5799d0906dfea03`",
         "implementation commit: `947bbfa4ba1e3f5ed805585d41ba3a562039441a`",
+        "docs/provenance commit: `0dc83f269c4a72545c6e3fbe006ae334e4d41202`",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "## Paper Source",
@@ -900,6 +901,7 @@ def validate_phase19_record() -> None:
         "`src/mabd_reproduction/comparison_reports.py`",
         "generated reports: not committed",
         "No `experiment.*` claim is passed in this phase.",
+        "phase bootstrap docs tests: Ran 33 tests, OK",
     )
     for snippet in required_snippets:
         if snippet not in text:

@@ -623,6 +623,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Repository",
             "plan commit:",
             "implementation commit:",
+            "docs/provenance commit: `0dc83f269c4a72545c6e3fbe006ae334e4d41202`",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "## Paper Source",
@@ -640,6 +641,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "`src/mabd_reproduction/comparison_reports.py`",
             "generated reports: not committed",
             "No `experiment.*` claim is passed in this phase.",
+            "phase bootstrap docs tests: Ran 33 tests, OK",
         ):
             self.assertIn(snippet, text)
 
