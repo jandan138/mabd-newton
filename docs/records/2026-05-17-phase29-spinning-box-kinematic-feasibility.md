@@ -34,7 +34,7 @@ protocol, or the paper spinning-box experiment.
 - plan commit: `d18942c`
 - helper implementation commit: `7cec405`
 - report implementation commit: `061f916`
-- docs/record commit: `3f0e489`
+- docs/record commit: `0c38c44`
 - independent review: paper/claim review required no M-ABD lane pass, no
   comparison pass, and no `paper-claims.yaml` pass-state change. Solver/numerics
   review identified the finite-difference velocity relation as the key blocker:
