@@ -519,6 +519,7 @@
   `sections/experiment.tex` and
   `images/simple_pendulum/simple_pendulum.pdf`, positive findings from
   `sections/experiment.tex:77-91`, embedded `pendulum*.png` figure metadata,
+  the `absence_findings` report section,
   `absence_findings.physical_pendulum_geometry_parameter_search.status =
   no_paper_faithful_physical_pendulum_geometry_parameters_found`, audit status
   `source_assets_found_geometry_parameters_missing`, retained missing
