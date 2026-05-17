@@ -25,6 +25,7 @@ from .step_oracle import (
     MABDCPUOracleConfig,
     MABDCPUOracleConstraint,
     MABDCPUOracleStepResult,
+    MABDCPUOracleWorldConstraint,
     solve_cpu_oracle_step,
 )
 
@@ -39,6 +40,7 @@ class SolverMABD(SolverBase):
 
     MABD_BODY_FREQUENCY = "mabd:body"
     MABD_CONSTRAINT_FREQUENCY = "mabd:constraint"
+    MABD_WORLD_CONSTRAINT_FREQUENCY = "mabd:world_constraint"
     MABD_CONTROL_FREQUENCY = "mabd:control"
 
     def __init__(self, model: Model):
@@ -186,6 +188,17 @@ class SolverMABD(SolverBase):
             gradient_mode=self._joint_gradient_mode_from_model(int(namespace.gradient_mode.numpy()[row])),
         )
 
+    def _world_constraint_from_model_row(self, row: int, body_count: int) -> MABDCPUOracleWorldConstraint:
+        namespace = self.model.mabd
+        body = int(namespace.world_body.numpy()[row])
+        if not 0 <= body < body_count:
+            raise ValueError("mabd:world_body must reference a mabd:body row")
+        return MABDCPUOracleWorldConstraint(
+            body=body,
+            rest_point=np.asarray(namespace.world_rest_point.numpy()[row], dtype=float),
+            world_point=np.asarray(namespace.world_point.numpy()[row], dtype=float),
+        )
+
     def _custom_frequency_count(self, frequency: str) -> int:
         try:
             return int(self.model.get_custom_frequency_count(frequency))
@@ -206,9 +219,14 @@ class SolverMABD(SolverBase):
         if body_count <= 0:
             raise ValueError("model-derived SolverMABD.step() requires at least one mabd:body row")
         constraint_count = self._custom_frequency_count(self.MABD_CONSTRAINT_FREQUENCY)
+        world_constraint_count = self._custom_frequency_count(self.MABD_WORLD_CONSTRAINT_FREQUENCY)
         config = MABDCPUOracleConfig(
             bodies=tuple(self._body_precompute_from_model_row(row) for row in range(body_count)),
             constraints=tuple(self._constraint_from_model_row(row, body_count) for row in range(constraint_count)),
+            world_constraints=tuple(
+                self._world_constraint_from_model_row(row, body_count)
+                for row in range(world_constraint_count)
+            ),
             actuations=actuation_specs_from_model(self.model),
         )
         self.model_cpu_oracle_config = config
@@ -282,6 +300,7 @@ class SolverMABD(SolverBase):
     def register_custom_attributes(cls, builder: ModelBuilder) -> None:
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="body", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="constraint", namespace="mabd"))
+        builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="world_constraint", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="control", namespace="mabd"))
 
         model_attrs = (
@@ -536,6 +555,34 @@ class SolverMABD(SolverBase):
             ),
         )
 
+        world_constraint_attrs = (
+            ModelBuilder.CustomAttribute(
+                name="world_body",
+                frequency=cls.MABD_WORLD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=-1,
+                namespace="mabd",
+                references=cls.MABD_BODY_FREQUENCY,
+            ),
+            ModelBuilder.CustomAttribute(
+                name="world_rest_point",
+                frequency=cls.MABD_WORLD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="world_point",
+                frequency=cls.MABD_WORLD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+        )
+
         control_attrs = (
             ModelBuilder.CustomAttribute(
                 name="control_body",
@@ -668,7 +715,7 @@ class SolverMABD(SolverBase):
             ),
         )
 
-        for attr in (*model_attrs, *state_attrs, *constraint_attrs, *control_attrs):
+        for attr in (*model_attrs, *state_attrs, *constraint_attrs, *world_constraint_attrs, *control_attrs):
             builder.add_custom_attribute(attr)
 
 
