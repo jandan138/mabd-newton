@@ -1214,6 +1214,92 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE26_REVIEW_DISPOSITION_COMMIT", text)
         self.assertNotIn("pending branch-local", text)
 
+    def test_phase27_rbd_lane_gate_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        experiment_statuses = {
+            claim["claim_id"]: claim["reproduction_status"]
+            for claim in data["claims"]
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        self.assertNotIn("passed", set(experiment_statuses.values()))
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 27")
+        verified = claim_boundary_bullet(text, "Phase 27 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 27 does not verify")
+
+        self.assertIn("paper-scoped RBD lane gate", current)
+        self.assertIn("required single-body spinning-box", current)
+        self.assertIn("top-level report remains `incomplete`", verified)
+        self.assertIn("lane_gate_status = passed", verified)
+        self.assertIn("paper_faithful_implicit_rbd", verified)
+        self.assertIn("cpu_numpy_newton_only", verified)
+        self.assertIn("closed-form xyzw quaternion", verified)
+        self.assertIn("comparison protocol consumes the RBD lane gate", verified)
+        self.assertIn("the paper spinning-box experiment", non_claim)
+        self.assertIn("M-ABD lane pass", non_claim)
+        self.assertIn("spinning-box comparison pass", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase27_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-17-phase27-rbd-pass-gate.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "configs/experiments/paper_experiment_matrix.yaml",
+            "## Repository",
+            "plan commit: `423313d`",
+            "design hardening commit:",
+            "report gate validation commit:",
+            "paper RBD baseline commit:",
+            "runner/comparison commit:",
+            "docs/record commit:",
+            "independent review:",
+            "top-level experiment reports must remain incomplete",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status: Phase 27 does not modify vendored Newton",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "## Metrics And Diagnostics",
+            "baseline_lane = rbd_implicit_baseline",
+            "solver_mode = paper_faithful_implicit_rbd",
+            "backend = cpu_numpy_newton_only",
+            "lane_gate_status = passed",
+            "report status: `incomplete`",
+            "full_experiment_claim_passed = false",
+            "linear_momentum_error <= 1.0e-12",
+            "angular_momentum_error <= 1.0e-12",
+            "energy_drift <= 1.0e-12",
+            "relative_energy_drift <= 1.0e-12",
+            "final_rotation_xyzw = [0.0, -0.08827860647172615, 0.0, 0.9960958225188027]",
+            "spinning_box_comparison_pass_gate_not_enabled",
+            "No `experiment.*` claim is passed in this phase.",
+            "## Artifacts",
+            "generated reports: not committed",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_reporting_contracts",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_rigid_baselines",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_runner tests.test_spinning_box_comparison",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_phase0_bootstrap",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE27_DOCS_COMMIT", text)
+        self.assertNotIn("pending branch-local", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1245,7 +1331,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

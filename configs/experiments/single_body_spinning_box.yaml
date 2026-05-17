@@ -6,8 +6,7 @@ source_lines:
 asset_ids:
   - primitive_cube
 baseline_lane: mabd_newton
-required_missing_lanes:
-  - rbd_implicit_baseline
+required_missing_lanes: []
 paper_values:
   cube_size_m: 0.1
   density: "1E3 kg/m^3"
@@ -65,7 +64,7 @@ simulation:
     - 1.0
 report:
   status: incomplete
-  failure_reason: full paper claim still requires rbd_implicit_baseline
+  failure_reason: full paper claim still requires mabd_newton lane pass and spinning-box comparison pass gate
   output_report: reports/experiment_matrix/single_body_spinning_box.json
   thresholds:
     energy_drift: 1.0e-12

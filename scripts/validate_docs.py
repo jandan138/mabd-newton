@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26 docs."""
+"""Validate Phase 0-27 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -64,6 +64,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase24-spinning-box-trajectory-shape-diagnostics.md",
     "docs/records/2026-05-17-phase25-spinning-box-no-polar-material-lane.md",
     "docs/records/2026-05-17-phase26-corotated-material-rhs.md",
+    "docs/records/2026-05-17-phase27-rbd-pass-gate.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -651,6 +652,43 @@ def validate_claim_boundaries() -> None:
     for snippet in phase26_non_claims:
         if snippet not in phase26_non_claim:
             fail(f"claim-boundaries.md must bound Phase 26 corotated evidence: {snippet}")
+    phase27_current = claim_boundary_bullet(text, "This repository contains Phase 27")
+    phase27_verified = claim_boundary_bullet(text, "Phase 27 verifies")
+    phase27_non_claim = claim_boundary_bullet(text, "Phase 27 does not verify")
+    if "paper-scoped RBD lane gate" not in phase27_current:
+        fail("claim-boundaries.md must state Phase 27 RBD lane-gate evidence")
+    phase27_required = (
+        "top-level report remains `incomplete`",
+        "lane_gate_status = passed",
+        "paper_faithful_implicit_rbd",
+        "cpu_numpy_newton_only",
+        "closed-form xyzw quaternion",
+        "strict conservation thresholds",
+        "comparison protocol consumes the RBD lane gate",
+    )
+    for snippet in phase27_required:
+        if snippet not in phase27_verified:
+            fail(f"claim-boundaries.md must describe Phase 27 lane-gate evidence: {snippet}")
+    phase27_non_claims = (
+        "the paper spinning-box experiment",
+        "M-ABD lane pass",
+        "spinning-box comparison pass",
+        "full M-ABD dynamics",
+        "paper-faithful affine collision",
+        "collision detection",
+        "continuous collision detection",
+        "friction",
+        "implicit contact solve",
+        "gravity",
+        "rendered output",
+        "paper timing",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase27_non_claims:
+        if snippet not in phase27_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 27 lane-gate evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -1776,16 +1814,105 @@ def validate_phase26_record() -> None:
             if claim.get("reproduction_status") == "passed":
                 fail("Phase 26 must not pass experiment.* claims")
 
+def validate_phase27_record() -> None:
+    text = (ROOT / "docs/records/2026-05-17-phase27-rbd-pass-gate.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "## Repository",
+        "plan commit: `423313d`",
+        "design hardening commit:",
+        "report gate validation commit:",
+        "paper RBD baseline commit:",
+        "runner/comparison commit:",
+        "docs/record commit:",
+        "independent review:",
+        "top-level experiment reports must remain incomplete",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 27 does not modify vendored Newton",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Metrics And Diagnostics",
+        "baseline_lane = rbd_implicit_baseline",
+        "solver_mode = paper_faithful_implicit_rbd",
+        "backend = cpu_numpy_newton_only",
+        "lane_gate_status = passed",
+        "report status: `incomplete`",
+        "full_experiment_claim_passed = false",
+        "linear_momentum_error <= 1.0e-12",
+        "angular_momentum_error <= 1.0e-12",
+        "energy_drift <= 1.0e-12",
+        "relative_energy_drift <= 1.0e-12",
+        "final_rotation_xyzw = [0.0, -0.08827860647172615, 0.0, 0.9960958225188027]",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "No `experiment.*` claim is passed in this phase.",
+        "## Artifacts",
+        "generated reports: not committed",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_reporting_contracts",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_rigid_baselines",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_runner tests.test_spinning_box_comparison",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_phase0_bootstrap",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 27 record missing required evidence field: {snippet}")
+    if "TO_BE_BACKFILLED_PHASE27_DOCS_COMMIT" in text:
+        fail("Phase 27 record contains stale docs commit placeholder")
+    if "pending branch-local" in text:
+        fail("Phase 27 record contains pending branch-local provenance placeholder")
+    forbidden_snippets = (
+        "Phase 27 verifies the paper spinning-box experiment",
+        "Phase 27 passes experiment.single_body.spinning_box",
+        "Phase 27 passes the M-ABD lane",
+        "Phase 27 passes the spinning-box comparison",
+        "Phase 27 verifies paper-faithful affine collision",
+        "Phase 27 verifies collision detection",
+        "Phase 27 verifies implicit contact solve",
+        "Phase 27 verifies paper timing",
+        "Phase 27 verifies paper trajectory agreement",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 27 record overclaims unsupported evidence: {snippet}")
+
+    data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 27 must not pass experiment.* claims")
+
     matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
     spinning_box = next(
         experiment
         for experiment in matrix.experiments
         if experiment.claim_id == "experiment.single_body.spinning_box"
     )
-    if "rbd_implicit_baseline_report_incomplete" not in spinning_box.blocking_reasons:
-        fail("Phase 26 spinning-box matrix must retain incomplete RBD baseline blocker")
+    if "rbd_implicit_baseline_report_incomplete" in spinning_box.blocking_reasons:
+        fail("Phase 27 spinning-box matrix must remove incomplete RBD baseline blocker")
+    if "mabd_newton_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 27 spinning-box matrix must retain incomplete M-ABD lane blocker")
     if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
-        fail("Phase 26 spinning-box matrix must retain incomplete comparison report blocker")
+        fail("Phase 27 spinning-box matrix must retain incomplete comparison report blocker")
 
 
 def validate_paper_claims() -> None:
@@ -1913,8 +2040,10 @@ def validate_experiment_contracts() -> None:
     )
     if "rbd_implicit_baseline_adapter_missing" in spinning_box.blocking_reasons:
         fail("Phase 15 spinning-box matrix must not keep stale RBD adapter-missing blocker")
-    if "rbd_implicit_baseline_report_incomplete" not in spinning_box.blocking_reasons:
-        fail("Phase 15 spinning-box matrix must record incomplete RBD baseline report blocker")
+    if "rbd_implicit_baseline_report_incomplete" in spinning_box.blocking_reasons:
+        fail("Phase 27 spinning-box matrix must not keep stale incomplete RBD baseline blocker")
+    if "mabd_newton_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 27 spinning-box matrix must record incomplete M-ABD lane blocker")
     if "paper_comparison_protocol_not_recorded" in spinning_box.blocking_reasons:
         fail("Phase 16 spinning-box matrix must not keep stale missing-comparison-protocol blocker")
     if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
@@ -2014,13 +2143,14 @@ def main() -> int:
     validate_phase24_record()
     validate_phase25_record()
     validate_phase26_record()
+    validate_phase27_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27 "
         "docs/provenance validation passed"
     )
     return 0

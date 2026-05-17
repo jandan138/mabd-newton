@@ -55,9 +55,15 @@ def _require_str(data: dict[str, Any], key: str) -> str:
     return value
 
 
-def _require_str_tuple(data: dict[str, Any], key: str) -> tuple[str, ...]:
+def _require_str_tuple(
+    data: dict[str, Any], key: str, *, allow_empty: bool = False
+) -> tuple[str, ...]:
     value = data.get(key)
-    if not isinstance(value, list) or not value or not all(isinstance(item, str) and item for item in value):
+    if (
+        not isinstance(value, list)
+        or (not allow_empty and not value)
+        or not all(isinstance(item, str) and item for item in value)
+    ):
         raise ExperimentRunConfigError(f"{key} must be a non-empty list of strings")
     return tuple(value)
 
@@ -193,7 +199,11 @@ def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
         source_lines=_require_str_tuple(data, "source_lines"),
         asset_ids=_require_str_tuple(data, "asset_ids"),
         baseline_lane=_require_str(data, "baseline_lane"),
-        required_missing_lanes=_require_str_tuple(data, "required_missing_lanes"),
+        required_missing_lanes=_require_str_tuple(
+            data,
+            "required_missing_lanes",
+            allow_empty=True,
+        ),
         paper_values=_require_mapping(data, "paper_values"),
         time_step_s=time_step_s,
         step_count=step_count,

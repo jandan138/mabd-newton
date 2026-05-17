@@ -314,6 +314,20 @@
   contact solve, gravity, rendered output, paper timing, paper trajectory
   agreement, generated report artifacts as committed evidence, or any passed
   `experiment.*` claim.
+- This repository contains Phase 27 paper-scoped RBD lane gate evidence for
+  the required single-body spinning-box `rbd_implicit_baseline` lane.
+- Phase 27 verifies that the RBD lane top-level report remains `incomplete`
+  while `lane_gate_status = passed`, `solver_mode =
+  paper_faithful_implicit_rbd`, and `backend = cpu_numpy_newton_only` are
+  recorded for the closed-form xyzw quaternion free-body path. It also verifies
+  strict conservation thresholds and that the comparison protocol consumes the
+  RBD lane gate while keeping the full comparison incomplete.
+- Phase 27 does not verify the paper spinning-box experiment, M-ABD lane pass,
+  spinning-box comparison pass, full M-ABD dynamics, paper-faithful affine
+  collision, collision detection, continuous collision detection, friction,
+  implicit contact solve, gravity, rendered output, paper timing, paper
+  trajectory agreement, generated report artifacts as committed evidence, or
+  any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
