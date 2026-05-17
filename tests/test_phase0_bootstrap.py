@@ -577,6 +577,8 @@ class Phase0BootstrapTests(unittest.TestCase):
             "plan commit:",
             "implementation commit:",
             "docs/provenance commit: `632946ffa567ef7cac15868b92b8a5db936ec739`",
+            "review hardening commit: `054d454caa55c10b9094a536ef4d0dd10047b041`",
+            "independent review:",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "## Paper Source",
@@ -594,6 +596,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "`spinning_box_mabd_mass_diagonal`",
             "generated reports: not committed",
             "No `experiment.*` claim is passed in this phase.",
+            "phase bootstrap docs tests: Ran 31 tests, OK",
         ):
             self.assertIn(snippet, text)
 

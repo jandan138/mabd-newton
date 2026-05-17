@@ -810,6 +810,8 @@ def validate_phase18_record() -> None:
         "plan commit: `5f8c3de029f20b157b9a50d624223d05e21a7720`",
         "implementation commit: `c7710f0f3ab6656a41968b3fe230e274d5f77f8b`",
         "docs/provenance commit: `632946ffa567ef7cac15868b92b8a5db936ec739`",
+        "review hardening commit: `054d454caa55c10b9094a536ef4d0dd10047b041`",
+        "independent review:",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "## Paper Source",
@@ -827,6 +829,7 @@ def validate_phase18_record() -> None:
         "`spinning_box_mabd_mass_diagonal`",
         "generated reports: not committed",
         "No `experiment.*` claim is passed in this phase.",
+        "phase bootstrap docs tests: Ran 31 tests, OK",
     )
     for snippet in required_snippets:
         if snippet not in text:

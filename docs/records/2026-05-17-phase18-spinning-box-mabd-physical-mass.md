@@ -35,6 +35,10 @@ remain `incomplete`.
 - plan commit: `5f8c3de029f20b157b9a50d624223d05e21a7720`
 - implementation commit: `c7710f0f3ab6656a41968b3fe230e274d5f77f8b`
 - docs/provenance commit: `632946ffa567ef7cac15868b92b8a5db936ec739`
+- review hardening commit: `054d454caa55c10b9094a536ef4d0dd10047b041`
+- independent review: claim/spec review found missing review-hardening
+  provenance and expected-vs-observed wording in this record; code/physics
+  review found no findings.
 
 ## Vendored Newton
 
@@ -119,8 +123,9 @@ GREEN result:
 
 ```text
 config/report tests: Ran 10 tests, OK
-phase bootstrap docs tests: expected to pass after Phase 18 docs/validator
-are committed with this record.
+phase bootstrap docs tests: Ran 31 tests, OK
+docs validator: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18 docs/provenance validation passed
+ruff docs/code slice: All checks passed!
 ```
 
 ## Claim Impact
