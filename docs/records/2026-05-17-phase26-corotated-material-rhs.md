@@ -40,7 +40,8 @@ committed generated report artifacts, or any passed `experiment.*` claim.
 - polar CPU oracle implementation commit: `d2ddb2a2e1e6b74d4deb1c6d8720ca7ee09f7ddb`
 - spinning-box polar report lane implementation commit: `a5755baaed1d577fa23a6bd47e3ef4751a5e191a`
 - docs/record creation commit: `982ebaa60907e1666e3acc6f3cf8ffdabc1d207a`
-- review disposition record commit: `982ebaa60907e1666e3acc6f3cf8ffdabc1d207a`
+- review disposition record commit: `d500f97cee6f66a2a5a4aae23275d09ac4dd0df3`
+- provenance hardening commit: `d500f97cee6f66a2a5a4aae23275d09ac4dd0df3`
 - independent review: Newton/numerics review found that the initial Phase 26
   spec used an affine-only local transform that was not paper-equivalent unless
   the 12x12 system was translation-decoupled. Claim/provenance review found
@@ -136,6 +137,21 @@ committed generated report artifacts, or any passed `experiment.*` claim.
 - generated reports: not committed; tests write JSON reports to temporary
   directories only
 - No `experiment.*` claim is passed in this phase.
+
+## Verification Commands
+
+```bash
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_phase4_solver_step
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest newton.tests.test_mabd_phase4_solver_step
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_single_body_report_lane tests.test_spinning_box_comparison tests.test_experiment_runner
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py
+PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"
+git diff --check
+```
 
 ## TDD Evidence
 
