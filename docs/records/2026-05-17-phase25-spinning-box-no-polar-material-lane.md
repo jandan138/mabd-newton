@@ -42,6 +42,16 @@ artifacts, or any passed `experiment.*` claim.
 - CPU oracle no-polar implementation commit: `80a32a1e2f5a1a3ab80bec2460562cbcfd54c0bf`
 - spinning-box material lane implementation commit: `c0cef676e5265c659ca2bd9bd58165f357d8b1fa`
 - docs/record creation commit: `aa7eb983471ac1f2f6abdf27af7641b131533ea4`
+- docs/provenance hardening commit: `511f2d13baf67dcc478494a4022bfd6cf959e82b`
+- CPU oracle review disposition commit: `f8998822bc5d9a911c2a48fc3de93ffad204e6d8`
+- review disposition record commit: `TO_BE_BACKFILLED_PHASE25_REVIEW_DISPOSITION_COMMIT`
+- independent review: Newton/numerics review found that the first no-polar CPU
+  oracle route rotated the translation block and reported residuals in the
+  unrotated system. The disposition commit keeps translation inertial in the
+  world frame, reports residuals in the local no-polar solve system, and adds
+  independent invariant tests. Claim/provenance review found the Phase 25
+  record did not list the docs/provenance hardening commit; this record now
+  lists it explicitly.
 
 ## Vendored Newton
 
@@ -139,8 +149,8 @@ NotImplementedError: Phase 4 CPU step supports rotation_mode='none' only
 CPU oracle GREEN result:
 
 ```text
-CPU oracle tests: Ran 12 tests, OK
-vendored CPU oracle tests: Ran 6 tests, OK
+CPU oracle tests: Ran 13 tests, OK
+vendored CPU oracle tests: Ran 7 tests, OK
 ruff: All checks passed!
 git diff --check: exit 0
 ```
