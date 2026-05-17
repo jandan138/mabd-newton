@@ -72,6 +72,7 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertEqual(config.contact_surface["plane_offset"], 0.0)
         self.assertGreater(config.contact_surface["stiffness"], 0.0)
         self.assertGreaterEqual(config.contact_surface["damping"], 0.0)
+        self.assertAlmostEqual(float(config.initial_q[10]), 0.05)
         np.testing.assert_allclose(
             config.initial_qd,
             abd_generalized_velocity_from_paper_momenta(config),

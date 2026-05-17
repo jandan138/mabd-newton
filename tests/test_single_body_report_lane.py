@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import numpy as np
+
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 from mabd_reproduction.single_body_reports import write_spinning_box_development_report
 
@@ -80,18 +82,28 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         self.assertAlmostEqual(float(corners[:, 0].max()), 0.05)
         self.assertAlmostEqual(float(corners[:, 0].min()), -0.05)
         self.assertEqual(diagnostics.corner_count, 8)
-        self.assertGreaterEqual(diagnostics.active_contact_count, 0)
+        self.assertEqual(diagnostics.active_contact_count, 0)
         self.assertEqual(len(diagnostics.corner_signed_distances), 8)
         self.assertEqual(diagnostics.total_generalized_force.shape, (12,))
+        self.assertAlmostEqual(diagnostics.min_signed_distance, 0.0)
+        self.assertAlmostEqual(diagnostics.max_penetration_depth, 0.0)
+        self.assertTrue(np.allclose(diagnostics.total_normal_force, np.zeros(3)))
+        self.assertTrue(np.allclose(diagnostics.total_generalized_force, np.zeros(12)))
         self.assertEqual(loaded.observed["contact_surface_type"], "plane")
         self.assertEqual(loaded.observed["contact_corner_count"], 8)
-        self.assertIn("contact_active_count", loaded.observed)
-        self.assertIn("contact_min_signed_distance_m", loaded.observed)
-        self.assertIn("contact_max_penetration_m", loaded.observed)
+        self.assertEqual(loaded.observed["contact_active_count"], 0)
+        self.assertAlmostEqual(loaded.observed["contact_min_signed_distance_m"], 0.0)
+        self.assertAlmostEqual(loaded.observed["contact_max_penetration_m"], 0.0)
         self.assertIn("contact_total_normal_force_n", loaded.observed)
         self.assertIn("contact_total_generalized_force", loaded.observed)
         self.assertEqual(len(loaded.observed["contact_corner_signed_distances_m"]), 8)
         self.assertEqual(len(loaded.observed["contact_total_generalized_force"]), 12)
+        self.assertTrue(
+            np.allclose(loaded.observed["contact_total_normal_force_n"], np.zeros(3))
+        )
+        self.assertTrue(
+            np.allclose(loaded.observed["contact_total_generalized_force"], np.zeros(12))
+        )
         self.assertAlmostEqual(loaded.observed["mass_kg"], 1.0)
         self.assertAlmostEqual(loaded.observed["initial_energy_j"], 3005000.0)
         self.assertAlmostEqual(loaded.observed["final_energy_j"], 3005000.0)
