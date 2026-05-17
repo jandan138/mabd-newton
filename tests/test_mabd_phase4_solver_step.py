@@ -1147,6 +1147,11 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
         np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
         np.testing.assert_allclose(solver.model_cpu_oracle_config.gravity, [0.0, -9.81, 1.25])
+        cached_config = solver.model_cpu_oracle_config
+
+        solver.step(state, state, None, None, dt)
+
+        self.assertIs(solver.model_cpu_oracle_config, cached_config)
 
     def test_solver_step_model_path_ignores_disabled_gravity_rows(self) -> None:
         builder = newton.ModelBuilder()
@@ -1193,16 +1198,25 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         SolverMABD.register_custom_attributes(builder)
         _add_model_body_row(builder, young_modulus=1.0)
         _add_model_gravity_row(builder, gravity=(0.0, -9.81, 1.25))
+        _add_model_gravity_row(builder, gravity=(0.0, -1.0, 0.0))
         model = builder.finalize()
         solver = SolverMABD(model)
-        solver.configure_cpu_oracle(mabd.MABDCPUOracleConfig(bodies=[_body()]))
+        manual_config = mabd.MABDCPUOracleConfig(bodies=[_body()])
+        solver.configure_cpu_oracle(manual_config)
+        q = _identity_q((0.1, 0.2, -0.3))
+        qd = np.zeros(12)
         state = model.state()
-        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+        _assign_mabd_state(state, q, qd)
+        dt = 0.02
 
-        solver.step(state, state, None, None, 0.02)
+        solver.step(state, state, None, None, dt)
 
+        expected = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=dt, config=manual_config)
+        q_next, qd_next = _read_mabd_state(state)
         self.assertIsNone(solver.model_cpu_oracle_config)
         self.assertEqual(solver.last_step_result.topology, "unconstrained")
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-12)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-12)
 
     def test_solver_step_model_path_rejects_unknown_constraint_type(self) -> None:
         builder = newton.ModelBuilder()
