@@ -2247,6 +2247,36 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("joint_force_error", str(context.exception))
 
+    def test_phase36_validator_rejects_stale_input_report_sha256(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        comparison = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+        provenance = {
+            lane: dict(details)
+            for lane, details in comparison.observed["input_report_provenance"].items()
+        }
+        provenance["analytic_reference"]["sha256"] = "0" * 64
+        stale = replace(
+            comparison,
+            observed={
+                **comparison.observed,
+                "input_report_provenance": provenance,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_physical_pendulum_comparison.json"):
+                return stale
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase36_record()
+
+        self.assertIn("sha256", str(context.exception))
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [

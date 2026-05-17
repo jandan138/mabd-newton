@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -139,6 +140,14 @@ def read_yaml(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         fail(f"{path} must contain a YAML mapping")
     return data
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def claim_boundary_bullet(text: str, starts_with: str) -> str:
@@ -3819,6 +3828,9 @@ def validate_phase36_record() -> None:
             fail(f"Phase 36 input report vendored Newton commit changed: {lane}")
         if not lane_provenance.get("sha256"):
             fail(f"Phase 36 input report sha256 missing: {lane}")
+        actual_sha256 = sha256_file(ROOT / expected_path)
+        if lane_provenance.get("sha256") != actual_sha256:
+            fail(f"Phase 36 input report sha256 mismatch: {lane}")
         if lane_provenance.get("source_commit") in PLACEHOLDER_SOURCE_COMMITS:
             fail(f"Phase 36 input report source_commit placeholder: {lane}")
 
