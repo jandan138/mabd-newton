@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17 docs and claims."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18 docs."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import yaml
 
 from mabd_reproduction.experiment_contracts import (
@@ -21,6 +22,7 @@ from mabd_reproduction.experiment_configs import (
     load_spinning_box_config,
     validate_spinning_box_config_against_matrix,
 )
+from mabd_reproduction.spinning_box_physics import spinning_box_mabd_mass_diagonal
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,6 +52,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase15-rbd-baseline-lane.md",
     "docs/records/2026-05-17-phase16-spinning-box-comparison-protocol.md",
     "docs/records/2026-05-17-phase17-spinning-box-mabd-paper-metrics.md",
+    "docs/records/2026-05-17-phase18-spinning-box-mabd-physical-mass.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -303,6 +306,33 @@ def validate_claim_boundaries() -> None:
     for snippet in phase17_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 17 paper-momentum evidence: {snippet}")
+    if "Phase 18 verifies physical affine mass-diagonal reporting" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 18 physical mass evidence")
+    phase18_required = (
+        "M-ABD single-body spinning-box development lane",
+        "paper uniform centered cube",
+        "Newton affine packing order",
+        "mass_diagonal = [m*s^2/12] * 9 + [m] * 3",
+        "initial_energy_j",
+        "final_energy_j",
+        "relative_energy_drift",
+    )
+    for snippet in phase18_required:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must describe Phase 18 physical mass evidence: {snippet}")
+    phase18_non_claims = (
+        "Phase 18 does not verify the paper spinning-box experiment",
+        "paper-faithful implicit RBD baseline",
+        "paper-faithful affine collision",
+        "paper timing",
+        "rendered output",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase18_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 18 physical mass evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -768,6 +798,51 @@ def validate_phase17_record() -> None:
             fail(f"Phase 17 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase18_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase18-spinning-box-mabd-physical-mass.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit: `5f8c3de029f20b157b9a50d624223d05e21a7720`",
+        "implementation commit: `c7710f0f3ab6656a41968b3fe230e274d5f77f8b`",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "## Metrics And Thresholds",
+        "mass_diagonal = [1/1200] * 9 + [1.0] * 3",
+        "initial_energy_j = 3005000.0",
+        "relative_energy_drift",
+        "## Artifacts",
+        "`spinning_box_mabd_mass_diagonal`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 18 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 18 verifies the paper spinning-box experiment",
+        "Phase 18 passes experiment.single_body.spinning_box",
+        "Phase 18 verifies paper-faithful implicit RBD baseline",
+        "Phase 18 verifies paper-faithful affine collision",
+        "Phase 18 verifies paper timing",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 18 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -911,6 +986,9 @@ def validate_phase13_config(
         validate_spinning_box_config_against_matrix(config, matrix)
     except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
         fail(f"Phase 13 config validation failed: {exc}")
+    expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
+    if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
+        fail("Phase 18 config validation failed: spinning-box mass_diagonal is not paper-derived")
 
 
 def validate_provenance() -> None:
@@ -959,12 +1037,16 @@ def main() -> int:
     validate_phase15_record()
     validate_phase16_record()
     validate_phase17_record()
+    validate_phase18_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
-    print("Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17 docs/provenance validation passed")
+    print(
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18 "
+        "docs/provenance validation passed"
+    )
     return 0
 
 

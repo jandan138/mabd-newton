@@ -552,6 +552,50 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase18_spinning_box_mabd_physical_mass_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        normalized_text = " ".join(text.split())
+
+        self.assertIn("Phase 18 verifies physical affine mass-diagonal reporting", text)
+        self.assertIn("paper uniform centered cube", normalized_text)
+        self.assertIn("m*s^2/12", normalized_text)
+        self.assertIn("relative_energy_drift", text)
+        self.assertIn("Phase 18 does not verify the paper spinning-box experiment", text)
+        self.assertIn("paper-faithful implicit RBD baseline", text)
+        self.assertIn("any passed `experiment.*` claim", text)
+
+    def test_phase18_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase18-spinning-box-mabd-physical-mass.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit:",
+            "implementation commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "## Metrics And Thresholds",
+            "mass_diagonal = [1/1200] * 9 + [1.0] * 3",
+            "initial_energy_j = 3005000.0",
+            "relative_energy_drift",
+            "## Artifacts",
+            "`spinning_box_mabd_mass_diagonal`",
+            "generated reports: not committed",
+            "No `experiment.*` claim is passed in this phase.",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -583,7 +627,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

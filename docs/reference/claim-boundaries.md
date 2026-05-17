@@ -47,6 +47,9 @@
 - This repository contains Phase 17 paper-value momentum metric reporting for
   the M-ABD single-body spinning-box development lane after the Phase 17
   record is created.
+- This repository contains Phase 18 physical affine mass-diagonal reporting
+  and kinetic-energy diagnostics for the M-ABD single-body spinning-box
+  development lane after the Phase 18 record is created.
 
 ## Intended
 
@@ -187,6 +190,15 @@
   extraction via the paper twist map, and `linear_momentum_error` /
   `angular_momentum_error` fields consumed by the comparison protocol.
 - Phase 17 does not verify the paper spinning-box experiment,
+  paper-faithful implicit RBD baseline, paper-faithful affine collision, paper
+  timing, rendered output, paper trajectory agreement, generated report
+  artifacts as committed evidence, or any passed `experiment.*` claim.
+- Phase 18 verifies physical affine mass-diagonal reporting for the M-ABD
+  single-body spinning-box development lane: paper uniform centered cube mass
+  derivation, Newton affine packing order, `mass_diagonal = [m*s^2/12] * 9 +
+  [m] * 3`, `initial_energy_j`, `final_energy_j`, and
+  `relative_energy_drift` report fields.
+- Phase 18 does not verify the paper spinning-box experiment,
   paper-faithful implicit RBD baseline, paper-faithful affine collision, paper
   timing, rendered output, paper trajectory agreement, generated report
   artifacts as committed evidence, or any passed `experiment.*` claim.
