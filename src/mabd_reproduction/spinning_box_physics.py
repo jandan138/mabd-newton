@@ -59,6 +59,36 @@ class SpinningBoxContactDiagnostics:
     total_generalized_force: np.ndarray
 
 
+@dataclass(frozen=True)
+class SpinningBoxKinematicFeasibility:
+    time_step_s: float
+    paper_angular_speed_rad_s: float
+    orthogonal_update_angular_speed_bound_rad_s: float
+    paper_angular_momentum_norm_kg_m2_s: float
+    orthogonal_update_angular_momentum_bound_kg_m2_s: float
+    required_speed_to_bound_ratio: float
+    requires_affine_stretch: bool
+    velocity_update_relation: str
+    status: str
+
+    def to_report(self) -> dict[str, object]:
+        return {
+            "time_step_s": self.time_step_s,
+            "paper_angular_speed_rad_s": self.paper_angular_speed_rad_s,
+            "orthogonal_update_angular_speed_bound_rad_s": (
+                self.orthogonal_update_angular_speed_bound_rad_s
+            ),
+            "paper_angular_momentum_norm_kg_m2_s": self.paper_angular_momentum_norm_kg_m2_s,
+            "orthogonal_update_angular_momentum_bound_kg_m2_s": (
+                self.orthogonal_update_angular_momentum_bound_kg_m2_s
+            ),
+            "required_speed_to_bound_ratio": self.required_speed_to_bound_ratio,
+            "requires_affine_stretch": self.requires_affine_stretch,
+            "velocity_update_relation": self.velocity_update_relation,
+            "status": self.status,
+        }
+
+
 def _paper_float(value: Any, name: str, *, positive: bool = False) -> float:
     if isinstance(value, bool):
         raise ValueError(f"{name} must be numeric")
@@ -103,6 +133,39 @@ def spinning_box_physical_properties(config: SpinningBoxRunConfig) -> SpinningBo
         angular_momentum_kg_m2_s=angular_momentum,
         linear_velocity_m_s=linear_momentum / mass_kg,
         angular_velocity_rad_s=angular_momentum / inertia_diag,
+    )
+
+
+def spinning_box_kinematic_feasibility(
+    config: SpinningBoxRunConfig,
+    time_step_s: float,
+) -> SpinningBoxKinematicFeasibility:
+    dt = float(time_step_s)
+    if not isfinite(dt) or dt <= 0.0:
+        raise ValueError("time_step_s must be positive")
+
+    properties = spinning_box_physical_properties(config)
+    paper_angular_speed = float(np.linalg.norm(properties.angular_velocity_rad_s))
+    paper_angular_momentum = float(np.linalg.norm(properties.angular_momentum_kg_m2_s))
+    speed_bound = 1.0 / dt
+    momentum_bound = float(np.max(properties.inertia_diag_kg_m2)) * speed_bound
+    required_ratio = paper_angular_speed / speed_bound
+    requires_stretch = bool(paper_angular_momentum > momentum_bound * (1.0 + 1.0e-12))
+    status = (
+        "paper_momentum_requires_affine_stretch_under_q_delta_over_h"
+        if requires_stretch
+        else "orthogonal_update_can_represent_paper_momentum"
+    )
+    return SpinningBoxKinematicFeasibility(
+        time_step_s=dt,
+        paper_angular_speed_rad_s=paper_angular_speed,
+        orthogonal_update_angular_speed_bound_rad_s=speed_bound,
+        paper_angular_momentum_norm_kg_m2_s=paper_angular_momentum,
+        orthogonal_update_angular_momentum_bound_kg_m2_s=momentum_bound,
+        required_speed_to_bound_ratio=required_ratio,
+        requires_affine_stretch=requires_stretch,
+        velocity_update_relation="qd_next=(q_next-q_n)/h",
+        status=status,
     )
 
 
@@ -239,11 +302,13 @@ def mabd_momentum_diagnostics(
 __all__ = [
     "SpinningBoxAffineShapeDiagnostics",
     "SpinningBoxContactDiagnostics",
+    "SpinningBoxKinematicFeasibility",
     "SpinningBoxMABDMomentumDiagnostics",
     "SpinningBoxMaterialProperties",
     "SpinningBoxPhysicalProperties",
     "abd_generalized_velocity_from_paper_momenta",
     "spinning_box_affine_shape_diagnostics",
+    "spinning_box_kinematic_feasibility",
     "mabd_momentum_diagnostics",
     "paper_spatial_twist_from_momenta",
     "spinning_box_contact_diagnostics",

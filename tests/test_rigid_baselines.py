@@ -50,6 +50,45 @@ class RigidBaselineTests(unittest.TestCase):
             atol=1.0e-12,
         )
 
+    def test_spinning_box_kinematic_feasibility_bounds_paper_momentum(self) -> None:
+        from mabd_reproduction.spinning_box_physics import (
+            spinning_box_kinematic_feasibility,
+        )
+
+        config = load_spinning_box_config(CONFIG_PATH)
+
+        coarse = spinning_box_kinematic_feasibility(config, 0.01)
+        fine = spinning_box_kinematic_feasibility(config, 0.001)
+
+        self.assertEqual(
+            coarse.status,
+            "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+        )
+        self.assertEqual(
+            fine.status,
+            "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+        )
+        self.assertAlmostEqual(coarse.paper_angular_speed_rad_s, 60000.0)
+        self.assertAlmostEqual(coarse.orthogonal_update_angular_speed_bound_rad_s, 100.0)
+        self.assertAlmostEqual(fine.orthogonal_update_angular_speed_bound_rad_s, 1000.0)
+        self.assertAlmostEqual(coarse.paper_angular_momentum_norm_kg_m2_s, 100.0)
+        self.assertAlmostEqual(
+            coarse.orthogonal_update_angular_momentum_bound_kg_m2_s,
+            1.0 / 6.0,
+        )
+        self.assertAlmostEqual(
+            fine.orthogonal_update_angular_momentum_bound_kg_m2_s,
+            10.0 / 6.0,
+        )
+        self.assertAlmostEqual(coarse.required_speed_to_bound_ratio, 600.0)
+        self.assertAlmostEqual(fine.required_speed_to_bound_ratio, 60.0)
+        self.assertTrue(coarse.requires_affine_stretch)
+        self.assertTrue(fine.requires_affine_stretch)
+        self.assertEqual(
+            coarse.to_report()["velocity_update_relation"],
+            "qd_next=(q_next-q_n)/h",
+        )
+
     def test_run_spinning_box_rbd_baseline_is_deterministic_and_incomplete(self) -> None:
         from mabd_reproduction.rigid_baselines import run_spinning_box_rbd_baseline
 
