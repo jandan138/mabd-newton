@@ -9,7 +9,7 @@ passed
 ## Repository
 
 - branch: `phase43-t-handle-reference`
-- report source_commit: `6667517e36043913529eacfb09587bb13742e385`
+- report source_commit: `d741e6f5b1d85f7c02afb520f55b8bb273947604`
 - plan: `docs/superpowers/plans/2026-05-18-mabd-phase43-t-handle-rk4-reference.md`
 - spec: `docs/superpowers/specs/2026-05-18-phase43-t-handle-rk4-reference-design.md`
 
@@ -48,7 +48,7 @@ No raw simulation directories, videos, or large logs are committed.
 
 - `reports/experiment_matrix/single_body_t_handle_rk4_reference.json`
   - sha256:
-    `87e15f1841153ea5a3b173c0540a0cb66e0ac6ea3da8b288cbe5b2885182eb09`
+    `a0153e2bd4f0e20aa5271ecbaaec726661e352b6b4baebe96dcfc76dddd25b67`
   - baseline lane: `rbd_rk4_reference`
   - solver mode: `t_handle_torque_free_rk4_reference`
   - backend: `cpu_numpy`
@@ -73,7 +73,7 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
   --lane t_handle_rk4_reference \
   --config configs/experiments/single_body_t_handle.yaml \
   --matrix configs/experiments/paper_experiment_matrix.yaml \
-  --source-commit 6667517e36043913529eacfb09587bb13742e385 \
+  --source-commit d741e6f5b1d85f7c02afb520f55b8bb273947604 \
   --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb \
   --output reports/experiment_matrix/single_body_t_handle_rk4_reference.json
 ```
