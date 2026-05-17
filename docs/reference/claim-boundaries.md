@@ -343,6 +343,18 @@
   implicit contact solve, gravity, rendered output, paper timing, paper
   trajectory agreement, generated report artifacts as committed evidence, or
   any passed `experiment.*` claim.
+- This repository contains Phase 29 spinning-box kinematic feasibility
+  diagnostics for the M-ABD paper-horizon report.
+- Phase 29 verifies paper angular speed 60000 rad/s, orthogonal
+  finite-difference bounds 100 and 1000 rad/s for `h = 0.01` and
+  `h = 0.001`, momentum bounds 1/6 and 10/6 kg m^2/s, ratios 600 and 60,
+  `paper_momentum_requires_affine_stretch_under_q_delta_over_h`, and
+  `qd_next=(q_next-q_n)/h` reporting.
+- Phase 29 does not verify the paper spinning-box experiment, M-ABD lane pass,
+  spinning-box comparison pass, full M-ABD dynamics, solver fix, projection
+  fix, decoupled velocity semantics, paper-faithful affine collision, contact
+  solve, timing, generated report artifacts as committed evidence, or any
+  passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -360,6 +372,8 @@
 - Matching development-lane position vectors are paper trajectory agreement.
 - Development-lane trajectory samples or affine shape diagnostics are paper
   trajectory agreement.
+- Phase 29 kinematic feasibility diagnostics are an M-ABD lane pass or solver
+  fix.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

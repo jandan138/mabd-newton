@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-28 docs and provenance contracts."""
+"""Validate Phase 0-29 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -24,6 +24,7 @@ from mabd_reproduction.experiment_configs import (
 )
 from mabd_reproduction.spinning_box_physics import (
     spinning_box_contact_diagnostics,
+    spinning_box_kinematic_feasibility,
     spinning_box_mabd_mass_diagonal,
 )
 
@@ -66,6 +67,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase26-corotated-material-rhs.md",
     "docs/records/2026-05-17-phase27-rbd-pass-gate.md",
     "docs/records/2026-05-17-phase28-spinning-box-paper-horizon.md",
+    "docs/records/2026-05-17-phase29-spinning-box-kinematic-feasibility.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -733,6 +735,43 @@ def validate_claim_boundaries() -> None:
     for snippet in phase28_non_claims:
         if snippet not in phase28_non_claim:
             fail(f"claim-boundaries.md must bound Phase 28 paper-horizon evidence: {snippet}")
+    phase29_current = claim_boundary_bullet(text, "This repository contains Phase 29")
+    phase29_verified = claim_boundary_bullet(text, "Phase 29 verifies")
+    phase29_non_claim = claim_boundary_bullet(text, "Phase 29 does not verify")
+    phase29_current_required = (
+        "spinning-box kinematic feasibility diagnostics",
+        "M-ABD paper-horizon report",
+    )
+    for snippet in phase29_current_required:
+        if snippet not in phase29_current:
+            fail(f"claim-boundaries.md must state Phase 29 feasibility evidence: {snippet}")
+    phase29_verified_required = (
+        "paper angular speed 60000",
+        "orthogonal finite-difference bounds 100 and 1000 rad/s",
+        "momentum bounds 1/6 and 10/6",
+        "ratios 600 and 60",
+        "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+        "qd_next=(q_next-q_n)/h",
+    )
+    for snippet in phase29_verified_required:
+        if snippet not in phase29_verified:
+            fail(f"claim-boundaries.md must describe Phase 29 feasibility evidence: {snippet}")
+    phase29_non_claims = (
+        "the paper spinning-box experiment",
+        "M-ABD lane pass",
+        "spinning-box comparison pass",
+        "full M-ABD dynamics",
+        "solver fix",
+        "decoupled velocity semantics",
+        "paper-faithful affine collision",
+        "contact solve",
+        "timing",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase29_non_claims:
+        if snippet not in phase29_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 29 feasibility evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -2057,6 +2096,127 @@ def validate_phase28_record() -> None:
         fail("Phase 28 spinning-box matrix must retain incomplete comparison report blocker")
 
 
+def validate_phase29_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-17-phase29-spinning-box-kinematic-feasibility.md"
+    text = record_path.read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "## Repository",
+        "base commit: `df9ff5f`",
+        "design commit: `68a95b6`",
+        "plan commit: `d18942c`",
+        "helper implementation commit: `7cec405`",
+        "report implementation commit: `061f916`",
+        "docs/record commit:",
+        "independent review:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 29 does not modify vendored Newton",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Metrics And Diagnostics",
+        "paper_angular_speed_rad_s = 60000.0",
+        "paper_angular_momentum_norm_kg_m2_s = 100.0",
+        "h = 0.01 orthogonal_update_angular_speed_bound_rad_s = 100.0",
+        "h = 0.01 orthogonal_update_angular_momentum_bound_kg_m2_s =",
+        "0.16666666666666666",
+        "h = 0.01 required_speed_to_bound_ratio = 600.0",
+        "h = 0.001 orthogonal_update_angular_speed_bound_rad_s = 1000.0",
+        "h = 0.001 orthogonal_update_angular_momentum_bound_kg_m2_s =",
+        "1.6666666666666667",
+        "h = 0.001 required_speed_to_bound_ratio = 60.0",
+        "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+        "qd_next=(q_next-q_n)/h",
+        "no `lane_gate_status`",
+        "No `experiment.*` claim is passed in this phase.",
+        "## Artifacts",
+        "generated reports: not committed",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_rigid_baselines",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_single_body_report_lane",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 29 record missing required evidence field: {snippet}")
+    if "TO_BE_BACKFILLED_PHASE29_DOCS_COMMIT" in text:
+        fail("Phase 29 record contains stale docs commit placeholder")
+    if "pending branch-local" in text:
+        fail("Phase 29 record contains pending branch-local provenance placeholder")
+    forbidden_snippets = (
+        "Phase 29 verifies the paper spinning-box experiment",
+        "Phase 29 passes experiment.single_body.spinning_box",
+        "Phase 29 passes the M-ABD lane",
+        "Phase 29 passes the spinning-box comparison",
+        "Phase 29 fixes the M-ABD solver",
+        "Phase 29 verifies paper-faithful affine collision",
+        "Phase 29 verifies collision detection",
+        "Phase 29 verifies implicit contact solve",
+        "Phase 29 verifies paper timing",
+        "Phase 29 verifies paper trajectory agreement",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 29 record overclaims unsupported evidence: {snippet}")
+
+    data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 29 must not pass experiment.* claims")
+
+    config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+    coarse = spinning_box_kinematic_feasibility(config, 0.01)
+    fine = spinning_box_kinematic_feasibility(config, 0.001)
+    if coarse.status != "paper_momentum_requires_affine_stretch_under_q_delta_over_h":
+        fail("Phase 29 coarse feasibility status changed")
+    if fine.status != "paper_momentum_requires_affine_stretch_under_q_delta_over_h":
+        fail("Phase 29 fine feasibility status changed")
+    if not np.isclose(coarse.paper_angular_speed_rad_s, 60000.0):
+        fail("Phase 29 paper angular speed changed")
+    if not np.isclose(coarse.orthogonal_update_angular_speed_bound_rad_s, 100.0):
+        fail("Phase 29 coarse orthogonal speed bound changed")
+    if not np.isclose(fine.orthogonal_update_angular_speed_bound_rad_s, 1000.0):
+        fail("Phase 29 fine orthogonal speed bound changed")
+    if not np.isclose(coarse.paper_angular_momentum_norm_kg_m2_s, 100.0):
+        fail("Phase 29 paper angular momentum norm changed")
+    if not np.isclose(coarse.orthogonal_update_angular_momentum_bound_kg_m2_s, 1.0 / 6.0):
+        fail("Phase 29 coarse angular momentum bound changed")
+    if not np.isclose(fine.orthogonal_update_angular_momentum_bound_kg_m2_s, 10.0 / 6.0):
+        fail("Phase 29 fine angular momentum bound changed")
+    if not np.isclose(coarse.required_speed_to_bound_ratio, 600.0):
+        fail("Phase 29 coarse speed ratio changed")
+    if not np.isclose(fine.required_speed_to_bound_ratio, 60.0):
+        fail("Phase 29 fine speed ratio changed")
+
+    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    spinning_box = next(
+        experiment
+        for experiment in matrix.experiments
+        if experiment.claim_id == "experiment.single_body.spinning_box"
+    )
+    if "mabd_newton_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 29 spinning-box matrix must retain incomplete M-ABD lane blocker")
+    if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 29 spinning-box matrix must retain incomplete comparison report blocker")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -2298,13 +2458,14 @@ def main() -> int:
     validate_phase26_record()
     validate_phase27_record()
     validate_phase28_record()
+    validate_phase29_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29 "
         "docs/provenance validation passed"
     )
     return 0

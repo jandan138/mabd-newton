@@ -1390,6 +1390,89 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE28_DOCS_COMMIT", text)
         self.assertNotIn("pending branch-local", text)
 
+    def test_phase29_spinning_box_kinematic_feasibility_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        experiment_statuses = {
+            claim["claim_id"]: claim["reproduction_status"]
+            for claim in data["claims"]
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        self.assertNotIn("passed", set(experiment_statuses.values()))
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 29")
+        verified = claim_boundary_bullet(text, "Phase 29 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 29 does not verify")
+
+        self.assertIn("spinning-box kinematic feasibility diagnostics", current)
+        self.assertIn("paper angular speed 60000", verified)
+        self.assertIn("orthogonal finite-difference bounds 100 and 1000 rad/s", verified)
+        self.assertIn("momentum bounds 1/6 and 10/6", verified)
+        self.assertIn("ratios 600 and 60", verified)
+        self.assertIn("paper_momentum_requires_affine_stretch_under_q_delta_over_h", verified)
+        self.assertIn("qd_next=(q_next-q_n)/h", verified)
+        self.assertIn("the paper spinning-box experiment", non_claim)
+        self.assertIn("M-ABD lane pass", non_claim)
+        self.assertIn("spinning-box comparison pass", non_claim)
+        self.assertIn("solver fix", non_claim)
+        self.assertIn("decoupled velocity semantics", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase29_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase29-spinning-box-kinematic-feasibility.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "configs/experiments/paper_experiment_matrix.yaml",
+            "## Repository",
+            "base commit: `df9ff5f`",
+            "design commit: `68a95b6`",
+            "plan commit: `d18942c`",
+            "helper implementation commit: `7cec405`",
+            "report implementation commit: `061f916`",
+            "docs/record commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status: Phase 29 does not modify vendored Newton",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "## Metrics And Diagnostics",
+            "paper_angular_speed_rad_s = 60000.0",
+            "h = 0.01 orthogonal_update_angular_speed_bound_rad_s = 100.0",
+            "h = 0.01 orthogonal_update_angular_momentum_bound_kg_m2_s = 0.16666666666666666",
+            "h = 0.01 required_speed_to_bound_ratio = 600.0",
+            "h = 0.001 orthogonal_update_angular_speed_bound_rad_s = 1000.0",
+            "h = 0.001 orthogonal_update_angular_momentum_bound_kg_m2_s = 1.6666666666666667",
+            "h = 0.001 required_speed_to_bound_ratio = 60.0",
+            "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+            "qd_next=(q_next-q_n)/h",
+            "no `lane_gate_status`",
+            "No `experiment.*` claim is passed in this phase.",
+            "## Artifacts",
+            "generated reports: not committed",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_rigid_baselines",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_single_body_report_lane",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE29_DOCS_COMMIT", text)
+        self.assertNotIn("pending branch-local", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1421,7 +1504,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
