@@ -3055,6 +3055,114 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("sha256 mismatch", str(context.exception))
 
+    def test_phase43_t_handle_rk4_reference_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        t_handle_claim = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.t_handle"
+        )
+        self.assertEqual(t_handle_claim["reproduction_status"], "intended")
+        self.assertIn("exact_t_handle_geometry_unknown", t_handle_claim["conflict_note"])
+        self.assertIn("raw_t_handle_reference_curve_data_missing", t_handle_claim["conflict_note"])
+
+        matrix = yaml.safe_load((ROOT / "configs/experiments/paper_experiment_matrix.yaml").read_text())
+        matrix_entry = next(
+            item for item in matrix["experiments"] if item["claim_id"] == "experiment.single_body.t_handle"
+        )
+        self.assertEqual(matrix_entry["reproduction_status"], "planned")
+        self.assertIn("exact_t_handle_geometry_unknown", matrix_entry["blocking_reasons"])
+        self.assertIn("raw_t_handle_reference_curve_data_missing", matrix_entry["blocking_reasons"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 43")
+        verified = claim_boundary_bullet(text, "Phase 43 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 43 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 43 T-handle RK4 reference")
+
+        self.assertIn("T-handle RK4 reference diagnostic lane", current)
+        self.assertIn("rbd_rk4_reference", verified)
+        self.assertIn("source-backed", verified)
+        self.assertIn("raw_t_handle_reference_curve_data_missing", verified)
+        self.assertIn("passed T-handle experiment", non_claim)
+        self.assertIn("paper-faithful T-handle geometry", non_claim)
+        self.assertIn("M-ABD T-handle lane pass", non_claim)
+        self.assertIn("not a passed T-handle experiment", forbidden)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+    def test_phase43_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-18-phase43-t-handle-rk4-reference.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Repository",
+            "phase43-t-handle-reference",
+            "## Paper Source",
+            "experiment.tex:57-75",
+            "images/T-handle/T-handle.pdf",
+            "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c",
+            "## Report Artifact",
+            "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+            "t_handle_torque_free_rk4_reference",
+            "rbd_rk4_reference",
+            "diagnostic_generated",
+            "exact_t_handle_geometry_unknown",
+            "raw_t_handle_reference_curve_data_missing",
+            "mabd_newton_report_missing",
+            "t_handle_comparison_report_missing",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.t_handle` remains intended",
+            "does not implement a paper-faithful T-handle geometry",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_t_handle_reference tests.test_experiment_run_configs tests.test_experiment_runner tests.test_phase0_bootstrap",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE43", text)
+        self.assertNotIn("phase43-working-tree", text)
+
+    def test_phase43_validator_rejects_t_handle_lane_gate_pass(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
+        )
+        overclaimed = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "lane_gate_status": "passed",
+                "full_experiment_claim_passed": True,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_t_handle_rk4_reference.json"):
+                return overclaimed
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase43_record()
+
+        self.assertIn("must not expose a passed lane gate", str(context.exception))
+
+    def test_phase43_validator_rejects_t_handle_record_hash_mismatch(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual_sha256_file = validate_docs.sha256_file
+
+        def fake_sha256_file(path):
+            if str(path).endswith("single_body_t_handle_rk4_reference.json"):
+                return "0" * 64
+            return actual_sha256_file(path)
+
+        with patch.object(validate_docs, "sha256_file", side_effect=fake_sha256_file):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase43_record()
+
+        self.assertIn("sha256 mismatch", str(context.exception))
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -3086,7 +3194,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

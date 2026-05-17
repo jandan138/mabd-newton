@@ -13,8 +13,10 @@ from mabd_reproduction.experiment_configs import (
     ExperimentRunConfigError,
     load_physical_pendulum_config,
     load_spinning_box_config,
+    load_t_handle_config,
     validate_physical_pendulum_config_against_matrix,
     validate_spinning_box_config_against_matrix,
+    validate_t_handle_config_against_matrix,
 )
 from mabd_reproduction.experiment_contracts import load_experiment_matrix
 from mabd_reproduction.reporting import EvidenceStatus
@@ -22,6 +24,7 @@ from mabd_reproduction.reporting import EvidenceStatus
 
 ROOT = Path(__file__).resolve().parents[1]
 PHYSICAL_PENDULUM_CONFIG_PATH = ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+T_HANDLE_CONFIG_PATH = ROOT / "configs/experiments/single_body_t_handle.yaml"
 
 
 class ExperimentRunConfigTests(unittest.TestCase):
@@ -208,6 +211,80 @@ class ExperimentRunConfigTests(unittest.TestCase):
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
 
         validate_physical_pendulum_config_against_matrix(config, matrix)
+
+    def test_t_handle_config_is_machine_checkable(self) -> None:
+        config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
+
+        self.assertEqual(config.schema_version, 1)
+        self.assertEqual(config.claim_id, "experiment.single_body.t_handle")
+        self.assertEqual(config.scene_id, "single_body_t_handle")
+        self.assertEqual(config.source_lines, ("/tmp/mabd-paper/source/sections/experiment.tex:57-75",))
+        self.assertEqual(config.asset_ids, ("t_handle_procedural",))
+        self.assertEqual(config.baseline_lane, "rbd_rk4_reference")
+        self.assertEqual(config.required_missing_lanes, ("mabd_newton",))
+        self.assertEqual(config.report_status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(config.reference.time_step_s, 1.0e-4)
+        self.assertEqual(config.reference.duration_s, 4.0)
+        self.assertEqual(config.reference.sample_count, 9)
+        self.assertEqual(config.reference.intermediate_axis_index, 1)
+        np.testing.assert_allclose(config.reference.principal_inertia_kg_m2, [1.0, 2.0, 3.0])
+        np.testing.assert_allclose(config.reference.initial_angular_velocity_rad_s, [0.03, 3.0, 0.0])
+        np.testing.assert_allclose(config.reference.gravity_m_s2, [0.0, 0.0, 0.0])
+        self.assertEqual(
+            config.reference.figure_pdf_sha256,
+            "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c",
+        )
+        self.assertEqual(
+            config.reference.figure_text_source,
+            "pdftotext /tmp/mabd-paper/source/images/T-handle/T-handle.pdf -",
+        )
+        self.assertEqual(
+            config.reference.output_report,
+            "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+        )
+        self.assertIn("max_relative_energy_drift", config.reference.thresholds)
+        self.assertIn("max_angular_momentum_norm_drift", config.reference.thresholds)
+        self.assertIn("min_intermediate_axis_sign_flips", config.reference.thresholds)
+        self.assertIn("exact_t_handle_geometry_unknown", config.failure_reason)
+        self.assertIn("raw_t_handle_reference_curve_data_missing", config.failure_reason)
+        self.assertIn("mabd_newton_report_missing", config.failure_reason)
+
+    def test_t_handle_config_matches_experiment_matrix_without_overclaiming(self) -> None:
+        config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        validate_t_handle_config_against_matrix(config, matrix)
+
+    def test_t_handle_config_rejects_passed_status(self) -> None:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["report"]["status"] = "passed"
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "passed experiment configs"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_nonpositive_inertia(self) -> None:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["reference"]["principal_inertia_kg_m2"][1] = 0.0
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "principal_inertia_kg_m2"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_figure_hash_drift(self) -> None:
+        config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        drifted = replace(
+            config,
+            reference=replace(config.reference, figure_pdf_sha256="0" * 64),
+        )
+
+        with self.assertRaisesRegex(ExperimentRunConfigError, "figure_pdf_sha256"):
+            validate_t_handle_config_against_matrix(drifted, matrix)
 
     def test_physical_pendulum_config_rejects_missing_required_incomplete_lanes(self) -> None:
         config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-42 docs and provenance contracts."""
+"""Validate Phase 0-43 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -22,8 +22,10 @@ from mabd_reproduction.experiment_configs import (
     ExperimentRunConfigError,
     load_physical_pendulum_config,
     load_spinning_box_config,
+    load_t_handle_config,
     validate_physical_pendulum_config_against_matrix,
     validate_spinning_box_config_against_matrix,
+    validate_t_handle_config_against_matrix,
 )
 from mabd_reproduction.paper_source_audit import (
     physical_pendulum_geometry_source_audit,
@@ -90,6 +92,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase40-physical-pendulum-joint-force-reference.md",
     "docs/records/2026-05-17-phase41-physical-pendulum-geometry-source-audit.md",
     "docs/records/2026-05-17-phase42-spinning-box-report-artifacts.md",
+    "docs/records/2026-05-18-phase43-t-handle-rk4-reference.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -112,6 +115,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-17-mabd-phase41-physical-pendulum-geometry-source-audit.md",
     "docs/superpowers/specs/2026-05-17-phase42-spinning-box-report-artifacts-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase42-spinning-box-report-artifacts.md",
+    "docs/superpowers/specs/2026-05-18-phase43-t-handle-rk4-reference-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase43-t-handle-rk4-reference.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -121,6 +126,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
     "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
     "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+    "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -128,6 +134,7 @@ REQUIRED_PATHS = (
     "configs/experiments/paper_experiment_matrix.yaml",
     "configs/experiments/single_body_physical_pendulum.yaml",
     "configs/experiments/single_body_spinning_box.yaml",
+    "configs/experiments/single_body_t_handle.yaml",
     "scripts/run_experiment.py",
     "scripts/env/readiness_check.py",
     "tests/test_environment_readiness.py",
@@ -157,12 +164,14 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase40-working-tree",
     "phase41-working-tree",
     "phase42-working-tree",
+    "phase43-working-tree",
     "pending branch-local",
     "<implementation-commit>",
     "TO_BE_BACKFILLED_PHASE39",
     "TO_BE_BACKFILLED_PHASE40",
     "TO_BE_BACKFILLED_PHASE41",
     "TO_BE_BACKFILLED_PHASE42",
+    "TO_BE_BACKFILLED_PHASE43",
 }
 
 
@@ -5279,6 +5288,231 @@ def validate_phase42_record() -> None:
             fail(f"Phase 42 matrix blocker missing: {blocker}")
 
 
+def validate_phase43_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase43-t-handle-rk4-reference.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Repository",
+        "phase43-t-handle-reference",
+        "## Paper Source",
+        "experiment.tex:57-75",
+        "images/T-handle/T-handle.pdf",
+        "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c",
+        "## Report Artifact",
+        "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+        "t_handle_torque_free_rk4_reference",
+        "rbd_rk4_reference",
+        "diagnostic_generated",
+        "exact_t_handle_geometry_unknown",
+        "raw_t_handle_reference_curve_data_missing",
+        "mabd_newton_report_missing",
+        "t_handle_comparison_report_missing",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.t_handle` remains intended",
+        "does not implement a paper-faithful T-handle geometry",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_t_handle_reference tests.test_experiment_run_configs tests.test_experiment_runner tests.test_phase0_bootstrap",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 43 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE43", "phase43-working-tree", "<implementation-commit>"):
+        if placeholder in text:
+            fail("Phase 43 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "t-handle experiment passed",
+        "passed t-handle experiment",
+        "m-abd t-handle lane passed",
+        "mabd_newton lane passed",
+        "paper-faithful t-handle geometry reconstructed",
+        "raw curve agreement passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 43 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 43 T-handle RK4 reference diagnostic lane",
+        "Phase 43 verifies a source-backed `rbd_rk4_reference` diagnostic lane",
+        "`raw_t_handle_reference_curve_data_missing`",
+        "`mabd_newton_report_missing`",
+        "`t_handle_comparison_report_missing`",
+        "Phase 43 does not verify a passed T-handle experiment",
+        "Phase 43 T-handle RK4 reference",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 43 claim boundary missing: {snippet}")
+
+    try:
+        config = load_t_handle_config(ROOT / "configs/experiments/single_body_t_handle.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_t_handle_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 43 T-handle config validation failed: {exc}")
+
+    report_path = "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
+    report = load_claim_report(ROOT / report_path)
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 43 report source_commit must not be a placeholder")
+    if report.source_commit not in text:
+        fail("Phase 43 record must list the report source_commit")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 43 report vendored Newton commit changed")
+    if report.claim_id != config.claim_id:
+        fail("Phase 43 report claim_id does not match config")
+    if report.scene_id != config.scene_id:
+        fail("Phase 43 report scene_id does not match config")
+    if report.status.value != "incomplete":
+        fail("Phase 43 T-handle report must remain incomplete")
+    actual_hash = sha256_file(ROOT / report_path)
+    record_hash = _record_sha256_for_artifact(text, report_path)
+    if record_hash != actual_hash:
+        fail("Phase 43 T-handle report sha256 mismatch")
+
+    if report.baseline_lane != "rbd_rk4_reference":
+        fail("Phase 43 T-handle report lane changed")
+    if report.solver_mode != "t_handle_torque_free_rk4_reference":
+        fail("Phase 43 T-handle report solver mode changed")
+    if report.backend != "cpu_numpy":
+        fail("Phase 43 T-handle report backend changed")
+    observed = report.observed
+    if observed.get("lane_status") != "diagnostic_generated":
+        fail("Phase 43 T-handle diagnostic status changed")
+    if "lane_gate_status" in observed:
+        fail("Phase 43 T-handle report must not expose a passed lane gate")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 43 T-handle report must not pass full experiment claim")
+    if observed.get("reference_not_paper_geometry") is not True:
+        fail("Phase 43 T-handle report must mark reference_not_paper_geometry")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 43 T-handle blockers must be a list")
+    for blocker in (
+        "exact_t_handle_geometry_unknown",
+        "raw_t_handle_reference_curve_data_missing",
+        "mabd_newton_report_missing",
+        "t_handle_comparison_report_missing",
+        "t_handle_timing_evidence_missing",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 43 T-handle blocker missing: {blocker}")
+    if observed.get("required_missing_lanes") != ["mabd_newton"]:
+        fail("Phase 43 T-handle required_missing_lanes changed")
+    if _require_finite_scalar(observed.get("time_step_s"), "Phase 43 T-handle time_step_s") != 1.0e-4:
+        fail("Phase 43 T-handle RK4 step changed")
+    if _require_finite_scalar(observed.get("duration_s"), "Phase 43 T-handle duration_s") != 4.0:
+        fail("Phase 43 T-handle diagnostic duration changed")
+    if abs(
+        _require_finite_scalar(
+            observed.get("relative_energy_drift"),
+            "Phase 43 T-handle relative_energy_drift",
+        )
+    ) > config.reference.thresholds["max_relative_energy_drift"]:
+        fail("Phase 43 T-handle relative energy drift exceeded threshold")
+    if abs(
+        _require_finite_scalar(
+            observed.get("angular_momentum_norm_drift"),
+            "Phase 43 T-handle angular_momentum_norm_drift",
+        )
+    ) > config.reference.thresholds["max_angular_momentum_norm_drift"]:
+        fail("Phase 43 T-handle angular momentum norm drift exceeded threshold")
+    if _require_finite_scalar(
+        observed.get("intermediate_axis_sign_flips"),
+        "Phase 43 T-handle intermediate_axis_sign_flips",
+    ) < config.reference.thresholds["min_intermediate_axis_sign_flips"]:
+        fail("Phase 43 T-handle sign-flip count below threshold")
+    _require_finite_vector3(
+        observed.get("principal_inertia_kg_m2"),
+        "Phase 43 T-handle principal_inertia_kg_m2",
+    )
+    _require_finite_vector3(
+        observed.get("initial_angular_velocity_rad_s"),
+        "Phase 43 T-handle initial_angular_velocity_rad_s",
+    )
+    gravity = _require_finite_vector3(observed.get("gravity_m_s2"), "Phase 43 T-handle gravity_m_s2")
+    if gravity != [0.0, 0.0, 0.0]:
+        fail("Phase 43 T-handle gravity must remain zero")
+    samples = observed.get("angular_velocity_samples")
+    if not isinstance(samples, list) or len(samples) != config.reference.sample_count:
+        fail("Phase 43 T-handle angular_velocity_samples changed")
+    for index, sample in enumerate(samples):
+        if not isinstance(sample, dict):
+            fail("Phase 43 T-handle sample must be a mapping")
+        if sample.get("sample_index") != index:
+            fail("Phase 43 T-handle sample_index changed")
+        for key in ("time_s", "omega_x_rad_s", "omega_y_rad_s", "omega_z_rad_s"):
+            _require_finite_scalar(sample.get(key), f"Phase 43 T-handle sample {index} {key}")
+    if report.expected.get("source_lines") != list(config.source_lines):
+        fail("Phase 43 T-handle expected source_lines changed")
+    if report.expected.get("figure_pdf_sha256") != config.reference.figure_pdf_sha256:
+        fail("Phase 43 T-handle expected figure hash changed")
+    if report.expected.get("matrix_claim_report") != "reports/experiment_matrix/single_body_t_handle.json":
+        fail("Phase 43 T-handle matrix claim report binding changed")
+    if report.expected.get("lane_report") != config.reference.output_report:
+        fail("Phase 43 T-handle lane report binding changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_t_handle = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.t_handle":
+            found_t_handle = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 43 must keep T-handle experiment status intended")
+            conflict_note = str(claim.get("conflict_note", ""))
+            if "exact_t_handle_geometry_unknown" not in conflict_note:
+                fail("Phase 43 T-handle conflict_note missing geometry blocker")
+            if "raw_t_handle_reference_curve_data_missing" not in conflict_note:
+                fail("Phase 43 T-handle conflict_note missing raw-curve blocker")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 43 must not pass experiment.* claims")
+    if not found_t_handle:
+        fail("paper-claims.yaml missing T-handle claim")
+
+    matrix_data = read_yaml(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    experiments = matrix_data.get("experiments")
+    if not isinstance(experiments, list):
+        fail("Phase 43 experiment matrix missing experiments")
+    matrix_entry = next(
+        (
+            item
+            for item in experiments
+            if isinstance(item, dict)
+            and item.get("claim_id") == "experiment.single_body.t_handle"
+        ),
+        None,
+    )
+    if matrix_entry is None:
+        fail("Phase 43 matrix missing T-handle experiment")
+    if matrix_entry.get("reproduction_status") != "planned":
+        fail("Phase 43 matrix must keep T-handle planned")
+    matrix_blockers = matrix_entry.get("blocking_reasons")
+    if not isinstance(matrix_blockers, list):
+        fail("Phase 43 matrix T-handle blockers must be a list")
+    for blocker in (
+        "exact_t_handle_geometry_unknown",
+        "raw_t_handle_reference_curve_data_missing",
+        "mabd_newton_report_missing",
+        "t_handle_comparison_report_missing",
+    ):
+        if blocker not in matrix_blockers:
+            fail(f"Phase 43 matrix blocker missing: {blocker}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -5537,13 +5771,14 @@ def main() -> int:
     validate_phase40_record()
     validate_phase41_record()
     validate_phase42_record()
+    validate_phase43_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43 "
         "docs/provenance validation passed"
     )
     return 0

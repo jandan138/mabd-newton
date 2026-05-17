@@ -12,6 +12,7 @@ from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "configs/experiments/single_body_spinning_box.yaml"
 PHYSICAL_PENDULUM_CONFIG_PATH = ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+T_HANDLE_CONFIG_PATH = ROOT / "configs/experiments/single_body_t_handle.yaml"
 MATRIX_PATH = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
 PHYSICAL_PENDULUM_TIMING_SOURCE_LINES = [
     "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
@@ -602,6 +603,59 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.observed["blocking_reasons"],
         )
 
+    def test_run_t_handle_rk4_reference_writes_bounded_diagnostic_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_t_handle_rk4_reference
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "t_handle_rk4_reference.json"
+            result = run_t_handle_rk4_reference(
+                config_path=T_HANDLE_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.t_handle")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "rbd_rk4_reference")
+        self.assertEqual(loaded.solver_mode, "t_handle_torque_free_rk4_reference")
+        self.assertEqual(loaded.backend, "cpu_numpy")
+        self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertGreaterEqual(loaded.observed["intermediate_axis_sign_flips"], 1)
+        self.assertLessEqual(abs(loaded.observed["relative_energy_drift"]), 1.0e-8)
+        self.assertIn("exact_t_handle_geometry_unknown", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "raw_t_handle_reference_curve_data_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("t_handle_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_t_handle_rk4_reference_requires_incomplete_status(self) -> None:
+        from mabd_reproduction.experiment_runner import run_t_handle_rk4_reference
+
+        with TemporaryDirectory() as tmpdir:
+            source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+            source["report"]["status"] = "failed"
+            config_path = Path(tmpdir) / "single_body_t_handle.yaml"
+            config_path.write_text(yaml.safe_dump(source), encoding="utf-8")
+            output_path = Path(tmpdir) / "t_handle_rk4_reference.json"
+
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                run_t_handle_rk4_reference(
+                    config_path=config_path,
+                    matrix_path=MATRIX_PATH,
+                    output_path=output_path,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+            self.assertFalse(output_path.exists())
+
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
         import json
         import os
@@ -960,6 +1014,49 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.observed["input_report_provenance"]["analytic_reference"]["source_commit"],
             "test-source",
         )
+
+    def test_run_experiment_cli_writes_t_handle_rk4_reference_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "t_handle_rk4_reference_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "t_handle_rk4_reference",
+                    "--config",
+                    str(T_HANDLE_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.t_handle")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "rbd_rk4_reference")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.solver_mode, "t_handle_torque_free_rk4_reference")
+        self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
 
     def test_run_experiment_cli_physical_pendulum_comparison_requires_input_reports(self) -> None:
         import os

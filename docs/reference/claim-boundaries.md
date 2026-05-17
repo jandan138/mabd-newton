@@ -546,6 +546,21 @@
   paper-horizon M-ABD stability, shape or energy agreement, comparison pass
   gate enablement, rendered output, runtime performance, generated videos or raw
   simulation logs, or any passed `experiment.*` claim.
+- This repository contains Phase 43 T-handle RK4 reference diagnostic lane
+  evidence after the Phase 43 record is created.
+- Phase 43 verifies a source-backed `rbd_rk4_reference` diagnostic lane for
+  `experiment.single_body.t_handle`, the public T-handle figure hash, zero
+  gravity, `omega_0 = 3 rad/s`, RK4 step size `h = 10^-4 s`, deterministic
+  torque-free angular-velocity samples, at least one intermediate-axis sign
+  flip in the configured diagnostic horizon, small relative energy and angular
+  momentum norm drift, retained `exact_t_handle_geometry_unknown`,
+  `raw_t_handle_reference_curve_data_missing`, `mabd_newton_report_missing`,
+  and `t_handle_comparison_report_missing` blockers, and top-level report
+  status: `incomplete`.
+- Phase 43 does not verify a passed T-handle experiment, paper-faithful
+  T-handle geometry, raw figure curve agreement, M-ABD T-handle lane pass,
+  ABD-vs-RBD comparison, rendered output, runtime performance, generated videos
+  or raw simulation logs, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -610,6 +625,10 @@
   experiment, M-ABD lane pass, paper-horizon stability result, comparison pass
   gate, rendered result, runtime performance reproduction, or any passed
   `experiment.*` claim.
+- Phase 43 T-handle RK4 reference is not a passed T-handle experiment,
+  paper-faithful T-handle geometry reconstruction, raw curve agreement, M-ABD
+  lane pass, comparison pass gate, rendered result, runtime performance
+  reproduction, or any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

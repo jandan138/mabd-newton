@@ -73,6 +73,9 @@ experiments:
     reproduction_status: planned
     blocking_reasons:
       - exact_t_handle_geometry_unknown
+      - raw_t_handle_reference_curve_data_missing
+      - mabd_newton_report_missing
+      - t_handle_comparison_report_missing
     output_report: reports/experiment_matrix/single_body_t_handle.json
   - claim_id: experiment.single_body.heavy_top
     scene_id: single_body_heavy_top

@@ -133,6 +133,38 @@ class PhysicalPendulumRunConfig:
     thresholds: dict[str, float]
 
 
+@dataclass(frozen=True)
+class THandleReferenceConfig:
+    time_step_s: float
+    duration_s: float
+    sample_count: int
+    principal_inertia_kg_m2: np.ndarray
+    intermediate_axis_index: int
+    initial_angular_velocity_rad_s: np.ndarray
+    gravity_m_s2: np.ndarray
+    figure_pdf_sha256: str
+    figure_text_source: str
+    output_report: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
+class THandleRunConfig:
+    schema_version: int
+    claim_id: str
+    scene_id: str
+    source_lines: tuple[str, ...]
+    asset_ids: tuple[str, ...]
+    baseline_lane: str
+    required_missing_lanes: tuple[str, ...]
+    paper_values: dict[str, Any]
+    reference: THandleReferenceConfig
+    report_status: EvidenceStatus
+    failure_reason: str
+    output_report: str
+    thresholds: dict[str, float]
+
+
 PAPER_HORIZON_THRESHOLD_KEYS = frozenset(
     {
         "max_linear_momentum_error",
@@ -195,6 +227,28 @@ PHYSICAL_PENDULUM_COMPARISON_REQUIRED_METRICS = (
     "pendulum_angle_error",
     "joint_force_error",
     "phase_drift",
+)
+T_HANDLE_THRESHOLD_KEYS = frozenset(
+    {
+        "max_relative_energy_drift",
+        "max_angular_momentum_norm_drift",
+        "min_intermediate_axis_sign_flips",
+    }
+)
+T_HANDLE_REQUIRED_MISSING_LANES = ("mabd_newton",)
+T_HANDLE_EXPECTED_FIGURE_PDF_SHA256 = (
+    "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c"
+)
+T_HANDLE_EXPECTED_FIGURE_TEXT_SOURCE = (
+    "pdftotext /tmp/mabd-paper/source/images/T-handle/T-handle.pdf -"
+)
+T_HANDLE_REQUIRED_BLOCKERS = frozenset(
+    {
+        "exact_t_handle_geometry_unknown",
+        "raw_t_handle_reference_curve_data_missing",
+        "mabd_newton_report_missing",
+        "t_handle_comparison_report_missing",
+    }
 )
 
 
@@ -347,6 +401,30 @@ def _require_vec3_array(data: dict[str, Any], key: str) -> np.ndarray:
             raise ExperimentRunConfigError(f"{key} must contain 3 finite numeric values")
         result.append(item_float)
     return np.asarray(result, dtype=float)
+
+
+def _require_positive_vec3_array(data: dict[str, Any], key: str) -> np.ndarray:
+    vector = _require_vec3_array(data, key)
+    if np.any(vector <= 0.0):
+        raise ExperimentRunConfigError(f"{key} must contain 3 finite positive values")
+    return vector
+
+
+def _require_zero_vec3_array(data: dict[str, Any], key: str) -> np.ndarray:
+    vector = _require_vec3_array(data, key)
+    if not np.allclose(vector, np.zeros(3), rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError(f"{key} must be zero gravity")
+    return vector
+
+
+def _require_axis_index(data: dict[str, Any], key: str) -> int:
+    value = data.get(key)
+    if not isinstance(value, Integral) or isinstance(value, bool):
+        raise ExperimentRunConfigError(f"{key} must be 0, 1, or 2")
+    result = int(value)
+    if result not in (0, 1, 2):
+        raise ExperimentRunConfigError(f"{key} must be 0, 1, or 2")
+    return result
 
 
 def _require_negative_y_gravity_array(data: dict[str, Any], key: str) -> np.ndarray:
@@ -587,6 +665,46 @@ def _require_physical_pendulum_comparison(
     )
 
 
+def _require_t_handle_reference(data: dict[str, Any]) -> THandleReferenceConfig:
+    reference = _require_mapping(data, "reference")
+    thresholds = _require_float_mapping(reference, "thresholds")
+    missing = sorted(T_HANDLE_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "reference.thresholds missing required keys: " + ", ".join(missing)
+        )
+    sample_count = _require_positive_int(reference, "sample_count")
+    if sample_count < 2:
+        raise ExperimentRunConfigError("reference.sample_count must be at least 2")
+    time_step_s = _require_positive_float(reference, "time_step_s")
+    duration_s = _require_positive_float(reference, "duration_s")
+    step_count_float = duration_s / time_step_s
+    step_count = round(step_count_float)
+    if not np.isclose(step_count_float, float(step_count), rtol=0.0, atol=1.0e-10):
+        raise ExperimentRunConfigError("reference duration_s must be an integer multiple of time_step_s")
+    if sample_count > step_count + 1:
+        raise ExperimentRunConfigError("reference.sample_count must be at most step_count + 1")
+    return THandleReferenceConfig(
+        time_step_s=time_step_s,
+        duration_s=duration_s,
+        sample_count=sample_count,
+        principal_inertia_kg_m2=_require_positive_vec3_array(
+            reference,
+            "principal_inertia_kg_m2",
+        ),
+        intermediate_axis_index=_require_axis_index(reference, "intermediate_axis_index"),
+        initial_angular_velocity_rad_s=_require_vec3_array(
+            reference,
+            "initial_angular_velocity_rad_s",
+        ),
+        gravity_m_s2=_require_zero_vec3_array(reference, "gravity_m_s2"),
+        figure_pdf_sha256=_require_str(reference, "figure_pdf_sha256"),
+        figure_text_source=_require_str(reference, "figure_text_source"),
+        output_report=_require_str(reference, "output_report"),
+        thresholds=thresholds,
+    )
+
+
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     config_path = Path(path)
     data = _read_mapping(config_path)
@@ -818,6 +936,116 @@ def validate_physical_pendulum_config_against_matrix(
         raise ExperimentRunConfigError("comparison.output_report must be separate from other lane reports")
 
 
+def load_t_handle_config(path: str | Path) -> THandleRunConfig:
+    config_path = Path(path)
+    data = _read_mapping(config_path)
+    if not isinstance(data.get("schema_version"), int) or isinstance(data.get("schema_version"), bool):
+        raise ExperimentRunConfigError("schema_version must be 1")
+    if data.get("schema_version") != 1:
+        raise ExperimentRunConfigError("schema_version must be 1")
+    claim_id = _require_str(data, "claim_id")
+    if claim_id != "experiment.single_body.t_handle":
+        raise ExperimentRunConfigError("T-handle config must target experiment.single_body.t_handle")
+
+    report = _require_mapping(data, "report")
+    try:
+        status = EvidenceStatus(_require_str(report, "status"))
+    except ValueError as exc:
+        raise ExperimentRunConfigError("report.status is not a known EvidenceStatus") from exc
+    if status == EvidenceStatus.PASSED:
+        raise ExperimentRunConfigError("passed experiment configs require a dedicated evidence gate")
+
+    thresholds = _require_float_mapping(report, "thresholds")
+    missing = sorted(T_HANDLE_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "report.thresholds missing required keys: " + ", ".join(missing)
+        )
+
+    return THandleRunConfig(
+        schema_version=1,
+        claim_id=claim_id,
+        scene_id=_require_str(data, "scene_id"),
+        source_lines=_require_str_tuple(data, "source_lines"),
+        asset_ids=_require_str_tuple(data, "asset_ids"),
+        baseline_lane=_require_str(data, "baseline_lane"),
+        required_missing_lanes=_require_str_tuple(
+            data,
+            "required_missing_lanes",
+            allow_empty=True,
+        ),
+        paper_values=_require_mapping(data, "paper_values"),
+        reference=_require_t_handle_reference(data),
+        report_status=status,
+        failure_reason=_require_str(report, "failure_reason"),
+        output_report=_require_str(report, "output_report"),
+        thresholds=thresholds,
+    )
+
+
+def validate_t_handle_config_against_matrix(
+    config: THandleRunConfig,
+    matrix: ExperimentMatrix,
+) -> None:
+    matches = [entry for entry in matrix.experiments if entry.claim_id == config.claim_id]
+    if len(matches) != 1:
+        raise ExperimentRunConfigError(f"{config.claim_id} must have exactly one matrix entry")
+    entry = matches[0]
+    if config.scene_id != entry.scene_id:
+        raise ExperimentRunConfigError("scene_id must match experiment matrix")
+    if config.source_lines != entry.source_lines:
+        raise ExperimentRunConfigError("source_lines must match experiment matrix")
+    if config.asset_ids != entry.asset_ids:
+        raise ExperimentRunConfigError("asset_ids must match experiment matrix")
+    if config.paper_values != entry.paper_values:
+        raise ExperimentRunConfigError("paper_values must match experiment matrix")
+    if config.baseline_lane != "rbd_rk4_reference":
+        raise ExperimentRunConfigError("baseline_lane must be rbd_rk4_reference")
+    if config.baseline_lane not in entry.required_lanes:
+        raise ExperimentRunConfigError("baseline_lane must be listed in required_lanes")
+    if config.required_missing_lanes != T_HANDLE_REQUIRED_MISSING_LANES:
+        raise ExperimentRunConfigError("required_missing_lanes must be mabd_newton only")
+    missing_lanes = set(config.required_missing_lanes) - set(entry.required_lanes)
+    if missing_lanes:
+        raise ExperimentRunConfigError("required_missing_lanes must be listed in required_lanes")
+    if config.baseline_lane in config.required_missing_lanes:
+        raise ExperimentRunConfigError("baseline_lane cannot be listed as missing")
+    blockers = set(entry.blocking_reasons)
+    missing_blockers = sorted(T_HANDLE_REQUIRED_BLOCKERS - blockers)
+    if missing_blockers:
+        raise ExperimentRunConfigError(
+            "T-handle matrix blockers missing: " + ", ".join(missing_blockers)
+        )
+    if entry.reproduction_status != "planned":
+        raise ExperimentRunConfigError("matrix reproduction_status must remain planned")
+    for metric in (
+        "flip_timing_error",
+        "intermediate_axis_angular_velocity_waveform",
+        "energy_loss",
+    ):
+        if metric not in entry.metrics:
+            raise ExperimentRunConfigError("T-handle metrics must match the paper matrix")
+    if config.reference.figure_pdf_sha256 != T_HANDLE_EXPECTED_FIGURE_PDF_SHA256:
+        raise ExperimentRunConfigError("reference.figure_pdf_sha256 changed")
+    if config.reference.figure_text_source != T_HANDLE_EXPECTED_FIGURE_TEXT_SOURCE:
+        raise ExperimentRunConfigError("reference.figure_text_source changed")
+    if not np.allclose(config.reference.gravity_m_s2, np.zeros(3), rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError("reference.gravity_m_s2 must be zero gravity")
+    expected_prefix = Path(entry.output_report).with_suffix("").as_posix() + "_"
+    if (
+        not config.reference.output_report.startswith(expected_prefix)
+        or not config.reference.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "reference.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.output_report != config.reference.output_report:
+        raise ExperimentRunConfigError("output_report must match reference.output_report")
+    for blocker in T_HANDLE_REQUIRED_BLOCKERS:
+        if blocker not in config.failure_reason:
+            raise ExperimentRunConfigError(f"report.failure_reason missing {blocker}")
+
+
 __all__ = [
     "ExperimentRunConfigError",
     "PAPER_HORIZON_THRESHOLD_KEYS",
@@ -830,6 +1058,11 @@ __all__ = [
     "PHYSICAL_PENDULUM_MABD_NEWTON_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_THRESHOLD_KEYS",
+    "T_HANDLE_EXPECTED_FIGURE_PDF_SHA256",
+    "T_HANDLE_EXPECTED_FIGURE_TEXT_SOURCE",
+    "T_HANDLE_REQUIRED_BLOCKERS",
+    "T_HANDLE_REQUIRED_MISSING_LANES",
+    "T_HANDLE_THRESHOLD_KEYS",
     "PhysicalPendulumComparisonConfig",
     "PhysicalPendulumMABDDevelopmentConfig",
     "PhysicalPendulumMABDNewtonConfig",
@@ -838,8 +1071,12 @@ __all__ = [
     "PhysicalPendulumRunConfig",
     "SpinningBoxPaperHorizonConfig",
     "SpinningBoxRunConfig",
+    "THandleReferenceConfig",
+    "THandleRunConfig",
     "load_physical_pendulum_config",
     "load_spinning_box_config",
+    "load_t_handle_config",
     "validate_physical_pendulum_config_against_matrix",
     "validate_spinning_box_config_against_matrix",
+    "validate_t_handle_config_against_matrix",
 ]
