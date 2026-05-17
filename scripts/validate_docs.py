@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-37 docs and provenance contracts."""
+"""Validate Phase 0-39 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -83,6 +83,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase35-physical-pendulum-rbd-baseline.md",
     "docs/records/2026-05-17-phase36-physical-pendulum-comparison-protocol.md",
     "docs/records/2026-05-17-phase37-physical-pendulum-mabd-newton-lane.md",
+    "docs/records/2026-05-17-phase39-physical-pendulum-timing-source-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -97,6 +98,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-17-mabd-phase36-physical-pendulum-comparison-protocol.md",
     "docs/superpowers/specs/2026-05-17-phase37-physical-pendulum-mabd-newton-lane-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase37-physical-pendulum-mabd-newton-lane.md",
+    "docs/superpowers/specs/2026-05-17-phase39-physical-pendulum-timing-source-audit-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase39-physical-pendulum-timing-source-audit.md",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -126,17 +129,39 @@ STATUS_VALUES = {
     "qualitative_reconstruction",
 }
 VENDORED_NEWTON_COMMIT = "96713fa965463b69c229a4d30582c733ff3526bb"
+PHYSICAL_PENDULUM_TIMING_SOURCE_LINES = [
+    "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+]
+PHYSICAL_PENDULUM_TIMING_AUDIT_STATUS = "not_a_physical_pendulum_paper_metric"
 PLACEHOLDER_SOURCE_COMMITS = {
     "test-source",
     "phase36-working-tree",
     "phase37-working-tree",
+    "phase39-working-tree",
     "pending branch-local",
     "<implementation-commit>",
+    "TO_BE_BACKFILLED_PHASE39",
 }
 
 
 def fail(message: str) -> None:
     raise SystemExit(f"validate_docs.py: {message}")
+
+
+def validate_physical_pendulum_timing_source_audit(payload: Any, context: str) -> None:
+    if not isinstance(payload, dict):
+        fail(f"{context} paper_timing_source_audit must be a mapping")
+    if payload.get("source_lines") != PHYSICAL_PENDULUM_TIMING_SOURCE_LINES:
+        fail(f"{context} paper_timing_source_audit source_lines changed")
+    if payload.get("status") != PHYSICAL_PENDULUM_TIMING_AUDIT_STATUS:
+        fail(f"{context} paper_timing_source_audit status changed")
+    if payload.get("runtime_timing_claim_present") is not False:
+        fail(f"{context} paper_timing_source_audit must record no runtime timing claim")
+    if payload.get("required_metric") is not False:
+        fail(f"{context} paper_timing_source_audit must record required_metric=false")
+    finding = str(payload.get("finding", "")).lower()
+    if "no runtime timing" not in finding or "physical-pendulum source lines" not in finding:
+        fail(f"{context} paper_timing_source_audit finding changed")
 
 
 def read_yaml(path: Path) -> dict[str, Any]:
@@ -3997,7 +4022,6 @@ def validate_phase37_record() -> None:
     for blocker in (
         "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
-        "paper_timing_missing",
         "physical_pendulum_comparison_pass_gate_not_enabled",
     ):
         if blocker not in blockers:
@@ -4197,7 +4221,6 @@ def validate_phase38_record() -> None:
     for blocker in (
         "pendulum_geometry_unknown",
         "joint_force_waveform_agreement_missing",
-        "paper_timing_missing",
     ):
         if blocker not in mabd_observed.get("blocking_reasons", []):
             fail(f"Phase 38 MABD Newton blocker missing: {blocker}")
@@ -4221,7 +4244,6 @@ def validate_phase38_record() -> None:
     for blocker in (
         "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
-        "paper_timing_missing",
         "physical_pendulum_comparison_pass_gate_not_enabled",
     ):
         if blocker not in blockers:
@@ -4278,6 +4300,171 @@ def validate_phase38_record() -> None:
                 fail("Phase 38 must keep physical-pendulum experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 38 must not pass experiment.* claims")
+    if not found_physical_pendulum:
+        fail("paper-claims.yaml missing physical-pendulum claim")
+
+
+def validate_phase39_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase39-physical-pendulum-timing-source-audit.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_physical_pendulum.yaml",
+        "## Repository",
+        "phase39-physical-pendulum-timing",
+        "## Paper Source Audit",
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91",
+        "runtime_timing_claim_present = `false`",
+        "required_metric = `false`",
+        PHYSICAL_PENDULUM_TIMING_AUDIT_STATUS,
+        "## Report Evidence",
+        "paper_timing_source_audit",
+        "removed blocker: `paper_timing_missing`",
+        "retained blocker: `joint_force_waveform_agreement_missing`",
+        "retained blocker: `pendulum_geometry_unknown`",
+        "retained blocker: `physical_pendulum_comparison_pass_gate_not_enabled`",
+        "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+        "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+        "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.physical_pendulum` remains intended.",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 39 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE39", "phase39-working-tree", "<implementation-commit>"):
+        if placeholder in text:
+            fail("Phase 39 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "physical-pendulum experiment passed",
+        "joint-force waveform agreement passed",
+        "paper geometry result",
+        "paper timing result",
+        "runtime timing reproduced",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 39 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    for snippet in (
+        "This repository contains Phase 39 physical-pendulum timing source-audit evidence",
+        "Phase 39 verifies `paper_timing_source_audit`",
+        "runtime_timing_claim_present = false",
+        "required_metric = false",
+        "removal of `paper_timing_missing`",
+        "Phase 39 does not verify runtime performance",
+        "Phase 39 physical-pendulum timing source audit",
+    ):
+        if snippet not in boundary_text:
+            fail(f"Phase 39 claim boundary missing: {snippet}")
+
+    try:
+        config = load_physical_pendulum_config(
+            ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 39 physical-pendulum config validation failed: {exc}")
+
+    report_paths = {
+        "analytic_reference": config.reference.output_report,
+        "mabd_newton": config.mabd_newton.output_report,
+        "rbd_implicit_baseline": config.rbd_baseline.output_report,
+        "comparison": config.comparison.output_report,
+    }
+    reports = {
+        name: load_claim_report(ROOT / path)
+        for name, path in report_paths.items()
+    }
+    for name, report in reports.items():
+        if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+            fail(f"Phase 39 {name} report source_commit must name the implementation commit")
+        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 39 {name} report vendored Newton commit changed")
+        if report.claim_id != config.claim_id:
+            fail(f"Phase 39 {name} report claim_id does not match config")
+        if report.scene_id != config.scene_id:
+            fail(f"Phase 39 {name} report scene_id does not match config")
+        if report.status.value != "incomplete":
+            fail(f"Phase 39 {name} report must remain incomplete")
+        if report.observed.get("full_experiment_claim_passed") is not False:
+            fail(f"Phase 39 {name} report must not pass full experiment claim")
+        validate_physical_pendulum_timing_source_audit(
+            report.observed.get("paper_timing_source_audit"),
+            f"Phase 39 {name} observed",
+        )
+        validate_physical_pendulum_timing_source_audit(
+            report.expected.get("paper_timing_source_audit"),
+            f"Phase 39 {name} expected",
+        )
+        if report.timing_distribution.get("scope") != "not_timed":
+            fail(f"Phase 39 {name} report must remain not_timed")
+        blockers = report.observed.get("blocking_reasons", [])
+        if isinstance(blockers, list) and "paper_timing_missing" in blockers:
+            fail(f"Phase 39 {name} report must not retain paper_timing_missing blocker")
+
+    mabd_blockers = reports["mabd_newton"].observed.get("blocking_reasons", [])
+    for blocker in ("pendulum_geometry_unknown", "joint_force_waveform_agreement_missing"):
+        if blocker not in mabd_blockers:
+            fail(f"Phase 39 MABD Newton blocker missing: {blocker}")
+
+    rbd_blockers = reports["rbd_implicit_baseline"].observed.get("blocking_reasons", [])
+    for blocker in (
+        "mabd_newton_missing",
+        "joint_force_waveform_agreement_missing",
+        "pendulum_geometry_unknown",
+    ):
+        if blocker not in rbd_blockers:
+            fail(f"Phase 39 RBD baseline blocker missing: {blocker}")
+
+    comparison = reports["comparison"]
+    if comparison.baseline_lane != "physical_pendulum_comparison_protocol":
+        fail("Phase 39 comparison report lane changed")
+    if comparison.solver_mode != "physical_pendulum_multilane_comparison_development":
+        fail("Phase 39 comparison report solver mode changed")
+    observed = comparison.observed
+    if observed.get("missing_required_lanes") != []:
+        fail("Phase 39 comparison missing_required_lanes changed")
+    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_waveform_agreement"]:
+        fail("Phase 39 comparison missing_paper_metrics changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 39 comparison blockers must be a list")
+    for blocker in (
+        "joint_force_waveform_agreement_missing",
+        "pendulum_geometry_unknown",
+        "physical_pendulum_comparison_pass_gate_not_enabled",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 39 comparison blocker missing: {blocker}")
+    if "paper_timing_missing" in blockers:
+        fail("Phase 39 comparison must not retain paper_timing_missing blocker")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_physical_pendulum = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.physical_pendulum":
+            found_physical_pendulum = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 39 must keep physical-pendulum experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 39 must not pass experiment.* claims")
     if not found_physical_pendulum:
         fail("paper-claims.yaml missing physical-pendulum claim")
 
@@ -4536,13 +4723,14 @@ def main() -> int:
     validate_phase36_record()
     validate_phase37_record()
     validate_phase38_record()
+    validate_phase39_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39 "
         "docs/provenance validation passed"
     )
     return 0

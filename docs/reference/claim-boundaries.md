@@ -484,6 +484,19 @@
   experiment, paper-faithful pendulum geometry, joint-force waveform agreement,
   paper timing, rendered output, paper trajectory agreement, generated videos
   or raw simulation logs, or any passed `experiment.*` claim.
+- This repository contains Phase 39 physical-pendulum timing source-audit
+  evidence after the Phase 39 record is created.
+- Phase 39 verifies `paper_timing_source_audit` records for the
+  physical-pendulum analytic, M-ABD Newton, RBD baseline, and comparison reports:
+  source lines `/tmp/mabd-paper/source/sections/experiment.tex:77-91`,
+  `runtime_timing_claim_present = false`, `required_metric = false`, status
+  `not_a_physical_pendulum_paper_metric`, and removal of
+  `paper_timing_missing` from current physical-pendulum report blockers.
+- Phase 39 does not verify runtime performance, paper timing reproduction for
+  other experiments, the full physical-pendulum experiment, paper-faithful
+  pendulum geometry, joint-force waveform agreement, rendered output, paper
+  trajectory agreement, generated videos or raw simulation logs, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -531,6 +544,10 @@
   experiment, constrained `no_polar` implementation, rotated non-dense topology
   implementation, joint-force waveform agreement, paper geometry result, paper
   timing result, or any passed `experiment.*` claim.
+- Phase 39 physical-pendulum timing source audit is not a passed
+  physical-pendulum experiment, runtime performance reproduction, paper timing
+  result, paper-faithful pendulum geometry result, joint-force waveform
+  agreement, rendered result, or any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

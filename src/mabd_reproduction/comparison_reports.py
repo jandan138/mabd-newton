@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .experiment_configs import PhysicalPendulumRunConfig, SpinningBoxRunConfig
+from .physical_pendulum_reports import physical_pendulum_timing_source_audit
 from .reporting import ClaimReport, EvidenceStatus, load_claim_report, write_claim_report
 
 
@@ -482,7 +483,6 @@ def write_physical_pendulum_comparison_report(
     blocking_reasons = [
         "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
-        "paper_timing_missing",
         "physical_pendulum_comparison_pass_gate_not_enabled",
     ]
     if sample_diagnostics["matched_sample_count"] == 0:
@@ -548,6 +548,7 @@ def write_physical_pendulum_comparison_report(
             ),
         },
         "paper_metric_statuses": _physical_pendulum_paper_metric_statuses(),
+        "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
         "missing_required_lanes": [],
         "missing_paper_metrics": ["joint_force_error:paper_waveform_agreement"],
         "blocking_reasons": blocking_reasons,
@@ -572,11 +573,13 @@ def write_physical_pendulum_comparison_report(
         expected={
             "paper_claim_status": (
                 "formal M-ABD and RBD lanes are present; joint-force waveform comparison, "
-                "geometry, and timing evidence remain required"
+                "geometry, and pass gate remain required; runtime timing is not a cited "
+                "physical-pendulum metric"
             ),
             "required_lanes": list(config.comparison.required_lanes),
             "diagnostic_lanes": list(config.comparison.diagnostic_lanes),
             "required_metrics": list(PHYSICAL_PENDULUM_REQUIRED_METRICS),
+            "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
             "source_lines": list(config.source_lines),
             "full_experiment_claim_passed": False,
         },
@@ -586,7 +589,7 @@ def write_physical_pendulum_comparison_report(
         status=EvidenceStatus.INCOMPLETE,
         failure_reason=(
             "physical-pendulum comparison protocol is incomplete because joint-force waveform "
-            "agreement, paper geometry, and paper timing remain missing"
+            "agreement, paper geometry, and pass gate remain missing"
         ),
         timing_distribution={"scope": "not_timed"},
         raw_outputs={

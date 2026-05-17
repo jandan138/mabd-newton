@@ -13,6 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "configs/experiments/single_body_spinning_box.yaml"
 PHYSICAL_PENDULUM_CONFIG_PATH = ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
 MATRIX_PATH = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
+PHYSICAL_PENDULUM_TIMING_SOURCE_LINES = [
+    "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+]
 
 
 class ExperimentRunnerTests(unittest.TestCase):
@@ -91,6 +94,12 @@ class ExperimentRunnerTests(unittest.TestCase):
             vendored_newton_commit="test-newton",
         )
         return analytic_path, mabd_path, rbd_path
+
+    def _assert_physical_pendulum_timing_source_audit(self, payload: dict[str, object]) -> None:
+        self.assertEqual(payload["source_lines"], PHYSICAL_PENDULUM_TIMING_SOURCE_LINES)
+        self.assertEqual(payload["status"], "not_a_physical_pendulum_paper_metric")
+        self.assertFalse(payload["runtime_timing_claim_present"])
+        self.assertFalse(payload["required_metric"])
 
     def test_run_spinning_box_experiment_writes_override_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_experiment
@@ -420,7 +429,15 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertIn("max_phase_drift_rad", loaded.observed)
         self.assertIn("max_world_anchor_reaction_magnitude_n", loaded.observed)
         self.assertIn("world_anchor_reaction_vector_n", loaded.observed["angle_samples_rad"][-1])
+        self.assertNotIn("paper_timing_missing", loaded.observed["blocking_reasons"])
+        self._assert_physical_pendulum_timing_source_audit(
+            loaded.observed["paper_timing_source_audit"]
+        )
+        self._assert_physical_pendulum_timing_source_audit(
+            loaded.expected["paper_timing_source_audit"]
+        )
         self.assertIn("pendulum_geometry_unknown", loaded.failure_reason)
+        self.assertNotIn("paper timing", loaded.failure_reason)
         self.assertEqual(loaded.source_commit, "test-source")
         self.assertEqual(loaded.vendored_newton_commit, "test-newton")
 
@@ -456,7 +473,15 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.threshold["max_implicit_residual"],
         )
         self.assertIn("joint_force_waveform_agreement_missing", loaded.observed["blocking_reasons"])
+        self.assertNotIn("paper_timing_missing", loaded.observed["blocking_reasons"])
+        self._assert_physical_pendulum_timing_source_audit(
+            loaded.observed["paper_timing_source_audit"]
+        )
+        self._assert_physical_pendulum_timing_source_audit(
+            loaded.expected["paper_timing_source_audit"]
+        )
         self.assertIn("pendulum_geometry_unknown", loaded.failure_reason)
+        self.assertNotIn("paper timing", loaded.failure_reason)
         self.assertNotIn("full experiment passed", loaded.failure_reason)
         self.assertEqual(loaded.source_commit, "test-source")
         self.assertEqual(loaded.vendored_newton_commit, "test-newton")
@@ -488,6 +513,23 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.observed["missing_required_lanes"], [])
         self.assertEqual(loaded.observed["matched_sample_count"], 5)
         self.assertIn("input_report_provenance", loaded.observed)
+        self.assertNotIn("paper_timing_missing", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "joint_force_waveform_agreement_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn("pendulum_geometry_unknown", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "physical_pendulum_comparison_pass_gate_not_enabled",
+            loaded.observed["blocking_reasons"],
+        )
+        self._assert_physical_pendulum_timing_source_audit(
+            loaded.observed["paper_timing_source_audit"]
+        )
+        self._assert_physical_pendulum_timing_source_audit(
+            loaded.expected["paper_timing_source_audit"]
+        )
+        self.assertNotIn("paper timing", loaded.failure_reason)
 
     def test_run_spinning_box_comparison_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_comparison

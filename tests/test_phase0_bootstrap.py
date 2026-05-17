@@ -14,6 +14,9 @@ from mabd_reproduction.reporting import EvidenceStatus, REQUIRED_REPORT_KEYS, lo
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PHYSICAL_PENDULUM_TIMING_SOURCE_LINES = [
+    "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+]
 
 
 def claim_boundary_bullet(text: str, starts_with: str) -> str:
@@ -39,6 +42,12 @@ def claim_boundary_bullet(text: str, starts_with: str) -> str:
 
 
 class Phase0BootstrapTests(unittest.TestCase):
+    def assert_physical_pendulum_timing_source_audit(self, payload: dict[str, object]) -> None:
+        self.assertEqual(payload["source_lines"], PHYSICAL_PENDULUM_TIMING_SOURCE_LINES)
+        self.assertEqual(payload["status"], "not_a_physical_pendulum_paper_metric")
+        self.assertFalse(payload["runtime_timing_claim_present"])
+        self.assertFalse(payload["required_metric"])
+
     def test_report_status_vocabulary_matches_spec(self) -> None:
         self.assertEqual(
             {status.value for status in EvidenceStatus},
@@ -2476,6 +2485,130 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("full experiment", str(context.exception))
 
+    def test_phase39_physical_pendulum_timing_source_audit_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        physical_pendulum = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.physical_pendulum"
+        )
+        self.assertEqual(physical_pendulum["reproduction_status"], "intended")
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 39")
+        verified = claim_boundary_bullet(text, "Phase 39 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 39 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 39 physical-pendulum timing source audit",
+        )
+
+        self.assertIn("physical-pendulum timing source-audit evidence", current)
+        self.assertIn("paper_timing_source_audit", verified)
+        self.assertIn("runtime_timing_claim_present = false", verified)
+        self.assertIn("paper_timing_missing", verified)
+        self.assertIn("joint-force waveform agreement", non_claim)
+        self.assertIn("paper-faithful pendulum geometry", non_claim)
+        self.assertIn("runtime performance", non_claim)
+        self.assertIn("passed physical-pendulum experiment", forbidden)
+
+    def test_phase39_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase39-physical-pendulum-timing-source-audit.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_physical_pendulum.yaml",
+            "## Repository",
+            "phase39-physical-pendulum-timing",
+            "## Paper Source Audit",
+            "/tmp/mabd-paper/source/sections/experiment.tex:77-91",
+            "runtime_timing_claim_present = `false`",
+            "required_metric = `false`",
+            "not_a_physical_pendulum_paper_metric",
+            "## Report Evidence",
+            "paper_timing_source_audit",
+            "removed blocker: `paper_timing_missing`",
+            "retained blocker: `joint_force_waveform_agreement_missing`",
+            "retained blocker: `pendulum_geometry_unknown`",
+            "retained blocker: `physical_pendulum_comparison_pass_gate_not_enabled`",
+            "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+            "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+            "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains intended.",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE39", text)
+        self.assertNotIn("phase39-working-tree", text)
+
+    def test_phase39_current_physical_pendulum_reports_record_timing_source_audit(
+        self,
+    ) -> None:
+        report_paths = (
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+        )
+
+        reports = [load_claim_report(path) for path in report_paths]
+        for report in reports:
+            self.assertEqual(report.status.value, "incomplete")
+            self.assertFalse(report.observed["full_experiment_claim_passed"])
+            self.assert_physical_pendulum_timing_source_audit(
+                report.observed["paper_timing_source_audit"]
+            )
+            self.assert_physical_pendulum_timing_source_audit(
+                report.expected["paper_timing_source_audit"]
+            )
+            self.assertEqual(report.timing_distribution["scope"], "not_timed")
+            self.assertNotIn("paper_timing_missing", report.observed.get("blocking_reasons", []))
+
+        comparison = reports[-1]
+        blockers = comparison.observed["blocking_reasons"]
+        self.assertIn("joint_force_waveform_agreement_missing", blockers)
+        self.assertIn("pendulum_geometry_unknown", blockers)
+        self.assertIn("physical_pendulum_comparison_pass_gate_not_enabled", blockers)
+        self.assertEqual(
+            comparison.observed["missing_paper_metrics"],
+            ["joint_force_error:paper_waveform_agreement"],
+        )
+
+    def test_phase39_validator_rejects_returned_physical_pendulum_timing_blocker(
+        self,
+    ) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+        overblocked = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "blocking_reasons": [
+                    *actual.observed["blocking_reasons"],
+                    "paper_timing_missing",
+                ],
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_physical_pendulum_comparison.json"):
+                return overblocked
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase39_record()
+
+        self.assertIn("paper_timing_missing", str(context.exception))
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -2507,7 +2640,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

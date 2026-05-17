@@ -23,6 +23,24 @@ from .physical_pendulum_rbd import (
 from .reporting import ClaimReport, write_claim_report
 
 
+PHYSICAL_PENDULUM_TIMING_SOURCE_AUDIT = {
+    "source_lines": ["/tmp/mabd-paper/source/sections/experiment.tex:77-91"],
+    "runtime_timing_claim_present": False,
+    "required_metric": False,
+    "status": "not_a_physical_pendulum_paper_metric",
+    "finding": (
+        "No runtime timing or performance value is stated in the cited "
+        "physical-pendulum source lines."
+    ),
+}
+
+
+def physical_pendulum_timing_source_audit() -> dict[str, object]:
+    audit = dict(PHYSICAL_PENDULUM_TIMING_SOURCE_AUDIT)
+    audit["source_lines"] = list(PHYSICAL_PENDULUM_TIMING_SOURCE_AUDIT["source_lines"])
+    return audit
+
+
 def _clean_report_float(value: float) -> float:
     result = float(value)
     return 0.0 if abs(result) < 1.0e-15 else result
@@ -164,6 +182,7 @@ def write_physical_pendulum_analytic_reference_report(
         "threshold_violations": threshold_violations,
         "required_missing_lanes": list(config.required_missing_lanes),
         "blocking_reasons": ["pendulum_geometry_unknown"],
+        "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
         "angle_samples_rad": _angle_samples(config=config, period_s=period_s),
     }
     report = ClaimReport(
@@ -177,6 +196,7 @@ def write_physical_pendulum_analytic_reference_report(
             "paper_claim_status": "analytic reference lane only; full experiment incomplete",
             "source_lines": list(config.source_lines),
             "paper_values": config.paper_values,
+            "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
             "formula": (
                 "theta(t)=pi/2 - 2 asin(kappa * "
                 "sn(K(kappa) - omega_lin * t, kappa))"
@@ -240,8 +260,9 @@ def write_physical_pendulum_mabd_development_report(
         "blocking_reasons": [
             "pendulum_geometry_unknown",
             "joint_force_comparison_missing",
-            "paper_geometry_and_timing_missing",
+            "paper_geometry_missing",
         ],
+        "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
         "angle_samples_rad": _development_sample_rows(rollout),
     }
     report = ClaimReport(
@@ -255,6 +276,7 @@ def write_physical_pendulum_mabd_development_report(
             "paper_claim_status": "development diagnostic only; full experiment incomplete",
             "source_lines": list(config.source_lines),
             "paper_values": config.paper_values,
+            "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
             "mabd_rotation_mode": rollout.rotation_mode,
             "world_anchor_constraint": {
                 "pivot_rest_point_m": config.mabd_development.pivot_rest_point_m.tolist(),
@@ -339,8 +361,8 @@ def write_physical_pendulum_mabd_newton_report(
         "blocking_reasons": [
             "pendulum_geometry_unknown",
             "joint_force_waveform_agreement_missing",
-            "paper_timing_missing",
         ],
+        "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
         "angle_samples_rad": _mabd_newton_sample_rows(rollout),
     }
     report = ClaimReport(
@@ -354,6 +376,7 @@ def write_physical_pendulum_mabd_newton_report(
             "paper_claim_status": "formal M-ABD lane generated; full experiment incomplete",
             "source_lines": list(config.source_lines),
             "paper_values": config.paper_values,
+            "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
             "mabd_rotation_mode": config.mabd_newton.rotation_mode,
             "world_anchor_constraint": {
                 "pivot_rest_point_m": config.mabd_development.pivot_rest_point_m.tolist(),
@@ -373,7 +396,7 @@ def write_physical_pendulum_mabd_newton_report(
         status=config.report_status,
         failure_reason=(
             "physical_pendulum mabd_newton lane remains incomplete because "
-            "pendulum_geometry_unknown, joint-force waveform agreement, and paper timing are unresolved"
+            "pendulum_geometry_unknown and joint-force waveform agreement are unresolved"
         ),
         timing_distribution={"scope": "not_timed", "lane": "mabd_newton"},
         raw_outputs={"time_series": "compact_samples_only"},
@@ -437,8 +460,8 @@ def write_physical_pendulum_rbd_baseline_report(
             "mabd_newton_missing",
             "joint_force_waveform_agreement_missing",
             "pendulum_geometry_unknown",
-            "paper_timing_missing",
         ],
+        "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
         "angle_samples_rad": _rbd_sample_rows(rollout),
     }
     report = ClaimReport(
@@ -452,6 +475,7 @@ def write_physical_pendulum_rbd_baseline_report(
             "paper_claim_status": "RBD diagnostic only; full experiment incomplete",
             "source_lines": list(config.source_lines),
             "paper_values": config.paper_values,
+            "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
             "implicit_update": (
                 "theta_next - theta - h * "
                 "(omega + h * g / L * cos(theta_next)) = 0"
@@ -470,7 +494,7 @@ def write_physical_pendulum_rbd_baseline_report(
         status=config.report_status,
         failure_reason=(
             "physical_pendulum rbd_implicit_baseline diagnostic only; mabd_newton, "
-            "joint-force waveform agreement, pendulum_geometry_unknown, and paper timing remain incomplete"
+            "joint-force waveform agreement, and pendulum_geometry_unknown remain incomplete"
         ),
         timing_distribution={"scope": "not_timed", "lane": "rbd_implicit_baseline"},
         raw_outputs={"time_series": "compact_samples_only"},
@@ -484,6 +508,8 @@ def write_physical_pendulum_rbd_baseline_report(
 
 
 __all__ = [
+    "PHYSICAL_PENDULUM_TIMING_SOURCE_AUDIT",
+    "physical_pendulum_timing_source_audit",
     "write_physical_pendulum_analytic_reference_report",
     "write_physical_pendulum_mabd_development_report",
     "write_physical_pendulum_mabd_newton_report",
