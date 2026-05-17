@@ -888,7 +888,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "plan commit: `080f4908c9a16f5e707a1175ceb33c4e7bda8c2d`",
             "implementation commit: `434bdeab71a024277311bfc0925eb9b09630bf41`",
             "implementation commit: `57c8365262f12fd4f026da14163f493c60a86974`",
-            "docs/provenance commit:",
+            "docs/provenance commit: `27a305329df473bc4c30f63ad7e36f058e3e3a6f`",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "## Paper Source",
