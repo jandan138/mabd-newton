@@ -20,8 +20,11 @@ class PhysicalPendulumMABDSample:
     angle_rad: float
     reference_angle_rad: float
     abs_angle_error_rad: float
+    phase_drift_rad: float
     pivot_residual_m: float
     constraint_residual_norm: float
+    world_anchor_reaction_vector_n: np.ndarray
+    world_anchor_reaction_magnitude_n: float
 
 
 @dataclass(frozen=True)
@@ -33,6 +36,8 @@ class PhysicalPendulumMABDRollout:
     max_pivot_residual_m: float
     max_constraint_residual_norm: float
     max_abs_angle_error_rad: float
+    max_phase_drift_rad: float
+    max_world_anchor_reaction_magnitude_n: float
     finite: bool
 
 
@@ -93,6 +98,9 @@ def roll_out_physical_pendulum_mabd_development(
     max_pivot_residual = 0.0
     max_constraint_residual = 0.0
     max_abs_angle_error = 0.0
+    max_phase_drift = 0.0
+    max_world_anchor_reaction = 0.0
+    latest_world_anchor_reaction = np.zeros(3, dtype=float)
     finite = True
 
     for step in range(lane.step_count + 1):
@@ -118,7 +126,11 @@ def roll_out_physical_pendulum_mabd_development(
             )[0]
         )
         abs_error = abs(angle - reference)
+        phase_drift = angle - reference
         max_abs_angle_error = max(max_abs_angle_error, abs_error)
+        max_phase_drift = max(max_phase_drift, abs(phase_drift))
+        reaction_magnitude = float(np.linalg.norm(latest_world_anchor_reaction))
+        max_world_anchor_reaction = max(max_world_anchor_reaction, reaction_magnitude)
         if step in sample_steps:
             samples.append(
                 PhysicalPendulumMABDSample(
@@ -128,8 +140,11 @@ def roll_out_physical_pendulum_mabd_development(
                     angle_rad=angle,
                     reference_angle_rad=reference,
                     abs_angle_error_rad=abs_error,
+                    phase_drift_rad=phase_drift,
                     pivot_residual_m=pivot_residual,
                     constraint_residual_norm=max_constraint_residual,
+                    world_anchor_reaction_vector_n=latest_world_anchor_reaction.copy(),
+                    world_anchor_reaction_magnitude_n=reaction_magnitude,
                 )
             )
 
@@ -143,6 +158,11 @@ def roll_out_physical_pendulum_mabd_development(
         )
         q = result.q[0]
         qd = result.qd[0]
+        latest_world_anchor_reaction = (
+            np.asarray(result.dlambda[:3], dtype=float).copy()
+            if result.dlambda.shape[0] >= 3
+            else np.zeros(3, dtype=float)
+        )
         max_constraint_residual = max(max_constraint_residual, result.constraint_residual_norm)
 
     return PhysicalPendulumMABDRollout(
@@ -153,6 +173,8 @@ def roll_out_physical_pendulum_mabd_development(
         max_pivot_residual_m=max_pivot_residual,
         max_constraint_residual_norm=max_constraint_residual,
         max_abs_angle_error_rad=max_abs_angle_error,
+        max_phase_drift_rad=max_phase_drift,
+        max_world_anchor_reaction_magnitude_n=max_world_anchor_reaction,
         finite=finite,
     )
 
