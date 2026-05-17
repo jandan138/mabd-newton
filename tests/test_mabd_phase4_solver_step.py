@@ -235,6 +235,22 @@ def _add_model_constraint_row(
     )
 
 
+def _add_model_world_constraint_row(
+    builder: newton.ModelBuilder,
+    *,
+    body: int,
+    rest_point: tuple[float, float, float],
+    world_point: tuple[float, float, float],
+) -> None:
+    builder.add_custom_values(
+        **{
+            "mabd:world_body": body,
+            "mabd:world_rest_point": wp.vec3(*rest_point),
+            "mabd:world_point": wp.vec3(*world_point),
+        }
+    )
+
+
 def _model_path_body(
     *,
     young_modulus: float = 1.0,
@@ -272,6 +288,19 @@ def _mabd_model_with_one_constraint() -> object:
     for _ in range(2):
         _add_model_body_row(builder, young_modulus=1.0)
     _add_model_constraint_row(builder, constraint_type=2, body_a=0, body_b=1, rank=3, cp_index=1)
+    return builder.finalize()
+
+
+def _mabd_model_with_one_world_constraint(*, body: int = 0) -> object:
+    builder = newton.ModelBuilder()
+    SolverMABD.register_custom_attributes(builder)
+    _add_model_body_row(builder, young_modulus=1.0)
+    _add_model_world_constraint_row(
+        builder,
+        body=body,
+        rest_point=(1.0, 0.0, 0.0),
+        world_point=(1.25, 0.0, 0.0),
+    )
     return builder.finalize()
 
 
@@ -1032,6 +1061,49 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
 
         self.assertIsNone(solver.model_cpu_oracle_config)
         self.assertEqual(solver.last_step_result.topology, "unconstrained")
+
+    def test_solver_step_model_path_builds_world_constraint_from_model_rows(self) -> None:
+        model = _mabd_model_with_one_world_constraint()
+        solver = SolverMABD(model)
+        q = _identity_q()
+        state = model.state()
+        _assign_mabd_state(state, q, np.zeros(12))
+
+        solver.step(state, state, None, None, 0.05)
+
+        self.assertIsNotNone(solver.model_cpu_oracle_config)
+        config = solver.model_cpu_oracle_config
+        self.assertEqual(len(config.world_constraints), 1)
+        self.assertEqual(config.world_constraints[0].body, 0)
+        self.assertTrue(np.allclose(config.world_constraints[0].rest_point, [1.0, 0.0, 0.0]))
+        self.assertTrue(np.allclose(config.world_constraints[0].world_point, [1.25, 0.0, 0.0]))
+        q_next = _read_mabd_state(state)[0][0]
+        pinned = mabd.point_jacobian(np.array([1.0, 0.0, 0.0], dtype=float)) @ q_next
+        self.assertTrue(np.allclose(pinned, np.array([1.25, 0.0, 0.0]), atol=1.0e-10))
+        self.assertLess(solver.last_step_result.constraint_residual_norm, 1.0e-10)
+        self.assertEqual(solver.last_step_result.topology, "dense")
+        self.assertEqual(solver.last_step_result.dlambda.shape, (3,))
+
+    def test_solver_step_manual_config_takes_precedence_over_model_world_constraints(self) -> None:
+        model = _mabd_model_with_one_world_constraint()
+        solver = SolverMABD(model)
+        solver.configure_cpu_oracle(mabd.MABDCPUOracleConfig(bodies=[_body()]))
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        solver.step(state, state, None, None, 0.05)
+
+        self.assertIsNone(solver.model_cpu_oracle_config)
+        self.assertEqual(solver.last_step_result.topology, "unconstrained")
+
+    def test_solver_step_model_path_rejects_out_of_range_world_constraint_body(self) -> None:
+        model = _mabd_model_with_one_world_constraint(body=1)
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        with self.assertRaisesRegex(ValueError, "mabd:world_body"):
+            solver.step(state, state, None, None, 0.05)
 
     def test_solver_step_model_path_rejects_unknown_constraint_type(self) -> None:
         builder = newton.ModelBuilder()
