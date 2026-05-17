@@ -114,7 +114,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "mabd_cpu_oracle_physical_pendulum_development",
-  "source_commit": "phase35-review-working-tree",
+  "source_commit": "88c8195",
   "status": "incomplete",
   "threshold": {
     "max_abs_angle_error_rad": 2.0,
