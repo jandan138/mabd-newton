@@ -25,6 +25,7 @@ from mabd_reproduction.experiment_configs import (
     validate_spinning_box_config_against_matrix,
 )
 from mabd_reproduction.paper_source_audit import velocity_semantics_source_audit
+from mabd_reproduction.reporting import load_claim_report
 from mabd_reproduction.spinning_box_physics import (
     spinning_box_contact_diagnostics,
     spinning_box_kinematic_feasibility,
@@ -86,6 +87,7 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-17-mabd-phase33-physical-pendulum-analytic-reference.md",
     "docs/superpowers/specs/2026-05-17-phase34-world-anchor-physical-pendulum-mabd-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase34-world-anchor-physical-pendulum-mabd.md",
+    "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -3262,6 +3264,41 @@ def validate_phase34_record() -> None:
     ):
         if key not in lane.thresholds:
             fail(f"Phase 34 M-ABD diagnostic threshold missing: {key}")
+
+    report = load_claim_report(ROOT / lane.output_report)
+    if report.claim_id != config.claim_id:
+        fail("Phase 34 report claim_id does not match config")
+    if report.scene_id != config.scene_id:
+        fail("Phase 34 report scene_id does not match config")
+    if report.status.value != "incomplete":
+        fail("Phase 34 report must remain incomplete")
+    if report.baseline_lane != "physical_pendulum_mabd_development_diagnostic":
+        fail("Phase 34 report must use the diagnostic baseline lane id")
+    if report.solver_mode != "mabd_cpu_oracle_physical_pendulum_development":
+        fail("Phase 34 report solver mode changed")
+    observed = report.observed
+    if observed.get("lane_status") != "development_diagnostic_generated":
+        fail("Phase 34 report lane_status changed")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 34 report must not pass the full experiment claim")
+    if observed.get("required_missing_lanes") != ["mabd_newton", "rbd_implicit_baseline"]:
+        fail("Phase 34 report required missing lanes changed")
+    if observed.get("threshold_violations") != []:
+        fail("Phase 34 report threshold violations must remain empty")
+    if not np.isclose(float(observed.get("max_pivot_residual_m")), 0.0, rtol=0.0, atol=1.0e-15):
+        fail("Phase 34 report pivot residual changed")
+    if not np.isclose(float(observed.get("max_constraint_residual_norm")), 0.0, rtol=0.0, atol=1.0e-15):
+        fail("Phase 34 report constraint residual changed")
+    if not np.isclose(
+        float(observed.get("max_abs_angle_error_rad")),
+        0.007130697850637885,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        fail("Phase 34 report max angle error changed")
+    samples = observed.get("angle_samples_rad")
+    if not isinstance(samples, list) or len(samples) != 5:
+        fail("Phase 34 report must contain five compact angle samples")
 
     claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
     if not isinstance(claims, list):
