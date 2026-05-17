@@ -434,6 +434,14 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.observed["lane_status"], "incomplete_diagnostic_generated")
         self.assertFalse(loaded.observed["full_experiment_claim_passed"])
         self.assertEqual(loaded.observed["mabd_rotation_mode"], "polar")
+        self.assertEqual(
+            loaded.observed["solver_model_config_source"],
+            "newton_model_derived",
+        )
+        self.assertEqual(
+            loaded.expected["solver_model_config_source"],
+            "newton_model_derived",
+        )
         self.assertIn("max_phase_drift_rad", loaded.observed)
         self.assertIn("max_world_anchor_reaction_magnitude_n", loaded.observed)
         self.assertIn("max_abs_joint_force_error_n", loaded.observed)

@@ -6,7 +6,10 @@ from pathlib import Path
 import numpy as np
 
 from mabd_reproduction.experiment_configs import load_physical_pendulum_config
-from mabd_reproduction.physical_pendulum_mabd import roll_out_physical_pendulum_mabd_development
+from mabd_reproduction.physical_pendulum_mabd import (
+    roll_out_physical_pendulum_mabd_development,
+    roll_out_physical_pendulum_mabd_model_derived,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +42,33 @@ class PhysicalPendulumMABDTests(unittest.TestCase):
 
         self.assertEqual(rollout.rotation_mode, "polar")
         self.assertTrue(rollout.finite)
+
+    def test_model_derived_rollout_matches_manual_oracle_diagnostic(self) -> None:
+        config = load_physical_pendulum_config(CONFIG_PATH)
+
+        manual = roll_out_physical_pendulum_mabd_development(config, rotation_mode="polar")
+        model = roll_out_physical_pendulum_mabd_model_derived(config, rotation_mode="polar")
+
+        self.assertEqual(model.solver_model_config_source, "newton_model_derived")
+        self.assertEqual(model.rotation_mode, "polar")
+        self.assertEqual(model.sample_count, manual.sample_count)
+        self.assertEqual(model.step_count, manual.step_count)
+        self.assertTrue(model.finite)
+        np.testing.assert_allclose(
+            [sample.angle_rad for sample in model.samples],
+            [sample.angle_rad for sample in manual.samples],
+            atol=2.0e-6,
+        )
+        np.testing.assert_allclose(
+            [sample.pivot_residual_m for sample in model.samples],
+            [sample.pivot_residual_m for sample in manual.samples],
+            atol=2.0e-6,
+        )
+        np.testing.assert_allclose(
+            [sample.world_anchor_reaction_magnitude_n for sample in model.samples],
+            [sample.world_anchor_reaction_magnitude_n for sample in manual.samples],
+            atol=2.0e-5,
+        )
 
 
 if __name__ == "__main__":
