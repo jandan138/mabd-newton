@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-46 docs and provenance contracts."""
+"""Validate Phase 0-47 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -97,6 +97,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase44-solver-model-config.md",
     "docs/records/2026-05-18-phase45-model-constraint-config.md",
     "docs/records/2026-05-18-phase46-model-world-constraints.md",
+    "docs/records/2026-05-18-phase47-model-gravity-config.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -127,6 +128,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase45-model-constraint-config.md",
     "docs/superpowers/specs/2026-05-18-phase46-model-world-constraints-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase46-model-world-constraints.md",
+    "docs/superpowers/specs/2026-05-18-phase47-model-gravity-config-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase47-model-gravity-config.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -5978,7 +5981,7 @@ def validate_phase45_record() -> None:
         "ball, hinge, and universal joint specs",
         "`mabd:cp_index`",
         "rank validation",
-        "manual `configure_cpu_oracle(...)` precedence",
+        "Manual `configure_cpu_oracle(...)` precedence",
         "Phase 45 does not verify model-derived world constraints",
         "Newton `Contacts`",
         "Newton `Control` input",
@@ -6252,6 +6255,296 @@ def validate_phase46_record() -> None:
     validate_phase46_model_world_constraint_smoke()
 
 
+def validate_phase47_model_gravity_smoke() -> None:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"
+    code = r"""
+import numpy as np
+import warp as wp
+
+import newton
+from newton.solvers import SolverMABD, mabd
+
+
+def add_body_row(builder):
+    body_id = builder.add_body()
+    builder.add_custom_values(
+        **{
+            "mabd:body_index": body_id,
+            "mabd:young_modulus": 1.0,
+            "mabd:poisson_ratio": 0.25,
+            "mabd:density": 1.0,
+            "mabd:polar_mode": 0,
+            "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+            "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+            "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+            "mabd:point_mass0": -1.0,
+            "mabd:point_mass1": -1.0,
+            "mabd:point_mass2": -1.0,
+            "mabd:point_mass3": -1.0,
+            "mabd:volume": -1.0,
+        }
+    )
+
+
+def assign_state(state, q, qd):
+    q_arr = np.asarray(q, dtype=float)
+    qd_arr = np.asarray(qd, dtype=float)
+    state.mabd.q0.assign(q_arr[:, 0:3].astype(np.float32))
+    state.mabd.q1.assign(q_arr[:, 3:6].astype(np.float32))
+    state.mabd.q2.assign(q_arr[:, 6:9].astype(np.float32))
+    state.mabd.t.assign(q_arr[:, 9:12].astype(np.float32))
+    state.mabd.qd0.assign(qd_arr[:, 0:3].astype(np.float32))
+    state.mabd.qd1.assign(qd_arr[:, 3:6].astype(np.float32))
+    state.mabd.qd2.assign(qd_arr[:, 6:9].astype(np.float32))
+    state.mabd.td.assign(qd_arr[:, 9:12].astype(np.float32))
+
+
+def read_state(state):
+    q = np.concatenate(
+        [
+            state.mabd.q0.numpy(),
+            state.mabd.q1.numpy(),
+            state.mabd.q2.numpy(),
+            state.mabd.t.numpy(),
+        ],
+        axis=1,
+    )
+    qd = np.concatenate(
+        [
+            state.mabd.qd0.numpy(),
+            state.mabd.qd1.numpy(),
+            state.mabd.qd2.numpy(),
+            state.mabd.td.numpy(),
+        ],
+        axis=1,
+    )
+    return q, qd
+
+
+rest_points = np.array(
+    [
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ],
+    dtype=float,
+)
+gravity = np.array([0.0, -9.81, 1.25], dtype=float)
+q_initial = mabd.pack_q(np.eye(3), np.array([0.1, 0.2, -0.3], dtype=float))
+qd_initial = np.zeros(12, dtype=float)
+dt = 0.02
+
+builder = newton.ModelBuilder()
+SolverMABD.register_custom_attributes(builder)
+add_body_row(builder)
+builder.add_custom_values(
+    **{
+        "mabd:gravity_enabled": 1,
+        "mabd:gravity_vector": wp.vec3(*gravity),
+    }
+)
+model = builder.finalize()
+state = model.state()
+assign_state(state, [q_initial], [qd_initial])
+solver = SolverMABD(model)
+solver.step(state, state, None, None, dt)
+config = solver.model_cpu_oracle_config
+if config is None:
+    raise SystemExit("model-derived config was not cached")
+if config.gravity is None or not np.allclose(config.gravity, gravity):
+    raise SystemExit("model-derived gravity vector changed")
+
+volume = mabd.tetra_volume(rest_points)
+masses = np.full(4, volume / 4.0, dtype=float)
+expected = mabd.solve_cpu_oracle_step(
+    q=[q_initial],
+    qd=[qd_initial],
+    dt=dt,
+    config=mabd.MABDCPUOracleConfig(
+        bodies=[
+            mabd.MABDCPUOracleBody(
+                precompute=mabd.SingleBodyABDPrecompute.from_linear_elastic_points(
+                    rest_points,
+                    masses,
+                    young_modulus=1.0,
+                    poisson_ratio=0.25,
+                    volume=volume,
+                ),
+                rest_q=mabd.pack_q(np.eye(3), np.zeros(3)),
+                rotation_mode="none",
+            )
+        ],
+        gravity=gravity,
+    ),
+)
+q_next, qd_next = read_state(state)
+if not np.allclose(q_next[0], expected.q[0], atol=1.0e-7):
+    raise SystemExit("model-derived gravity q did not match explicit CPU oracle gravity")
+if not np.allclose(qd_next[0], expected.qd[0], atol=1.0e-7):
+    raise SystemExit("model-derived gravity qd did not match explicit CPU oracle gravity")
+"""
+    result = subprocess.run(
+        [str(MABD_PYTHON), "-c", code],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        fail("Phase 47 model-derived gravity smoke failed: " + result.stderr.strip())
+
+
+def validate_phase47_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase47-model-gravity-config.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed_for_solver_model_gravity_config_slice",
+        "## Repository",
+        "phase47-model-gravity-config",
+        "2d03449f079fb853dae64c672686edffae9b078b",
+        "b6abb83f5ec70f7d8b02e1e450ef05f871c4e659",
+        "804d8ea37e3adb2140bde10823e65dd4aa96c75d",
+        "f393c43831e7c5dd0a665a7b9e8f4d4ff49f81b4",
+        "Evidence record commit",
+        "## Vendored Newton",
+        "https://github.com/newton-physics/newton.git",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "Local patch status",
+        "locally patched",
+        "## Environment",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+        "does not mutate the shared Newton environment",
+        "## Implementation Evidence",
+        "`mabd:gravity`",
+        "`mabd:gravity_enabled`",
+        "`mabd:gravity_vector`",
+        "`MABDCPUOracleConfig.gravity`",
+        "Multiple enabled rows raise",
+        "manual `configure_cpu_oracle(...)` precedence",
+        "## RED Evidence",
+        "Custom attribute 'mabd:gravity_enabled' is not defined",
+        "FAILED (errors=4)",
+        "## GREEN Evidence",
+        "Ran 41 tests",
+        "OK",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+        'PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"',
+        "git diff --check",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed",
+        "heavy-top reproduction",
+        "physical-pendulum scene",
+        "Newton `Contacts`",
+        "runtime Newton `Control`",
+        "GPU/Warp solver",
+        "paper timing",
+        "comparative baselines",
+        "rendered output",
+        "raw simulation logs",
+        "full paper reproduction",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 47 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE47",
+        "phase47-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 47 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "full paper reproduction complete",
+        "experiment.* claim is passed",
+        "paper experiment passed",
+        "contacts are implemented",
+        "control input is implemented",
+        "gpu solver passed",
+        "warp solver passed",
+        "runtime performance reproduced",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 47 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 47 SolverMABD model-derived CPU gravity-config",
+        "Phase 47 verifies model-derived `mabd:gravity` rows",
+        "`MABDCPUOracleConfig.gravity`",
+        "`mabd:gravity_enabled`",
+        "`mabd:gravity_vector`",
+        "disabled-row filtering",
+        "multiple-enabled-row validation",
+        "manual `configure_cpu_oracle(...)` precedence",
+        "Phase 47 does not verify heavy-top reproduction",
+        "physical-pendulum scene reproduction",
+        "Newton `Contacts`",
+        "Newton `Control` input",
+        "GPU/Warp kernels",
+        "paper timing",
+        "comparative baselines",
+        "rendered output",
+        "raw simulation logs",
+        "a full paper reproduction",
+        "any passed `experiment.*` claim",
+        "Phase 47 model-derived SolverMABD gravity config",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 47 claim boundary missing: {snippet}")
+
+    spec_text = (
+        ROOT / "docs/superpowers/specs/2026-05-18-phase47-model-gravity-config-design.md"
+    ).read_text(encoding="utf-8")
+    plan_text = (
+        ROOT / "docs/superpowers/plans/2026-05-18-mabd-phase47-model-gravity-config.md"
+    ).read_text(encoding="utf-8")
+    for snippet in (
+        "Phase 47 Solver Model Gravity Config Design",
+        "`mabd:gravity`",
+        "`mabd:gravity_enabled`",
+        "`mabd:gravity_vector`",
+        "more than one enabled row is rejected",
+        "This is still not a paper experiment pass",
+        "Phase 47 does not implement heavy-top reproduction",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 47 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 47 Model Gravity Config Implementation Plan",
+        "Let `SolverMABD.step()` build `MABDCPUOracleConfig.gravity`",
+        "`MABDCPUOracleConfig.gravity`",
+        "manual `configure_cpu_oracle(...)` remains authoritative",
+        "registered custom attribute",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 47 plan missing required boundary text: {snippet}")
+    for stale in (
+        "Phase 46 Model World Constraints Implementation Plan",
+        "passed_for_solver_model_world_constraint_config_slice",
+        "model-derived `mabd:world_constraint` rows are verified",
+        "Phase 47 does not verify model-derived gravity",
+    ):
+        if stale in spec_text or stale in plan_text:
+            fail(f"Phase 47 spec/plan contains stale copied language: {stale}")
+
+    validate_phase44_environment_clone()
+    validate_phase47_model_gravity_smoke()
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -6514,13 +6807,14 @@ def main() -> int:
     validate_phase44_record()
     validate_phase45_record()
     validate_phase46_record()
+    validate_phase47_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47 "
         "docs/provenance validation passed"
     )
     return 0

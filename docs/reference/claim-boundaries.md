@@ -602,6 +602,19 @@
   GPU/Warp kernels, paper scene assets, paper timing, comparative baselines,
   rendered output, generated videos or raw simulation logs, a full paper
   reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 47 SolverMABD model-derived CPU gravity-config
+  integration evidence after the Phase 47 record is created.
+- Phase 47 verifies model-derived `mabd:gravity` rows can be translated into
+  `MABDCPUOracleConfig.gravity` for CPU oracle stepping, including
+  `mabd:gravity_enabled`, `mabd:gravity_vector`, disabled-row filtering,
+  multiple-enabled-row validation, cached model-derived config behavior, and
+  continued manual `configure_cpu_oracle(...)` precedence over the
+  model-derived path.
+- Phase 47 does not verify heavy-top reproduction, physical-pendulum scene
+  reproduction, Newton `Contacts`, Newton `Control` input, GPU/Warp kernels,
+  paper scene assets, paper timing, comparative baselines, rendered output,
+  generated videos or raw simulation logs, a full paper reproduction, or any
+  passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -683,6 +696,12 @@
   experiment, not a contact implementation, not a Newton `Control` input
   implementation, not a GPU/Warp solver, not a paper scene or timing
   reproduction, not a full paper reproduction, and not any passed
+  `experiment.*` claim.
+- Phase 47 model-derived SolverMABD gravity config is not a passed paper
+  experiment, not a heavy-top reproduction, not a physical-pendulum scene
+  reproduction, not a contact implementation, not a Newton `Control` input
+  implementation, not a GPU/Warp solver, not a paper timing reproduction, not
+  rendered-output evidence, not a full paper reproduction, and not any passed
   `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or

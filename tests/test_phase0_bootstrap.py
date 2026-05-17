@@ -3424,6 +3424,132 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertNotIn(stale, spec)
             self.assertNotIn(stale, plan)
 
+    def test_phase47_solver_model_gravity_config_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 47")
+        verified = claim_boundary_bullet(text, "Phase 47 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 47 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 47 model-derived SolverMABD gravity config")
+
+        self.assertIn("SolverMABD model-derived CPU gravity-config integration", current)
+        self.assertIn("model-derived `mabd:gravity` rows", verified)
+        self.assertIn("`MABDCPUOracleConfig.gravity`", verified)
+        self.assertIn("`mabd:gravity_enabled`", verified)
+        self.assertIn("`mabd:gravity_vector`", verified)
+        self.assertIn("disabled-row filtering", verified)
+        self.assertIn("multiple-enabled-row validation", verified)
+        self.assertIn("manual `configure_cpu_oracle(...)`", verified)
+        self.assertIn("heavy-top reproduction", non_claim)
+        self.assertIn("physical-pendulum scene reproduction", non_claim)
+        self.assertIn("Newton `Contacts`", non_claim)
+        self.assertIn("Newton `Control` input", non_claim)
+        self.assertIn("GPU/Warp kernels", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("comparative baselines", non_claim)
+        self.assertIn("rendered output", non_claim)
+        self.assertIn("raw simulation", non_claim)
+        self.assertIn("full paper reproduction", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+        self.assertIn("not a passed paper experiment", forbidden)
+        self.assertIn("not a heavy-top reproduction", forbidden)
+        self.assertIn("not a physical-pendulum scene reproduction", forbidden)
+        self.assertIn("not a contact implementation", forbidden)
+        self.assertIn("not a Newton `Control` input implementation", forbidden)
+        self.assertIn("not a GPU/Warp solver", forbidden)
+
+    def test_phase47_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-18-phase47-model-gravity-config.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_solver_model_gravity_config_slice",
+            "## Repository",
+            "phase47-model-gravity-config",
+            "2d03449f079fb853dae64c672686edffae9b078b",
+            "b6abb83f5ec70f7d8b02e1e450ef05f871c4e659",
+            "804d8ea37e3adb2140bde10823e65dd4aa96c75d",
+            "f393c43831e7c5dd0a665a7b9e8f4d4ff49f81b4",
+            "Evidence record commit",
+            "## Vendored Newton",
+            "https://github.com/newton-physics/newton.git",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "Local patch status",
+            "locally patched",
+            "## Environment",
+            "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+            "does not mutate the shared Newton environment",
+            "## Implementation Evidence",
+            "`mabd:gravity`",
+            "`mabd:gravity_enabled`",
+            "`mabd:gravity_vector`",
+            "`MABDCPUOracleConfig.gravity`",
+            "Multiple enabled rows raise",
+            "Manual `configure_cpu_oracle(...)` precedence",
+            "## RED Evidence",
+            "Custom attribute 'mabd:gravity_enabled' is not defined",
+            "FAILED (errors=4)",
+            "## GREEN Evidence",
+            "Ran 41 tests",
+            "OK",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+            'PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"',
+            "git diff --check",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed",
+            "heavy-top reproduction",
+            "physical-pendulum scene",
+            "Newton `Contacts`",
+            "runtime Newton `Control`",
+            "GPU/Warp solver",
+            "paper timing",
+            "comparative baselines",
+            "rendered output",
+            "raw simulation logs",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE47", text)
+        self.assertNotIn("phase47-working-tree", text)
+
+    def test_phase47_spec_and_plan_have_gravity_guardrails(self) -> None:
+        spec = (
+            ROOT / "docs/superpowers/specs/2026-05-18-phase47-model-gravity-config-design.md"
+        ).read_text()
+        plan = (
+            ROOT / "docs/superpowers/plans/2026-05-18-mabd-phase47-model-gravity-config.md"
+        ).read_text()
+
+        for snippet in (
+            "Phase 47 Solver Model Gravity Config Design",
+            "`mabd:gravity`",
+            "`mabd:gravity_enabled`",
+            "`mabd:gravity_vector`",
+            "more than one enabled row is rejected",
+            "This is still not a paper experiment pass",
+            "Phase 47 does not implement heavy-top reproduction",
+        ):
+            self.assertIn(snippet, spec)
+        for snippet in (
+            "Phase 47 Model Gravity Config Implementation Plan",
+            "Let `SolverMABD.step()` build `MABDCPUOracleConfig.gravity`",
+            "`MABDCPUOracleConfig.gravity`",
+            "manual `configure_cpu_oracle(...)` remains authoritative",
+            "registered custom attribute",
+            "No `experiment.*` claim is passed",
+        ):
+            self.assertIn(snippet, plan)
+        for stale in (
+            "Phase 46 Model World Constraints Implementation Plan",
+            "passed_for_solver_model_world_constraint_config_slice",
+            "model-derived `mabd:world_constraint` rows are verified",
+            "Phase 47 does not verify model-derived gravity",
+        ):
+            self.assertNotIn(stale, spec)
+            self.assertNotIn(stale, plan)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -3455,7 +3581,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
