@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import numpy as np
+
 from mabd_reproduction.experiment_configs import load_spinning_box_config
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 from mabd_reproduction.rigid_baselines import write_spinning_box_rbd_baseline_report
@@ -67,6 +69,27 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         self.assertIn("linear_momentum_error", differences)
         self.assertIn("angular_momentum_error", differences)
         self.assertIn("energy_drift", differences)
+        self.assertEqual(
+            loaded.observed["lane_vector_metrics"]["mabd_newton"]["initial_position_m"],
+            [0.0, 0.05, 0.0],
+        )
+        np.testing.assert_allclose(
+            loaded.observed["lane_vector_metrics"]["rbd_implicit_baseline"]["final_position_m"],
+            [4.0, 0.05, 0.0],
+            atol=1.0e-6,
+        )
+        vector_differences = loaded.observed["lane_vector_metric_differences"][
+            "mabd_newton_minus_rbd_implicit_baseline"
+        ]
+        np.testing.assert_allclose(
+            vector_differences["initial_position_m"],
+            [0.0, 0.0, 0.0],
+        )
+        np.testing.assert_allclose(
+            vector_differences["final_position_m"],
+            [0.0, 0.0, 0.0],
+            atol=1.0e-6,
+        )
         self.assertLessEqual(
             loaded.observed["lane_metrics"]["mabd_newton"]["linear_momentum_error"],
             1.0e-9,
@@ -138,6 +161,47 @@ class SpinningBoxComparisonTests(unittest.TestCase):
                     "mabd_newton:energy_drift_invalid",
                     loaded.observed["blocking_reasons"],
                 )
+
+    def test_spinning_box_comparison_flags_invalid_position_vectors(self) -> None:
+        import json
+
+        from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        with TemporaryDirectory() as tmpdir:
+            mabd_path, rbd_path = self._write_lane_reports(tmpdir)
+            data = json.loads(mabd_path.read_text(encoding="utf-8"))
+            data["observed"]["final_position_m"] = [0.0, float("nan"), 0.0]
+            mabd_path.write_text(json.dumps(data), encoding="utf-8")
+            output_path = Path(tmpdir) / "comparison.json"
+
+            write_spinning_box_comparison_report(
+                output_path,
+                config=config,
+                mabd_report_path=mabd_path,
+                rbd_report_path=rbd_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            payload = output_path.read_text(encoding="utf-8")
+            loaded = load_claim_report(output_path)
+
+        self.assertNotIn("NaN", payload)
+        self.assertIn(
+            "mabd_newton:final_position_m",
+            loaded.observed["invalid_required_vector_metrics"],
+        )
+        self.assertNotIn(
+            "mabd_newton:final_position_m",
+            loaded.observed["missing_required_vector_metrics"],
+        )
+        self.assertIsNone(
+            loaded.observed["lane_vector_metrics"]["mabd_newton"]["final_position_m"]
+        )
+        self.assertIn(
+            "mabd_newton:final_position_m_invalid",
+            loaded.observed["blocking_reasons"],
+        )
 
 
 if __name__ == "__main__":

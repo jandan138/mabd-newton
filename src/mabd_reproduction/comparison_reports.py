@@ -15,6 +15,10 @@ SPINNING_BOX_REQUIRED_METRICS = (
     "angular_momentum_error",
     "energy_drift",
 )
+SPINNING_BOX_REQUIRED_VECTOR_METRICS = (
+    "initial_position_m",
+    "final_position_m",
+)
 
 
 def _require_lane_report(
@@ -40,10 +44,29 @@ def _finite_scalar(value: Any) -> float | None:
     return result if isfinite(result) else None
 
 
+def _finite_vector3(value: Any) -> list[float] | None:
+    if not isinstance(value, list | tuple) or len(value) != 3:
+        return None
+    result: list[float] = []
+    for component in value:
+        scalar = _finite_scalar(component)
+        if scalar is None:
+            return None
+        result.append(scalar)
+    return result
+
+
 def _lane_metric_snapshot(report: ClaimReport) -> dict[str, float | None]:
     return {
         metric: _finite_scalar(report.observed[metric]) if metric in report.observed else None
         for metric in SPINNING_BOX_REQUIRED_METRICS
+    }
+
+
+def _lane_vector_metric_snapshot(report: ClaimReport) -> dict[str, list[float] | None]:
+    return {
+        metric: _finite_vector3(report.observed[metric]) if metric in report.observed else None
+        for metric in SPINNING_BOX_REQUIRED_VECTOR_METRICS
     }
 
 
@@ -53,11 +76,27 @@ def _missing_metrics(lane: str, report: ClaimReport) -> list[str]:
     ]
 
 
+def _missing_vector_metrics(lane: str, report: ClaimReport) -> list[str]:
+    return [
+        f"{lane}:{metric}"
+        for metric in SPINNING_BOX_REQUIRED_VECTOR_METRICS
+        if metric not in report.observed
+    ]
+
+
 def _invalid_metrics(lane: str, report: ClaimReport) -> list[str]:
     return [
         f"{lane}:{metric}"
         for metric in SPINNING_BOX_REQUIRED_METRICS
         if metric in report.observed and _finite_scalar(report.observed[metric]) is None
+    ]
+
+
+def _invalid_vector_metrics(lane: str, report: ClaimReport) -> list[str]:
+    return [
+        f"{lane}:{metric}"
+        for metric in SPINNING_BOX_REQUIRED_VECTOR_METRICS
+        if metric in report.observed and _finite_vector3(report.observed[metric]) is None
     ]
 
 
@@ -71,6 +110,22 @@ def _lane_metric_differences(
         rbd_value = _finite_scalar(rbd_report.observed.get(metric))
         if mabd_value is not None and rbd_value is not None:
             differences[metric] = mabd_value - rbd_value
+    return {"mabd_newton_minus_rbd_implicit_baseline": differences}
+
+
+def _lane_vector_metric_differences(
+    mabd_report: ClaimReport,
+    rbd_report: ClaimReport,
+) -> dict[str, dict[str, list[float]]]:
+    differences: dict[str, list[float]] = {}
+    for metric in SPINNING_BOX_REQUIRED_VECTOR_METRICS:
+        mabd_value = _finite_vector3(mabd_report.observed.get(metric))
+        rbd_value = _finite_vector3(rbd_report.observed.get(metric))
+        if mabd_value is not None and rbd_value is not None:
+            differences[metric] = [
+                mabd_component - rbd_component
+                for mabd_component, rbd_component in zip(mabd_value, rbd_value, strict=True)
+            ]
     return {"mabd_newton_minus_rbd_implicit_baseline": differences}
 
 
@@ -98,7 +153,16 @@ def write_spinning_box_comparison_report(
         "rbd_implicit_baseline",
         rbd_report,
     )
+    missing_required_vector_metrics = _missing_vector_metrics(
+        "mabd_newton",
+        mabd_report,
+    ) + _missing_vector_metrics("rbd_implicit_baseline", rbd_report)
+    invalid_required_vector_metrics = _invalid_vector_metrics(
+        "mabd_newton",
+        mabd_report,
+    ) + _invalid_vector_metrics("rbd_implicit_baseline", rbd_report)
     metric_differences = _lane_metric_differences(mabd_report, rbd_report)
+    vector_metric_differences = _lane_vector_metric_differences(mabd_report, rbd_report)
     incomplete_lanes = [
         lane for lane, status in lane_statuses.items() if status != EvidenceStatus.PASSED.value
     ]
@@ -106,6 +170,8 @@ def write_spinning_box_comparison_report(
         *(f"{lane}_report_{lane_statuses[lane]}" for lane in incomplete_lanes),
         *(f"{metric}_missing" for metric in missing_required_metrics),
         *(f"{metric}_invalid" for metric in invalid_required_metrics),
+        *(f"{metric}_missing" for metric in missing_required_vector_metrics),
+        *(f"{metric}_invalid" for metric in invalid_required_vector_metrics),
     ]
     if rbd_report.solver_mode != "paper_faithful_implicit_rbd":
         blocking_reasons.append("rbd_implicit_baseline_not_paper_faithful")
@@ -123,6 +189,7 @@ def write_spinning_box_comparison_report(
             "paper_claim_status": "requires passed M-ABD and paper-faithful implicit RBD lanes",
             "required_lanes": ["mabd_newton", "rbd_implicit_baseline"],
             "required_metrics": list(SPINNING_BOX_REQUIRED_METRICS),
+            "required_vector_metrics": list(SPINNING_BOX_REQUIRED_VECTOR_METRICS),
             "source_lines": list(config.source_lines),
         },
         observed={
@@ -135,14 +202,22 @@ def write_spinning_box_comparison_report(
                 "mabd_newton": _lane_metric_snapshot(mabd_report),
                 "rbd_implicit_baseline": _lane_metric_snapshot(rbd_report),
             },
+            "lane_vector_metrics": {
+                "mabd_newton": _lane_vector_metric_snapshot(mabd_report),
+                "rbd_implicit_baseline": _lane_vector_metric_snapshot(rbd_report),
+            },
             "missing_required_metrics": missing_required_metrics,
             "invalid_required_metrics": invalid_required_metrics,
+            "missing_required_vector_metrics": missing_required_vector_metrics,
+            "invalid_required_vector_metrics": invalid_required_vector_metrics,
             "lane_metric_differences": metric_differences,
+            "lane_vector_metric_differences": vector_metric_differences,
             "blocking_reasons": blocking_reasons,
         },
         threshold={
             "required_lane_status": EvidenceStatus.PASSED.value,
             "required_metrics": list(SPINNING_BOX_REQUIRED_METRICS),
+            "required_vector_metrics": list(SPINNING_BOX_REQUIRED_VECTOR_METRICS),
             "paper_faithful_rbd_solver_mode": "paper_faithful_implicit_rbd",
         },
         unit="json_report",
@@ -162,4 +237,8 @@ def write_spinning_box_comparison_report(
     return report
 
 
-__all__ = ["SPINNING_BOX_REQUIRED_METRICS", "write_spinning_box_comparison_report"]
+__all__ = [
+    "SPINNING_BOX_REQUIRED_METRICS",
+    "SPINNING_BOX_REQUIRED_VECTOR_METRICS",
+    "write_spinning_box_comparison_report",
+]
