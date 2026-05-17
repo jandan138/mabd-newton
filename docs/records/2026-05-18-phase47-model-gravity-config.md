@@ -12,6 +12,9 @@ passed_for_solver_model_gravity_config_slice
 - RED test commit: `804d8ea37e3adb2140bde10823e65dd4aa96c75d`
 - Implementation commit: `f393c43831e7c5dd0a665a7b9e8f4d4ff49f81b4`
 - Evidence record commit: `c265d0098c75a46f2d2bf471ecb3acf7350b9987`
+- Evidence pin commit: `f0a9b57a0f5aa44f52397042405c9e7090730fc3`
+- Review hardening commit: `94559a01f220a2546273870c994a8eff333c2bba`
+- Mixed-row coverage commit: `32e2270761115eae53c1b901c03bb42e9f82f5a3`
 
 ## Vendored Newton
 
@@ -44,8 +47,11 @@ frequency are translated into the existing CPU oracle field
 - Zero enabled rows leave `MABDCPUOracleConfig.gravity` as `None`.
 - One enabled row is passed to `MABDCPUOracleConfig.gravity`.
 - Multiple enabled rows raise `ValueError("mabd:gravity supports at most one enabled row")`.
+- One enabled row plus one disabled row remains accepted and uses only the
+  enabled vector.
 - manual `configure_cpu_oracle(...)` precedence is preserved; manual configs do
-  not build or cache model-derived gravity configs.
+  not build or cache model-derived gravity configs, and solver outputs match an
+  explicit no-gravity manual oracle even when model gravity rows are present.
 
 ## RED Evidence
 
@@ -74,6 +80,28 @@ Observed after implementation:
 
 ```text
 Ran 41 tests
+OK
+```
+
+## Review Hardening Evidence
+
+Code review found that manual-precedence coverage could false-positive if the
+test only checked topology. Phase 47 therefore hardens the test so manual
+configuration is compared against an explicit no-gravity CPU oracle while model
+gravity contains multiple enabled rows that would otherwise raise on the model
+path. A follow-up mixed-row test also verifies that one enabled and one disabled
+`mabd:gravity` row is accepted.
+
+Command:
+
+```bash
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_phase4_solver_step
+```
+
+Observed after review hardening:
+
+```text
+Ran 42 tests
 OK
 ```
 
