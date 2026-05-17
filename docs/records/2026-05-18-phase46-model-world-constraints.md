@@ -9,12 +9,12 @@ passed_for_solver_model_world_constraint_config_slice
 ## Repository
 
 - Branch: `phase46-model-world-constraints`
-- Base commit: `f88b3e990dde2bf50810f5b8551c049c34106f1e`
-- Plan commit: `bec91f550c320b00406c112cf8d9573d923ebd92`
-- RED test commit: `dee93c4029cde024a6bd64cfa8b8cb9c7bf73ef6`
-- Implementation commit: `0cef329e201d7d4a3d2b285420e092dc26d23ea4`
-- Evidence record commit: `413b03e76ec52595fc83532ba4e89828d4e02029`
-- Review hardening commit: `f3246df7df1461838a6a80e21dc8e2f7723288bd`
+- Base commit: `aa9d8c6ca586d7d4faa15fda19be17a138cb8307`
+- Plan commit: `a7d95d4ec069afd333de2582f9b198a62189ad73`
+- RED test commit: `e53e842877b3ddd7bcaca8d56d584074601d40f7`
+- Implementation commit: `da38183ca7090fc2ceb8a6f635a7aaf4c6bd02e4`
+- Evidence record commit: `76ba6acba4b208b66e4088a08434a354ed3fd186`
+- Review hardening commit: `47b3d63f63103ae1a81747fe7635975814b3f626`
 - Worktree:
   `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase46-model-world-constraints`
 
@@ -25,7 +25,7 @@ passed_for_solver_model_world_constraint_config_slice
 - Provenance file: `vendor/newton/PROVENANCE.md`
 - Local patch status: locally patched for Phase 46 in
   `vendor/newton/newton/_src/solvers/mabd/solver_mabd.py`.
-- Local patch commit: `0cef329e201d7d4a3d2b285420e092dc26d23ea4`
+- Local patch commit: `da38183ca7090fc2ceb8a6f635a7aaf4c6bd02e4`
 - This record does not claim unmodified Newton supports affine-body dynamics.
 
 ## Environment
