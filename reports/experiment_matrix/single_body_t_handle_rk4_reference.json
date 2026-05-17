@@ -1,0 +1,165 @@
+{
+  "asset_hashes": {
+    "t_handle_procedural": "not_applicable_procedural_diagnostic"
+  },
+  "backend": "cpu_numpy",
+  "baseline_lane": "rbd_rk4_reference",
+  "claim_id": "experiment.single_body.t_handle",
+  "expected": {
+    "blocking_reasons": [
+      "exact_t_handle_geometry_unknown",
+      "raw_t_handle_reference_curve_data_missing",
+      "mabd_newton_report_missing",
+      "t_handle_comparison_report_missing",
+      "t_handle_timing_evidence_missing"
+    ],
+    "figure_pdf_sha256": "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c",
+    "figure_text_source": "pdftotext /tmp/mabd-paper/source/images/T-handle/T-handle.pdf -",
+    "full_experiment_claim_passed": false,
+    "known_source_gaps": [
+      "exact_t_handle_geometry_unknown",
+      "principal_inertias_unknown",
+      "subtle_asymmetry_magnitude_unknown",
+      "raw_t_handle_reference_curve_data_missing"
+    ],
+    "lane_report": "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+    "matrix_claim_report": "reports/experiment_matrix/single_body_t_handle.json",
+    "paper_claim_status": "RK4 reference diagnostic lane only; full experiment incomplete",
+    "paper_values": {
+      "asymmetry": "subtle",
+      "initial_angular_speed_rad_s": 3,
+      "reference_h_s": 0.0001,
+      "reference_integrator": "RK4"
+    },
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:57-75"
+    ]
+  },
+  "failure_reason": "rbd_rk4_reference diagnostic only; exact_t_handle_geometry_unknown, raw_t_handle_reference_curve_data_missing, mabd_newton_report_missing, t_handle_comparison_report_missing, and t_handle_timing_evidence_missing remain incomplete",
+  "observed": {
+    "angular_momentum_norm_drift": -5.329003906068249e-15,
+    "angular_momentum_norm_final": 6.000074999531224,
+    "angular_momentum_norm_initial": 6.000074999531256,
+    "angular_velocity_samples": [
+      {
+        "omega_x_rad_s": 0.03,
+        "omega_y_rad_s": 3.0,
+        "omega_z_rad_s": 0.0,
+        "sample_index": 0,
+        "time_s": 0.0
+      },
+      {
+        "omega_x_rad_s": 0.04197057156412415,
+        "omega_y_rad_s": 2.9998564084173287,
+        "omega_z_rad_s": -0.016946276655156196,
+        "sample_index": 1,
+        "time_s": 0.5
+      },
+      {
+        "omega_x_rad_s": 0.08742449846731871,
+        "omega_y_rad_s": 2.9988759489294674,
+        "omega_z_rad_s": -0.04740971395632697,
+        "sample_index": 2,
+        "time_s": 1.0
+      },
+      {
+        "omega_x_rad_s": 0.20247119257397975,
+        "omega_y_rad_s": 2.993310110258793,
+        "omega_z_rad_s": -0.11560649321776867,
+        "sample_index": 3,
+        "time_s": 1.5
+      },
+      {
+        "omega_x_rad_s": 0.47669192552545375,
+        "omega_y_rad_s": 2.9620372732527716,
+        "omega_z_rad_s": -0.27467264871792685,
+        "sample_index": 4,
+        "time_s": 2.0
+      },
+      {
+        "omega_x_rad_s": 1.099976668688822,
+        "omega_y_rad_s": 2.791227566562808,
+        "omega_z_rad_s": -0.6348355880750431,
+        "sample_index": 5,
+        "time_s": 2.5
+      },
+      {
+        "omega_x_rad_s": 2.2503917330026195,
+        "omega_y_rad_s": 1.9840960279263973,
+        "omega_z_rad_s": -1.2991488177478,
+        "sample_index": 6,
+        "time_s": 3.0
+      },
+      {
+        "omega_x_rad_s": 2.9926382818422628,
+        "omega_y_rad_s": -0.21217001214121756,
+        "omega_z_rad_s": -1.727713699849975,
+        "sample_index": 7,
+        "time_s": 3.5
+      },
+      {
+        "omega_x_rad_s": 2.038294759145079,
+        "omega_y_rad_s": -2.2014210126283325,
+        "omega_z_rad_s": -1.176682557752709,
+        "sample_index": 8,
+        "time_s": 4.0
+      }
+    ],
+    "blocking_reasons": [
+      "exact_t_handle_geometry_unknown",
+      "raw_t_handle_reference_curve_data_missing",
+      "mabd_newton_report_missing",
+      "t_handle_comparison_report_missing",
+      "t_handle_timing_evidence_missing"
+    ],
+    "duration_s": 4.0,
+    "energy_final": 9.000449999999885,
+    "energy_initial": 9.00045,
+    "full_experiment_claim_passed": false,
+    "gravity_m_s2": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "initial_angular_velocity_rad_s": [
+      0.03,
+      3.0,
+      0.0
+    ],
+    "intermediate_axis_index": 1,
+    "intermediate_axis_sign_flips": 1,
+    "lane_status": "diagnostic_generated",
+    "principal_inertia_kg_m2": [
+      1.0,
+      2.0,
+      3.0
+    ],
+    "reference_not_paper_geometry": true,
+    "reference_scope": "torque_free_principal_axis_rk4_diagnostic",
+    "relative_energy_drift": -1.2828602409992419e-14,
+    "required_missing_lanes": [
+      "mabd_newton"
+    ],
+    "sample_count": 9,
+    "threshold_violations": [],
+    "time_step_s": 0.0001
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_t_handle",
+  "solver_mode": "t_handle_torque_free_rk4_reference",
+  "source_commit": "6667517e36043913529eacfb09587bb13742e385",
+  "status": "incomplete",
+  "threshold": {
+    "max_angular_momentum_norm_drift": 1e-08,
+    "max_relative_energy_drift": 1e-08,
+    "min_intermediate_axis_sign_flips": 1.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "status": "not_measured"
+  },
+  "unit": "dimensionless",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}
