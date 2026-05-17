@@ -1514,13 +1514,14 @@ class Phase0BootstrapTests(unittest.TestCase):
             "base commit: `6683d92`",
             "design/plan commit: `c97ee49`",
             "source-audit implementation commit:",
-            "docs/record commit:",
+            "docs/record commit: `ee188d0`",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "local patch status: Phase 30 does not modify vendored Newton",
             "## Paper Source",
             "arXiv ID: `2603.08079`",
             "arXiv version: `v2`",
+            "source root setup: `/tmp/mabd-paper/source` must exist locally",
             "sections/singleabd.tex SHA256:",
             "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d",
             "sections/solver.tex SHA256:",
@@ -1532,6 +1533,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "singleabd.tex:34-42",
             "solver.tex:219-241",
             "experiment.tex:40-55",
+            "scanned TeX source includes: `arxiv.tex`, `sections/singleabd.tex`, `sections/solver.tex`, `sections/experiment.tex`, `sections_a/multiabd.tex`",
             "## Environment",
             "mabd-newton-py310",
             "physics-primitive-newton-py310",
@@ -1559,6 +1561,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE30_DOCS_COMMIT", text)
+        self.assertNotIn("to be recorded after the Phase 30 docs commit", text)
         self.assertNotIn("pending branch-local", text)
 
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:

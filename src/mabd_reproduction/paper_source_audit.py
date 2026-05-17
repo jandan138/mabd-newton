@@ -49,6 +49,7 @@ class PaperSourceFinding:
 class VelocitySemanticsSourceAudit:
     source_root: str
     file_hashes: dict[str, str]
+    scanned_tex_paths: tuple[str, ...]
     findings: tuple[PaperSourceFinding, ...]
     blockers: tuple[str, ...]
     status: str
@@ -57,6 +58,7 @@ class VelocitySemanticsSourceAudit:
         return {
             "source_root": self.source_root,
             "file_hashes": dict(self.file_hashes),
+            "scanned_tex_paths": list(self.scanned_tex_paths),
             "findings": [finding.to_report() for finding in self.findings],
             "blockers": list(self.blockers),
             "status": self.status,
@@ -88,6 +90,12 @@ def _read_lines(source_root: Path, relative_path: str) -> list[str]:
     return (source_root / relative_path).read_text(encoding="utf-8").splitlines()
 
 
+def _discover_tex_paths(source_root: Path) -> tuple[str, ...]:
+    return tuple(
+        sorted(path.relative_to(source_root).as_posix() for path in source_root.rglob("*.tex"))
+    )
+
+
 def _line_window_finding(
     *,
     source_root: Path,
@@ -113,10 +121,11 @@ def _line_window_finding(
 
 def _scan_uncommented_tex(
     source_root: Path,
+    tex_paths: tuple[str, ...],
     patterns: tuple[str, ...],
 ) -> list[tuple[str, int, str, str]]:
     hits: list[tuple[str, int, str, str]] = []
-    for relative_path in ("arxiv.tex", "sections/singleabd.tex", "sections/solver.tex", "sections/experiment.tex"):
+    for relative_path in tex_paths:
         for line_number, line in enumerate(_read_lines(source_root, relative_path), start=1):
             uncommented = _strip_tex_comment(line).strip()
             if not uncommented:
@@ -131,10 +140,11 @@ def _scan_uncommented_tex(
 def _negative_scan_finding(
     *,
     source_root: Path,
+    tex_paths: tuple[str, ...],
     key: str,
     patterns: tuple[str, ...],
 ) -> PaperSourceFinding:
-    hits = _scan_uncommented_tex(source_root, patterns)
+    hits = _scan_uncommented_tex(source_root, tex_paths, patterns)
     if hits:
         evidence = "\n".join(f"{path}:{line_number}: {text}" for path, line_number, _, text in hits)
         return PaperSourceFinding(
@@ -159,6 +169,12 @@ def velocity_semantics_source_audit(
     source_root: Path = DEFAULT_PAPER_SOURCE_ROOT,
 ) -> VelocitySemanticsSourceAudit:
     source_root = Path(source_root)
+    if not source_root.exists():
+        raise FileNotFoundError(
+            f"paper source root does not exist: {source_root}; "
+            "extract the paper source to /tmp/mabd-paper/source before running this audit"
+        )
+    tex_paths = _discover_tex_paths(source_root)
     file_hashes = {
         relative_path: file_sha256(source_root / relative_path)
         for relative_path in AUDITED_FILE_HASHES
@@ -214,6 +230,7 @@ def velocity_semantics_source_audit(
         ),
         _negative_scan_finding(
             source_root=source_root,
+            tex_paths=tex_paths,
             key="decoupled_velocity_semantics",
             patterns=(
                 "decoupled velocity",
@@ -226,6 +243,7 @@ def velocity_semantics_source_audit(
         ),
         _negative_scan_finding(
             source_root=source_root,
+            tex_paths=tex_paths,
             key="alternative_momentum_extraction",
             patterns=(
                 "momentum extraction",
@@ -243,21 +261,30 @@ def velocity_semantics_source_audit(
         if file_hashes[relative_path] != expected
     )
     missing_positive_evidence = tuple(finding.key for finding in findings[:4] if not finding.present)
-    blockers = (
-        "source_does_not_specify_decoupled_velocity_semantics",
-        "source_does_not_specify_alternative_momentum_extraction",
-    )
+    blockers: tuple[str, ...] = ()
+    decoupled_finding = findings[4]
+    alternative_momentum_finding = findings[5]
+    if not decoupled_finding.present:
+        blockers = (*blockers, "source_does_not_specify_decoupled_velocity_semantics")
+    if not alternative_momentum_finding.present:
+        blockers = (*blockers, "source_does_not_specify_alternative_momentum_extraction")
     if expected_hash_mismatches:
         blockers = (*blockers, "paper_source_hash_mismatch")
     if missing_positive_evidence:
         blockers = (*blockers, "paper_source_required_snippet_missing")
+    status = (
+        "source_mentions_velocity_semantics_requiring_manual_review"
+        if decoupled_finding.present or alternative_momentum_finding.present
+        else "source_does_not_prove_decoupled_velocity_semantics"
+    )
 
     return VelocitySemanticsSourceAudit(
         source_root=str(source_root),
         file_hashes=file_hashes,
+        scanned_tex_paths=tex_paths,
         findings=findings,
         blockers=blockers,
-        status="source_does_not_prove_decoupled_velocity_semantics",
+        status=status,
     )
 
 

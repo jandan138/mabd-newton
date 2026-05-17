@@ -1,8 +1,63 @@
 from __future__ import annotations
 
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
 from mabd_reproduction.paper_source_audit import velocity_semantics_source_audit
+
+
+def _line_filled_text(line_map: dict[int, str], *, total_lines: int = 260) -> str:
+    lines = [""] * total_lines
+    for line_number, text in line_map.items():
+        lines[line_number - 1] = text
+    return "\n".join(lines)
+
+
+def _write_source_fixture(root: Path, *, omitted_file_text: str) -> None:
+    (root / "sections").mkdir(parents=True)
+    (root / "sections_a").mkdir(parents=True)
+    (root / "images/cube").mkdir(parents=True)
+    (root / "arxiv.tex").write_text("% root\n", encoding="utf-8")
+    (root / "sections/singleabd.tex").write_text(
+        _line_filled_text(
+            {
+                34: (
+                    "E_I(\\bm{x}) with implicit Euler and "
+                    "h\\dot{\\bm{x}}^n source evidence"
+                )
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / "sections/solver.tex").write_text(
+        _line_filled_text(
+            {
+                219: (
+                    "spatial twist source evidence "
+                    "\\bm V^j = \\bm{G}\\dot{\\bm q}^j"
+                ),
+                238: (
+                    "G(\\bm A^j)^\\top maps a wrench and "
+                    "\\frac{1}{h}\\bm M_{A}^j\\dot{\\bm q}^j appears"
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / "sections/experiment.tex").write_text(
+        _line_filled_text(
+            {
+                40: (
+                    "\\bm p_0=[100, 0, 0] and \\bm L_0=[0, 100, 0] "
+                    "with \\bm V_0 map it to ABD generalized velocities"
+                )
+            }
+        ),
+        encoding="utf-8",
+    )
+    (root / "sections_a/multiabd.tex").write_text(omitted_file_text, encoding="utf-8")
+    (root / "images/cube/roll_cube.pdf").write_bytes(b"%PDF-fixture\n")
 
 
 class PaperSourceAuditTests(unittest.TestCase):
@@ -30,6 +85,11 @@ class PaperSourceAuditTests(unittest.TestCase):
             audit.file_hashes["images/cube/roll_cube.pdf"],
             "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
         )
+        self.assertIn("arxiv.tex", audit.scanned_tex_paths)
+        self.assertIn("sections/singleabd.tex", audit.scanned_tex_paths)
+        self.assertIn("sections/solver.tex", audit.scanned_tex_paths)
+        self.assertIn("sections/experiment.tex", audit.scanned_tex_paths)
+        self.assertIn("sections_a/multiabd.tex", audit.scanned_tex_paths)
 
         findings = {finding.key: finding for finding in audit.findings}
         self.assertTrue(findings["implicit_euler_inertia_potential"].present)
@@ -71,11 +131,38 @@ class PaperSourceAuditTests(unittest.TestCase):
         )
         self.assertEqual(report["source_root"], "/tmp/mabd-paper/source")
         self.assertIn("file_hashes", report)
+        self.assertIn("scanned_tex_paths", report)
+        self.assertIn("sections_a/multiabd.tex", report["scanned_tex_paths"])
         self.assertIn("findings", report)
         self.assertIn("blockers", report)
         self.assertIn(
             "source_does_not_specify_decoupled_velocity_semantics",
             report["blockers"],
+        )
+
+    def test_negative_scan_covers_all_tex_files_and_conditionally_reports_blockers(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            source_root = Path(tmpdir) / "source"
+            _write_source_fixture(
+                source_root,
+                omitted_file_text=(
+                    "The private note mentions decoupled velocity semantics and "
+                    "alternative momentum extraction.\n"
+                ),
+            )
+
+            audit = velocity_semantics_source_audit(source_root)
+
+        findings = {finding.key: finding for finding in audit.findings}
+        self.assertIn("sections_a/multiabd.tex", audit.scanned_tex_paths)
+        self.assertTrue(findings["decoupled_velocity_semantics"].present)
+        self.assertIn("sections_a/multiabd.tex", findings["decoupled_velocity_semantics"].path)
+        self.assertTrue(findings["alternative_momentum_extraction"].present)
+        self.assertNotIn("source_does_not_specify_decoupled_velocity_semantics", audit.blockers)
+        self.assertNotIn("source_does_not_specify_alternative_momentum_extraction", audit.blockers)
+        self.assertEqual(
+            audit.status,
+            "source_mentions_velocity_semantics_requiring_manual_review",
         )
 
 

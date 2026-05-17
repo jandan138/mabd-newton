@@ -48,6 +48,8 @@ the spinning-box comparison, or any paper experiment.
 - arXiv ID: `2603.08079`
 - arXiv version: `v2`
 - source root: `/tmp/mabd-paper/source`
+- source root setup: `/tmp/mabd-paper/source` must exist locally before
+  running the Phase 30 source audit or docs validator.
 - sections/singleabd.tex SHA256:
   `0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d`
 - sections/solver.tex SHA256:
@@ -58,6 +60,7 @@ the spinning-box comparison, or any paper experiment.
   `7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80`
 - cited source lines: `singleabd.tex:34-42`, `solver.tex:219-241`,
   `experiment.tex:40-55`
+- scanned TeX source includes: `arxiv.tex`, `sections/singleabd.tex`, `sections/solver.tex`, `sections/experiment.tex`, `sections_a/multiabd.tex`
 
 ## Environment
 

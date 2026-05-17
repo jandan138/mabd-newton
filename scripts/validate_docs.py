@@ -32,6 +32,7 @@ from mabd_reproduction.spinning_box_physics import (
 
 ROOT = Path(__file__).resolve().parents[1]
 MABD_PYTHON = Path("/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python")
+PAPER_SOURCE_ROOT = Path("/tmp/mabd-paper/source")
 REQUIRED_PATHS = (
     "AGENTS.md",
     "LICENSE.md",
@@ -2266,13 +2267,14 @@ def validate_phase30_record() -> None:
         "base commit: `6683d92`",
         "design/plan commit: `c97ee49`",
         "source-audit implementation commit: `d180e58`",
-        "docs/record commit:",
+        "docs/record commit: `ee188d0`",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "local patch status: Phase 30 does not modify vendored Newton",
         "## Paper Source",
         "arXiv ID: `2603.08079`",
         "arXiv version: `v2`",
+        "source root setup: `/tmp/mabd-paper/source` must exist locally",
         "sections/singleabd.tex SHA256:",
         "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d",
         "sections/solver.tex SHA256:",
@@ -2284,6 +2286,7 @@ def validate_phase30_record() -> None:
         "singleabd.tex:34-42",
         "solver.tex:219-241",
         "experiment.tex:40-55",
+        "scanned TeX source includes: `arxiv.tex`, `sections/singleabd.tex`, `sections/solver.tex`, `sections/experiment.tex`, `sections_a/multiabd.tex`",
         "## Environment",
         "mabd-newton-py310",
         "physics-primitive-newton-py310",
@@ -2314,6 +2317,8 @@ def validate_phase30_record() -> None:
             fail(f"Phase 30 record missing required evidence field: {snippet}")
     if "TO_BE_BACKFILLED_PHASE30_DOCS_COMMIT" in text:
         fail("Phase 30 record contains stale docs commit placeholder")
+    if "to be recorded after the Phase 30 docs commit" in text:
+        fail("Phase 30 record contains stale docs commit placeholder")
     if "pending branch-local" in text:
         fail("Phase 30 record contains pending branch-local provenance placeholder")
     forbidden_snippets = (
@@ -2331,7 +2336,9 @@ def validate_phase30_record() -> None:
         if snippet in text:
             fail(f"Phase 30 record overclaims unsupported evidence: {snippet}")
 
-    audit = velocity_semantics_source_audit()
+    if not PAPER_SOURCE_ROOT.exists():
+        fail(f"Phase 30 paper source root missing: {PAPER_SOURCE_ROOT}")
+    audit = velocity_semantics_source_audit(PAPER_SOURCE_ROOT)
     if audit.status != "source_does_not_prove_decoupled_velocity_semantics":
         fail("Phase 30 source audit status changed")
     findings = {finding.key: finding for finding in audit.findings}
@@ -2353,6 +2360,15 @@ def validate_phase30_record() -> None:
     ):
         if blocker not in audit.blockers:
             fail(f"Phase 30 source audit missing blocker: {blocker}")
+    for relative_path in (
+        "arxiv.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections/experiment.tex",
+        "sections_a/multiabd.tex",
+    ):
+        if relative_path not in audit.scanned_tex_paths:
+            fail(f"Phase 30 source audit did not scan {relative_path}")
     for relative_path, expected_hash in {
         "sections/singleabd.tex": (
             "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d"
