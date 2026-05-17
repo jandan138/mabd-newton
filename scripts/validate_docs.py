@@ -5909,6 +5909,7 @@ def validate_phase45_record() -> None:
         "00e54159fcc18cd02f7c2cff74426d276b4f2e11",
         "83534a45b9ec1be456b3eaf9512a0a06b6639402",
         "ca8c8a100471ff0b7a5a42adbb795f64f16a90a6",
+        "2eb5e39126b12d4609aa51309c9a78d6a9016fbc",
         "## Vendored Newton",
         "https://github.com/newton-physics/newton.git",
         "96713fa965463b69c229a4d30582c733ff3526bb",

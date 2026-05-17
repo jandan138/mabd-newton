@@ -3260,6 +3260,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "00e5415",
             "83534a4",
             "ca8c8a1",
+            "2eb5e39",
             "## Vendored Newton",
             "https://github.com/newton-physics/newton.git",
             "96713fa965463b69c229a4d30582c733ff3526bb",

@@ -13,6 +13,7 @@ passed_for_solver_model_constraint_config_slice
 - Plan commit: `00e54159fcc18cd02f7c2cff74426d276b4f2e11`
 - RED test commit: `83534a45b9ec1be456b3eaf9512a0a06b6639402`
 - Implementation commit: `ca8c8a100471ff0b7a5a42adbb795f64f16a90a6`
+- Evidence record commit: `2eb5e39126b12d4609aa51309c9a78d6a9016fbc`
 - Worktree:
   `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase45-model-constraint-config`
 
