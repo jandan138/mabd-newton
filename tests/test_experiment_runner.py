@@ -101,7 +101,8 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         self.assertEqual(loaded.claim_id, "experiment.single_body.spinning_box")
         self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
-        self.assertIn("rbd_implicit_baseline", loaded.failure_reason)
+        self.assertIn("mabd_newton", loaded.failure_reason)
+        self.assertIn("comparison", loaded.failure_reason)
 
     def test_run_spinning_box_experiment_rejects_ambiguous_output_selection(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_experiment
