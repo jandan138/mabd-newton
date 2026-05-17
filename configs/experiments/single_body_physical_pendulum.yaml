@@ -20,6 +20,31 @@ reference:
   omega_lin_rad_s: 3.132091952673165
   period_count: 1
   sample_count: 9
+mabd_development:
+  time_step_s: 0.01
+  step_count: 16
+  sample_count: 5
+  rest_points_m:
+    - [0.0, 0.0, 0.0]
+    - [1.0, 0.0, 0.0]
+    - [1.0, 0.05, 0.0]
+    - [1.0, 0.0, 0.05]
+  masses_kg:
+    - 0.001
+    - 0.333
+    - 0.333
+    - 0.333
+  pivot_rest_point_m: [0.0, 0.0, 0.0]
+  pivot_world_point_m: [0.0, 0.0, 0.0]
+  angle_probe_rest_point_m: [1.0, 0.0, 0.0]
+  gravity_m_s2: [0.0, -9.81, 0.0]
+  initial_q: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+  initial_qd: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  output_report: reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json
+  thresholds:
+    max_pivot_residual_m: 1.0e-10
+    max_constraint_residual_norm: 1.0e-10
+    max_abs_angle_error_rad: 2.0
 report:
   status: incomplete
   failure_reason: >-

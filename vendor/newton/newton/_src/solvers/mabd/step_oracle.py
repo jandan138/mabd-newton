@@ -15,6 +15,7 @@ from .affine_math import (
     apply_polar_rhs_rotation,
     gravity_generalized_force,
     pack_q,
+    point_jacobian,
     unpack_q,
 )
 from .control_forces import MABDActuationSpec, assemble_control_generalized_forces
@@ -22,6 +23,7 @@ from .dense_kkt import solve_dense_dual_kkt
 from .joint_constraints import JointGradientMode, MABDJointSpec, evaluate_joint, joint_residual
 from .single_body import SingleBodyABDPrecompute
 from .topology_solvers import (
+    TopologyDualInputs,
     assemble_topology_dual_inputs,
     classify_constraint_graph,
     solve_chain_block_tridiagonal_kkt,
@@ -47,9 +49,17 @@ class MABDCPUOracleConstraint:
 
 
 @dataclass(frozen=True)
+class MABDCPUOracleWorldConstraint:
+    body: int
+    rest_point: np.ndarray
+    world_point: np.ndarray
+
+
+@dataclass(frozen=True)
 class MABDCPUOracleConfig:
     bodies: tuple[MABDCPUOracleBody, ...] | list[MABDCPUOracleBody]
     constraints: tuple[MABDCPUOracleConstraint, ...] | list[MABDCPUOracleConstraint] = field(default_factory=tuple)
+    world_constraints: tuple[MABDCPUOracleWorldConstraint, ...] | list[MABDCPUOracleWorldConstraint] = field(default_factory=tuple)
     external_forces: tuple[np.ndarray, ...] | list[np.ndarray] | None = None
     gravity: np.ndarray | None = None
     actuations: tuple[MABDActuationSpec, ...] | list[MABDActuationSpec] = field(default_factory=tuple)
@@ -75,6 +85,13 @@ def _as_q_blocks(values: Any, name: str) -> tuple[np.ndarray, ...]:
         if block.shape != (12,):
             raise ValueError(f"{name}[{body_id}] must have shape (12,), got {block.shape}")
     return blocks
+
+
+def _as_vec3(value: Any, name: str) -> np.ndarray:
+    arr = np.asarray(value, dtype=float)
+    if arr.shape != (3,):
+        raise ValueError(f"{name} must have shape (3,), got {arr.shape}")
+    return arr
 
 
 def _body_rest_q(body: MABDCPUOracleBody) -> np.ndarray:
@@ -126,6 +143,10 @@ def _validate_config(config: MABDCPUOracleConfig, body_count: int) -> tuple[MABD
     for constraint_id, constraint in enumerate(constraints):
         if not 0 <= int(constraint.body_a) < body_count or not 0 <= int(constraint.body_b) < body_count:
             raise ValueError(f"constraint {constraint_id} references a body outside [0, {body_count})")
+    world_constraints = tuple(config.world_constraints)
+    for constraint_id, constraint in enumerate(world_constraints):
+        if not 0 <= int(constraint.body) < body_count:
+            raise ValueError(f"world constraint {constraint_id} references a body outside [0, {body_count})")
     return bodies
 
 
@@ -248,6 +269,102 @@ def _constraint_blocks(
     return edges, gradients, lower_rhs_blocks, residuals
 
 
+def _world_constraint_blocks(
+    q: tuple[np.ndarray, ...],
+    config: MABDCPUOracleConfig,
+) -> tuple[list[int], list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+    bodies: list[int] = []
+    gradients: list[np.ndarray] = []
+    lower_rhs_blocks: list[np.ndarray] = []
+    residuals: list[np.ndarray] = []
+    for constraint_id, constraint in enumerate(config.world_constraints):
+        body = int(constraint.body)
+        rest_point = _as_vec3(
+            constraint.rest_point,
+            f"world_constraints[{constraint_id}].rest_point",
+        )
+        world_point = _as_vec3(
+            constraint.world_point,
+            f"world_constraints[{constraint_id}].world_point",
+        )
+        gradient = point_jacobian(rest_point)
+        residual = gradient @ q[body] - world_point
+        bodies.append(body)
+        gradients.append(gradient)
+        lower_rhs_blocks.append(-residual if config.residual_correction else np.zeros_like(residual))
+        residuals.append(residual)
+    return bodies, gradients, lower_rhs_blocks, residuals
+
+
+def _block_diag_hessians(blocks: tuple[np.ndarray, ...]) -> np.ndarray:
+    dim = blocks[0].shape[0]
+    out = np.zeros((dim * len(blocks), dim * len(blocks)), dtype=float)
+    for body_id, block in enumerate(blocks):
+        start = dim * body_id
+        out[start : start + dim, start : start + dim] = block
+    return out
+
+
+def _assemble_dense_dual_inputs_with_world_constraints(
+    hessians: tuple[np.ndarray, ...],
+    body_edges: list[tuple[int, int]],
+    body_gradients: list[tuple[np.ndarray, np.ndarray]],
+    body_forces: tuple[np.ndarray, ...],
+    body_lower_rhs_blocks: list[np.ndarray],
+    world_bodies: list[int],
+    world_gradients: list[np.ndarray],
+    world_lower_rhs_blocks: list[np.ndarray],
+) -> TopologyDualInputs:
+    dim = hessians[0].shape[0]
+    H = _block_diag_hessians(hessians)
+    f = np.concatenate(body_forces)
+    rows = []
+    lower_blocks = []
+    edge_slices: list[slice] = []
+    row_start = 0
+    for (body_a, body_b), (grad_a, grad_b), lower_rhs in zip(
+        body_edges,
+        body_gradients,
+        body_lower_rhs_blocks,
+        strict=True,
+    ):
+        rank = grad_a.shape[0]
+        row = np.zeros((rank, dim * len(hessians)), dtype=float)
+        row[:, dim * body_a : dim * body_a + dim] = grad_a
+        row[:, dim * body_b : dim * body_b + dim] = grad_b
+        rows.append(row)
+        lower_blocks.append(lower_rhs)
+        edge_slices.append(slice(row_start, row_start + rank))
+        row_start += rank
+    for body, gradient, lower_rhs in zip(
+        world_bodies,
+        world_gradients,
+        world_lower_rhs_blocks,
+        strict=True,
+    ):
+        rank = gradient.shape[0]
+        row = np.zeros((rank, dim * len(hessians)), dtype=float)
+        row[:, dim * body : dim * body + dim] = gradient
+        rows.append(row)
+        lower_blocks.append(lower_rhs)
+        edge_slices.append(slice(row_start, row_start + rank))
+        row_start += rank
+    J = np.vstack(rows)
+    lower_rhs = np.concatenate(lower_blocks)
+    inv_h_f = np.linalg.solve(H, f)
+    dual_matrix = J @ np.linalg.solve(H, J.T)
+    dual_rhs = J @ inv_h_f - lower_rhs
+    return TopologyDualInputs(
+        H=H,
+        J=J,
+        f=f,
+        lower_rhs=lower_rhs,
+        dual_matrix=dual_matrix,
+        dual_rhs=dual_rhs,
+        edge_slices=edge_slices,
+    )
+
+
 def _solve_constrained_step(
     q: tuple[np.ndarray, ...],
     dt: float,
@@ -256,7 +373,10 @@ def _solve_constrained_step(
     config: MABDCPUOracleConfig,
 ) -> MABDCPUOracleStepResult:
     edges, gradients, lower_rhs_blocks, _residuals = _constraint_blocks(q, config)
+    world_bodies, world_gradients, world_lower_rhs_blocks, _world_residuals = _world_constraint_blocks(q, config)
     topology = str(config.topology)
+    if world_bodies and topology != "dense":
+        raise ValueError("world constraints currently require topology='dense'")
 
     if topology == "auto":
         classification = classify_constraint_graph(len(q), edges)
@@ -268,7 +388,19 @@ def _solve_constrained_step(
             )
 
     if topology == "dense":
-        inputs = assemble_topology_dual_inputs(hessians, edges, gradients, rhs, lower_rhs_blocks)
+        if world_bodies:
+            inputs = _assemble_dense_dual_inputs_with_world_constraints(
+                hessians,
+                edges,
+                gradients,
+                rhs,
+                lower_rhs_blocks,
+                world_bodies,
+                world_gradients,
+                world_lower_rhs_blocks,
+            )
+        else:
+            inputs = assemble_topology_dual_inputs(hessians, edges, gradients, rhs, lower_rhs_blocks)
         dense = solve_dense_dual_kkt(inputs.H, inputs.J, inputs.f, lower_rhs=inputs.lower_rhs)
         dq = dense.dq
         dlambda = dense.dlambda
@@ -300,6 +432,11 @@ def _solve_constrained_step(
     q_next = tuple(body_q + body_dq for body_q, body_dq in zip(q, dq_blocks, strict=True))
     qd_next = tuple(body_dq / float(dt) for body_dq in dq_blocks)
     residual_after = [joint_residual(constraint.spec, q_next[int(constraint.body_a)], q_next[int(constraint.body_b)]) for constraint in config.constraints]
+    residual_after.extend(
+        point_jacobian(_as_vec3(constraint.rest_point, "rest_point")) @ q_next[int(constraint.body)]
+        - _as_vec3(constraint.world_point, "world_point")
+        for constraint in config.world_constraints
+    )
     constraint_norm = float(np.linalg.norm(np.concatenate(residual_after))) if residual_after else 0.0
     return MABDCPUOracleStepResult(
         q=q_next,
@@ -342,7 +479,7 @@ def solve_cpu_oracle_step(
         ),
     )
     hessians, rhs = _step_body_systems(q_blocks, qd_blocks, dt_float, bodies, external_forces)
-    if not tuple(config.constraints):
+    if not tuple(config.constraints) and not tuple(config.world_constraints):
         return _unconstrained_step(q_blocks, dt_float, hessians, rhs, bodies)
     _require_constrained_none_rotation(bodies)
     world_rhs = tuple(
@@ -357,5 +494,6 @@ __all__ = [
     "MABDCPUOracleConfig",
     "MABDCPUOracleConstraint",
     "MABDCPUOracleStepResult",
+    "MABDCPUOracleWorldConstraint",
     "solve_cpu_oracle_step",
 ]

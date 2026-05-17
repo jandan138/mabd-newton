@@ -134,6 +134,21 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertAlmostEqual(config.reference.release_angle_rad, np.pi / 2.0)
         self.assertAlmostEqual(config.reference.kappa, np.sqrt(0.5))
         self.assertAlmostEqual(config.reference.omega_lin_rad_s, np.sqrt(9.81))
+        self.assertEqual(config.mabd_development.time_step_s, 0.01)
+        self.assertEqual(config.mabd_development.step_count, 16)
+        self.assertEqual(config.mabd_development.sample_count, 5)
+        self.assertEqual(config.mabd_development.rest_points_m.shape, (4, 3))
+        self.assertEqual(config.mabd_development.masses_kg.shape, (4,))
+        np.testing.assert_allclose(config.mabd_development.pivot_rest_point_m, [0.0, 0.0, 0.0])
+        np.testing.assert_allclose(config.mabd_development.pivot_world_point_m, [0.0, 0.0, 0.0])
+        np.testing.assert_allclose(config.mabd_development.angle_probe_rest_point_m, [1.0, 0.0, 0.0])
+        np.testing.assert_allclose(config.mabd_development.gravity_m_s2, [0.0, -9.81, 0.0])
+        self.assertEqual(
+            config.mabd_development.output_report,
+            "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
+        )
+        self.assertIn("max_pivot_residual_m", config.mabd_development.thresholds)
+        self.assertIn("max_abs_angle_error_rad", config.mabd_development.thresholds)
         self.assertEqual(
             config.output_report,
             "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
@@ -164,6 +179,16 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ExperimentRunConfigError, "reference"):
             validate_physical_pendulum_config_against_matrix(drifted, matrix)
+
+    def test_physical_pendulum_config_rejects_degenerate_mabd_points(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_development"]["rest_points_m"][3] = source["mabd_development"]["rest_points_m"][2]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "nondegenerate"):
+                load_physical_pendulum_config(path)
 
     def test_physical_pendulum_config_rejects_passed_experiment_status(self) -> None:
         source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))

@@ -64,6 +64,23 @@ class PhysicalPendulumReferenceConfig:
 
 
 @dataclass(frozen=True)
+class PhysicalPendulumMABDDevelopmentConfig:
+    time_step_s: float
+    step_count: int
+    sample_count: int
+    rest_points_m: np.ndarray
+    masses_kg: np.ndarray
+    pivot_rest_point_m: np.ndarray
+    pivot_world_point_m: np.ndarray
+    angle_probe_rest_point_m: np.ndarray
+    gravity_m_s2: np.ndarray
+    initial_q: np.ndarray
+    initial_qd: np.ndarray
+    output_report: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class PhysicalPendulumRunConfig:
     schema_version: int
     claim_id: str
@@ -74,6 +91,7 @@ class PhysicalPendulumRunConfig:
     required_missing_lanes: tuple[str, ...]
     paper_values: dict[str, Any]
     reference: PhysicalPendulumReferenceConfig
+    mabd_development: PhysicalPendulumMABDDevelopmentConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -97,6 +115,13 @@ PAPER_HORIZON_THRESHOLD_KEYS = frozenset(
 PHYSICAL_PENDULUM_THRESHOLD_KEYS = frozenset(
     {
         "max_abs_reference_identity_error",
+    }
+)
+PHYSICAL_PENDULUM_MABD_DEVELOPMENT_THRESHOLD_KEYS = frozenset(
+    {
+        "max_abs_angle_error_rad",
+        "max_constraint_residual_norm",
+        "max_pivot_residual_m",
     }
 )
 PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES = ("mabd_newton", "rbd_implicit_baseline")
@@ -238,6 +263,56 @@ def _require_vec3_tuple(data: dict[str, Any], key: str) -> tuple[float, float, f
     return (result[0], result[1], result[2])
 
 
+def _require_vec3_array(data: dict[str, Any], key: str) -> np.ndarray:
+    value = data.get(key)
+    if not isinstance(value, list) or len(value) != 3:
+        raise ExperimentRunConfigError(f"{key} must contain 3 numeric values")
+    result: list[float] = []
+    for item in value:
+        if not isinstance(item, Real) or isinstance(item, bool):
+            raise ExperimentRunConfigError(f"{key} must contain 3 numeric values")
+        item_float = float(item)
+        if not isfinite(item_float):
+            raise ExperimentRunConfigError(f"{key} must contain 3 finite numeric values")
+        result.append(item_float)
+    return np.asarray(result, dtype=float)
+
+
+def _require_points(data: dict[str, Any], key: str) -> np.ndarray:
+    value = data.get(key)
+    if not isinstance(value, list) or len(value) < 4:
+        raise ExperimentRunConfigError(f"{key} must contain at least 4 3D points")
+    rows: list[list[float]] = []
+    for row in value:
+        if not isinstance(row, list) or len(row) != 3:
+            raise ExperimentRunConfigError(f"{key} must contain 3D points")
+        parsed: list[float] = []
+        for item in row:
+            if not isinstance(item, Real) or isinstance(item, bool):
+                raise ExperimentRunConfigError(f"{key} must contain finite numeric 3D points")
+            item_float = float(item)
+            if not isfinite(item_float):
+                raise ExperimentRunConfigError(f"{key} must contain finite numeric 3D points")
+            parsed.append(item_float)
+        rows.append(parsed)
+    return np.asarray(rows, dtype=float)
+
+
+def _require_positive_mass_vector(data: dict[str, Any], key: str, count: int) -> np.ndarray:
+    value = data.get(key)
+    if not isinstance(value, list) or len(value) != count:
+        raise ExperimentRunConfigError(f"{key} must contain {count} positive masses")
+    result: list[float] = []
+    for item in value:
+        if not isinstance(item, Real) or isinstance(item, bool):
+            raise ExperimentRunConfigError(f"{key} must contain finite positive masses")
+        item_float = float(item)
+        if not isfinite(item_float) or item_float <= 0.0:
+            raise ExperimentRunConfigError(f"{key} must contain finite positive masses")
+        result.append(item_float)
+    return np.asarray(result, dtype=float)
+
+
 def _require_contact_surface(data: dict[str, Any]) -> dict[str, Any]:
     surface = _require_mapping(data, "contact_surface")
     if _require_str(surface, "type") != "plane":
@@ -288,6 +363,53 @@ def _require_physical_pendulum_reference(
         omega_lin_rad_s=_require_positive_float(reference, "omega_lin_rad_s"),
         period_count=_require_positive_int(reference, "period_count"),
         sample_count=sample_count,
+    )
+
+
+def _require_physical_pendulum_mabd_development(
+    data: dict[str, Any],
+) -> PhysicalPendulumMABDDevelopmentConfig:
+    mabd_development = _require_mapping(data, "mabd_development")
+    rest_points = _require_points(mabd_development, "rest_points_m")
+    masses = _require_positive_mass_vector(
+        mabd_development,
+        "masses_kg",
+        rest_points.shape[0],
+    )
+    rank = np.linalg.matrix_rank(rest_points[1:] - rest_points[0], tol=1.0e-12)
+    if rank != 3:
+        raise ExperimentRunConfigError("mabd_development.rest_points_m must be nondegenerate")
+
+    step_count = _require_positive_int(mabd_development, "step_count")
+    sample_count = _require_positive_int(mabd_development, "sample_count")
+    if sample_count < 2:
+        raise ExperimentRunConfigError("mabd_development.sample_count must be at least 2")
+    if sample_count > step_count + 1:
+        raise ExperimentRunConfigError("mabd_development.sample_count must be at most step_count + 1")
+    thresholds = _require_float_mapping(mabd_development, "thresholds")
+    missing = sorted(PHYSICAL_PENDULUM_MABD_DEVELOPMENT_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "mabd_development.thresholds missing required keys: " + ", ".join(missing)
+        )
+    pivot_rest = _require_vec3_array(mabd_development, "pivot_rest_point_m")
+    angle_probe = _require_vec3_array(mabd_development, "angle_probe_rest_point_m")
+    if np.linalg.norm(angle_probe - pivot_rest) <= 1.0e-12:
+        raise ExperimentRunConfigError("mabd_development angle probe must be distinct from pivot")
+    return PhysicalPendulumMABDDevelopmentConfig(
+        time_step_s=_require_positive_float(mabd_development, "time_step_s"),
+        step_count=step_count,
+        sample_count=sample_count,
+        rest_points_m=rest_points,
+        masses_kg=masses,
+        pivot_rest_point_m=pivot_rest,
+        pivot_world_point_m=_require_vec3_array(mabd_development, "pivot_world_point_m"),
+        angle_probe_rest_point_m=angle_probe,
+        gravity_m_s2=_require_vec3_array(mabd_development, "gravity_m_s2"),
+        initial_q=_require_vector(mabd_development, "initial_q"),
+        initial_qd=_require_vector(mabd_development, "initial_qd"),
+        output_report=_require_str(mabd_development, "output_report"),
+        thresholds=thresholds,
     )
 
 
@@ -415,6 +537,7 @@ def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig
         ),
         paper_values=_require_mapping(data, "paper_values"),
         reference=_require_physical_pendulum_reference(data),
+        mabd_development=_require_physical_pendulum_mabd_development(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -466,13 +589,24 @@ def validate_physical_pendulum_config_against_matrix(
     expected_prefix = Path(entry.output_report).with_suffix("").as_posix() + "_"
     if not config.output_report.startswith(expected_prefix) or not config.output_report.endswith(".json"):
         raise ExperimentRunConfigError("output_report must be a lane-specific report under the matrix stem")
+    if (
+        not config.mabd_development.output_report.startswith(expected_prefix)
+        or not config.mabd_development.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_development.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.mabd_development.output_report == config.output_report:
+        raise ExperimentRunConfigError("mabd_development.output_report must be separate from analytic output_report")
 
 
 __all__ = [
     "ExperimentRunConfigError",
     "PAPER_HORIZON_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES",
+    "PHYSICAL_PENDULUM_MABD_DEVELOPMENT_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_THRESHOLD_KEYS",
+    "PhysicalPendulumMABDDevelopmentConfig",
     "PhysicalPendulumReferenceConfig",
     "PhysicalPendulumRunConfig",
     "SpinningBoxPaperHorizonConfig",

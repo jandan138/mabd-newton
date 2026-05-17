@@ -407,6 +407,21 @@
   contact, collision, rendered output, paper timing, generated report artifacts
   as committed evidence, the full physical-pendulum experiment, or any passed
   `experiment.*` claim.
+- This repository contains Phase 34 world-anchor CPU-oracle support and a
+  physical-pendulum M-ABD development diagnostic lane after the Phase 34 record
+  is created.
+- Phase 34 verifies vendored Newton dense CPU-oracle world-anchor constraints
+  for `MABDCPUOracleWorldConstraint`, dense-only topology gating, malformed
+  vector rejection, physical-pendulum `mabd_development` config validation,
+  `physical_pendulum_mabd_development` CLI dispatch, the distinct
+  `physical_pendulum_mabd_development_diagnostic` report lane id, compact
+  angle samples, `lane_status = development_diagnostic_generated`, and
+  top-level report status: `incomplete`.
+- Phase 34 does not verify the full physical-pendulum experiment,
+  paper-faithful pendulum geometry, RBD implicit baseline dynamics,
+  joint-force waveform agreement, rendered output, paper timing, topology
+  solvers for world anchors beyond dense CPU oracle, generated report artifacts
+  as committed evidence, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -436,6 +451,9 @@
 - Phase 33 analytic-reference lane status is a passed physical-pendulum
   experiment, M-ABD dynamics result, RBD baseline result, or joint-force
   agreement result.
+- Phase 34 physical-pendulum M-ABD development diagnostic is a passed
+  physical-pendulum experiment, paper-faithful pendulum geometry result, RBD
+  baseline result, joint-force agreement result, or paper timing result.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

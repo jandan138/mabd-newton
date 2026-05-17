@@ -372,6 +372,104 @@ class MABDPhase4InternalTests(unittest.TestCase):
         self.assertTrue(np.allclose(result.qd[0][9:12], qd[9:12], atol=1.0e-12))
         self.assertTrue(np.allclose(result.q[0][9:12], q[9:12] + dt * qd[9:12], atol=1.0e-12))
 
+    def test_dense_cpu_step_enforces_world_anchor_residual_correction(self) -> None:
+        q = _identity_q((0.2, -0.1, 0.05))
+        dt = 0.1
+        rest_point = np.zeros(3, dtype=float)
+        world_point = np.zeros(3, dtype=float)
+        config = mabd.MABDCPUOracleConfig(
+            bodies=[_body()],
+            world_constraints=[
+                mabd.MABDCPUOracleWorldConstraint(
+                    body=0,
+                    rest_point=rest_point,
+                    world_point=world_point,
+                )
+            ],
+            topology="dense",
+        )
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[np.zeros(12)],
+            dt=dt,
+            config=config,
+        )
+
+        pinned = mabd.point_jacobian(rest_point) @ result.q[0]
+        self.assertLess(result.constraint_residual_norm, 1.0e-10)
+        self.assertTrue(np.allclose(pinned, world_point, atol=1.0e-10))
+
+    def test_dense_cpu_step_enforces_nonzero_world_anchor_affine_residual_correction(self) -> None:
+        A = np.array([[1.2, 0.1, -0.05], [0.0, 0.9, 0.2], [0.08, -0.03, 1.1]], dtype=float)
+        q = mabd.pack_q(A, np.array([0.2, -0.1, 0.05], dtype=float))
+        dt = 0.1
+        rest_point = np.array([1.0, -0.5, 0.25], dtype=float)
+        world_point = np.array([-0.15, 0.35, 0.5], dtype=float)
+        config = mabd.MABDCPUOracleConfig(
+            bodies=[_body()],
+            world_constraints=[
+                mabd.MABDCPUOracleWorldConstraint(
+                    body=0,
+                    rest_point=rest_point,
+                    world_point=world_point,
+                )
+            ],
+            topology="dense",
+        )
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[np.zeros(12)],
+            dt=dt,
+            config=config,
+        )
+
+        pinned = mabd.point_jacobian(rest_point) @ result.q[0]
+        self.assertLess(result.constraint_residual_norm, 1.0e-10)
+        self.assertGreater(float(np.linalg.norm(result.q[0][:9] - q[:9])), 1.0e-6)
+        self.assertTrue(np.allclose(pinned, world_point, atol=1.0e-10))
+
+    def test_world_anchor_constraints_require_dense_topology(self) -> None:
+        config = mabd.MABDCPUOracleConfig(
+            bodies=[_body()],
+            world_constraints=[
+                mabd.MABDCPUOracleWorldConstraint(
+                    body=0,
+                    rest_point=np.zeros(3),
+                    world_point=np.zeros(3),
+                )
+            ],
+            topology="chain",
+        )
+
+        with self.assertRaisesRegex(ValueError, "world.*dense"):
+            mabd.solve_cpu_oracle_step(
+                q=[_identity_q((0.2, 0.0, 0.0))],
+                qd=[np.zeros(12)],
+                dt=0.1,
+                config=config,
+            )
+
+    def test_world_anchor_constraint_rejects_bad_vector_shapes(self) -> None:
+        with self.assertRaisesRegex(ValueError, "rest_point"):
+            mabd.solve_cpu_oracle_step(
+                q=[_identity_q()],
+                qd=[np.zeros(12)],
+                dt=0.1,
+                config=mabd.MABDCPUOracleConfig(
+                    bodies=[_body()],
+                    world_constraints=[
+                        mabd.MABDCPUOracleWorldConstraint(
+                            body=0,
+                            rest_point=np.zeros(2),
+                            world_point=np.zeros(3),
+                        )
+                    ],
+                    topology="dense",
+                ),
+            )
+
     def test_constrained_cpu_step_rejects_polar_until_rotated_kkt_exists(self) -> None:
         control_tetrahedron = np.array(
             [

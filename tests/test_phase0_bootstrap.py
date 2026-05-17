@@ -1831,6 +1831,118 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE33", text)
         self.assertNotIn("pending branch-local", text)
 
+    def test_phase34_world_anchor_physical_pendulum_mabd_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        experiment_statuses = {
+            claim["claim_id"]: claim["reproduction_status"]
+            for claim in data["claims"]
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        self.assertNotIn("passed", set(experiment_statuses.values()))
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 34")
+        verified = claim_boundary_bullet(text, "Phase 34 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 34 does not verify")
+
+        self.assertIn("world-anchor CPU-oracle support", current)
+        self.assertIn("physical-pendulum M-ABD development diagnostic lane", current)
+        self.assertIn("MABDCPUOracleWorldConstraint", verified)
+        self.assertIn("dense-only topology gating", verified)
+        self.assertIn("mabd_development", verified)
+        self.assertIn("`physical_pendulum_mabd_development` CLI dispatch", verified)
+        self.assertIn("`physical_pendulum_mabd_development_diagnostic` report lane id", verified)
+        self.assertIn("`lane_status = development_diagnostic_generated`", verified)
+        self.assertIn("top-level report status: `incomplete`", verified)
+        self.assertIn("full physical-pendulum experiment", non_claim)
+        self.assertIn("paper-faithful pendulum geometry", non_claim)
+        self.assertIn("RBD implicit baseline dynamics", non_claim)
+        self.assertIn("joint-force waveform agreement", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase34_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase34-world-anchor-physical-pendulum-mabd.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_physical_pendulum.yaml",
+            "configs/experiments/paper_experiment_matrix.yaml",
+            "## Repository",
+            "base commit: `81785e0`",
+            "phase34-physical-pendulum-mabd-lane",
+            "## Vendored Newton",
+            "local patch status: Phase 34 modifies vendored Newton M-ABD CPU oracle code",
+            "vendor/newton/newton/_src/solvers/mabd/step_oracle.py",
+            "vendor/newton/newton/tests/test_mabd_phase4_solver_step.py",
+            "## Paper Source",
+            "/tmp/mabd-paper/source/sections/experiment.tex:77-91",
+            "fixed pivot",
+            "joint-force waveform comparison",
+            "implicit RBD baseline comparison",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "## Newton World Anchor Evidence",
+            "MABDCPUOracleWorldConstraint",
+            "MABDCPUOracleConfig.world_constraints",
+            "point_jacobian(rest_point)",
+            "topology='dense'",
+            "malformed rest/world vectors are rejected",
+            "## Physical Pendulum M-ABD Diagnostic Evidence",
+            "src/mabd_reproduction/physical_pendulum_mabd.py",
+            "run_physical_pendulum_mabd_development",
+            "--lane physical_pendulum_mabd_development",
+            "mabd_cpu_oracle_physical_pendulum_development",
+            "report lane: `physical_pendulum_mabd_development_diagnostic`",
+            "lane_status = development_diagnostic_generated",
+            "top-level report status: `incomplete`",
+            "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
+            "paper pendulum geometry remains unknown",
+            "no implicit RBD baseline",
+            "no joint-force waveform comparison",
+            "required `mabd_newton` experiment lane remains listed as missing",
+            "## Metrics And Thresholds",
+            "time_step_s: `0.01`",
+            "step_count: `16`",
+            "compact sample count: `5`",
+            "max_pivot_residual_m = 0.0",
+            "max_constraint_residual_norm = 0.0",
+            "max_abs_angle_error_rad = 0.007130697850637885",
+            "threshold status: `passed`",
+            "sample steps: `[0, 4, 8, 12, 16]`",
+            "## TDD Evidence",
+            "MABDCPUOracleWorldConstraint",
+            "missing `mabd_development` config parsing",
+            "invalid CLI choice `physical_pendulum_mabd_development`",
+            "Ran 22 tests",
+            "Ran 17 tests",
+            "Ran 38 tests",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains not passed.",
+            "Newton-only M-ABD development diagnostic lane",
+            "required physical-pendulum `mabd_newton` experiment lane remains missing",
+            "RBD implicit baseline remains missing",
+            "Joint-force waveform agreement remains missing",
+            "Paper-faithful pendulum geometry remains missing",
+            "`pendulum_geometry_unknown` remains a blocker",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_phase4_solver_step",
+            "PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest newton.tests.test_mabd_phase4_solver_step",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_experiment_runner",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE34", text)
+        self.assertNotIn("pending branch-local", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1862,7 +1974,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

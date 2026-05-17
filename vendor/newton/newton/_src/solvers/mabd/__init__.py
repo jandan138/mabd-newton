@@ -86,6 +86,7 @@ from .step_oracle import (
     MABDCPUOracleConfig,
     MABDCPUOracleConstraint,
     MABDCPUOracleStepResult,
+    MABDCPUOracleWorldConstraint,
     solve_cpu_oracle_step,
 )
 from .topology_solvers import (
@@ -116,6 +117,7 @@ __all__ = [
     "MABDCPUOracleConfig",
     "MABDCPUOracleConstraint",
     "MABDCPUOracleStepResult",
+    "MABDCPUOracleWorldConstraint",
     "MABDControlEvaluation",
     "MABDJointSpec",
     "MABDJointType",

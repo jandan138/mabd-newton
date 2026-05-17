@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-33 docs and provenance contracts."""
+"""Validate Phase 0-34 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -77,12 +77,15 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase31-official-artifact-availability.md",
     "docs/records/2026-05-17-phase32-gravity-force-mapping.md",
     "docs/records/2026-05-17-phase33-physical-pendulum-analytic-reference.md",
+    "docs/records/2026-05-17-phase34-world-anchor-physical-pendulum-mabd.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase32-gravity-force-mapping.md",
     "docs/superpowers/specs/2026-05-17-phase33-physical-pendulum-analytic-reference-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase33-physical-pendulum-analytic-reference.md",
+    "docs/superpowers/specs/2026-05-17-phase34-world-anchor-physical-pendulum-mabd-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase34-world-anchor-physical-pendulum-mabd.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -178,6 +181,8 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md contains stale Phase 32 placeholder")
     if "TO_BE_BACKFILLED_PHASE33" in text:
         fail("claim-boundaries.md contains stale Phase 33 placeholder")
+    if "TO_BE_BACKFILLED_PHASE34" in text:
+        fail("claim-boundaries.md contains stale Phase 34 placeholder")
     for heading in ("## Current", "## Intended", "## Verified", "## Forbidden Claims"):
         if heading not in text:
             fail(f"claim-boundaries.md missing {heading}")
@@ -978,6 +983,57 @@ def validate_claim_boundaries() -> None:
     ):
         if snippet not in phase33_forbidden:
             fail(f"claim-boundaries.md must forbid Phase 33 overclaim: {snippet}")
+    phase34_current = claim_boundary_bullet(text, "This repository contains Phase 34")
+    phase34_verified = claim_boundary_bullet(text, "Phase 34 verifies")
+    phase34_non_claim = claim_boundary_bullet(text, "Phase 34 does not verify")
+    phase34_current_required = (
+        "world-anchor CPU-oracle support",
+        "physical-pendulum M-ABD development diagnostic lane",
+        "Phase 34 record",
+    )
+    for snippet in phase34_current_required:
+        if snippet not in phase34_current:
+            fail(f"claim-boundaries.md must state Phase 34 M-ABD diagnostic evidence: {snippet}")
+    phase34_verified_required = (
+        "MABDCPUOracleWorldConstraint",
+        "dense-only topology gating",
+        "malformed vector rejection",
+        "mabd_development",
+        "`physical_pendulum_mabd_development` CLI dispatch",
+        "`physical_pendulum_mabd_development_diagnostic` report lane id",
+        "compact angle samples",
+        "`lane_status = development_diagnostic_generated`",
+        "top-level report status: `incomplete`",
+    )
+    for snippet in phase34_verified_required:
+        if snippet not in phase34_verified:
+            fail(f"claim-boundaries.md must describe Phase 34 M-ABD diagnostic evidence: {snippet}")
+    phase34_non_claims = (
+        "full physical-pendulum experiment",
+        "paper-faithful pendulum geometry",
+        "RBD implicit baseline dynamics",
+        "joint-force waveform agreement",
+        "rendered output",
+        "paper timing",
+        "topology solvers for world anchors beyond dense CPU oracle",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase34_non_claims:
+        if snippet not in phase34_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 34 M-ABD diagnostic evidence: {snippet}")
+    phase34_forbidden = claim_boundary_bullet(
+        text, "Phase 34 physical-pendulum M-ABD development diagnostic"
+    )
+    for snippet in (
+        "passed physical-pendulum experiment",
+        "paper-faithful pendulum geometry result",
+        "RBD baseline result",
+        "joint-force agreement result",
+        "paper timing result",
+    ):
+        if snippet not in phase34_forbidden:
+            fail(f"claim-boundaries.md must forbid Phase 34 overclaim: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -3046,6 +3102,176 @@ def validate_phase33_record() -> None:
                 fail("Phase 33 must not pass experiment.* claims")
 
 
+def validate_phase34_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-17-phase34-world-anchor-physical-pendulum-mabd.md"
+    text = record_path.read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_physical_pendulum.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "## Repository",
+        "base commit: `81785e0`",
+        "phase34-physical-pendulum-mabd-lane",
+        "2026-05-17-mabd-phase34-world-anchor-physical-pendulum-mabd.md",
+        "2026-05-17-phase34-world-anchor-physical-pendulum-mabd-design.md",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 34 modifies vendored Newton M-ABD CPU oracle code",
+        "vendor/newton/newton/_src/solvers/mabd/step_oracle.py",
+        "vendor/newton/newton/_src/solvers/mabd/__init__.py",
+        "vendor/newton/newton/tests/test_mabd_phase4_solver_step.py",
+        "## Paper Source",
+        "arXiv ID: `2603.08079`",
+        "arXiv version: `v2`",
+        "PDF SHA256:",
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91",
+        "fixed pivot",
+        "joint-force waveform comparison",
+        "implicit RBD baseline comparison",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Newton World Anchor Evidence",
+        "MABDCPUOracleWorldConstraint",
+        "MABDCPUOracleConfig.world_constraints",
+        "point_jacobian(rest_point)",
+        "topology='dense'",
+        "malformed rest/world vectors are rejected",
+        "newton.tests.test_mabd_phase4_solver_step",
+        "## Physical Pendulum M-ABD Diagnostic Evidence",
+        "src/mabd_reproduction/physical_pendulum_mabd.py",
+        "src/mabd_reproduction/physical_pendulum_reports.py",
+        "load_physical_pendulum_config",
+        "validate_physical_pendulum_config_against_matrix",
+        "run_physical_pendulum_mabd_development",
+        "--lane physical_pendulum_mabd_development",
+        "mabd_cpu_oracle_physical_pendulum_development",
+        "cpu_numpy_newton_only",
+        "report lane: `physical_pendulum_mabd_development_diagnostic`",
+        "lane_status = development_diagnostic_generated",
+        "top-level report status: `incomplete`",
+        "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
+        "paper pendulum geometry remains unknown",
+        "no implicit RBD baseline",
+        "no joint-force waveform comparison",
+        "required `mabd_newton` experiment lane remains listed as missing",
+        "## Metrics And Thresholds",
+        "random seed: not applicable deterministic config-driven CPU oracle rollout",
+        "time_step_s: `0.01`",
+        "step_count: `16`",
+        "compact sample count: `5`",
+        "max_pivot_residual_m <= 1.0e-10",
+        "max_pivot_residual_m = 0.0",
+        "max_constraint_residual_norm <= 1.0e-10",
+        "max_constraint_residual_norm = 0.0",
+        "max_abs_angle_error_rad <= 2.0",
+        "max_abs_angle_error_rad = 0.007130697850637885",
+        "threshold status: `passed`",
+        "sample steps: `[0, 4, 8, 12, 16]`",
+        "## TDD Evidence",
+        "MABDCPUOracleWorldConstraint",
+        "missing `mabd_development` config parsing",
+        "invalid CLI choice `physical_pendulum_mabd_development`",
+        "Ran 22 tests",
+        "Ran 17 tests",
+        "Ran 38 tests",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.physical_pendulum` remains not passed.",
+        "Newton-only M-ABD development diagnostic lane",
+        "required physical-pendulum `mabd_newton` experiment lane remains missing",
+        "RBD implicit baseline remains missing",
+        "Joint-force waveform agreement remains missing",
+        "Paper-faithful pendulum geometry remains missing",
+        "`pendulum_geometry_unknown` remains a blocker",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_phase4_solver_step",
+        "PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest newton.tests.test_mabd_phase4_solver_step",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_experiment_runner",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+        'PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"',
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 34 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE34", "pending branch-local"):
+        if placeholder in text:
+            fail("Phase 34 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "passed physical-pendulum experiment",
+        "physical-pendulum experiment passed",
+        "physical pendulum experiment passed",
+        "full reproduction complete",
+        "paper timing verified",
+        "paper timing result",
+        "joint-force agreement passed",
+        "joint-force agreement result",
+        "rbd baseline passed",
+        "rbd baseline result",
+        "paper-faithful pendulum geometry passed",
+        "paper-faithful pendulum geometry result",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 34 record overclaims unsupported evidence: {snippet}")
+
+    try:
+        config = load_physical_pendulum_config(
+            ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 34 physical-pendulum config validation failed: {exc}")
+    lane = config.mabd_development
+    if config.baseline_lane != "analytic_reference":
+        fail("Phase 34 config must keep analytic_reference as the config baseline lane")
+    if config.report_status.value != "incomplete":
+        fail("Phase 34 physical-pendulum report status must remain incomplete")
+    if config.required_missing_lanes != ("mabd_newton", "rbd_implicit_baseline"):
+        fail("Phase 34 physical-pendulum missing lanes changed")
+    if lane.output_report != "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json":
+        fail("Phase 34 M-ABD diagnostic output report changed")
+    if lane.step_count != 16 or lane.sample_count != 5:
+        fail("Phase 34 M-ABD diagnostic rollout size changed")
+    if not np.isclose(lane.time_step_s, 0.01, rtol=0.0, atol=1.0e-15):
+        fail("Phase 34 M-ABD diagnostic timestep changed")
+    if lane.rest_points_m.shape != (4, 3) or lane.masses_kg.shape != (4,):
+        fail("Phase 34 M-ABD diagnostic procedural point set changed shape")
+    if not np.allclose(lane.pivot_rest_point_m, [0.0, 0.0, 0.0], rtol=0.0, atol=1.0e-15):
+        fail("Phase 34 M-ABD diagnostic pivot rest point changed")
+    if not np.allclose(lane.pivot_world_point_m, [0.0, 0.0, 0.0], rtol=0.0, atol=1.0e-15):
+        fail("Phase 34 M-ABD diagnostic pivot world point changed")
+    if not np.allclose(lane.gravity_m_s2, [0.0, -9.81, 0.0], rtol=0.0, atol=1.0e-15):
+        fail("Phase 34 M-ABD diagnostic gravity changed")
+    for key in (
+        "max_pivot_residual_m",
+        "max_constraint_residual_norm",
+        "max_abs_angle_error_rad",
+    ):
+        if key not in lane.thresholds:
+            fail(f"Phase 34 M-ABD diagnostic threshold missing: {key}")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 34 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -3295,13 +3521,14 @@ def main() -> int:
     validate_phase31_record()
     validate_phase32_record()
     validate_phase33_record()
+    validate_phase34_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34 "
         "docs/provenance validation passed"
     )
     return 0
