@@ -22,7 +22,7 @@ HEAVY_TOP_REPORT_BLOCKERS = (
     "exact_heavy_top_inertia_unknown",
     "exact_heavy_top_geometry_unknown",
     "raw_heavy_top_reference_curve_data_missing",
-    "mabd_newton_report_missing",
+    "mabd_newton_report_incomplete",
     "heavy_top_comparison_report_incomplete",
     "heavy_top_timing_evidence_missing",
 )

@@ -730,7 +730,8 @@ class ExperimentRunnerTests(unittest.TestCase):
             "raw_heavy_top_reference_curve_data_missing",
             loaded.observed["blocking_reasons"],
         )
-        self.assertIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertNotIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
         self.assertIn("heavy_top_comparison_report_incomplete", loaded.observed["blocking_reasons"])
         self.assertIn("exact_heavy_top_geometry_unknown", loaded.observed["blocking_reasons"])
         self.assertNotIn("lane_gate_status", loaded.observed)
