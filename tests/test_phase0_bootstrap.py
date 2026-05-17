@@ -3232,6 +3232,63 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE49", text)
         self.assertNotIn("phase49-working-tree", text)
 
+    def test_phase50_heavy_top_mabd_newton_lane_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        heavy_top_claim = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.heavy_top"
+        )
+        self.assertEqual(heavy_top_claim["reproduction_status"], "intended")
+        self.assertIn("mabd_newton_report_incomplete", heavy_top_claim["conflict_note"])
+        self.assertNotIn("mabd_newton_report_missing", heavy_top_claim["conflict_note"])
+
+        matrix = yaml.safe_load((ROOT / "configs/experiments/paper_experiment_matrix.yaml").read_text())
+        matrix_entry = next(
+            item for item in matrix["experiments"] if item["claim_id"] == "experiment.single_body.heavy_top"
+        )
+        self.assertEqual(matrix_entry["reproduction_status"], "planned")
+        self.assertIn("mabd_newton_report_incomplete", matrix_entry["blocking_reasons"])
+        self.assertNotIn("mabd_newton_report_missing", matrix_entry["blocking_reasons"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 50")
+        verified = claim_boundary_bullet(text, "Phase 50 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 50 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 50 heavy-top MABD Newton lane")
+
+        self.assertIn("heavy-top `mabd_newton` diagnostic lane", current)
+        self.assertIn("model-derived `SolverMABD.step()`", verified)
+        self.assertIn("`mabd:body`", verified)
+        self.assertIn("`mabd:world_constraint`", verified)
+        self.assertIn("`mabd:gravity`", verified)
+        self.assertIn("paper-faithful heavy-top inertia", non_claim)
+        self.assertIn("ABD-vs-RBD comparison", non_claim)
+        self.assertIn("not a passed heavy-top experiment", forbidden)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+    def test_phase50_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-18-phase50-heavy-top-mabd-newton-lane.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_heavy_top_mabd_newton_diagnostic_lane",
+            "phase50-heavy-top-mabd-lane",
+            "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+            "mabd_cpu_oracle_heavy_top_newton_lane",
+            "mabd_newton",
+            "newton_model_derived",
+            "mabd_newton_report_incomplete",
+            "exact_heavy_top_inertia_unknown",
+            "exact_heavy_top_geometry_unknown",
+            "heavy_top_comparison_report_missing",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.heavy_top` remains intended",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_heavy_top_mabd tests.test_experiment_run_configs tests.test_experiment_runner tests.test_phase0_bootstrap",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE50", text)
+        self.assertNotIn("phase50-working-tree", text)
+
     def test_phase44_solver_model_config_is_bounded(self) -> None:
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
         current = claim_boundary_bullet(text, "This repository contains Phase 44")

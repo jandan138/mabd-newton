@@ -20,7 +20,10 @@ from .experiment_configs import (
     validate_t_handle_config_against_matrix,
 )
 from .experiment_contracts import load_experiment_matrix
-from .heavy_top_reports import write_heavy_top_rk4_reference_report
+from .heavy_top_reports import (
+    write_heavy_top_mabd_newton_report,
+    write_heavy_top_rk4_reference_report,
+)
 from .physical_pendulum_reports import (
     write_physical_pendulum_analytic_reference_report,
     write_physical_pendulum_mabd_development_report,
@@ -489,8 +492,45 @@ def run_heavy_top_rk4_reference(
     )
 
 
+def run_heavy_top_mabd_newton(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    config = load_heavy_top_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_heavy_top_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError("Phase 50 heavy-top M-ABD Newton runner requires incomplete status")
+    report_path = _resolve_output_path(
+        config.mabd_newton.output_report,
+        output_path=output_path,
+        output_root=output_root,
+    )
+    report = write_heavy_top_mabd_newton_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
 __all__ = [
     "ExperimentRunResult",
+    "run_heavy_top_mabd_newton",
     "run_heavy_top_rk4_reference",
     "run_physical_pendulum_analytic_reference",
     "run_physical_pendulum_comparison",

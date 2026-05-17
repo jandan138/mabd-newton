@@ -298,7 +298,7 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertEqual(config.source_lines, ("/tmp/mabd-paper/source/sections/experiment.tex:65-75",))
         self.assertEqual(config.asset_ids, ("heavy_top_procedural",))
         self.assertEqual(config.baseline_lane, "rbd_rk4_reference")
-        self.assertEqual(config.required_missing_lanes, ("mabd_newton",))
+        self.assertEqual(config.required_missing_lanes, ())
         self.assertEqual(config.report_status, EvidenceStatus.INCOMPLETE)
         self.assertEqual(config.reference.time_step_s, 1.0e-4)
         self.assertEqual(config.reference.duration_s, 10.0)
@@ -327,13 +327,48 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("exact_heavy_top_inertia_unknown", config.failure_reason)
         self.assertIn("exact_heavy_top_geometry_unknown", config.failure_reason)
         self.assertIn("raw_heavy_top_reference_curve_data_missing", config.failure_reason)
-        self.assertIn("mabd_newton_report_missing", config.failure_reason)
+        self.assertIn("mabd_newton_report_incomplete", config.failure_reason)
+        self.assertEqual(config.mabd_newton.rotation_mode, "polar")
+        self.assertEqual(
+            config.mabd_newton.output_report,
+            "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+        )
+        self.assertEqual(config.mabd_newton.sample_count, 6)
+        self.assertEqual(config.mabd_newton.step_count, 250)
+        self.assertEqual(config.mabd_newton.rest_points_m.shape, (4, 3))
+        self.assertEqual(config.mabd_newton.point_masses_kg.shape, (4,))
+        self.assertIn("max_pivot_residual_m", config.mabd_newton.thresholds)
+        self.assertIn("max_constraint_residual_norm", config.mabd_newton.thresholds)
+        self.assertIn("min_nutation_angle_range_deg", config.mabd_newton.thresholds)
 
     def test_heavy_top_config_matches_experiment_matrix_without_overclaiming(self) -> None:
         config = load_heavy_top_config(HEAVY_TOP_CONFIG_PATH)
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
 
         validate_heavy_top_config_against_matrix(config, matrix)
+
+    def test_heavy_top_config_rejects_missing_mabd_incomplete_blocker(self) -> None:
+        config = load_heavy_top_config(HEAVY_TOP_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        entry = next(item for item in matrix.experiments if item.claim_id == config.claim_id)
+        drifted_entry = replace(
+            entry,
+            blocking_reasons=tuple(
+                blocker
+                for blocker in entry.blocking_reasons
+                if blocker != "mabd_newton_report_incomplete"
+            ),
+        )
+        drifted_matrix = replace(
+            matrix,
+            experiments=tuple(
+                drifted_entry if item.claim_id == config.claim_id else item
+                for item in matrix.experiments
+            ),
+        )
+
+        with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton_report_incomplete"):
+            validate_heavy_top_config_against_matrix(config, drifted_matrix)
 
     def test_heavy_top_config_rejects_passed_status(self) -> None:
         source = yaml.safe_load(HEAVY_TOP_CONFIG_PATH.read_text(encoding="utf-8"))

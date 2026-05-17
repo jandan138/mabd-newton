@@ -11,6 +11,7 @@ from pathlib import Path
 import yaml
 
 from mabd_reproduction.experiment_runner import (
+    run_heavy_top_mabd_newton,
     run_heavy_top_rk4_reference,
     run_physical_pendulum_analytic_reference,
     run_physical_pendulum_comparison,
@@ -38,6 +39,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--lane",
         choices=(
             "analytic_reference",
+            "heavy_top_mabd_newton",
             "heavy_top_rk4_reference",
             "mabd_newton",
             "mabd_paper_horizon",
@@ -155,6 +157,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "heavy_top_rk4_reference":
             result = run_heavy_top_rk4_reference(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "heavy_top_mabd_newton":
+            result = run_heavy_top_mabd_newton(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

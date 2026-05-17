@@ -731,6 +731,45 @@ class ExperimentRunnerTests(unittest.TestCase):
                 )
             self.assertFalse(output_path.exists())
 
+    def test_run_heavy_top_mabd_newton_writes_incomplete_model_derived_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_heavy_top_mabd_newton
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "heavy_top_mabd_newton.json"
+            result = run_heavy_top_mabd_newton(
+                config_path=HEAVY_TOP_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.heavy_top")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_heavy_top_newton_lane")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_only")
+        self.assertEqual(loaded.observed["lane_status"], "incomplete_diagnostic_generated")
+        self.assertEqual(
+            loaded.observed["solver_model_config_source"],
+            "newton_model_derived",
+        )
+        self.assertEqual(
+            loaded.observed["newton_model_derived_custom_frequencies"],
+            ["mabd:body", "mabd:world_constraint", "mabd:gravity"],
+        )
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertIn("exact_heavy_top_geometry_unknown", loaded.observed["blocking_reasons"])
+        self.assertIn("heavy_top_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertGreater(
+            loaded.observed["max_nutation_angle_deg"] - loaded.observed["min_nutation_angle_deg"],
+            0.0,
+        )
+
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
         import json
         import os
