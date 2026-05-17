@@ -1061,8 +1061,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "docs/record creation commit: `aa7eb983471ac1f2f6abdf27af7641b131533ea4`",
             "docs/provenance hardening commit: `511f2d13baf67dcc478494a4022bfd6cf959e82b`",
             "CPU oracle review disposition commit: `f8998822bc5d9a911c2a48fc3de93ffad204e6d8`",
-            "review disposition record commit:",
-            "TO_BE_BACKFILLED_PHASE25_REVIEW_DISPOSITION_COMMIT",
+            "review disposition record commit: `766a863491855fecba03033c4baeca818f6c480f`",
             "independent review:",
             "rotated the translation block",
             "reported residuals in the",
@@ -1120,6 +1119,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE25_DOCS_COMMIT", text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE25_REVIEW_DISPOSITION_COMMIT", text)
 
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(

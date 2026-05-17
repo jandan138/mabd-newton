@@ -1534,8 +1534,7 @@ def validate_phase25_record() -> None:
         "docs/record creation commit: `aa7eb983471ac1f2f6abdf27af7641b131533ea4`",
         "docs/provenance hardening commit: `511f2d13baf67dcc478494a4022bfd6cf959e82b`",
         "CPU oracle review disposition commit: `f8998822bc5d9a911c2a48fc3de93ffad204e6d8`",
-        "review disposition record commit:",
-        "TO_BE_BACKFILLED_PHASE25_REVIEW_DISPOSITION_COMMIT",
+        "review disposition record commit: `766a863491855fecba03033c4baeca818f6c480f`",
         "independent review:",
         "rotated the translation block",
         "reported residuals in the",
@@ -1599,6 +1598,8 @@ def validate_phase25_record() -> None:
             fail(f"Phase 25 record missing required evidence field: {snippet}")
     if "TO_BE_BACKFILLED_PHASE25_DOCS_COMMIT" in text:
         fail("Phase 25 record contains stale docs commit placeholder")
+    if "TO_BE_BACKFILLED_PHASE25_REVIEW_DISPOSITION_COMMIT" in text:
+        fail("Phase 25 record contains stale review disposition commit placeholder")
     forbidden_snippets = (
         "Phase 25 verifies the paper spinning-box experiment",
         "Phase 25 passes experiment.single_body.spinning_box",
