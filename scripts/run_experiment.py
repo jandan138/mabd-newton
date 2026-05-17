@@ -11,6 +11,7 @@ from pathlib import Path
 from mabd_reproduction.experiment_runner import (
     run_spinning_box_comparison,
     run_spinning_box_experiment,
+    run_spinning_box_paper_horizon,
     run_spinning_box_rbd_baseline,
 )
 
@@ -19,7 +20,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run one configured M-ABD experiment lane.")
     parser.add_argument(
         "--lane",
-        choices=("mabd_newton", "rbd_implicit_baseline", "spinning_box_comparison"),
+        choices=(
+            "mabd_newton",
+            "mabd_paper_horizon",
+            "rbd_implicit_baseline",
+            "spinning_box_comparison",
+        ),
         default="mabd_newton",
         help="Experiment lane to run.",
     )
@@ -52,6 +58,16 @@ def main(argv: list[str] | None = None) -> int:
                 matrix_path=Path(args.matrix),
                 mabd_report_path=Path(args.mabd_report) if args.mabd_report else None,
                 rbd_report_path=Path(args.rbd_report) if args.rbd_report else None,
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "mabd_paper_horizon":
+            result = run_spinning_box_paper_horizon(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,
                 output_root=Path(args.output_root) if args.output_root else None,
                 source_commit=args.source_commit,

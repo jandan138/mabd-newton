@@ -121,6 +121,50 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         self.assertEqual(loaded.threshold["required_lane_status"], "passed")
         self.assertEqual(loaded.threshold["required_lane_gate_status"], "passed")
 
+    def test_spinning_box_comparison_keeps_mabd_horizon_diagnostic_incomplete(self) -> None:
+        from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
+        from mabd_reproduction.single_body_reports import (
+            write_spinning_box_paper_horizon_report,
+        )
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        with TemporaryDirectory() as tmpdir:
+            mabd_path = Path(tmpdir) / "mabd_horizon.json"
+            rbd_path = Path(tmpdir) / "rbd.json"
+            write_spinning_box_paper_horizon_report(
+                mabd_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            write_spinning_box_paper_rbd_baseline_report(
+                rbd_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            output_path = Path(tmpdir) / "comparison.json"
+
+            write_spinning_box_comparison_report(
+                output_path,
+                config=config,
+                mabd_report_path=mabd_path,
+                rbd_report_path=rbd_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            mabd_report = load_claim_report(mabd_path)
+            loaded = load_claim_report(output_path)
+
+        self.assertNotIn("lane_gate_status", mabd_report.observed)
+        self.assertEqual(loaded.observed["lane_gate_statuses"]["mabd_newton"], "incomplete")
+        self.assertEqual(loaded.observed["lane_gate_statuses"]["rbd_implicit_baseline"], "passed")
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "spinning_box_comparison_pass_gate_not_enabled",
+            loaded.observed["blocking_reasons"],
+        )
+
     def test_spinning_box_comparison_rejects_wrong_lane_inputs(self) -> None:
         from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
 
