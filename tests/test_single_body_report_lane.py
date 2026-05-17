@@ -193,7 +193,19 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             loaded.observed["mabd_paper_horizon_status"],
             "development_gap_observed",
         )
+        self.assertEqual(
+            loaded.observed["mabd_kinematic_feasibility_status"],
+            "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+        )
+        self.assertEqual(
+            loaded.observed["mabd_kinematic_feasibility_statuses"],
+            ["paper_momentum_requires_affine_stretch_under_q_delta_over_h"],
+        )
         self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "mabd_kinematic_feasibility_blocker_recorded",
+            loaded.observed["blocking_reasons"],
+        )
         self.assertEqual(len(loaded.observed["paper_horizon_results"]), 2)
         self.assertIn("figure_pdf_sha256", loaded.observed)
         self.assertEqual(
@@ -214,6 +226,21 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             self.assertIn("first_nonfinite_step", entry)
             self.assertIn("threshold_violations", entry)
             self.assertIn("trajectory_samples", entry)
+            self.assertIn("kinematic_feasibility", entry)
+            feasibility = entry["kinematic_feasibility"]
+            self.assertEqual(
+                feasibility["status"],
+                "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+            )
+            self.assertTrue(feasibility["requires_affine_stretch"])
+            self.assertEqual(
+                feasibility["velocity_update_relation"],
+                "qd_next=(q_next-q_n)/h",
+            )
+            if entry["time_step_s"] == 0.01:
+                self.assertAlmostEqual(feasibility["required_speed_to_bound_ratio"], 600.0)
+            if entry["time_step_s"] == 0.001:
+                self.assertAlmostEqual(feasibility["required_speed_to_bound_ratio"], 60.0)
             self.assertLessEqual(
                 len(entry["trajectory_samples"]),
                 config.paper_horizon.sample_count,

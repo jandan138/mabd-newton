@@ -15,6 +15,7 @@ from .spinning_box_physics import (
     mabd_momentum_diagnostics,
     spinning_box_affine_shape_diagnostics,
     spinning_box_contact_diagnostics,
+    spinning_box_kinematic_feasibility,
     spinning_box_mabd_mass_diagonal,
     spinning_box_mabd_material_properties,
     spinning_box_mabd_material_stiffness,
@@ -199,6 +200,7 @@ def _run_spinning_box_paper_horizon_step_size(
     time_step_s: float,
 ) -> dict[str, object]:
     duration = config.paper_horizon.duration_s
+    feasibility = spinning_box_kinematic_feasibility(config, time_step_s)
     step_count = int(round(duration / time_step_s))
     if abs(step_count * time_step_s - duration) > 1.0e-12:
         raise ValueError("paper_horizon duration_s must be divisible by time_step_grid_s entries")
@@ -316,6 +318,7 @@ def _run_spinning_box_paper_horizon_step_size(
         "total_energy_initial_j": initial_total_energy,
         "kinetic_energy_final_j": _kinetic_energy(qd, mass_matrix),
         "elastic_energy_final_j": _elastic_energy(config=config, q=q),
+        "kinematic_feasibility": feasibility.to_report(),
         "trajectory_samples": samples,
     }
     for key, (value, step_index) in extrema.items():
@@ -517,6 +520,18 @@ def write_spinning_box_paper_horizon_report(
         if all_violations
         else "thresholds_met_no_lane_gate"
     )
+    feasibility_statuses = sorted(
+        {
+            str(result["kinematic_feasibility"]["status"])
+            for result in results
+        }
+    )
+    feasibility_blockers = (
+        ["mabd_kinematic_feasibility_blocker_recorded"]
+        if "paper_momentum_requires_affine_stretch_under_q_delta_over_h"
+        in feasibility_statuses
+        else []
+    )
     top_linear_momentum_error = max(
         float(result["max_linear_momentum_error"]) for result in results
     )
@@ -533,12 +548,19 @@ def write_spinning_box_paper_horizon_report(
         "figure_text_source": config.paper_horizon.figure_text_source,
         "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
         "mabd_paper_horizon_status": diagnostic_status,
+        "mabd_kinematic_feasibility_status": (
+            feasibility_statuses[0]
+            if len(feasibility_statuses) == 1
+            else "mixed_kinematic_feasibility_statuses"
+        ),
+        "mabd_kinematic_feasibility_statuses": feasibility_statuses,
         "blocking_reasons": [
             "mabd_newton_report_incomplete",
             "mabd_paper_horizon_diagnostic_thresholds_violated",
+            *feasibility_blockers,
         ]
         if all_violations
-        else ["mabd_newton_report_incomplete"],
+        else ["mabd_newton_report_incomplete", *feasibility_blockers],
         "threshold_violations": all_violations,
         "linear_momentum_error": top_linear_momentum_error,
         "angular_momentum_error": top_angular_momentum_error,
