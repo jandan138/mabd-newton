@@ -14,6 +14,7 @@ passed_for_solver_model_constraint_config_slice
 - RED test commit: `83534a45b9ec1be456b3eaf9512a0a06b6639402`
 - Implementation commit: `ca8c8a100471ff0b7a5a42adbb795f64f16a90a6`
 - Evidence record commit: `2eb5e39126b12d4609aa51309c9a78d6a9016fbc`
+- Review fix commit: `bb4b416341adace4db145df51efcc148409b6363`
 - Worktree:
   `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase45-model-constraint-config`
 
@@ -24,7 +25,8 @@ passed_for_solver_model_constraint_config_slice
 - Provenance file: `vendor/newton/PROVENANCE.md`
 - Local patch status: locally patched for Phase 45 in
   `vendor/newton/newton/_src/solvers/mabd/solver_mabd.py`.
-- Local patch commit: `ca8c8a100471ff0b7a5a42adbb795f64f16a90a6`
+- Local patch commits: `ca8c8a100471ff0b7a5a42adbb795f64f16a90a6`,
+  `bb4b416341adace4db145df51efcc148409b6363`
 - This record does not claim unmodified Newton supports affine-body dynamics.
 
 ## Environment
