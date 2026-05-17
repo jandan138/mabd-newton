@@ -50,6 +50,9 @@
 - This repository contains Phase 18 physical affine mass-diagonal reporting
   and kinetic-energy diagnostics for the M-ABD single-body spinning-box
   development lane after the Phase 18 record is created.
+- This repository contains Phase 19 finite required-metric validation and
+  lane metric-difference reporting for the spinning-box comparison protocol
+  after the Phase 19 record is created.
 
 ## Intended
 
@@ -199,6 +202,13 @@
   [m] * 3`, `initial_energy_j`, `final_energy_j`, and
   `relative_energy_drift` report fields.
 - Phase 18 does not verify the paper spinning-box experiment,
+  paper-faithful implicit RBD baseline, paper-faithful affine collision, paper
+  timing, rendered output, paper trajectory agreement, generated report
+  artifacts as committed evidence, or any passed `experiment.*` claim.
+- Phase 19 verifies finite required-metric validation for the spinning-box
+  comparison protocol, including `invalid_required_metrics` reporting,
+  finite-only `lane_metric_differences`, and invalid metric blocking reasons.
+- Phase 19 does not verify the paper spinning-box experiment,
   paper-faithful implicit RBD baseline, paper-faithful affine collision, paper
   timing, rendered output, paper trajectory agreement, generated report
   artifacts as committed evidence, or any passed `experiment.*` claim.
