@@ -12,6 +12,7 @@ from .reporting import ClaimReport, EvidenceStatus, write_claim_report
 from .spinning_box_physics import (
     abd_generalized_velocity_from_paper_momenta,
     mabd_momentum_diagnostics,
+    spinning_box_contact_diagnostics,
     spinning_box_mabd_mass_diagonal,
     spinning_box_physical_properties,
 )
@@ -58,6 +59,7 @@ def write_spinning_box_development_report(
     initial_momentum = qd.copy()
     initial_energy = _kinetic_energy(qd, mass_matrix)
     initial_diagnostics = mabd_momentum_diagnostics(config, q, qd) if config is not None else None
+    contact_diagnostics = spinning_box_contact_diagnostics(config, q, qd) if config is not None else None
     oracle_config = mabd.MABDCPUOracleConfig(bodies=[_oracle_body(config)])
     for _step in range(step_count):
         result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=dt, config=oracle_config)
@@ -96,6 +98,22 @@ def write_spinning_box_development_report(
                 "final_angular_momentum_kg_m2_s": final_diagnostics.angular_momentum_kg_m2_s.tolist(),
                 "linear_momentum_error": final_diagnostics.linear_momentum_error,
                 "angular_momentum_error": final_diagnostics.angular_momentum_error,
+            }
+        )
+    if contact_diagnostics is not None and config is not None:
+        observed.update(
+            {
+                "contact_evaluation_state": "initial_configured_q_qd",
+                "contact_surface_type": config.contact_surface["type"],
+                "contact_corner_count": contact_diagnostics.corner_count,
+                "contact_active_count": contact_diagnostics.active_contact_count,
+                "contact_min_signed_distance_m": contact_diagnostics.min_signed_distance,
+                "contact_max_penetration_m": contact_diagnostics.max_penetration_depth,
+                "contact_total_normal_force_n": contact_diagnostics.total_normal_force.tolist(),
+                "contact_total_generalized_force": contact_diagnostics.total_generalized_force.tolist(),
+                "contact_corner_signed_distances_m": (
+                    contact_diagnostics.corner_signed_distances.tolist()
+                ),
             }
         )
     report = ClaimReport(
