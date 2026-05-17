@@ -35,11 +35,13 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
         from mabd_reproduction.spinning_box_physics import (
             abd_generalized_velocity_from_paper_momenta,
+            spinning_box_mabd_mass_diagonal,
             spinning_box_physical_properties,
         )
 
         config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
         properties = spinning_box_physical_properties(config)
+        expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
 
         self.assertEqual(config.schema_version, 1)
         self.assertEqual(config.claim_id, "experiment.single_body.spinning_box")
@@ -52,6 +54,17 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertEqual(config.step_count, 4)
         self.assertEqual(config.initial_qd.shape, (12,))
         self.assertEqual(config.mass_diagonal.shape, (12,))
+        np.testing.assert_allclose(
+            expected_mass_diagonal,
+            [1.0 / 1200.0] * 9 + [1.0, 1.0, 1.0],
+            rtol=0.0,
+            atol=1.0e-15,
+        )
+        np.testing.assert_allclose(config.mass_diagonal, expected_mass_diagonal, atol=1.0e-15)
+        self.assertAlmostEqual(
+            float(0.5 * config.initial_qd @ np.diag(config.mass_diagonal) @ config.initial_qd),
+            3005000.0,
+        )
         self.assertIn("energy_drift", config.thresholds)
         self.assertIn("generalized_momentum_delta_norm", config.thresholds)
         np.testing.assert_allclose(

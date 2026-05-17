@@ -85,6 +85,17 @@ def paper_spatial_twist_from_momenta(config: SpinningBoxRunConfig) -> np.ndarray
     return np.concatenate([properties.angular_velocity_rad_s, properties.linear_velocity_m_s])
 
 
+def spinning_box_mabd_mass_diagonal(config: SpinningBoxRunConfig) -> np.ndarray:
+    properties = spinning_box_physical_properties(config)
+    affine_second_moment = properties.mass_kg * properties.cube_size_m**2 / 12.0
+    return np.concatenate(
+        [
+            np.full(9, affine_second_moment, dtype=float),
+            np.full(3, properties.mass_kg, dtype=float),
+        ]
+    )
+
+
 def abd_generalized_velocity_from_paper_momenta(
     config: SpinningBoxRunConfig,
     A: np.ndarray | None = None,
@@ -118,5 +129,6 @@ __all__ = [
     "abd_generalized_velocity_from_paper_momenta",
     "mabd_momentum_diagnostics",
     "paper_spatial_twist_from_momenta",
+    "spinning_box_mabd_mass_diagonal",
     "spinning_box_physical_properties",
 ]

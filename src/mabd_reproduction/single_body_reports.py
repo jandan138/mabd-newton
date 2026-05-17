@@ -12,6 +12,8 @@ from .reporting import ClaimReport, EvidenceStatus, write_claim_report
 from .spinning_box_physics import (
     abd_generalized_velocity_from_paper_momenta,
     mabd_momentum_diagnostics,
+    spinning_box_mabd_mass_diagonal,
+    spinning_box_physical_properties,
 )
 
 
@@ -50,6 +52,9 @@ def write_spinning_box_development_report(
         expected_qd = abd_generalized_velocity_from_paper_momenta(config)
         if not np.allclose(qd, expected_qd, rtol=0.0, atol=1.0e-9):
             raise ValueError("single_body_spinning_box initial_qd must map paper p0/L0 to ABD velocity")
+        expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
+        if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
+            raise ValueError("single_body_spinning_box mass_diagonal must match paper cube ABD mass")
     initial_momentum = qd.copy()
     initial_energy = _kinetic_energy(qd, mass_matrix)
     initial_diagnostics = mabd_momentum_diagnostics(config, q, qd) if config is not None else None
@@ -58,7 +63,8 @@ def write_spinning_box_development_report(
         result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=dt, config=oracle_config)
         q = result.q[0]
         qd = result.qd[0]
-    energy_drift = abs(_kinetic_energy(qd, mass_matrix) - initial_energy)
+    final_energy = _kinetic_energy(qd, mass_matrix)
+    energy_drift = abs(final_energy - initial_energy)
     momentum_delta = float(np.linalg.norm(qd - initial_momentum))
     final_diagnostics = mabd_momentum_diagnostics(config, q, qd) if config is not None else None
     thresholds = (
@@ -73,8 +79,17 @@ def write_spinning_box_development_report(
         "generalized_momentum_delta_norm": momentum_delta,
     }
     if initial_diagnostics is not None and final_diagnostics is not None:
+        properties = spinning_box_physical_properties(config)
         observed.update(
             {
+                "mass_kg": properties.mass_kg,
+                "mabd_mass_diagonal": mass_matrix.diagonal().tolist(),
+                "mass_diagonal_source": "paper_uniform_centered_cube_continuous",
+                "initial_energy_j": initial_energy,
+                "final_energy_j": final_energy,
+                "relative_energy_drift": 0.0
+                if initial_energy == 0.0
+                else energy_drift / abs(initial_energy),
                 "paper_spatial_twist": initial_diagnostics.spatial_twist.tolist(),
                 "final_spatial_twist": final_diagnostics.spatial_twist.tolist(),
                 "final_linear_momentum_kg_m_s": final_diagnostics.linear_momentum_kg_m_s.tolist(),

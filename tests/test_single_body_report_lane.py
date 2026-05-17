@@ -65,6 +65,15 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             loaded.observed["angular_momentum_error"],
             loaded.threshold["angular_momentum_error"],
         )
+        self.assertEqual(
+            loaded.observed["mass_diagonal_source"],
+            "paper_uniform_centered_cube_continuous",
+        )
+        self.assertEqual(len(loaded.observed["mabd_mass_diagonal"]), 12)
+        self.assertAlmostEqual(loaded.observed["mass_kg"], 1.0)
+        self.assertAlmostEqual(loaded.observed["initial_energy_j"], 3005000.0)
+        self.assertAlmostEqual(loaded.observed["final_energy_j"], 3005000.0)
+        self.assertLessEqual(loaded.observed["relative_energy_drift"], 1.0e-15)
 
 
 if __name__ == "__main__":
