@@ -11,6 +11,8 @@ import numpy as np
 from .affine_math import (
     apply_no_polar_increment_rotation,
     apply_no_polar_rhs_rotation,
+    apply_polar_increment_rotation,
+    apply_polar_rhs_rotation,
     pack_q,
     unpack_q,
 )
@@ -101,8 +103,8 @@ def _validate_config(config: MABDCPUOracleConfig, body_count: int) -> tuple[MABD
     for body_id, body in enumerate(bodies):
         if not isinstance(body.precompute, SingleBodyABDPrecompute):
             raise TypeError(f"config.bodies[{body_id}].precompute must be SingleBodyABDPrecompute")
-        if body.rotation_mode not in {"none", "no_polar"}:
-            raise ValueError("rotation_mode must be one of 'none' or 'no_polar'")
+        if body.rotation_mode not in {"none", "polar", "no_polar"}:
+            raise ValueError("rotation_mode must be one of 'none', 'polar', or 'no_polar'")
     constraints = tuple(config.constraints)
     for constraint_id, constraint in enumerate(constraints):
         if not 0 <= int(constraint.body_a) < body_count or not 0 <= int(constraint.body_b) < body_count:
@@ -146,12 +148,15 @@ def _step_body_systems(
     hessians = []
     rhs = []
     inv_dt = 1.0 / float(dt)
-    for body_q, body_qd, body, force in zip(q, qd, bodies, external_forces, strict=True):
+    for _body_q, body_qd, body, force in zip(q, qd, bodies, external_forces, strict=True):
         mass = body.precompute.mass_matrix
-        stiffness = body.precompute.stiffness_matrix
         hessians.append(body.precompute.hessian(dt))
-        rhs.append(inv_dt * (mass @ body_qd) + force - stiffness @ (body_q - _body_rest_q(body)))
+        rhs.append(inv_dt * (mass @ body_qd) + force)
     return tuple(hessians), tuple(rhs)
+
+
+def _world_material_rhs(body_q: np.ndarray, inertial_external_rhs: np.ndarray, body: MABDCPUOracleBody) -> np.ndarray:
+    return inertial_external_rhs - body.precompute.stiffness_matrix @ (body_q - _body_rest_q(body))
 
 
 def _unconstrained_step(
@@ -165,17 +170,27 @@ def _unconstrained_step(
     residual_blocks = []
     for body_q, H, f, body in zip(q, hessians, rhs, bodies, strict=True):
         if body.rotation_mode == "none":
-            body_dq = np.linalg.solve(H, f)
+            world_rhs = _world_material_rhs(body_q, f, body)
+            body_dq = np.linalg.solve(H, world_rhs)
             dq_blocks.append(body_dq)
-            residual_blocks.append(float(np.linalg.norm(H @ body_dq - f)))
+            residual_blocks.append(float(np.linalg.norm(H @ body_dq - world_rhs)))
+        elif body.rotation_mode == "polar":
+            A, _t = unpack_q(body_q)
+            local_q = apply_polar_rhs_rotation(A, body_q)
+            local_rhs = apply_polar_rhs_rotation(A, f) - body.precompute.stiffness_matrix @ (
+                local_q - _body_rest_q(body)
+            )
+            local_delta = np.linalg.solve(H, local_rhs)
+            dq_blocks.append(apply_polar_increment_rotation(A, local_delta))
+            residual_blocks.append(float(np.linalg.norm(H @ local_delta - local_rhs)))
         elif body.rotation_mode == "no_polar":
             A, _t = unpack_q(body_q)
-            local_rhs = _affine_only_no_polar_rhs(A, f)
+            local_rhs = _affine_only_no_polar_rhs(A, _world_material_rhs(body_q, f, body))
             local_delta = np.linalg.solve(H, local_rhs)
             dq_blocks.append(_affine_only_no_polar_increment(A, local_delta))
             residual_blocks.append(float(np.linalg.norm(H @ local_delta - local_rhs)))
         else:  # pragma: no cover - _validate_config owns this boundary.
-            raise ValueError("rotation_mode must be one of 'none' or 'no_polar'")
+            raise ValueError("rotation_mode must be one of 'none', 'polar', or 'no_polar'")
     dq_blocks = tuple(dq_blocks)
     dq = np.concatenate(dq_blocks) if dq_blocks else np.zeros(0, dtype=float)
     q_next = tuple(body_q + body_dq for body_q, body_dq in zip(q, dq_blocks, strict=True))
@@ -305,7 +320,11 @@ def solve_cpu_oracle_step(
     if not tuple(config.constraints):
         return _unconstrained_step(q_blocks, dt_float, hessians, rhs, bodies)
     _require_constrained_none_rotation(bodies)
-    return _solve_constrained_step(q_blocks, dt_float, hessians, rhs, config)
+    world_rhs = tuple(
+        _world_material_rhs(body_q, body_rhs, body)
+        for body_q, body_rhs, body in zip(q_blocks, rhs, bodies, strict=True)
+    )
+    return _solve_constrained_step(q_blocks, dt_float, hessians, world_rhs, config)
 
 
 __all__ = [

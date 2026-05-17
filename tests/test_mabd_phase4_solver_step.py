@@ -211,6 +211,118 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertTrue(np.allclose(result.q[0][9:12], q[9:12] + dt * qd[9:12], atol=1.0e-12))
         self.assertLess(result.residual_norm, 1.0e-12)
 
+    def test_polar_cpu_step_treats_pure_rotation_as_zero_material_strain(self) -> None:
+        theta = 0.43
+        R = np.array(
+            [
+                [np.cos(theta), -np.sin(theta), 0.0],
+                [np.sin(theta), np.cos(theta), 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=float,
+        )
+        q = mabd.pack_q(R, np.array([0.2, -0.1, 0.3]))
+        rest_q = _identity_q((0.2, -0.1, 0.3))
+        stiffness = mabd.rest_generalized_stiffness_matrix(80.0, 0.25, 0.35)
+        dt = 0.04
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[np.zeros(12)],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body_with_stiffness(stiffness, rest_q, rotation_mode="polar")]
+            ),
+        )
+
+        self.assertTrue(np.allclose(result.q[0], q, atol=1.0e-12))
+        self.assertTrue(np.allclose(result.qd[0], np.zeros(12), atol=1.0e-12))
+        self.assertLess(result.residual_norm, 1.0e-12)
+
+    def test_polar_cpu_step_matches_corotated_material_force_for_small_deformation(self) -> None:
+        theta = 0.2
+        R = np.array(
+            [
+                [np.cos(theta), -np.sin(theta), 0.0],
+                [np.sin(theta), np.cos(theta), 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=float,
+        )
+        stretch = np.diag([1.02, 0.99, 1.01])
+        A = R @ stretch
+        q = mabd.pack_q(A, np.array([0.2, -0.1, 0.3]))
+        rest_q = _identity_q((0.2, -0.1, 0.3))
+        young = 80.0
+        poisson = 0.25
+        volume = 0.35
+        stiffness = mabd.rest_generalized_stiffness_matrix(young, poisson, volume)
+        dt = 0.04
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[np.zeros(12)],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body_with_stiffness(stiffness, rest_q, rotation_mode="polar")]
+            ),
+        )
+
+        material_force = mabd.co_rotated_linear_elastic_affine_force(A, young, poisson, volume)
+        expected_dq = np.linalg.solve(
+            np.eye(12) / (dt * dt) + stiffness,
+            mabd.apply_polar_rhs_rotation(A, material_force),
+        )
+        expected_q = q + mabd.apply_polar_increment_rotation(A, expected_dq)
+        self.assertTrue(np.allclose(result.q[0], expected_q, atol=1.0e-10))
+        self.assertLess(result.residual_norm, 1.0e-10)
+
+    def test_polar_cpu_step_preserves_free_translation_under_rigid_rotation(self) -> None:
+        theta = -0.37
+        R = np.array(
+            [
+                [np.cos(theta), 0.0, np.sin(theta)],
+                [0.0, 1.0, 0.0],
+                [-np.sin(theta), 0.0, np.cos(theta)],
+            ],
+            dtype=float,
+        )
+        q = mabd.pack_q(R, np.array([0.2, -0.1, 0.3]))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([1.0, 2.0, 3.0])
+        dt = 0.04
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(bodies=[_body(rotation_mode="polar")]),
+        )
+
+        self.assertTrue(np.allclose(result.qd[0][9:12], qd[9:12], atol=1.0e-12))
+        self.assertTrue(np.allclose(result.q[0][9:12], q[9:12] + dt * qd[9:12], atol=1.0e-12))
+
+    def test_constrained_cpu_step_rejects_polar_until_rotated_kkt_exists(self) -> None:
+        config = mabd.MABDCPUOracleConfig(
+            bodies=[_body(rotation_mode="polar"), _body()],
+            constraints=[
+                mabd.MABDCPUOracleConstraint(
+                    body_a=0,
+                    body_b=1,
+                    spec=mabd.ball_joint(HINGE_CT, HINGE_CT),
+                )
+            ],
+            topology="dense",
+        )
+
+        with self.assertRaisesRegex(NotImplementedError, "constrained.*rotation_mode='none'"):
+            mabd.solve_cpu_oracle_step(
+                q=[_identity_q((0.2, 0.0, 0.0)), _identity_q()],
+                qd=[np.zeros(12), np.zeros(12)],
+                dt=0.1,
+                config=config,
+            )
+
     def test_constrained_cpu_step_rejects_no_polar_until_rotated_kkt_exists(self) -> None:
         config = mabd.MABDCPUOracleConfig(
             bodies=[_body(rotation_mode="no_polar"), _body()],
