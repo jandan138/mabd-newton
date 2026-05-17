@@ -1,0 +1,35 @@
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" fill="#fff7eb"/>
+  <rect x="58" y="58" width="844" height="424" rx="28" fill="#fffaf3" stroke="#6b4028" stroke-width="3"/>
+  <text x="480" y="110" fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="34" font-weight="700" text-anchor="middle">Modeling Spectrum</text>
+  <line x1="142" y1="310" x2="818" y2="310" stroke="#d8742f" stroke-width="6" stroke-linecap="round"/>
+  <polygon points="818,310 795,296 795,324" fill="#d8742f"/>
+  <text x="142" y="354" fill="#8a6a55" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" text-anchor="middle">few state</text>
+  <text x="818" y="354" fill="#8a6a55" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" text-anchor="middle">many state</text>
+  <g stroke="#6b4028" stroke-width="3" fill="#fff7eb">
+    <circle cx="154" cy="230" r="28"/>
+    <rect x="250" y="190" width="86" height="76" rx="12"/>
+    <polygon points="430,186 494,218 482,282 408,282 396,218"/>
+    <rect x="584" y="190" width="98" height="76" rx="10"/>
+    <g>
+      <rect x="750" y="190" width="28" height="28" rx="4"/>
+      <rect x="785" y="190" width="28" height="28" rx="4"/>
+      <rect x="750" y="225" width="28" height="28" rx="4"/>
+      <rect x="785" y="225" width="28" height="28" rx="4"/>
+      <rect x="768" y="260" width="28" height="28" rx="4"/>
+    </g>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20" font-weight="700" text-anchor="middle">
+    <text x="154" y="168">particle</text>
+    <text x="293" y="168">rigid</text>
+    <text x="445" y="168">ABD</text>
+    <text x="633" y="168">M-ABD</text>
+    <text x="782" y="168">FEM</text>
+  </g>
+  <g fill="#7d5bb2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" text-anchor="middle">
+    <text x="445" y="326">A + t</text>
+    <text x="633" y="326">constraints</text>
+  </g>
+  <path d="M398 388 C462 424 560 424 642 388" fill="none" stroke="#4f82aa" stroke-width="4" stroke-dasharray="10 9" stroke-linecap="round"/>
+  <text x="520" y="450" fill="#4f82aa" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" text-anchor="middle">conceptual placement</text>
+</svg>

@@ -1,0 +1,41 @@
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" fill="#fff7eb"/>
+  <rect x="58" y="54" width="844" height="432" rx="28" fill="#fffaf3" stroke="#6b4028" stroke-width="3"/>
+  <text x="480" y="104" fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="32" font-weight="700" text-anchor="middle">Implicit Residual Loop</text>
+  <g stroke="#6b4028" stroke-width="4" fill="#fff7eb">
+    <rect x="118" y="196" width="172" height="98" rx="18"/>
+    <rect x="394" y="150" width="172" height="98" rx="18" fill="#f7edff"/>
+    <rect x="670" y="196" width="172" height="98" rx="18"/>
+    <rect x="394" y="334" width="172" height="98" rx="18"/>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" text-anchor="middle">
+    <text x="204" y="236" font-size="21">guess</text>
+    <text x="204" y="264" font-size="17" fill="#8a6a55">q_next</text>
+    <text x="480" y="190" font-size="21">forces</text>
+    <text x="480" y="218" font-size="17" fill="#8a6a55">at guess</text>
+    <text x="756" y="236" font-size="21">residual</text>
+    <text x="756" y="264" font-size="17" fill="#8a6a55">r(q)</text>
+    <text x="480" y="374" font-size="21">correction</text>
+    <text x="480" y="402" font-size="17" fill="#8a6a55">solve dx</text>
+  </g>
+  <g stroke="#d8742f" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M290 230 C338 188 354 182 394 190"/>
+    <path d="M566 190 C620 182 642 190 670 230"/>
+    <path d="M756 294 C742 364 662 400 566 392"/>
+    <path d="M394 392 C286 396 204 350 204 294"/>
+  </g>
+  <g fill="#d8742f">
+    <polygon points="394,190 370,180 376,205"/>
+    <polygon points="670,230 646,222 652,247"/>
+    <polygon points="566,392 589,380 588,406"/>
+    <polygon points="204,294 194,318 219,313"/>
+  </g>
+  <g stroke="#4f82aa" stroke-width="3" fill="none" stroke-dasharray="10 8">
+    <line x1="142" y1="442" x2="818" y2="442"/>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">
+    <text x="480" y="462" font-size="18" fill="#4f82aa">accept when residual is small</text>
+    <text x="204" y="334" font-size="18" fill="#7d5bb2">predict</text>
+    <text x="756" y="334" font-size="18" fill="#7d5bb2">check</text>
+  </g>
+</svg>

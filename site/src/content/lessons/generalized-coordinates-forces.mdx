@@ -12,14 +12,25 @@ import ConceptCard from "../../components/ConceptCard.astro";
 import ProblemCard from "../../components/ProblemCard.astro";
 import StepFlow from "../../components/StepFlow.astro";
 import CompareGrid from "../../components/CompareGrid.astro";
+import Figure from "../../components/Figure.astro";
 import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import jacobianForceMap from "../../assets/diagrams/jacobian-force-map.svg";
 
 <ProblemCard title="它解决的问题">
 模拟器真正积分的通常不是每个表面点的位置，而是一组控制状态，例如刚体的 6 个自由度或仿射体的 `q in R12`。本课解释一个世界空间里的力 `f` 怎样通过 Jacobian 变成这些状态变量上的广义力。
 </ProblemCard>
+
+<Figure
+  src={jacobianForceMap}
+  alt="Point-space force mapped through Jacobian transpose into generalized force coordinates"
+  caption="Conceptual force map: J links generalized velocity to point velocity, while J^T maps point force into generalized force by virtual work."
+  kind="diagram"
+  provenance="authored-svg"
+  claimStatus="conceptual"
+/>
 
 ## 从点到旋钮
 

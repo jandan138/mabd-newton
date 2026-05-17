@@ -1,0 +1,37 @@
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" fill="#fff7eb"/>
+  <rect x="58" y="54" width="844" height="432" rx="28" fill="#fffaf3" stroke="#6b4028" stroke-width="3"/>
+  <text x="480" y="104" fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="32" font-weight="700" text-anchor="middle">Rigid vs Affine DOF</text>
+  <g stroke="#6b4028" stroke-width="4" fill="#fff7eb">
+    <rect x="136" y="176" width="232" height="184" rx="20"/>
+    <rect x="592" y="176" width="232" height="184" rx="20" fill="#f7edff"/>
+  </g>
+  <g stroke="#6b4028" stroke-width="3" fill="none">
+    <polygon points="192,276 252,236 312,276 252,316"/>
+    <polygon points="650,286 724,222 774,298 694,342"/>
+  </g>
+  <g stroke="#d8742f" stroke-width="4" fill="none" stroke-linecap="round">
+    <line x1="252" y1="276" x2="312" y2="238"/>
+    <path d="M196 226 C230 190 284 190 318 226"/>
+    <line x1="690" y1="282" x2="782" y2="230"/>
+    <line x1="690" y1="282" x2="658" y2="352"/>
+    <path d="M646 226 C686 186 752 184 794 222"/>
+  </g>
+  <g fill="#d8742f">
+    <polygon points="312,238 288,240 300,260"/>
+    <polygon points="318,226 296,216 302,240"/>
+    <polygon points="782,230 758,231 770,252"/>
+    <polygon points="658,352 654,326 678,337"/>
+    <polygon points="794,222 772,214 779,238"/>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" text-anchor="middle">
+    <text x="252" y="152" font-size="24">rigid</text>
+    <text x="708" y="152" font-size="24">affine</text>
+    <text x="252" y="406" font-size="28">6 DOF</text>
+    <text x="708" y="406" font-size="28" fill="#7d5bb2">12 DOF</text>
+    <text x="252" y="436" font-size="17" fill="#8a6a55">move + rotate</text>
+    <text x="708" y="436" font-size="17" fill="#8a6a55">A + t</text>
+  </g>
+  <line x1="480" y1="162" x2="480" y2="432" stroke="#ead5bc" stroke-width="3" stroke-dasharray="12 10"/>
+  <text x="480" y="462" fill="#4f82aa" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" text-anchor="middle">conceptual comparison</text>
+</svg>

@@ -12,14 +12,25 @@ import ConceptCard from "../../components/ConceptCard.astro";
 import ProblemCard from "../../components/ProblemCard.astro";
 import StepFlow from "../../components/StepFlow.astro";
 import CompareGrid from "../../components/CompareGrid.astro";
+import Figure from "../../components/Figure.astro";
 import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-map.svg";
 
 <ProblemCard title="它解决的问题">
 多体 M-ABD 不只是把很多单体 ABD 放进列表。体与体之间有关节，关节带来约束，约束又改变线性系统结构；不同拓扑需要不同求解策略才能高效、可审计地求解。
 </ProblemCard>
+
+<Figure
+  src={mabdTopologySolverMap}
+  alt="Chain, tree, loop, and graph topologies mapped to increasingly general solver structure choices"
+  caption="Conceptual topology map: chain, tree, loop, and graph connections shape sparsity and solver choices without implying a completed M-ABD solver."
+  kind="diagram"
+  provenance="authored-svg"
+  claimStatus="conceptual"
+/>
 
 ## 控制点关节
 

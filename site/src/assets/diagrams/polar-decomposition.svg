@@ -1,0 +1,29 @@
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" fill="#fff7eb"/>
+  <rect x="58" y="54" width="844" height="432" rx="28" fill="#fffaf3" stroke="#6b4028" stroke-width="3"/>
+  <text x="480" y="104" fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="32" font-weight="700" text-anchor="middle">Polar Decomposition</text>
+  <g stroke="#6b4028" stroke-width="4" fill="#fff7eb">
+    <polygon points="136,230 262,186 326,304 186,346"/>
+    <polygon points="412,216 516,174 566,292 456,334" fill="#f7edff"/>
+    <polygon points="672,210 812,210 812,330 672,330"/>
+  </g>
+  <path d="M410 216 C450 250 510 252 566 292" fill="none" stroke="#7d5bb2" stroke-width="5" stroke-linecap="round"/>
+  <path d="M690 212 C746 188 800 206 812 270 C802 330 744 350 692 328" fill="none" stroke="#d8742f" stroke-width="5" stroke-linecap="round"/>
+  <polygon points="812,270 794,254 792,280" fill="#d8742f"/>
+  <g stroke="#d8742f" stroke-width="5" fill="none" stroke-linecap="round">
+    <line x1="340" y1="270" x2="390" y2="270"/>
+    <line x1="586" y1="270" x2="650" y2="270"/>
+  </g>
+  <polygon points="390,270 368,256 368,284" fill="#d8742f"/>
+  <polygon points="650,270 628,256 628,284" fill="#d8742f"/>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" text-anchor="middle">
+    <text x="232" y="390" font-size="24">A</text>
+    <text x="490" y="390" font-size="24" fill="#7d5bb2">stretch</text>
+    <text x="742" y="390" font-size="24">R</text>
+    <text x="480" y="146" font-size="20" fill="#8a6a55">separate shape from spin</text>
+  </g>
+  <g stroke="#4f82aa" stroke-width="4" fill="none" stroke-dasharray="10 8">
+    <path d="M232 410 C372 454 590 454 742 410"/>
+  </g>
+  <text x="480" y="466" fill="#4f82aa" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" text-anchor="middle">conceptual math tool</text>
+</svg>

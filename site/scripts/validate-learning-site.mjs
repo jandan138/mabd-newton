@@ -34,6 +34,9 @@ const forbiddenClaimPatterns = [
 ];
 const requiredFrontmatterKeys = ["title", "description", "module", "order", "status", "claimStatus"];
 const requiredLessonComponents = ["<ProblemCard", "<ConceptCard", "<RememberBox"];
+const requiredFigureProps = ["alt", "caption", "kind", "provenance", "claimStatus"];
+const allowedFigureSvgImport = /^\.\.\/\.\.\/assets\/diagrams\/[^/]+\.svg$/;
+const forbiddenAssetExtensions = new Set([".pdf", ".tex", ".mp4", ".mov", ".avi", ".log", ".usd", ".usda", ".usdc"]);
 
 function walk(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -100,6 +103,37 @@ function displayPath(file) {
   return path.relative(repoRoot, file);
 }
 
+function stripExamplesAndComments(text) {
+  return text
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/<!--[\s\S]*?-->/g, "");
+}
+
+function figureCalls(text) {
+  return [...stripExamplesAndComments(text).matchAll(/^[ \t]*<Figure\b[\s\S]*?(?:\/>|<\/Figure>)/gm)].map((match) => match[0]);
+}
+
+function assetImports(text) {
+  return [...text.matchAll(/^\s*import\s+(\w+)\s+from\s+["']([^"']+\.(?:svg|png|jpg|jpeg|webp|gif))["'];?\s*$/gim)]
+    .map((match) => ({ name: match[1], path: match[2] }));
+}
+
+function figurePropValue(figure, prop) {
+  const pattern = new RegExp(`${prop}\\s*=\\s*(?:"([^"]+)"|'([^']+)'|\\{\\s*"([^"]+)"\\s*\\}|\\{\\s*'([^']+)'\\s*\\})`, "m");
+  const match = figure.match(pattern);
+  return match ? match.slice(1).find((value) => value !== undefined) : null;
+}
+
+function figureSrcName(figure) {
+  const match = figure.match(/\bsrc\s*=\s*\{\s*(\w+)\s*\}/m);
+  return match ? match[1] : null;
+}
+
+function importsFigureComponent(text) {
+  return /^\s*import\s+Figure\s+from\s+["']\.\.\/\.\.\/components\/Figure\.astro["'];?\s*$/m.test(text);
+}
+
 const issues = [];
 const requiredLessons = requiredLessonSlugs();
 
@@ -145,6 +179,14 @@ const checkedFiles = [
   path.join(root, "README.md"),
   path.join(repoRoot, ".github/workflows/deploy-learning-site.yml"),
 ].filter((file) => fs.existsSync(file));
+
+for (const file of walk(path.join(root, "src/assets"))) {
+  const extension = path.extname(file).toLowerCase();
+  if (forbiddenAssetExtensions.has(extension)) {
+    issues.push(`${displayPath(file)}: forbidden asset extension ${extension}`);
+  }
+}
+
 for (const file of checkedFiles) {
   const relative = displayPath(file);
   const text = fs.readFileSync(file, "utf8");
@@ -176,6 +218,50 @@ for (const file of checkedFiles) {
     for (const marker of requiredLessonComponents) {
       if (!text.includes(marker)) {
         issues.push(`${relative}: missing learning component ${marker}`);
+      }
+    }
+    const figures = figureCalls(text);
+    if (figures.length === 0) {
+      issues.push(`${relative}: missing learning component <Figure`);
+    }
+    if (figures.length > 0 && !importsFigureComponent(text)) {
+      issues.push(`${relative}: missing Figure component import from ../../components/Figure.astro`);
+    }
+    const imports = assetImports(text);
+    const importsByName = new Map(imports.map((imported) => [imported.name, imported.path]));
+    figures.forEach((figure, index) => {
+      for (const prop of requiredFigureProps) {
+        if (figurePropValue(figure, prop) === null) {
+          issues.push(`${relative}: Figure ${index + 1} missing required prop ${prop}`);
+        }
+      }
+      if (figurePropValue(figure, "kind") !== "diagram") {
+        issues.push(`${relative}: Figure ${index + 1} kind must be diagram`);
+      }
+      if (figurePropValue(figure, "provenance") !== "authored-svg") {
+        issues.push(`${relative}: Figure ${index + 1} provenance must be authored-svg`);
+      }
+      const claimStatus = figurePropValue(figure, "claimStatus");
+      if (claimStatus !== "conceptual" && claimStatus !== "not_evidence") {
+        issues.push(`${relative}: Figure ${index + 1} claimStatus must be conceptual or not_evidence`);
+      }
+      const srcName = figureSrcName(figure);
+      if (srcName === null) {
+        issues.push(`${relative}: Figure ${index + 1} src must reference an imported SVG asset`);
+        return;
+      }
+      const importedPath = importsByName.get(srcName);
+      if (importedPath === undefined) {
+        issues.push(`${relative}: Figure ${index + 1} src ${srcName} is not imported`);
+        return;
+      }
+      if (!allowedFigureSvgImport.test(importedPath)) {
+        issues.push(`${relative}: Figure ${index + 1} asset ${importedPath} must be from ../../assets/diagrams/*.svg`);
+      }
+    });
+    for (const imported of imports) {
+      if (imported.path.includes("/assets/") && !allowedFigureSvgImport.test(imported.path)) {
+        issues.push(`${relative}: imported site asset ${imported.path} must be an SVG from ../../assets/diagrams/*.svg`);
       }
     }
   }

@@ -1,0 +1,75 @@
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" fill="#fff7eb"/>
+  <rect x="58" y="54" width="844" height="432" rx="28" fill="#fffaf3" stroke="#6b4028" stroke-width="3"/>
+  <text x="480" y="104" fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="32" font-weight="700" text-anchor="middle">Topology Solver Map</text>
+  <g stroke="#6b4028" stroke-width="4" fill="#fff7eb">
+    <rect x="102" y="158" width="150" height="116" rx="18"/>
+    <rect x="306" y="158" width="150" height="116" rx="18" fill="#f7edff"/>
+    <rect x="510" y="158" width="150" height="116" rx="18"/>
+    <rect x="714" y="158" width="150" height="116" rx="18" fill="#f7edff"/>
+  </g>
+  <g stroke="#d8742f" stroke-width="4" fill="none" stroke-linecap="round">
+    <line x1="132" y1="216" x2="222" y2="216"/>
+    <line x1="350" y1="216" x2="412" y2="190"/>
+    <line x1="350" y1="216" x2="412" y2="242"/>
+    <line x1="558" y1="198" x2="612" y2="198"/>
+    <line x1="612" y1="198" x2="585" y2="242"/>
+    <line x1="585" y1="242" x2="558" y2="198"/>
+    <line x1="754" y1="198" x2="824" y2="238"/>
+    <line x1="824" y1="198" x2="754" y2="238"/>
+    <line x1="754" y1="198" x2="754" y2="238"/>
+    <line x1="824" y1="198" x2="824" y2="238"/>
+  </g>
+  <g fill="#6b4028" stroke="#6b4028" stroke-width="3">
+    <circle cx="132" cy="216" r="12"/>
+    <circle cx="177" cy="216" r="12"/>
+    <circle cx="222" cy="216" r="12"/>
+    <circle cx="350" cy="216" r="12"/>
+    <circle cx="412" cy="190" r="12"/>
+    <circle cx="412" cy="242" r="12"/>
+    <circle cx="558" cy="198" r="12"/>
+    <circle cx="612" cy="198" r="12"/>
+    <circle cx="585" cy="242" r="12"/>
+    <circle cx="754" cy="198" r="12"/>
+    <circle cx="824" cy="198" r="12"/>
+    <circle cx="754" cy="238" r="12"/>
+    <circle cx="824" cy="238" r="12"/>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" text-anchor="middle">
+    <text x="177" y="306" font-size="22">chain</text>
+    <text x="381" y="306" font-size="22">tree</text>
+    <text x="585" y="306" font-size="22">loop</text>
+    <text x="789" y="306" font-size="22">graph</text>
+  </g>
+  <g stroke="#4f82aa" stroke-width="4" fill="none" stroke-linecap="round">
+    <path d="M177 326 C246 374 306 374 381 326"/>
+    <path d="M381 326 C454 374 512 374 585 326"/>
+    <path d="M585 326 C658 374 716 374 789 326"/>
+  </g>
+  <g fill="#4f82aa">
+    <polygon points="381,326 356,326 370,346"/>
+    <polygon points="585,326 560,326 574,346"/>
+    <polygon points="789,326 764,326 778,346"/>
+  </g>
+  <g transform="translate(393 350)">
+    <rect x="0" y="0" width="174" height="78" rx="10" fill="#fffaf3" stroke="#6b4028" stroke-width="2"/>
+    <g fill="#ead5bc" stroke="#6b4028" stroke-width="1">
+      <rect x="24" y="14" width="12" height="12"/>
+      <rect x="42" y="14" width="12" height="12"/>
+      <rect x="60" y="14" width="12" height="12"/>
+      <rect x="42" y="32" width="12" height="12"/>
+      <rect x="60" y="32" width="12" height="12"/>
+      <rect x="78" y="32" width="12" height="12"/>
+      <rect x="60" y="50" width="12" height="12"/>
+      <rect x="78" y="50" width="12" height="12"/>
+      <rect x="96" y="50" width="12" height="12"/>
+      <rect x="120" y="14" width="12" height="12" fill="#f7edff"/>
+      <rect x="138" y="32" width="12" height="12" fill="#f7edff"/>
+      <rect x="120" y="50" width="12" height="12" fill="#f7edff"/>
+    </g>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">
+    <text x="480" y="450" font-size="19" fill="#4f82aa">topology -> block sparsity -> solver path</text>
+    <text x="480" y="474" font-size="17" fill="#8a6a55">concept map only, not completion evidence</text>
+  </g>
+</svg>
