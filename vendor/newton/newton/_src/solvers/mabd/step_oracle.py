@@ -8,11 +8,16 @@ from typing import Any
 
 import numpy as np
 
-from .affine_math import pack_q, unpack_q
+from .affine_math import (
+    apply_no_polar_increment_rotation,
+    apply_no_polar_rhs_rotation,
+    pack_q,
+    unpack_q,
+)
 from .control_forces import MABDActuationSpec, assemble_control_generalized_forces
 from .dense_kkt import solve_dense_dual_kkt
 from .joint_constraints import JointGradientMode, MABDJointSpec, evaluate_joint, joint_residual
-from .single_body import SingleBodyABDPrecompute, solve_single_body_delta
+from .single_body import SingleBodyABDPrecompute
 from .topology_solvers import (
     assemble_topology_dual_inputs,
     classify_constraint_graph,
@@ -115,6 +120,22 @@ def _require_constrained_none_rotation(bodies: tuple[MABDCPUOracleBody, ...]) ->
             )
 
 
+def _affine_only_no_polar_rhs(A: np.ndarray, rhs: np.ndarray) -> np.ndarray:
+    affine_rhs = np.zeros(12, dtype=float)
+    affine_rhs[:9] = rhs[:9]
+    rotated = rhs.copy()
+    rotated[:9] = apply_no_polar_rhs_rotation(A, affine_rhs)[:9]
+    return rotated
+
+
+def _affine_only_no_polar_increment(A: np.ndarray, delta: np.ndarray) -> np.ndarray:
+    affine_delta = np.zeros(12, dtype=float)
+    affine_delta[:9] = delta[:9]
+    rotated = delta.copy()
+    rotated[:9] = apply_no_polar_increment_rotation(A, affine_delta)[:9]
+    return rotated
+
+
 def _step_body_systems(
     q: tuple[np.ndarray, ...],
     qd: tuple[np.ndarray, ...],
@@ -141,27 +162,25 @@ def _unconstrained_step(
     bodies: tuple[MABDCPUOracleBody, ...],
 ) -> MABDCPUOracleStepResult:
     dq_blocks = []
+    residual_blocks = []
     for body_q, H, f, body in zip(q, hessians, rhs, bodies, strict=True):
         if body.rotation_mode == "none":
-            dq_blocks.append(np.linalg.solve(H, f))
+            body_dq = np.linalg.solve(H, f)
+            dq_blocks.append(body_dq)
+            residual_blocks.append(float(np.linalg.norm(H @ body_dq - f)))
         elif body.rotation_mode == "no_polar":
             A, _t = unpack_q(body_q)
-            dq_blocks.append(
-                solve_single_body_delta(
-                    body.precompute,
-                    f,
-                    dt,
-                    A=A,
-                    rotation_mode="no_polar",
-                )
-            )
+            local_rhs = _affine_only_no_polar_rhs(A, f)
+            local_delta = np.linalg.solve(H, local_rhs)
+            dq_blocks.append(_affine_only_no_polar_increment(A, local_delta))
+            residual_blocks.append(float(np.linalg.norm(H @ local_delta - local_rhs)))
         else:  # pragma: no cover - _validate_config owns this boundary.
             raise ValueError("rotation_mode must be one of 'none' or 'no_polar'")
     dq_blocks = tuple(dq_blocks)
     dq = np.concatenate(dq_blocks) if dq_blocks else np.zeros(0, dtype=float)
     q_next = tuple(body_q + body_dq for body_q, body_dq in zip(q, dq_blocks, strict=True))
     qd_next = tuple(body_dq / float(dt) for body_dq in dq_blocks)
-    residual = sum(float(np.linalg.norm(H @ body_dq - f)) for H, body_dq, f in zip(hessians, dq_blocks, rhs, strict=True))
+    residual = sum(residual_blocks)
     return MABDCPUOracleStepResult(
         q=q_next,
         qd=qd_next,

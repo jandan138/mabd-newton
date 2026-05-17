@@ -52,6 +52,22 @@ def _identity_q(translation: tuple[float, float, float] = (0.0, 0.0, 0.0)) -> np
     return mabd.pack_q(np.eye(3), np.array(translation, dtype=float))
 
 
+def _no_polar_affine_only_rhs(A: np.ndarray, rhs: np.ndarray) -> np.ndarray:
+    affine_rhs = np.zeros(12, dtype=float)
+    affine_rhs[:9] = rhs[:9]
+    rotated = rhs.copy()
+    rotated[:9] = mabd.apply_no_polar_rhs_rotation(A, affine_rhs)[:9]
+    return rotated
+
+
+def _no_polar_affine_only_increment(A: np.ndarray, delta: np.ndarray) -> np.ndarray:
+    affine_delta = np.zeros(12, dtype=float)
+    affine_delta[:9] = delta[:9]
+    rotated = delta.copy()
+    rotated[:9] = mabd.apply_no_polar_increment_rotation(A, affine_delta)[:9]
+    return rotated
+
+
 def _assign_mabd_state(state: object, q: np.ndarray | list[np.ndarray], qd: np.ndarray | list[np.ndarray]) -> None:
     q_arr = np.asarray([q], dtype=float) if np.asarray(q).shape == (12,) else np.asarray(q, dtype=float)
     qd_arr = np.asarray([qd], dtype=float) if np.asarray(qd).shape == (12,) else np.asarray(qd, dtype=float)
@@ -157,6 +173,7 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         dt = 0.04
         body = _body_with_stiffness(stiffness, rest_q, rotation_mode="no_polar")
         rhs = qd / dt + force - stiffness @ (q - rest_q)
+        local_rhs = _no_polar_affine_only_rhs(A, rhs)
 
         result = mabd.solve_cpu_oracle_step(
             q=[q],
@@ -168,17 +185,31 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
             ),
         )
 
-        expected_dq = mabd.solve_single_body_delta(
-            body.precompute,
-            rhs,
-            dt,
-            A=A,
-            rotation_mode="no_polar",
-        )
+        local_delta = np.linalg.solve(body.precompute.hessian(dt), local_rhs)
+        expected_dq = _no_polar_affine_only_increment(A, local_delta)
         none_dq = np.linalg.solve(body.precompute.hessian(dt), rhs)
         self.assertTrue(np.allclose(result.q[0], q + expected_dq, atol=1.0e-12))
         self.assertTrue(np.allclose(result.qd[0], expected_dq / dt, atol=1.0e-12))
+        self.assertLess(result.residual_norm, 1.0e-10)
         self.assertGreater(float(np.linalg.norm(expected_dq - none_dq)), 1.0e-6)
+
+    def test_no_polar_cpu_step_preserves_free_translation_in_world_frame(self) -> None:
+        A = np.array([[1.1, 0.2, 0.0], [0.0, 0.9, -0.1], [0.05, 0.0, 1.2]])
+        q = mabd.pack_q(A, np.array([0.2, -0.1, 0.3]))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([1.0, 2.0, 3.0])
+        dt = 0.04
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(bodies=[_body(rotation_mode="no_polar")]),
+        )
+
+        self.assertTrue(np.allclose(result.qd[0][9:12], qd[9:12], atol=1.0e-12))
+        self.assertTrue(np.allclose(result.q[0][9:12], q[9:12] + dt * qd[9:12], atol=1.0e-12))
+        self.assertLess(result.residual_norm, 1.0e-12)
 
     def test_constrained_cpu_step_rejects_no_polar_until_rotated_kkt_exists(self) -> None:
         config = mabd.MABDCPUOracleConfig(
