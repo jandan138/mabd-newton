@@ -821,6 +821,10 @@ class Phase0BootstrapTests(unittest.TestCase):
             "plan commit: `50816b9ba11c80e9993d067bfbbdcc579e2c5fa3`",
             "implementation commit: `c7a22b1a0fb400da47c2a715b9ac32333aed67d2`",
             "docs/provenance commit: `2bb28f572427fb879f3168265b0e3e26f0e0a1f5`",
+            "review hardening commit: `1c6125ed899cd57d1d39096fd70d52b657cef440`",
+            "independent review:",
+            "RBD config/physics review found no findings",
+            "claim/provenance review found",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "## Paper Source",
@@ -841,6 +845,13 @@ class Phase0BootstrapTests(unittest.TestCase):
             "generated reports: not committed",
             "No `experiment.*` claim is passed in this phase.",
             "RBD tests: Ran 5 tests, OK",
+            "Docs GREEN result:",
+            "phase bootstrap docs tests: Ran 39 tests, OK",
+            (
+                "docs validator: Phase "
+                "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22 "
+                "docs/provenance validation passed"
+            ),
         ):
             self.assertIn(snippet, text)
 

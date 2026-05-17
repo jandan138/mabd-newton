@@ -36,7 +36,12 @@ RBD report remains `incomplete`.
 - plan commit: `50816b9ba11c80e9993d067bfbbdcc579e2c5fa3`
 - implementation commit: `c7a22b1a0fb400da47c2a715b9ac32333aed67d2`
 - docs/provenance commit: `2bb28f572427fb879f3168265b0e3e26f0e0a1f5`
-- independent review: pending
+- review hardening commit: `1c6125ed899cd57d1d39096fd70d52b657cef440`
+- independent review: RBD config/physics review found no findings. The
+  claim/provenance review found that the Phase 22 record did not list the
+  final review hardening commit, still said independent review was pending,
+  and labeled docs GREEN evidence as expected rather than actual. This review
+  disposition records the review result and the hardening commit.
 
 ## Vendored Newton
 
@@ -120,7 +125,7 @@ record file missing:
 validator output still ended at Phase 21
 ```
 
-Expected docs GREEN evidence for this record:
+Docs GREEN result:
 
 ```text
 phase bootstrap docs tests: Ran 39 tests, OK

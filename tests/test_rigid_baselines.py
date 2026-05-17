@@ -108,6 +108,7 @@ class RigidBaselineTests(unittest.TestCase):
         self.assertIn("linear_velocity_m_s", loaded.observed)
         self.assertIn("angular_velocity_rad_s", loaded.observed)
         self.assertIn("final_position_m", loaded.observed)
+        np.testing.assert_allclose(loaded.observed["final_position_m"], [4.0, 0.05, 0.0], atol=1.0e-6)
         self.assertAlmostEqual(loaded.observed["final_position_m"][1], 0.05)
         self.assertIn("final_rotation_xyzw", loaded.observed)
         self.assertIn("linear_momentum_error", loaded.observed)
