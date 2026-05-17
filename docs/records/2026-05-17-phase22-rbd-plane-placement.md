@@ -35,7 +35,7 @@ RBD report remains `incomplete`.
 - base commit: `cdb1f46c427ad7bea6e223efce515f4895498882`
 - plan commit: `50816b9ba11c80e9993d067bfbbdcc579e2c5fa3`
 - implementation commit: `c7a22b1a0fb400da47c2a715b9ac32333aed67d2`
-- docs/provenance commit: pending until this record is committed
+- docs/provenance commit: `2bb28f572427fb879f3168265b0e3e26f0e0a1f5`
 - independent review: pending
 
 ## Vendored Newton
