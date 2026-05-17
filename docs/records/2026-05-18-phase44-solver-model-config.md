@@ -12,7 +12,18 @@ passed_for_solver_model_config_slice
 - Base commit: `ddd2696fbbc958b5f313dd40ee49b27e9b89b454`
 - Plan commit: `5d39ca8aeb29e4c353687058cb430b72625df27d`
 - Implementation commit: `0e506bf9a0e53d74a06eb55d8c093909e3a72f8d`
+- Evidence record commit: `60a957a4f3d02d14d0f025bc4bdb373cfbe686ec`
 - Worktree: `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase44-solver-model-config`
+
+## Vendored Newton
+
+- Upstream source: `https://github.com/newton-physics/newton.git`
+- Upstream commit: `96713fa965463b69c229a4d30582c733ff3526bb`
+- Provenance file: `vendor/newton/PROVENANCE.md`
+- Local patch status: locally patched for Phase 44 in
+  `vendor/newton/newton/_src/solvers/mabd/solver_mabd.py`.
+- Local patch commit: `0e506bf9a0e53d74a06eb55d8c093909e3a72f8d`
+- This record does not claim unmodified Newton supports affine-body dynamics.
 
 ## Environment
 
@@ -23,8 +34,11 @@ passed_for_solver_model_config_slice
 - Both interpreters report Python 3.10.20.
 - The reference environment comes from
   `/cpfs/user/zhuzihou/dev/physics-primitive-agent`.
-- `pip freeze --local | sort`, ignoring editable `-e` project roots, has the
-  same package set except editable project root.
+- Phase 44 observed `pip freeze --local | sort`, ignoring editable `-e`
+  project roots, had the same package set except editable project root.
+- The validator rechecks core package parity and editable roots rather than
+  every non-editable package line, so unrelated future reference-environment
+  drift does not invalidate this historical evidence record.
 - The reference project editable install points at `primitive_collision_compiler`;
   this project editable install points at `mabd_newton`.
 - No package install was performed into the DSW ambient Python or the reference

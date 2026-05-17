@@ -156,6 +156,10 @@ STATUS_VALUES = {
     "qualitative_reconstruction",
 }
 VENDORED_NEWTON_COMMIT = "96713fa965463b69c229a4d30582c733ff3526bb"
+PHASE44_REFERENCE_PYTHON = Path(
+    "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
+)
+PHASE44_CORE_ENV_PACKAGES = ("numpy", "PyYAML", "warp-lang", "ruff", "pytest")
 PHYSICAL_PENDULUM_TIMING_SOURCE_LINES = [
     "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
 ]
@@ -5564,7 +5568,7 @@ def validate_phase43_record() -> None:
             fail(f"Phase 43 matrix blocker missing: {blocker}")
 
 
-def _pip_freeze_without_editable(python: Path, context: str) -> list[str]:
+def _pip_freeze_parts(python: Path, context: str) -> tuple[list[str], list[str]]:
     result = subprocess.run(
         [str(python), "-m", "pip", "freeze", "--local"],
         cwd=ROOT,
@@ -5575,11 +5579,67 @@ def _pip_freeze_without_editable(python: Path, context: str) -> list[str]:
     )
     if result.returncode != 0:
         fail(f"{context} pip freeze failed: {result.stderr.strip()}")
-    return sorted(
-        line.strip()
-        for line in result.stdout.splitlines()
-        if line.strip() and not line.startswith("-e ")
+    lines = sorted(line.strip() for line in result.stdout.splitlines() if line.strip())
+    editable = [line for line in lines if line.startswith("-e ")]
+    non_editable = [line for line in lines if not line.startswith("-e ")]
+    return non_editable, editable
+
+
+def _editable_lines_by_egg(lines: list[str]) -> dict[str, str]:
+    eggs: dict[str, str] = {}
+    for line in lines:
+        marker = "#egg="
+        if marker not in line:
+            continue
+        egg = line.split(marker, 1)[1].split("&", 1)[0]
+        eggs[egg] = line
+    return eggs
+
+
+def _require_freeze_pin(lines: list[str], package: str, context: str) -> str:
+    prefix = f"{package}=="
+    matches = [line for line in lines if line.startswith(prefix)]
+    if len(matches) != 1:
+        fail(f"{context} must contain one {package} version pin")
+    return matches[0]
+
+
+def validate_phase44_environment_clone() -> None:
+    if not PHASE44_REFERENCE_PYTHON.exists():
+        fail("Phase 44 reference physics-primitive-agent Python is missing")
+    if not MABD_PYTHON.exists():
+        fail("Phase 44 canonical mabd-newton Python is missing")
+
+    reference_packages, reference_editable = _pip_freeze_parts(
+        PHASE44_REFERENCE_PYTHON,
+        "Phase 44 reference env",
     )
+    current_packages, current_editable = _pip_freeze_parts(MABD_PYTHON, "Phase 44 current env")
+
+    reference_eggs = _editable_lines_by_egg(reference_editable)
+    current_eggs = _editable_lines_by_egg(current_editable)
+    if "primitive_collision_compiler" not in reference_eggs:
+        fail("Phase 44 reference env missing primitive_collision_compiler editable root")
+    if "mabd_newton" not in current_eggs:
+        fail("Phase 44 current env missing mabd_newton editable root")
+
+    for context, eggs in (
+        ("Phase 44 reference env", reference_eggs),
+        ("Phase 44 current env", current_eggs),
+    ):
+        newton_line = eggs.get("newton")
+        if newton_line is None:
+            fail(f"{context} missing editable Newton source")
+        if "https://github.com/newton-physics/newton.git" not in newton_line:
+            fail(f"{context} Newton editable source changed")
+        if VENDORED_NEWTON_COMMIT not in newton_line:
+            fail(f"{context} Newton editable commit changed")
+
+    for package in PHASE44_CORE_ENV_PACKAGES:
+        reference_pin = _require_freeze_pin(reference_packages, package, "Phase 44 reference env")
+        current_pin = _require_freeze_pin(current_packages, package, "Phase 44 current env")
+        if reference_pin != current_pin:
+            fail(f"Phase 44 environment core package drift: {reference_pin} != {current_pin}")
 
 
 def validate_phase44_model_path_smoke() -> None:
@@ -5657,10 +5717,19 @@ def validate_phase44_record() -> None:
         "phase44-solver-model-config",
         "ddd2696fbbc958b5f313dd40ee49b27e9b89b454",
         "0e506bf9a0e53d74a06eb55d8c093909e3a72f8d",
+        "60a957a4f3d02d14d0f025bc4bdb373cfbe686ec",
+        "## Vendored Newton",
+        "https://github.com/newton-physics/newton.git",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "Local patch status",
+        "locally patched",
         "## Environment",
         "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
         "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python",
         "same package set except editable project root",
+        "validator rechecks core package parity and editable roots",
+        "primitive_collision_compiler",
+        "mabd_newton",
         "## Implementation Evidence",
         "model-derived `SolverMABD.step()`",
         "`mabd:rest_point0`",
@@ -5723,18 +5792,7 @@ def validate_phase44_record() -> None:
         if snippet not in normalized_boundary_text:
             fail(f"Phase 44 claim boundary missing: {snippet}")
 
-    reference_python = Path(
-        "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
-    )
-    if not reference_python.exists():
-        fail("Phase 44 reference physics-primitive-agent Python is missing")
-    if not MABD_PYTHON.exists():
-        fail("Phase 44 canonical mabd-newton Python is missing")
-    reference_packages = _pip_freeze_without_editable(reference_python, "Phase 44 reference env")
-    current_packages = _pip_freeze_without_editable(MABD_PYTHON, "Phase 44 current env")
-    if reference_packages != current_packages:
-        fail("Phase 44 environment package set differs from reference after editable roots")
-
+    validate_phase44_environment_clone()
     validate_phase44_model_path_smoke()
 
 
