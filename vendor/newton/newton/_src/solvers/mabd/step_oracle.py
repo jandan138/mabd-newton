@@ -16,6 +16,7 @@ from .affine_math import (
     gravity_generalized_force,
     pack_q,
     point_jacobian,
+    polar_rotation,
     unpack_q,
 )
 from .control_forces import MABDActuationSpec, assemble_control_generalized_forces
@@ -150,16 +151,6 @@ def _validate_config(config: MABDCPUOracleConfig, body_count: int) -> tuple[MABD
     return bodies
 
 
-def _require_constrained_none_rotation(bodies: tuple[MABDCPUOracleBody, ...]) -> None:
-    for body_id, body in enumerate(bodies):
-        if body.rotation_mode != "none":
-            raise NotImplementedError(
-                "constrained CPU oracle steps require rotation_mode='none' "
-                f"until rotated KKT assembly is implemented; body {body_id} "
-                f"uses rotation_mode={body.rotation_mode!r}"
-            )
-
-
 def _affine_only_no_polar_rhs(A: np.ndarray, rhs: np.ndarray) -> np.ndarray:
     affine_rhs = np.zeros(12, dtype=float)
     affine_rhs[:9] = rhs[:9]
@@ -195,6 +186,35 @@ def _step_body_systems(
 
 def _world_material_rhs(body_q: np.ndarray, inertial_external_rhs: np.ndarray, body: MABDCPUOracleBody) -> np.ndarray:
     return inertial_external_rhs - body.precompute.stiffness_matrix @ (body_q - _body_rest_q(body))
+
+
+def _polar_increment_map(A: np.ndarray) -> np.ndarray:
+    return np.kron(np.eye(4), polar_rotation(A))
+
+
+def _body_solve_system(
+    body_q: np.ndarray,
+    inertial_external_rhs: np.ndarray,
+    body: MABDCPUOracleBody,
+) -> tuple[np.ndarray, np.ndarray]:
+    if body.rotation_mode == "none":
+        return _world_material_rhs(body_q, inertial_external_rhs, body), np.eye(12)
+
+    A, _t = unpack_q(body_q)
+    if body.rotation_mode == "polar":
+        local_q = apply_polar_rhs_rotation(A, body_q)
+        local_rhs = apply_polar_rhs_rotation(A, inertial_external_rhs) - body.precompute.stiffness_matrix @ (
+            local_q - _body_rest_q(body)
+        )
+        return local_rhs, _polar_increment_map(A)
+
+    if body.rotation_mode == "no_polar":
+        raise NotImplementedError(
+            "constrained CPU oracle no_polar KKT is unsupported because the current "
+            "no-polar normalization increment is nonlinear"
+        )
+
+    raise ValueError("rotation_mode must be one of 'none', 'polar', or 'no_polar'")
 
 
 def _unconstrained_step(
@@ -314,6 +334,7 @@ def _assemble_dense_dual_inputs_with_world_constraints(
     world_bodies: list[int],
     world_gradients: list[np.ndarray],
     world_lower_rhs_blocks: list[np.ndarray],
+    increment_maps: tuple[np.ndarray, ...],
 ) -> TopologyDualInputs:
     dim = hessians[0].shape[0]
     H = _block_diag_hessians(hessians)
@@ -330,8 +351,8 @@ def _assemble_dense_dual_inputs_with_world_constraints(
     ):
         rank = grad_a.shape[0]
         row = np.zeros((rank, dim * len(hessians)), dtype=float)
-        row[:, dim * body_a : dim * body_a + dim] = grad_a
-        row[:, dim * body_b : dim * body_b + dim] = grad_b
+        row[:, dim * body_a : dim * body_a + dim] = grad_a @ increment_maps[body_a]
+        row[:, dim * body_b : dim * body_b + dim] = grad_b @ increment_maps[body_b]
         rows.append(row)
         lower_blocks.append(lower_rhs)
         edge_slices.append(slice(row_start, row_start + rank))
@@ -344,7 +365,7 @@ def _assemble_dense_dual_inputs_with_world_constraints(
     ):
         rank = gradient.shape[0]
         row = np.zeros((rank, dim * len(hessians)), dtype=float)
-        row[:, dim * body : dim * body + dim] = gradient
+        row[:, dim * body : dim * body + dim] = gradient @ increment_maps[body]
         rows.append(row)
         lower_blocks.append(lower_rhs)
         edge_slices.append(slice(row_start, row_start + rank))
@@ -370,6 +391,7 @@ def _solve_constrained_step(
     dt: float,
     hessians: tuple[np.ndarray, ...],
     rhs: tuple[np.ndarray, ...],
+    increment_maps: tuple[np.ndarray, ...],
     config: MABDCPUOracleConfig,
 ) -> MABDCPUOracleStepResult:
     edges, gradients, lower_rhs_blocks, _residuals = _constraint_blocks(q, config)
@@ -386,6 +408,9 @@ def _solve_constrained_step(
                 "topology='auto' requires graph_schedule for general_graph routing; "
                 "use topology='dense' for dense CPU oracle fallback"
             )
+    has_rotated_body = any(body.rotation_mode != "none" for body in config.bodies)
+    if has_rotated_body and topology != "dense":
+        raise NotImplementedError("constrained rotated CPU oracle steps require topology='dense'")
 
     if topology == "dense":
         if world_bodies:
@@ -398,9 +423,14 @@ def _solve_constrained_step(
                 world_bodies,
                 world_gradients,
                 world_lower_rhs_blocks,
+                increment_maps,
             )
         else:
-            inputs = assemble_topology_dual_inputs(hessians, edges, gradients, rhs, lower_rhs_blocks)
+            local_gradients = tuple(
+                (grad_a @ increment_maps[body_a], grad_b @ increment_maps[body_b])
+                for (body_a, body_b), (grad_a, grad_b) in zip(edges, gradients, strict=True)
+            )
+            inputs = assemble_topology_dual_inputs(hessians, edges, local_gradients, rhs, lower_rhs_blocks)
         dense = solve_dense_dual_kkt(inputs.H, inputs.J, inputs.f, lower_rhs=inputs.lower_rhs)
         dq = dense.dq
         dlambda = dense.dlambda
@@ -428,7 +458,12 @@ def _solve_constrained_step(
     else:
         raise ValueError("topology must be one of dense, auto, chain, tree, single_loop, or general_graph")
 
-    dq_blocks = tuple(dq[12 * body_id : 12 * body_id + 12] for body_id in range(len(q)))
+    local_dq_blocks = tuple(dq[12 * body_id : 12 * body_id + 12] for body_id in range(len(q)))
+    dq_blocks = tuple(
+        increment_map @ local_dq
+        for increment_map, local_dq in zip(increment_maps, local_dq_blocks, strict=True)
+    )
+    world_dq = np.concatenate(dq_blocks) if dq_blocks else np.zeros(0, dtype=float)
     q_next = tuple(body_q + body_dq for body_q, body_dq in zip(q, dq_blocks, strict=True))
     qd_next = tuple(body_dq / float(dt) for body_dq in dq_blocks)
     residual_after = [joint_residual(constraint.spec, q_next[int(constraint.body_a)], q_next[int(constraint.body_b)]) for constraint in config.constraints]
@@ -441,7 +476,7 @@ def _solve_constrained_step(
     return MABDCPUOracleStepResult(
         q=q_next,
         qd=qd_next,
-        dq=dq,
+        dq=world_dq,
         dlambda=dlambda,
         residual_norm=float(residual_norm),
         constraint_residual_norm=constraint_norm,
@@ -481,12 +516,13 @@ def solve_cpu_oracle_step(
     hessians, rhs = _step_body_systems(q_blocks, qd_blocks, dt_float, bodies, external_forces)
     if not tuple(config.constraints) and not tuple(config.world_constraints):
         return _unconstrained_step(q_blocks, dt_float, hessians, rhs, bodies)
-    _require_constrained_none_rotation(bodies)
-    world_rhs = tuple(
-        _world_material_rhs(body_q, body_rhs, body)
+    body_systems = tuple(
+        _body_solve_system(body_q, body_rhs, body)
         for body_q, body_rhs, body in zip(q_blocks, rhs, bodies, strict=True)
     )
-    return _solve_constrained_step(q_blocks, dt_float, hessians, world_rhs, config)
+    local_rhs = tuple(system[0] for system in body_systems)
+    increment_maps = tuple(system[1] for system in body_systems)
+    return _solve_constrained_step(q_blocks, dt_float, hessians, local_rhs, increment_maps, config)
 
 
 __all__ = [

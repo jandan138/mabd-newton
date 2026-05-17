@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add bounded CPU-oracle support for constrained M-ABD KKT solves with `rotation_mode = polar` and `rotation_mode = no_polar`.
+**Goal:** Add bounded CPU-oracle support for constrained M-ABD KKT solves with `rotation_mode = polar`, while keeping constrained `no_polar` explicitly unsupported.
 
-**Architecture:** Assemble constrained KKT systems in per-body solve coordinates. Body Hessians and RHS vectors stay in local solve frames; constraint gradients are transformed as `J_world @ increment_map`; solved local increments are mapped back to world affine increments before state updates.
+**Architecture:** Assemble dense constrained KKT systems in per-body solve coordinates. Body Hessians and RHS vectors stay in local solve frames; constraint gradients are transformed as `J_world @ increment_map`; solved local increments are mapped back to world affine increments before state updates. Rotated non-dense topology paths stay unsupported until they have independent tests.
 
 **Tech Stack:** Python 3.10, NumPy, vendored Newton M-ABD CPU oracle, YAML config parsing, `unittest`, canonical `mabd-newton-py310` environment.
 
@@ -12,7 +12,7 @@
 
 ## File Map
 
-- Modify `vendor/newton/newton/_src/solvers/mabd/step_oracle.py`: add per-body local-frame KKT assembly and remove the constrained-rotation rejection.
+- Modify `vendor/newton/newton/_src/solvers/mabd/step_oracle.py`: add dense per-body polar local-frame KKT assembly and replace the broad constrained-rotation rejection with no-polar and non-dense topology-specific rejections.
 - Modify `tests/test_mabd_phase4_solver_step.py`: replace rejection tests with behavioral red/green tests.
 - Modify `vendor/newton/newton/tests/test_mabd_phase4_solver_step.py`: keep vendored Newton tests in sync for provenance.
 - Modify `configs/experiments/single_body_physical_pendulum.yaml`: add `mabd_newton.rotation_mode: polar`.
@@ -20,7 +20,7 @@
 - Modify `src/mabd_reproduction/physical_pendulum_mabd.py`: allow the formal lane to pass `rotation_mode=polar`.
 - Modify `src/mabd_reproduction/physical_pendulum_reports.py`: record `mabd_rotation_mode` in the formal report.
 - Modify `tests/test_physical_pendulum_mabd.py`, `tests/test_experiment_run_configs.py`, `tests/test_experiment_runner.py`, and `tests/test_phase0_bootstrap.py`: cover the new report/config evidence.
-- Modify `docs/reference/claim-boundaries.md`, `docs/reference/paper-claims.yaml`, `scripts/validate_docs.py`, and add a Phase 38 record after implementation evidence exists.
+- Modify `docs/reference/claim-boundaries.md`, `scripts/validate_docs.py`, and add a Phase 38 record after implementation evidence exists. Do not modify `docs/reference/paper-claims.yaml`; Phase 38 does not change any paper-claim status.
 
 ## Task 1: Solver Red Tests
 
@@ -68,13 +68,21 @@ def test_constrained_cpu_step_supports_polar_world_anchor(self) -> None:
     self.assertEqual(result.topology, "dense")
 ```
 
-- [ ] **Step 2: Replace the no-polar rejection test**
+- [ ] **Step 2: Keep constrained no-polar rejection explicit**
 
 In `tests/test_mabd_phase4_solver_step.py`, replace
 `test_constrained_cpu_step_rejects_no_polar_until_rotated_kkt_exists` with:
 
 ```python
-def test_constrained_cpu_step_supports_no_polar_ball_joint(self) -> None:
+def test_constrained_cpu_step_rejects_no_polar_because_map_is_nonlinear(self) -> None:
+    stretch_shear = np.array(
+        [
+            [1.05, 0.08, 0.0],
+            [0.0, 0.97, 0.03],
+            [0.0, 0.0, 1.02],
+        ],
+        dtype=float,
+    )
     config = mabd.MABDCPUOracleConfig(
         bodies=[_body(rotation_mode="no_polar"), _body(rotation_mode="polar")],
         constraints=[
@@ -87,28 +95,49 @@ def test_constrained_cpu_step_supports_no_polar_ball_joint(self) -> None:
         topology="dense",
     )
 
-    result = mabd.solve_cpu_oracle_step(
-        q=[_identity_q((0.2, 0.0, 0.0)), _identity_q()],
-        qd=[np.zeros(12), np.zeros(12)],
-        dt=0.1,
-        config=config,
-    )
-
-    residual = mabd.joint_residual(
-        config.constraints[0].spec,
-        result.q[0],
-        result.q[1],
-    )
-    self.assertLess(np.linalg.norm(residual), 1.0e-10)
-    self.assertLess(result.constraint_residual_norm, 1.0e-10)
+    with self.assertRaisesRegex(NotImplementedError, "constrained.*no_polar"):
+        mabd.solve_cpu_oracle_step(
+            q=[mabd.pack_q(stretch_shear, np.array([0.2, 0.0, 0.0])), _identity_q()],
+            qd=[np.zeros(12), np.zeros(12)],
+            dt=0.1,
+            config=config,
+        )
 ```
 
-- [ ] **Step 3: Mirror the tests in vendored Newton**
+- [ ] **Step 3: Add non-dense rotated topology rejection**
+
+Add this test to both `tests/test_mabd_phase4_solver_step.py` and
+`vendor/newton/newton/tests/test_mabd_phase4_solver_step.py`:
+
+```python
+def test_constrained_cpu_step_rejects_polar_non_dense_topology_until_tested(self) -> None:
+    config = mabd.MABDCPUOracleConfig(
+        bodies=[_body(rotation_mode="polar"), _body()],
+        constraints=[
+            mabd.MABDCPUOracleConstraint(
+                body_a=0,
+                body_b=1,
+                spec=mabd.ball_joint(HINGE_CT, HINGE_CT),
+            )
+        ],
+        topology="chain",
+    )
+
+    with self.assertRaisesRegex(NotImplementedError, "rotated.*topology='dense'"):
+        mabd.solve_cpu_oracle_step(
+            q=[_identity_q((0.2, 0.0, 0.0)), _identity_q()],
+            qd=[np.zeros(12), np.zeros(12)],
+            dt=0.1,
+            config=config,
+        )
+```
+
+- [ ] **Step 4: Mirror the tests in vendored Newton**
 
 Apply the same two test replacements in
 `vendor/newton/newton/tests/test_mabd_phase4_solver_step.py`.
 
-- [ ] **Step 4: Run RED**
+- [ ] **Step 5: Run RED**
 
 Run:
 
@@ -116,7 +145,7 @@ Run:
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_phase4_solver_step
 ```
 
-Expected before implementation: failures because constrained polar/no-polar still raise `NotImplementedError`.
+Expected before implementation: failure because constrained dense polar still raises `NotImplementedError`; constrained no-polar should keep raising; polar non-dense should raise with the old broad message instead of the new topology-specific message.
 
 ## Task 2: Local-Frame KKT Implementation
 
@@ -125,13 +154,8 @@ Expected before implementation: failures because constrained polar/no-polar stil
 In `vendor/newton/newton/_src/solvers/mabd/step_oracle.py`, add helpers near `_world_material_rhs`:
 
 ```python
-def _linear_map_from_operator(operator: Any) -> np.ndarray:
-    columns = []
-    for basis_index in range(12):
-        basis = np.zeros(12, dtype=float)
-        basis[basis_index] = 1.0
-        columns.append(np.asarray(operator(basis), dtype=float))
-    return np.column_stack(columns)
+def _polar_increment_map(A: np.ndarray) -> np.ndarray:
+    return np.kron(np.eye(4), polar_rotation(A))
 
 
 def _body_solve_system(
@@ -148,17 +172,14 @@ def _body_solve_system(
         local_rhs = apply_polar_rhs_rotation(A, inertial_external_rhs) - body.precompute.stiffness_matrix @ (
             local_q - _body_rest_q(body)
         )
-        increment_map = _linear_map_from_operator(
-            lambda local_delta: apply_polar_increment_rotation(A, local_delta)
-        )
+        increment_map = _polar_increment_map(A)
         return local_rhs, increment_map
 
     if body.rotation_mode == "no_polar":
-        local_rhs = _affine_only_no_polar_rhs(A, _world_material_rhs(body_q, inertial_external_rhs, body))
-        increment_map = _linear_map_from_operator(
-            lambda local_delta: _affine_only_no_polar_increment(A, local_delta)
+        raise NotImplementedError(
+            "constrained CPU oracle no_polar KKT is unsupported because the current "
+            "no-polar normalization increment is nonlinear"
         )
-        return local_rhs, increment_map
 
     raise ValueError("rotation_mode must be one of 'none', 'polar', or 'no_polar'")
 ```
@@ -176,23 +197,21 @@ row[:, dim * body_b : dim * body_b + dim] = grad_b @ increment_maps[body_b]
 row[:, dim * body : dim * body + dim] = gradient @ increment_maps[body]
 ```
 
-- [ ] **Step 3: Thread increment maps through topology body constraints**
+- [ ] **Step 3: Reject rotated non-dense topology paths**
 
-Before calling `assemble_topology_dual_inputs` or topology-specific solvers,
-build transformed body gradients:
+In `_solve_constrained_step`, after resolving `topology`, reject rotated
+non-dense paths before calling topology solvers:
 
 ```python
-local_gradients = tuple(
-    (grad_a @ increment_maps[body_a], grad_b @ increment_maps[body_b])
-    for (body_a, body_b), (grad_a, grad_b) in zip(edges, gradients, strict=True)
-)
+has_rotated_body = any(not np.allclose(increment_map, np.eye(12)) for increment_map in increment_maps)
+if has_rotated_body and topology != "dense":
+    raise NotImplementedError("constrained rotated CPU oracle steps require topology='dense'")
 ```
 
-Use `local_gradients` for `assemble_topology_dual_inputs`,
-`solve_chain_block_tridiagonal_kkt`, `solve_tree_elimination_kkt`,
-`solve_loop_schur_complement_kkt`, and `solve_graph_block_gauss_seidel_kkt`.
+Do not thread polar gradients into chain/tree/loop/graph solvers in Phase 38;
+that needs separate topology evidence.
 
-- [ ] **Step 4: Remove the constrained rotation rejection**
+- [ ] **Step 4: Replace the broad constrained rotation rejection**
 
 In `solve_cpu_oracle_step`, replace:
 
@@ -223,6 +242,9 @@ return _solve_constrained_step(
     config,
 )
 ```
+
+Leave `_require_constrained_none_rotation` deleted or unused only if no caller
+still references it; do not keep dead rejection code.
 
 - [ ] **Step 5: Map solved local increments back to world increments**
 
@@ -342,22 +364,41 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 
 Expected: pass.
 
-- [ ] **Step 6: Regenerate reports**
+- [ ] **Step 6: Commit code/config/tests before report regeneration**
+
+After code/config/report writers and focused tests pass, commit them before
+regenerating committed reports:
+
+```bash
+git add vendor/newton/newton/_src/solvers/mabd/step_oracle.py tests/test_mabd_phase4_solver_step.py vendor/newton/newton/tests/test_mabd_phase4_solver_step.py configs/experiments/single_body_physical_pendulum.yaml src/mabd_reproduction/experiment_configs.py src/mabd_reproduction/physical_pendulum_mabd.py src/mabd_reproduction/physical_pendulum_reports.py tests/test_experiment_run_configs.py tests/test_physical_pendulum_mabd.py tests/test_experiment_runner.py
+git commit -m "Support constrained polar MABD CPU KKT"
+```
+
+- [ ] **Step 7: Regenerate reports with real provenance**
+
+Set:
+
+```bash
+SOURCE_COMMIT=$(git rev-parse --short HEAD)
+VENDORED_NEWTON_COMMIT=96713fa965463b69c229a4d30582c733ff3526bb
+```
+
+Then run:
 
 Run:
 
 ```bash
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --config configs/experiments/single_body_physical_pendulum.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --lane physical_pendulum_mabd_newton --output reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json --source-commit HEAD --vendored-newton-commit phase38-local
-PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --config configs/experiments/single_body_physical_pendulum.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --lane physical_pendulum_comparison --output reports/experiment_matrix/single_body_physical_pendulum_comparison.json --analytic-report reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json --mabd-report reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json --rbd-report reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json --source-commit HEAD --vendored-newton-commit phase38-local
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --config configs/experiments/single_body_physical_pendulum.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --lane physical_pendulum_mabd_newton --output reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json --source-commit "$SOURCE_COMMIT" --vendored-newton-commit "$VENDORED_NEWTON_COMMIT"
+PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --config configs/experiments/single_body_physical_pendulum.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --lane physical_pendulum_comparison --output reports/experiment_matrix/single_body_physical_pendulum_comparison.json --analytic-report reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json --mabd-report reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json --rbd-report reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json --source-commit "$SOURCE_COMMIT" --vendored-newton-commit "$VENDORED_NEWTON_COMMIT"
 ```
 
 Expected: both reports are written and remain `incomplete`.
 
-- [ ] **Step 7: Commit lane evidence**
+- [ ] **Step 8: Commit regenerated reports**
 
 ```bash
-git add configs/experiments/single_body_physical_pendulum.yaml src/mabd_reproduction/experiment_configs.py src/mabd_reproduction/physical_pendulum_mabd.py src/mabd_reproduction/physical_pendulum_reports.py tests/test_experiment_run_configs.py tests/test_physical_pendulum_mabd.py tests/test_experiment_runner.py reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json reports/experiment_matrix/single_body_physical_pendulum_comparison.json
-git commit -m "Record constrained rotated physical pendulum MABD lane"
+git add reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json reports/experiment_matrix/single_body_physical_pendulum_comparison.json
+git commit -m "Regenerate physical pendulum constrained polar reports"
 ```
 
 ## Task 4: Phase 38 Docs And Gates
@@ -384,8 +425,17 @@ in `main()`. Verify:
 
 - Phase 38 record exists;
 - claim boundary has the Phase 38 current/verified/non-claim text;
+- physical-pendulum MABD report has `status = incomplete`;
 - physical-pendulum MABD report has `observed.mabd_rotation_mode = polar`;
+- physical-pendulum MABD report has `observed.full_experiment_claim_passed = false`;
+- physical-pendulum MABD report has `expected.full_experiment_claim_passed = false`;
+- physical-pendulum MABD report `blocking_reasons` still include
+  `pendulum_geometry_unknown`, `joint_force_waveform_agreement_missing`, and
+  `paper_timing_missing`;
 - physical-pendulum comparison remains `status = incomplete`;
+- physical-pendulum comparison
+  `paper_metric_statuses.joint_force_error.status =
+  diagnostic_reaction_not_paper_waveform`;
 - `paper-claims.yaml` still has `experiment.single_body.physical_pendulum`
   as `intended`.
 
@@ -416,7 +466,7 @@ Expected: both pass and validator prints Phase 0-38.
 - [ ] **Step 5: Commit docs**
 
 ```bash
-git add docs/reference/claim-boundaries.md docs/reference/paper-claims.yaml docs/records/2026-05-17-phase38-constrained-rotated-kkt.md scripts/validate_docs.py tests/test_phase0_bootstrap.py
+git add docs/reference/claim-boundaries.md docs/records/2026-05-17-phase38-constrained-rotated-kkt.md scripts/validate_docs.py tests/test_phase0_bootstrap.py
 git commit -m "Record Phase 38 constrained rotated KKT"
 ```
 

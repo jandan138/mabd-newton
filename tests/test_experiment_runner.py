@@ -416,6 +416,7 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.backend, "cpu_numpy_newton_only")
         self.assertEqual(loaded.observed["lane_status"], "incomplete_diagnostic_generated")
         self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(loaded.observed["mabd_rotation_mode"], "polar")
         self.assertIn("max_phase_drift_rad", loaded.observed)
         self.assertIn("max_world_anchor_reaction_magnitude_n", loaded.observed)
         self.assertIn("world_anchor_reaction_vector_n", loaded.observed["angle_samples_rad"][-1])

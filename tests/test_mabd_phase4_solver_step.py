@@ -358,7 +358,73 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertTrue(np.allclose(result.qd[0][9:12], qd[9:12], atol=1.0e-12))
         self.assertTrue(np.allclose(result.q[0][9:12], q[9:12] + dt * qd[9:12], atol=1.0e-12))
 
-    def test_constrained_cpu_step_rejects_polar_until_rotated_kkt_exists(self) -> None:
+    def test_constrained_cpu_step_supports_polar_world_anchor(self) -> None:
+        theta = 0.31
+        R = np.array(
+            [
+                [np.cos(theta), -np.sin(theta), 0.0],
+                [np.sin(theta), np.cos(theta), 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=float,
+        )
+        q = mabd.pack_q(R, np.array([0.2, -0.1, 0.05]))
+        rest_point = np.array([0.4, -0.2, 0.1], dtype=float)
+        world_point = mabd.point_jacobian(rest_point) @ q
+        world_point += np.array([0.03, -0.02, 0.01], dtype=float)
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[np.zeros(12)],
+            dt=0.05,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body(rotation_mode="polar")],
+                world_constraints=[
+                    mabd.MABDCPUOracleWorldConstraint(
+                        body=0,
+                        rest_point=rest_point,
+                        world_point=world_point,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+
+        pinned = mabd.point_jacobian(rest_point) @ result.q[0]
+        self.assertLess(result.constraint_residual_norm, 1.0e-10)
+        self.assertTrue(np.allclose(pinned, world_point, atol=1.0e-10))
+        self.assertEqual(result.topology, "dense")
+
+    def test_constrained_cpu_step_rejects_no_polar_because_map_is_nonlinear(self) -> None:
+        stretch_shear = np.array(
+            [
+                [1.05, 0.08, 0.0],
+                [0.0, 0.97, 0.03],
+                [0.0, 0.0, 1.02],
+            ],
+            dtype=float,
+        )
+        config = mabd.MABDCPUOracleConfig(
+            bodies=[_body(rotation_mode="no_polar"), _body(rotation_mode="polar")],
+            constraints=[
+                mabd.MABDCPUOracleConstraint(
+                    body_a=0,
+                    body_b=1,
+                    spec=mabd.ball_joint(HINGE_CT, HINGE_CT),
+                )
+            ],
+            topology="dense",
+        )
+
+        with self.assertRaisesRegex(NotImplementedError, "constrained.*no_polar"):
+            mabd.solve_cpu_oracle_step(
+                q=[mabd.pack_q(stretch_shear, np.array([0.2, 0.0, 0.0])), _identity_q()],
+                qd=[np.zeros(12), np.zeros(12)],
+                dt=0.1,
+                config=config,
+            )
+
+    def test_constrained_cpu_step_rejects_polar_non_dense_topology_until_tested(self) -> None:
         config = mabd.MABDCPUOracleConfig(
             bodies=[_body(rotation_mode="polar"), _body()],
             constraints=[
@@ -368,31 +434,10 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
                     spec=mabd.ball_joint(HINGE_CT, HINGE_CT),
                 )
             ],
-            topology="dense",
+            topology="chain",
         )
 
-        with self.assertRaisesRegex(NotImplementedError, "constrained.*rotation_mode='none'"):
-            mabd.solve_cpu_oracle_step(
-                q=[_identity_q((0.2, 0.0, 0.0)), _identity_q()],
-                qd=[np.zeros(12), np.zeros(12)],
-                dt=0.1,
-                config=config,
-            )
-
-    def test_constrained_cpu_step_rejects_no_polar_until_rotated_kkt_exists(self) -> None:
-        config = mabd.MABDCPUOracleConfig(
-            bodies=[_body(rotation_mode="no_polar"), _body()],
-            constraints=[
-                mabd.MABDCPUOracleConstraint(
-                    body_a=0,
-                    body_b=1,
-                    spec=mabd.ball_joint(HINGE_CT, HINGE_CT),
-                )
-            ],
-            topology="dense",
-        )
-
-        with self.assertRaisesRegex(NotImplementedError, "constrained.*rotation_mode='none'"):
+        with self.assertRaisesRegex(NotImplementedError, "rotated.*topology='dense'"):
             mabd.solve_cpu_oracle_step(
                 q=[_identity_q((0.2, 0.0, 0.0)), _identity_q()],
                 qd=[np.zeros(12), np.zeros(12)],

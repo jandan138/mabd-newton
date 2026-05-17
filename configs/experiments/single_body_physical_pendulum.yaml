@@ -45,6 +45,7 @@ mabd_development:
     max_constraint_residual_norm: 1.0e-10
     max_abs_angle_error_rad: 2.0
 mabd_newton:
+  rotation_mode: polar
   output_report: reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json
   thresholds:
     max_abs_angle_error_rad: 2.0

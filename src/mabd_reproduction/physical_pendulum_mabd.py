@@ -33,6 +33,7 @@ class PhysicalPendulumMABDRollout:
     step_count: int
     sample_count: int
     time_step_s: float
+    rotation_mode: str
     max_pivot_residual_m: float
     max_constraint_residual_norm: float
     max_abs_angle_error_rad: float
@@ -68,7 +69,11 @@ def _sample_steps(step_count: int, sample_count: int) -> tuple[int, ...]:
 
 def roll_out_physical_pendulum_mabd_development(
     config: PhysicalPendulumRunConfig,
+    *,
+    rotation_mode: str = "none",
 ) -> PhysicalPendulumMABDRollout:
+    if rotation_mode not in {"none", "polar"}:
+        raise ValueError("physical pendulum MABD rollout supports rotation_mode none or polar")
     lane = config.mabd_development
     body = mabd.MABDCPUOracleBody(
         precompute=mabd.SingleBodyABDPrecompute.from_points(
@@ -76,7 +81,7 @@ def roll_out_physical_pendulum_mabd_development(
             lane.masses_kg,
         ),
         rest_q=lane.initial_q,
-        rotation_mode="none",
+        rotation_mode=rotation_mode,
     )
     world_constraint = mabd.MABDCPUOracleWorldConstraint(
         body=0,
@@ -170,6 +175,7 @@ def roll_out_physical_pendulum_mabd_development(
         step_count=lane.step_count,
         sample_count=len(samples),
         time_step_s=lane.time_step_s,
+        rotation_mode=rotation_mode,
         max_pivot_residual_m=max_pivot_residual,
         max_constraint_residual_norm=max_constraint_residual,
         max_abs_angle_error_rad=max_abs_angle_error,

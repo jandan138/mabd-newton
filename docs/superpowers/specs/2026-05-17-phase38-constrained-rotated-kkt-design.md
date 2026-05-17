@@ -22,9 +22,8 @@ Current evidence:
 
 Conclusion: the full objective is not achieved. The next concrete blocker is
 inside the solver path: constrained CPU-oracle steps reject
-`rotation_mode = polar` and `rotation_mode = no_polar`, which prevents pivoted
-or jointed scenes from using the paper-facing co-rotated or no-polar single-body
-material lanes.
+`rotation_mode = polar`, which prevents pivoted or jointed scenes from using
+the paper-facing co-rotated single-body material lane.
 
 ## Problem
 
@@ -33,26 +32,34 @@ material lanes.
 This rejects any constrained body whose `MABDCPUOracleBody.rotation_mode` is
 `polar` or `no_polar`.
 
-Unconstrained bodies already support these modes by solving in a local rotated
-frame and mapping the increment back to the world-frame affine state. The
-constrained path needs the same coordinate-frame discipline for KKT assembly.
+Unconstrained `polar` bodies already solve in a local rotated frame and map the
+increment back to the world-frame affine state. The constrained path needs the
+same coordinate-frame discipline for KKT assembly.
+
+Unconstrained `no_polar` uses normalization helpers that are not a linear
+increment map for non-orthogonal `A`. Phase 38 therefore keeps constrained
+`no_polar` explicitly unsupported instead of forcing it into a KKT coordinate
+transform that would not preserve virtual work.
 
 ## Scope
 
 Phase 38 implements CPU-oracle support for constrained bodies with
-`rotation_mode in {"none", "polar", "no_polar"}`.
+`rotation_mode in {"none", "polar"}`.
 
 It covers:
 
 - dense constrained KKT with body-body constraints;
 - dense constrained KKT with world-anchor constraints;
-- topology solvers receiving local-frame gradients for body-body constraints;
+- explicit rejection for constrained rotated modes outside `topology = dense`;
+- explicit rejection coverage for constrained `no_polar`;
 - report-level evidence that the physical-pendulum `mabd_newton` lane can
   exercise the constrained rotated path.
 
 It does not cover:
 
 - Warp/CUDA kernels;
+- chain/tree/loop/general-graph topology solvers with rotated constrained
+  bodies;
 - paper ABD-ABA performance;
 - paper-faithful physical-pendulum geometry;
 - paper joint-force waveform agreement;
@@ -66,8 +73,8 @@ Each constrained solve assembles KKT unknowns in a per-body solve frame:
 - `none`: local increment is the world increment.
 - `polar`: local increment is the increment used by
   `apply_polar_increment_rotation(A, local_delta)`.
-- `no_polar`: local increment is the increment used by
-  `apply_no_polar_increment_rotation(A, local_delta)`.
+Constrained `no_polar` is rejected before KKT assembly because its current
+normalizing increment helper is nonlinear for general affine states.
 
 For each body, the solver builds:
 
@@ -119,7 +126,8 @@ Required checks:
 ## Claim Boundary
 
 Phase 38 may claim only that constrained CPU-oracle KKT supports local-frame
-polar and no-polar solve coordinates under unit and report tests.
+polar solve coordinates for dense CPU KKT under unit and report tests, while
+constrained `no_polar` and non-dense rotated topologies remain unsupported.
 
 Phase 38 must not claim:
 

@@ -82,6 +82,7 @@ class PhysicalPendulumMABDDevelopmentConfig:
 
 @dataclass(frozen=True)
 class PhysicalPendulumMABDNewtonConfig:
+    rotation_mode: str
     output_report: str
     thresholds: dict[str, float]
 
@@ -167,6 +168,7 @@ PHYSICAL_PENDULUM_MABD_NEWTON_THRESHOLD_KEYS = frozenset(
         "max_world_anchor_reaction_magnitude_n",
     }
 )
+PHYSICAL_PENDULUM_MABD_NEWTON_ROTATION_MODES = frozenset({"polar"})
 PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS = frozenset(
     {
         "max_abs_angle_error_rad",
@@ -497,6 +499,9 @@ def _require_physical_pendulum_mabd_newton(
     data: dict[str, Any],
 ) -> PhysicalPendulumMABDNewtonConfig:
     mabd_newton = _require_mapping(data, "mabd_newton")
+    rotation_mode = _require_str(mabd_newton, "rotation_mode")
+    if rotation_mode not in PHYSICAL_PENDULUM_MABD_NEWTON_ROTATION_MODES:
+        raise ExperimentRunConfigError("mabd_newton.rotation_mode must be polar")
     thresholds = _require_float_mapping(mabd_newton, "thresholds")
     missing = sorted(PHYSICAL_PENDULUM_MABD_NEWTON_THRESHOLD_KEYS - set(thresholds))
     if missing:
@@ -504,6 +509,7 @@ def _require_physical_pendulum_mabd_newton(
             "mabd_newton.thresholds missing required keys: " + ", ".join(missing)
         )
     return PhysicalPendulumMABDNewtonConfig(
+        rotation_mode=rotation_mode,
         output_report=_require_str(mabd_newton, "output_report"),
         thresholds=thresholds,
     )

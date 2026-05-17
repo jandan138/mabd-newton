@@ -231,6 +231,7 @@ def write_physical_pendulum_mabd_development_report(
         "step_count": rollout.step_count,
         "sample_count": rollout.sample_count,
         "time_step_s": rollout.time_step_s,
+        "mabd_rotation_mode": rollout.rotation_mode,
         "max_pivot_residual_m": rollout.max_pivot_residual_m,
         "max_constraint_residual_norm": rollout.max_constraint_residual_norm,
         "max_abs_angle_error_rad": rollout.max_abs_angle_error_rad,
@@ -254,6 +255,7 @@ def write_physical_pendulum_mabd_development_report(
             "paper_claim_status": "development diagnostic only; full experiment incomplete",
             "source_lines": list(config.source_lines),
             "paper_values": config.paper_values,
+            "mabd_rotation_mode": rollout.rotation_mode,
             "world_anchor_constraint": {
                 "pivot_rest_point_m": config.mabd_development.pivot_rest_point_m.tolist(),
                 "pivot_world_point_m": config.mabd_development.pivot_world_point_m.tolist(),
@@ -293,7 +295,10 @@ def write_physical_pendulum_mabd_newton_report(
     vendored_newton_commit: str,
     paper_source_version: str = "2603.08079v2",
 ) -> ClaimReport:
-    rollout = roll_out_physical_pendulum_mabd_development(config)
+    rollout = roll_out_physical_pendulum_mabd_development(
+        config,
+        rotation_mode=config.mabd_newton.rotation_mode,
+    )
     thresholds = config.mabd_newton.thresholds
     threshold_violations: list[str] = []
     if rollout.max_pivot_residual_m > thresholds["max_pivot_residual_m"]:
@@ -323,6 +328,7 @@ def write_physical_pendulum_mabd_newton_report(
         "step_count": rollout.step_count,
         "sample_count": rollout.sample_count,
         "time_step_s": rollout.time_step_s,
+        "mabd_rotation_mode": rollout.rotation_mode,
         "max_pivot_residual_m": rollout.max_pivot_residual_m,
         "max_constraint_residual_norm": rollout.max_constraint_residual_norm,
         "max_abs_angle_error_rad": rollout.max_abs_angle_error_rad,
@@ -348,6 +354,7 @@ def write_physical_pendulum_mabd_newton_report(
             "paper_claim_status": "formal M-ABD lane generated; full experiment incomplete",
             "source_lines": list(config.source_lines),
             "paper_values": config.paper_values,
+            "mabd_rotation_mode": config.mabd_newton.rotation_mode,
             "world_anchor_constraint": {
                 "pivot_rest_point_m": config.mabd_development.pivot_rest_point_m.tolist(),
                 "pivot_world_point_m": config.mabd_development.pivot_world_point_m.tolist(),

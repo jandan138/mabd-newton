@@ -154,6 +154,7 @@ class ExperimentRunConfigTests(unittest.TestCase):
             config.mabd_newton.output_report,
             "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
         )
+        self.assertEqual(config.mabd_newton.rotation_mode, "polar")
         self.assertIn("max_abs_angle_error_rad", config.mabd_newton.thresholds)
         self.assertIn("max_constraint_residual_norm", config.mabd_newton.thresholds)
         self.assertIn("max_phase_drift_rad", config.mabd_newton.thresholds)
@@ -255,6 +256,16 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(source), encoding="utf-8")
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.thresholds"):
+                load_physical_pendulum_config(path)
+
+    def test_physical_pendulum_config_rejects_mabd_newton_bad_rotation_mode(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_newton"]["rotation_mode"] = "no_polar"
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.rotation_mode"):
                 load_physical_pendulum_config(path)
 
     def test_physical_pendulum_config_rejects_bad_rbd_baseline_length(self) -> None:
