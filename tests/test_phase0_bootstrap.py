@@ -3163,6 +3163,62 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("sha256 mismatch", str(context.exception))
 
+    def test_phase44_solver_model_config_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 44")
+        verified = claim_boundary_bullet(text, "Phase 44 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 44 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 44 model-derived SolverMABD CPU config")
+
+        self.assertIn("SolverMABD model-derived CPU body-config integration", current)
+        self.assertIn("model-derived `SolverMABD.step()`", verified)
+        self.assertIn("registered `mabd:body` rows", verified)
+        self.assertIn("`mabd:rest_point0`", verified)
+        self.assertIn("model `mabd:control` rows", verified)
+        self.assertIn("manual `configure_cpu_oracle(...)`", verified)
+        self.assertIn("`notify_model_changed()`", verified)
+        self.assertIn("model-derived `mabd:constraint` rows", non_claim)
+        self.assertIn("Newton `Control` input", non_claim)
+        self.assertIn("GPU/Warp kernels", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+        self.assertIn("not a passed paper experiment", forbidden)
+        self.assertIn("not a model-derived joint/constraint implementation", forbidden)
+        self.assertIn("not a GPU/Warp solver", forbidden)
+
+    def test_phase44_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-18-phase44-solver-model-config.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_solver_model_config_slice",
+            "## Repository",
+            "phase44-solver-model-config",
+            "ddd2696fbbc958b5f313dd40ee49b27e9b89b454",
+            "0e506bf9a0e53d74a06eb55d8c093909e3a72f8d",
+            "## Environment",
+            "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+            "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python",
+            "same package set except editable project root",
+            "## Implementation Evidence",
+            "model-derived `SolverMABD.step()`",
+            "`mabd:rest_point0`",
+            "`mabd:point_mass0`",
+            "`mabd:volume`",
+            "`mabd:control` rows",
+            "`mabd:constraint` rows are rejected",
+            "manual `configure_cpu_oracle(...)`",
+            "`notify_model_changed()`",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_phase4_solver_step tests.test_mabd_single_body tests.test_mabd_control_forces tests.test_mabd_phase2_joints_kkt tests.test_mabd_phase3_topology_solvers",
+            "Ran 82 tests",
+            "OK",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "not a full paper reproduction",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE44", text)
+        self.assertNotIn("phase44-working-tree", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -3194,7 +3250,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

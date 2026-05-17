@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-43 docs and provenance contracts."""
+"""Validate Phase 0-44 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -94,6 +94,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase41-physical-pendulum-geometry-source-audit.md",
     "docs/records/2026-05-17-phase42-spinning-box-report-artifacts.md",
     "docs/records/2026-05-18-phase43-t-handle-rk4-reference.md",
+    "docs/records/2026-05-18-phase44-solver-model-config.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -118,6 +119,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-17-mabd-phase42-spinning-box-report-artifacts.md",
     "docs/superpowers/specs/2026-05-18-phase43-t-handle-rk4-reference-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase43-t-handle-rk4-reference.md",
+    "docs/superpowers/specs/2026-05-18-phase44-solver-model-config-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase44-solver-model-config.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -166,6 +169,7 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase41-working-tree",
     "phase42-working-tree",
     "phase43-working-tree",
+    "phase44-working-tree",
     "pending branch-local",
     "<implementation-commit>",
     "TO_BE_BACKFILLED_PHASE39",
@@ -173,6 +177,7 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "TO_BE_BACKFILLED_PHASE41",
     "TO_BE_BACKFILLED_PHASE42",
     "TO_BE_BACKFILLED_PHASE43",
+    "TO_BE_BACKFILLED_PHASE44",
 }
 
 
@@ -5559,6 +5564,180 @@ def validate_phase43_record() -> None:
             fail(f"Phase 43 matrix blocker missing: {blocker}")
 
 
+def _pip_freeze_without_editable(python: Path, context: str) -> list[str]:
+    result = subprocess.run(
+        [str(python), "-m", "pip", "freeze", "--local"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        fail(f"{context} pip freeze failed: {result.stderr.strip()}")
+    return sorted(
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip() and not line.startswith("-e ")
+    )
+
+
+def validate_phase44_model_path_smoke() -> None:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"
+    code = r"""
+import numpy as np
+import warp as wp
+
+import newton
+from newton.solvers import SolverMABD
+
+builder = newton.ModelBuilder()
+SolverMABD.register_custom_attributes(builder)
+body_id = builder.add_body()
+builder.add_custom_values(
+    **{
+        "mabd:body_index": body_id,
+        "mabd:young_modulus": 1.0,
+        "mabd:poisson_ratio": 0.25,
+        "mabd:density": 1.0,
+        "mabd:polar_mode": 0,
+        "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+        "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+        "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+        "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+        "mabd:point_mass0": -1.0,
+        "mabd:point_mass1": -1.0,
+        "mabd:point_mass2": -1.0,
+        "mabd:point_mass3": -1.0,
+        "mabd:volume": -1.0,
+    }
+)
+model = builder.finalize()
+state_in = model.state()
+state_out = model.state()
+solver = SolverMABD(model)
+solver.step(state_in, state_out, None, None, 0.01)
+if solver.cpu_oracle_config is not None:
+    raise SystemExit("manual config unexpectedly populated")
+if solver.model_cpu_oracle_config is None:
+    raise SystemExit("model-derived config was not cached")
+if solver.last_step_result is None:
+    raise SystemExit("missing last_step_result")
+if solver.last_step_result.topology != "unconstrained":
+    raise SystemExit(f"unexpected topology {solver.last_step_result.topology}")
+if len(solver.model_cpu_oracle_config.bodies) != 1:
+    raise SystemExit("model-derived config body count changed")
+if not np.isclose(float(solver.model_cpu_oracle_config.bodies[0].precompute.masses.sum()), 1.0 / 6.0):
+    raise SystemExit("model-derived tetrahedron density mass changed")
+solver.notify_model_changed(0)
+if solver.model_cpu_oracle_config is not None:
+    raise SystemExit("notify_model_changed did not clear model config cache")
+"""
+    result = subprocess.run(
+        [str(MABD_PYTHON), "-c", code],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        fail("Phase 44 model-derived SolverMABD smoke failed: " + result.stderr.strip())
+
+
+def validate_phase44_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase44-solver-model-config.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed_for_solver_model_config_slice",
+        "## Repository",
+        "phase44-solver-model-config",
+        "ddd2696fbbc958b5f313dd40ee49b27e9b89b454",
+        "0e506bf9a0e53d74a06eb55d8c093909e3a72f8d",
+        "## Environment",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+        "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python",
+        "same package set except editable project root",
+        "## Implementation Evidence",
+        "model-derived `SolverMABD.step()`",
+        "`mabd:rest_point0`",
+        "`mabd:point_mass0`",
+        "`mabd:volume`",
+        "`mabd:control` rows",
+        "`mabd:constraint` rows are rejected",
+        "manual `configure_cpu_oracle(...)`",
+        "`notify_model_changed()`",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_phase4_solver_step tests.test_mabd_single_body tests.test_mabd_control_forces tests.test_mabd_phase2_joints_kkt tests.test_mabd_phase3_topology_solvers",
+        "Ran 82 tests",
+        "OK",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "not a full paper reproduction",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 44 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE44",
+        "phase44-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 44 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "full paper reproduction complete",
+        "experiment.* claim is passed",
+        "paper experiment passed",
+        "model-derived constraints are implemented",
+        "contacts are implemented",
+        "gpu solver passed",
+        "warp solver passed",
+        "runtime performance reproduced",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 44 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 44 SolverMABD model-derived CPU body-config",
+        "Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration",
+        "`mabd:rest_point0`",
+        "`mabd:point_mass0`",
+        "`mabd:volume`",
+        "model `mabd:control` rows",
+        "manual `configure_cpu_oracle(...)` support",
+        "`notify_model_changed()`",
+        "Phase 44 does not verify model-derived `mabd:constraint` rows",
+        "Newton `Control` input",
+        "GPU/Warp kernels",
+        "any passed `experiment.*` claim",
+        "Phase 44 model-derived SolverMABD CPU config",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 44 claim boundary missing: {snippet}")
+
+    reference_python = Path(
+        "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
+    )
+    if not reference_python.exists():
+        fail("Phase 44 reference physics-primitive-agent Python is missing")
+    if not MABD_PYTHON.exists():
+        fail("Phase 44 canonical mabd-newton Python is missing")
+    reference_packages = _pip_freeze_without_editable(reference_python, "Phase 44 reference env")
+    current_packages = _pip_freeze_without_editable(MABD_PYTHON, "Phase 44 current env")
+    if reference_packages != current_packages:
+        fail("Phase 44 environment package set differs from reference after editable roots")
+
+    validate_phase44_model_path_smoke()
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -5818,13 +5997,14 @@ def main() -> int:
     validate_phase41_record()
     validate_phase42_record()
     validate_phase43_record()
+    validate_phase44_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44 "
         "docs/provenance validation passed"
     )
     return 0

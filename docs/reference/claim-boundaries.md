@@ -561,6 +561,20 @@
   T-handle geometry, raw figure curve agreement, M-ABD T-handle lane pass,
   ABD-vs-RBD comparison, rendered output, runtime performance, generated videos
   or raw simulation logs, or any passed `experiment.*` claim.
+- This repository contains Phase 44 SolverMABD model-derived CPU body-config
+  integration evidence after the Phase 44 record is created.
+- Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
+  from registered `mabd:body` rows, including `mabd:rest_point0` through
+  `mabd:rest_point3`, `mabd:point_mass0` through `mabd:point_mass3`,
+  `mabd:volume`, positive density-derived mass defaults, explicit point-mass
+  overrides, model `mabd:control` rows, continued manual
+  `configure_cpu_oracle(...)` support, and model-cache invalidation through
+  `notify_model_changed()`.
+- Phase 44 does not verify model-derived `mabd:constraint` rows, Newton
+  `Contacts`, Newton `Control` input, GPU/Warp kernels, paper scene assets,
+  paper timing, comparative baselines, rendered output, generated videos or raw
+  simulation logs, a full paper reproduction, or any passed `experiment.*`
+  claim.
 
 ## Forbidden Claims
 
@@ -629,6 +643,10 @@
   paper-faithful T-handle geometry reconstruction, raw curve agreement, M-ABD
   lane pass, comparison pass gate, rendered result, runtime performance
   reproduction, or any passed `experiment.*` claim.
+- Phase 44 model-derived SolverMABD CPU config is not a passed paper
+  experiment, not a model-derived joint/constraint implementation, not a
+  contact implementation, not a GPU/Warp solver, not a paper scene or timing
+  reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
