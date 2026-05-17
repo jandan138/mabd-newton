@@ -36,8 +36,15 @@ comparison report remains `incomplete`.
 - plan commit: `080f4908c9a16f5e707a1175ceb33c4e7bda8c2d`
 - implementation commit: `434bdeab71a024277311bfc0925eb9b09630bf41`
 - implementation commit: `57c8365262f12fd4f026da14163f493c60a86974`
+- review hardening commit: `c116a6fc1e499f99ab69aafc0c8c997930d14469`
 - docs/provenance commit: `27a305329df473bc4c30f63ad7e36f058e3e3a6f`
-- independent review: pending before merge.
+- independent review: source/numerics review found a medium issue where finite
+  scalar or vector inputs could produce non-finite comparison differences and
+  write `Infinity` to JSON. The review hardening commit omits non-finite
+  difference fields. docs/provenance review found stale final-provenance
+  expectations, a pending independent-review placeholder, and loose
+  environment evidence gates; this disposition records the reviews and hardens
+  the Phase 23 record gates.
 
 ## Vendored Newton
 
@@ -63,6 +70,11 @@ comparison report remains `incomplete`.
 - readiness check:
   `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py`
 - readiness status: `smoke_passed`
+- readiness JSON output: branch-gate stdout, not committed.
+- clone drift command:
+  `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m pip freeze`
+  compared with
+  `/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python -m pip freeze`
 - clone drift check: `pip freeze` differs from
   `physics-primitive-newton-py310` only by the editable project line,
   `primitive_collision_compiler` versus `mabd_newton`.
@@ -133,7 +145,21 @@ KeyError: 'invalid_required_vector_metrics'
 Comparison GREEN result:
 
 ```text
-comparison tests: Ran 4 tests, OK
+comparison tests: Ran 5 tests, OK
+ruff: All checks passed!
+git diff --check: exit 0
+```
+
+Review hardening RED result:
+
+```text
+AssertionError: 'Infinity' unexpectedly found
+```
+
+Review hardening GREEN result:
+
+```text
+comparison tests: Ran 5 tests, OK
 ruff: All checks passed!
 git diff --check: exit 0
 ```
