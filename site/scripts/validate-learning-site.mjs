@@ -130,6 +130,16 @@ if (layout === null) {
   issues.push("LearnLayout.astro missing claim-boundary banner");
 }
 
+const deployWorkflow = readIfExists("../.github/workflows/deploy-learning-site.yml");
+if (deployWorkflow === null) {
+  issues.push("missing .github/workflows/deploy-learning-site.yml");
+} else if (
+  deployWorkflow.includes("actions/configure-pages@v5")
+  && !/enablement:\s*true/.test(deployWorkflow)
+) {
+  issues.push("deploy-learning-site.yml must set configure-pages enablement: true");
+}
+
 const checkedFiles = [
   ...walk(path.join(root, "src")).filter((file) => /\.(astro|mdx|ts)$/.test(file)),
   path.join(root, "README.md"),
