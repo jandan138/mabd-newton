@@ -35,7 +35,7 @@ protocol, or the paper spinning-box experiment.
 - config commit: `0f0fb4f`
 - report implementation commit: `6d78c2e`
 - runner/comparison commit: `3347542`
-- docs/record commit: recorded by the Phase 28 docs commit.
+- docs/record commit: `b20817d`
 - independent review: claim/provenance review required removing
   `lane_gate_status` from the M-ABD diagnostic, preserving
   `paper-claims.yaml`, and adding distinct output/provenance fields.
