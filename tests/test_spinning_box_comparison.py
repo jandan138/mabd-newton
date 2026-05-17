@@ -60,6 +60,13 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         self.assertNotIn("mabd_newton:linear_momentum_error", loaded.observed["missing_required_metrics"])
         self.assertNotIn("mabd_newton:angular_momentum_error", loaded.observed["missing_required_metrics"])
         self.assertNotIn("mabd_newton:energy_drift", loaded.observed["missing_required_metrics"])
+        self.assertEqual(loaded.observed["invalid_required_metrics"], [])
+        differences = loaded.observed["lane_metric_differences"][
+            "mabd_newton_minus_rbd_implicit_baseline"
+        ]
+        self.assertIn("linear_momentum_error", differences)
+        self.assertIn("angular_momentum_error", differences)
+        self.assertIn("energy_drift", differences)
         self.assertLessEqual(
             loaded.observed["lane_metrics"]["mabd_newton"]["linear_momentum_error"],
             1.0e-9,
@@ -86,8 +93,38 @@ class SpinningBoxComparisonTests(unittest.TestCase):
                     rbd_report_path=mabd_path,
                     source_commit="test-source",
                     vendored_newton_commit="test-newton",
-                )
+            )
             self.assertFalse(output_path.exists())
+
+    def test_spinning_box_comparison_flags_invalid_required_metrics(self) -> None:
+        import json
+
+        from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        with TemporaryDirectory() as tmpdir:
+            mabd_path, rbd_path = self._write_lane_reports(tmpdir)
+            data = json.loads(mabd_path.read_text(encoding="utf-8"))
+            data["observed"]["energy_drift"] = None
+            mabd_path.write_text(json.dumps(data), encoding="utf-8")
+            output_path = Path(tmpdir) / "comparison.json"
+
+            write_spinning_box_comparison_report(
+                output_path,
+                config=config,
+                mabd_report_path=mabd_path,
+                rbd_report_path=rbd_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertNotIn("mabd_newton:energy_drift", loaded.observed["missing_required_metrics"])
+        self.assertIn("mabd_newton:energy_drift", loaded.observed["invalid_required_metrics"])
+        self.assertIn(
+            "mabd_newton:energy_drift_invalid",
+            loaded.observed["blocking_reasons"],
+        )
 
 
 if __name__ == "__main__":

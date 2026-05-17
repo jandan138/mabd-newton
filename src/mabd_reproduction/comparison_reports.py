@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
@@ -36,10 +37,38 @@ def _lane_metric_snapshot(report: ClaimReport) -> dict[str, Any]:
     return {metric: report.observed.get(metric) for metric in SPINNING_BOX_REQUIRED_METRICS}
 
 
+def _finite_scalar(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    result = float(value)
+    return result if isfinite(result) else None
+
+
 def _missing_metrics(lane: str, report: ClaimReport) -> list[str]:
     return [
         f"{lane}:{metric}" for metric in SPINNING_BOX_REQUIRED_METRICS if metric not in report.observed
     ]
+
+
+def _invalid_metrics(lane: str, report: ClaimReport) -> list[str]:
+    return [
+        f"{lane}:{metric}"
+        for metric in SPINNING_BOX_REQUIRED_METRICS
+        if metric in report.observed and _finite_scalar(report.observed[metric]) is None
+    ]
+
+
+def _lane_metric_differences(
+    mabd_report: ClaimReport,
+    rbd_report: ClaimReport,
+) -> dict[str, dict[str, float]]:
+    differences: dict[str, float] = {}
+    for metric in SPINNING_BOX_REQUIRED_METRICS:
+        mabd_value = _finite_scalar(mabd_report.observed.get(metric))
+        rbd_value = _finite_scalar(rbd_report.observed.get(metric))
+        if mabd_value is not None and rbd_value is not None:
+            differences[metric] = mabd_value - rbd_value
+    return {"mabd_newton_minus_rbd_implicit_baseline": differences}
 
 
 def write_spinning_box_comparison_report(
@@ -62,12 +91,18 @@ def write_spinning_box_comparison_report(
         "rbd_implicit_baseline",
         rbd_report,
     )
+    invalid_required_metrics = _invalid_metrics("mabd_newton", mabd_report) + _invalid_metrics(
+        "rbd_implicit_baseline",
+        rbd_report,
+    )
+    metric_differences = _lane_metric_differences(mabd_report, rbd_report)
     incomplete_lanes = [
         lane for lane, status in lane_statuses.items() if status != EvidenceStatus.PASSED.value
     ]
     blocking_reasons = [
         *(f"{lane}_report_{lane_statuses[lane]}" for lane in incomplete_lanes),
         *(f"{metric}_missing" for metric in missing_required_metrics),
+        *(f"{metric}_invalid" for metric in invalid_required_metrics),
     ]
     if rbd_report.solver_mode != "paper_faithful_implicit_rbd":
         blocking_reasons.append("rbd_implicit_baseline_not_paper_faithful")
@@ -98,6 +133,8 @@ def write_spinning_box_comparison_report(
                 "rbd_implicit_baseline": _lane_metric_snapshot(rbd_report),
             },
             "missing_required_metrics": missing_required_metrics,
+            "invalid_required_metrics": invalid_required_metrics,
+            "lane_metric_differences": metric_differences,
             "blocking_reasons": blocking_reasons,
         },
         threshold={
