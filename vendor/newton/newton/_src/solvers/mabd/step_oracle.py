@@ -8,11 +8,11 @@ from typing import Any
 
 import numpy as np
 
-from .affine_math import pack_q
+from .affine_math import pack_q, unpack_q
 from .control_forces import MABDActuationSpec, assemble_control_generalized_forces
 from .dense_kkt import solve_dense_dual_kkt
 from .joint_constraints import JointGradientMode, MABDJointSpec, evaluate_joint, joint_residual
-from .single_body import SingleBodyABDPrecompute
+from .single_body import SingleBodyABDPrecompute, solve_single_body_delta
 from .topology_solvers import (
     assemble_topology_dual_inputs,
     classify_constraint_graph,
@@ -96,13 +96,23 @@ def _validate_config(config: MABDCPUOracleConfig, body_count: int) -> tuple[MABD
     for body_id, body in enumerate(bodies):
         if not isinstance(body.precompute, SingleBodyABDPrecompute):
             raise TypeError(f"config.bodies[{body_id}].precompute must be SingleBodyABDPrecompute")
-        if body.rotation_mode != "none":
-            raise NotImplementedError("Phase 4 CPU step supports rotation_mode='none' only")
+        if body.rotation_mode not in {"none", "no_polar"}:
+            raise ValueError("rotation_mode must be one of 'none' or 'no_polar'")
     constraints = tuple(config.constraints)
     for constraint_id, constraint in enumerate(constraints):
         if not 0 <= int(constraint.body_a) < body_count or not 0 <= int(constraint.body_b) < body_count:
             raise ValueError(f"constraint {constraint_id} references a body outside [0, {body_count})")
     return bodies
+
+
+def _require_constrained_none_rotation(bodies: tuple[MABDCPUOracleBody, ...]) -> None:
+    for body_id, body in enumerate(bodies):
+        if body.rotation_mode != "none":
+            raise NotImplementedError(
+                "constrained CPU oracle steps require rotation_mode='none' "
+                f"until rotated KKT assembly is implemented; body {body_id} "
+                f"uses rotation_mode={body.rotation_mode!r}"
+            )
 
 
 def _step_body_systems(
@@ -128,8 +138,26 @@ def _unconstrained_step(
     dt: float,
     hessians: tuple[np.ndarray, ...],
     rhs: tuple[np.ndarray, ...],
+    bodies: tuple[MABDCPUOracleBody, ...],
 ) -> MABDCPUOracleStepResult:
-    dq_blocks = tuple(np.linalg.solve(H, f) for H, f in zip(hessians, rhs, strict=True))
+    dq_blocks = []
+    for body_q, H, f, body in zip(q, hessians, rhs, bodies, strict=True):
+        if body.rotation_mode == "none":
+            dq_blocks.append(np.linalg.solve(H, f))
+        elif body.rotation_mode == "no_polar":
+            A, _t = unpack_q(body_q)
+            dq_blocks.append(
+                solve_single_body_delta(
+                    body.precompute,
+                    f,
+                    dt,
+                    A=A,
+                    rotation_mode="no_polar",
+                )
+            )
+        else:  # pragma: no cover - _validate_config owns this boundary.
+            raise ValueError("rotation_mode must be one of 'none' or 'no_polar'")
+    dq_blocks = tuple(dq_blocks)
     dq = np.concatenate(dq_blocks) if dq_blocks else np.zeros(0, dtype=float)
     q_next = tuple(body_q + body_dq for body_q, body_dq in zip(q, dq_blocks, strict=True))
     qd_next = tuple(body_dq / float(dt) for body_dq in dq_blocks)
@@ -256,7 +284,8 @@ def solve_cpu_oracle_step(
     )
     hessians, rhs = _step_body_systems(q_blocks, qd_blocks, dt_float, bodies, external_forces)
     if not tuple(config.constraints):
-        return _unconstrained_step(q_blocks, dt_float, hessians, rhs)
+        return _unconstrained_step(q_blocks, dt_float, hessians, rhs, bodies)
+    _require_constrained_none_rotation(bodies)
     return _solve_constrained_step(q_blocks, dt_float, hessians, rhs, config)
 
 

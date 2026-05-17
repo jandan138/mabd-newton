@@ -19,18 +19,23 @@ HINGE_CT = np.array(
 )
 
 
-def _body() -> object:
+def _body(rotation_mode: str = "none") -> object:
     return mabd.MABDCPUOracleBody(
         precompute=mabd.SingleBodyABDPrecompute(
             rest_points=np.zeros((4, 3), dtype=float),
             masses=np.ones(4, dtype=float),
             mass_matrix=np.eye(12),
             stiffness_matrix=np.zeros((12, 12), dtype=float),
-        )
+        ),
+        rotation_mode=rotation_mode,
     )
 
 
-def _body_with_stiffness(stiffness: np.ndarray, rest_q: np.ndarray) -> object:
+def _body_with_stiffness(
+    stiffness: np.ndarray,
+    rest_q: np.ndarray,
+    rotation_mode: str = "none",
+) -> object:
     return mabd.MABDCPUOracleBody(
         precompute=mabd.SingleBodyABDPrecompute(
             rest_points=np.zeros((4, 3), dtype=float),
@@ -39,6 +44,7 @@ def _body_with_stiffness(stiffness: np.ndarray, rest_q: np.ndarray) -> object:
             stiffness_matrix=stiffness,
         ),
         rest_q=rest_q,
+        rotation_mode=rotation_mode,
     )
 
 
@@ -140,6 +146,60 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         expected_dq = np.linalg.solve(H, rhs)
         self.assertTrue(np.allclose(result.q[0], q + expected_dq, atol=1.0e-12))
         self.assertTrue(np.allclose(result.qd[0], expected_dq / dt, atol=1.0e-12))
+
+    def test_unconstrained_cpu_step_applies_no_polar_body_rotation(self) -> None:
+        A = np.array([[1.1, 0.2, 0.0], [0.0, 0.9, -0.1], [0.05, 0.0, 1.2]])
+        q = mabd.pack_q(A, np.array([0.2, -0.1, 0.3]))
+        qd = np.linspace(-0.2, 0.25, 12)
+        rest_q = _identity_q((0.05, 0.02, -0.03))
+        stiffness = mabd.rest_generalized_stiffness_matrix(80.0, 0.25, 0.35)
+        force = np.linspace(0.1, -0.25, 12)
+        dt = 0.04
+        body = _body_with_stiffness(stiffness, rest_q, rotation_mode="no_polar")
+        rhs = qd / dt + force - stiffness @ (q - rest_q)
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[body],
+                external_forces=[force],
+            ),
+        )
+
+        expected_dq = mabd.solve_single_body_delta(
+            body.precompute,
+            rhs,
+            dt,
+            A=A,
+            rotation_mode="no_polar",
+        )
+        none_dq = np.linalg.solve(body.precompute.hessian(dt), rhs)
+        self.assertTrue(np.allclose(result.q[0], q + expected_dq, atol=1.0e-12))
+        self.assertTrue(np.allclose(result.qd[0], expected_dq / dt, atol=1.0e-12))
+        self.assertGreater(float(np.linalg.norm(expected_dq - none_dq)), 1.0e-6)
+
+    def test_constrained_cpu_step_rejects_no_polar_until_rotated_kkt_exists(self) -> None:
+        config = mabd.MABDCPUOracleConfig(
+            bodies=[_body(rotation_mode="no_polar"), _body()],
+            constraints=[
+                mabd.MABDCPUOracleConstraint(
+                    body_a=0,
+                    body_b=1,
+                    spec=mabd.ball_joint(HINGE_CT, HINGE_CT),
+                )
+            ],
+            topology="dense",
+        )
+
+        with self.assertRaisesRegex(NotImplementedError, "constrained.*rotation_mode='none'"):
+            mabd.solve_cpu_oracle_step(
+                q=[_identity_q((0.2, 0.0, 0.0)), _identity_q()],
+                qd=[np.zeros(12), np.zeros(12)],
+                dt=0.1,
+                config=config,
+            )
 
     def test_dense_cpu_step_accepts_point_contact_generalized_force(self) -> None:
         q = mabd.pack_q(np.eye(3), np.array([0.0, -0.05, 0.0]))
