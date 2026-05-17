@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20 docs."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21 docs."""
 
 from __future__ import annotations
 
@@ -22,7 +22,10 @@ from mabd_reproduction.experiment_configs import (
     load_spinning_box_config,
     validate_spinning_box_config_against_matrix,
 )
-from mabd_reproduction.spinning_box_physics import spinning_box_mabd_mass_diagonal
+from mabd_reproduction.spinning_box_physics import (
+    spinning_box_contact_diagnostics,
+    spinning_box_mabd_mass_diagonal,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +58,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase18-spinning-box-mabd-physical-mass.md",
     "docs/records/2026-05-17-phase19-spinning-box-comparison-finite-metrics.md",
     "docs/records/2026-05-17-phase20-spinning-box-contact-diagnostics.md",
+    "docs/records/2026-05-17-phase21-spinning-box-plane-placement.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -411,6 +415,42 @@ def validate_claim_boundaries() -> None:
     for snippet in phase20_non_claims:
         if snippet not in phase20_non_claim:
             fail(f"claim-boundaries.md must bound Phase 20 contact diagnostics evidence: {snippet}")
+    phase21_current = claim_boundary_bullet(text, "This repository contains Phase 21")
+    phase21_verified = claim_boundary_bullet(text, "Phase 21 verifies")
+    phase21_non_claim = claim_boundary_bullet(text, "Phase 21 does not verify")
+    if "spinning-box plane-aligned initial placement" not in phase21_current:
+        fail("claim-boundaries.md must state Phase 21 current plane-placement evidence")
+    phase21_required = (
+        "configured spinning-box resting pose",
+        "cube side length 0.1m",
+        "plane normal [0, 1, 0]",
+        "plane offset 0",
+        "initial translation y=0.05m",
+        "zero initial penetration",
+        "zero point-plane penalty contact force fields",
+        "M-ABD development lane report",
+    )
+    for snippet in phase21_required:
+        if snippet not in phase21_verified:
+            fail(f"claim-boundaries.md must describe Phase 21 plane-placement evidence: {snippet}")
+    phase21_non_claims = (
+        "the paper spinning-box experiment",
+        "collision detection",
+        "continuous collision detection",
+        "friction",
+        "implicit contact solve",
+        "gravity",
+        "paper-faithful affine collision",
+        "paper-faithful implicit RBD baseline",
+        "paper timing",
+        "rendered output",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase21_non_claims:
+        if snippet not in phase21_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 21 plane-placement evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -1039,6 +1079,58 @@ def validate_phase20_record() -> None:
             fail(f"Phase 20 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase21_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase21-spinning-box-plane-placement.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit: `d6c2265ea9f23b867cd88a0881f0275aa341c4da`",
+        "implementation commit: `29a210d28446d2f5dd0fa816a35dde894aa7b639`",
+        "docs/provenance commit:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "## Metrics And Thresholds",
+        "initial_q[10] = 0.05",
+        "contact_min_signed_distance_m = 0.0",
+        "contact_max_penetration_m = 0.0",
+        "contact_active_count = 0",
+        "contact_total_normal_force_n = [0.0, 0.0, 0.0]",
+        "contact_total_generalized_force = [0.0] * 12",
+        "## Artifacts",
+        "`configs/experiments/single_body_spinning_box.yaml`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+        "config/report tests: Ran 10 tests, OK",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 21 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 21 verifies the paper spinning-box experiment",
+        "Phase 21 passes experiment.single_body.spinning_box",
+        "Phase 21 verifies collision detection",
+        "Phase 21 verifies implicit contact solve",
+        "Phase 21 verifies paper-faithful affine collision",
+        "Phase 21 verifies paper-faithful implicit RBD baseline",
+        "Phase 21 verifies paper timing",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 21 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -1191,6 +1283,23 @@ def validate_phase13_config(
         fail("Phase 20 config validation failed: spinning-box contact plane normal changed")
     if config.contact_surface["stiffness"] <= 0.0:
         fail("Phase 20 config validation failed: spinning-box contact stiffness must be positive")
+    if not np.isclose(config.initial_q[10], 0.05, rtol=0.0, atol=1.0e-15):
+        fail("Phase 21 config validation failed: spinning-box initial translation y must be 0.05m")
+    if not np.allclose(config.initial_q[:9], np.eye(3).reshape(9), rtol=0.0, atol=1.0e-15):
+        fail("Phase 21 config validation failed: spinning-box affine block must remain identity")
+    if not np.allclose(config.initial_q[[9, 11]], [0.0, 0.0], rtol=0.0, atol=1.0e-15):
+        fail("Phase 21 config validation failed: spinning-box initial x/z translation must remain zero")
+    diagnostics = spinning_box_contact_diagnostics(config, config.initial_q, config.initial_qd)
+    if diagnostics.active_contact_count != 0:
+        fail("Phase 21 config validation failed: spinning-box initial contacts must be nonpenetrating")
+    if not np.isclose(diagnostics.min_signed_distance, 0.0, rtol=0.0, atol=1.0e-15):
+        fail("Phase 21 config validation failed: spinning-box minimum signed distance must be zero")
+    if not np.isclose(diagnostics.max_penetration_depth, 0.0, rtol=0.0, atol=1.0e-15):
+        fail("Phase 21 config validation failed: spinning-box maximum penetration must be zero")
+    if not np.allclose(diagnostics.total_normal_force, np.zeros(3), rtol=0.0, atol=1.0e-15):
+        fail("Phase 21 config validation failed: spinning-box initial normal force must be zero")
+    if not np.allclose(diagnostics.total_generalized_force, np.zeros(12), rtol=0.0, atol=1.0e-15):
+        fail("Phase 21 config validation failed: spinning-box initial generalized contact force must be zero")
 
 
 def validate_provenance() -> None:
@@ -1242,13 +1351,14 @@ def main() -> int:
     validate_phase18_record()
     validate_phase19_record()
     validate_phase20_record()
+    validate_phase21_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21 "
         "docs/provenance validation passed"
     )
     return 0
