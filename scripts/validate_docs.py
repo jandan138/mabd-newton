@@ -2268,6 +2268,7 @@ def validate_phase30_record() -> None:
         "design/plan commit: `c97ee49`",
         "source-audit implementation commit: `d180e58`",
         "docs/record commit: `ee188d0`",
+        "review hardening commit: `ebc9c25`",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "local patch status: Phase 30 does not modify vendored Newton",
