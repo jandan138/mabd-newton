@@ -203,6 +203,49 @@ class SpinningBoxComparisonTests(unittest.TestCase):
             loaded.observed["blocking_reasons"],
         )
 
+    def test_spinning_box_comparison_omits_overflowed_metric_differences(self) -> None:
+        import json
+
+        from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        with TemporaryDirectory() as tmpdir:
+            mabd_path, rbd_path = self._write_lane_reports(tmpdir)
+            mabd_data = json.loads(mabd_path.read_text(encoding="utf-8"))
+            rbd_data = json.loads(rbd_path.read_text(encoding="utf-8"))
+            mabd_data["observed"]["linear_momentum_error"] = 1.79e308
+            rbd_data["observed"]["linear_momentum_error"] = -1.79e308
+            mabd_data["observed"]["final_position_m"] = [1.79e308, 0.05, 0.0]
+            rbd_data["observed"]["final_position_m"] = [-1.79e308, 0.05, 0.0]
+            mabd_path.write_text(json.dumps(mabd_data), encoding="utf-8")
+            rbd_path.write_text(json.dumps(rbd_data), encoding="utf-8")
+            output_path = Path(tmpdir) / "comparison.json"
+
+            write_spinning_box_comparison_report(
+                output_path,
+                config=config,
+                mabd_report_path=mabd_path,
+                rbd_report_path=rbd_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            payload = output_path.read_text(encoding="utf-8")
+            loaded = load_claim_report(output_path)
+
+        self.assertNotIn("Infinity", payload)
+        self.assertNotIn(
+            "linear_momentum_error",
+            loaded.observed["lane_metric_differences"][
+                "mabd_newton_minus_rbd_implicit_baseline"
+            ],
+        )
+        self.assertNotIn(
+            "final_position_m",
+            loaded.observed["lane_vector_metric_differences"][
+                "mabd_newton_minus_rbd_implicit_baseline"
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

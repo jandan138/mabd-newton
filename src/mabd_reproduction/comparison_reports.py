@@ -56,6 +56,11 @@ def _finite_vector3(value: Any) -> list[float] | None:
     return result
 
 
+def _finite_difference(lhs: float, rhs: float) -> float | None:
+    difference = lhs - rhs
+    return difference if isfinite(difference) else None
+
+
 def _lane_metric_snapshot(report: ClaimReport) -> dict[str, float | None]:
     return {
         metric: _finite_scalar(report.observed[metric]) if metric in report.observed else None
@@ -109,7 +114,9 @@ def _lane_metric_differences(
         mabd_value = _finite_scalar(mabd_report.observed.get(metric))
         rbd_value = _finite_scalar(rbd_report.observed.get(metric))
         if mabd_value is not None and rbd_value is not None:
-            differences[metric] = mabd_value - rbd_value
+            difference = _finite_difference(mabd_value, rbd_value)
+            if difference is not None:
+                differences[metric] = difference
     return {"mabd_newton_minus_rbd_implicit_baseline": differences}
 
 
@@ -122,10 +129,14 @@ def _lane_vector_metric_differences(
         mabd_value = _finite_vector3(mabd_report.observed.get(metric))
         rbd_value = _finite_vector3(rbd_report.observed.get(metric))
         if mabd_value is not None and rbd_value is not None:
-            differences[metric] = [
-                mabd_component - rbd_component
-                for mabd_component, rbd_component in zip(mabd_value, rbd_value, strict=True)
-            ]
+            difference: list[float] = []
+            for mabd_component, rbd_component in zip(mabd_value, rbd_value, strict=True):
+                component_difference = _finite_difference(mabd_component, rbd_component)
+                if component_difference is None:
+                    break
+                difference.append(component_difference)
+            if len(difference) == 3:
+                differences[metric] = difference
     return {"mabd_newton_minus_rbd_implicit_baseline": differences}
 
 
