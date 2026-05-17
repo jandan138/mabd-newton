@@ -83,6 +83,51 @@ class RigidBaselineTests(unittest.TestCase):
         self.assertLessEqual(result.angular_momentum_error, 1.0e-3)
         self.assertLessEqual(result.relative_energy_drift, 1.0e-5)
 
+    def test_run_spinning_box_paper_rbd_baseline_records_closed_form_gate_values(self) -> None:
+        from mabd_reproduction.rigid_baselines import run_spinning_box_paper_rbd_baseline
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        result = run_spinning_box_paper_rbd_baseline(config)
+
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(result.solver_name, "paper_faithful_implicit_rbd_closed_form")
+        self.assertEqual(result.newton_step_count, config.step_count)
+        np.testing.assert_allclose(result.initial_position_m, [0.0, 0.05, 0.0], atol=0.0)
+        np.testing.assert_allclose(result.final_position_m, [4.0, 0.05, 0.0], atol=0.0)
+        np.testing.assert_allclose(
+            result.final_rotation_xyzw,
+            [0.0, -0.08827860647172615, 0.0, 0.9960958225188027],
+            atol=1.0e-15,
+        )
+        self.assertLessEqual(result.linear_momentum_error, 1.0e-12)
+        self.assertLessEqual(result.angular_momentum_error, 1.0e-12)
+        self.assertLessEqual(result.energy_drift, 1.0e-12)
+        self.assertLessEqual(result.relative_energy_drift, 1.0e-12)
+        expected_rotations = (
+            [0.0, 0.0, 0.0, 1.0],
+            [0.0, -0.9997558399011495, 0.0, -0.022096619278683942],
+            [0.0, 0.044182448331873195, 0.0, -0.9990234788329058],
+            [0.0, 0.9978032744219705, 0.0, 0.06624670220315812],
+            [0.0, -0.08827860647172615, 0.0, 0.9960958225188027],
+        )
+        self.assertEqual(len(result.trajectory_samples), config.step_count + 1)
+        for step_index, sample in enumerate(result.trajectory_samples):
+            with self.subTest(step_index=step_index):
+                self.assertEqual(sample["step_index"], step_index)
+                self.assertAlmostEqual(sample["time_s"], step_index * config.time_step_s)
+                np.testing.assert_allclose(
+                    sample["position_m"],
+                    [float(step_index), 0.05, 0.0],
+                    atol=0.0,
+                )
+                np.testing.assert_allclose(
+                    sample["rotation_xyzw"],
+                    expected_rotations[step_index],
+                    atol=1.0e-15,
+                )
+                self.assertAlmostEqual(float(np.linalg.norm(sample["rotation_xyzw"])), 1.0)
+
     def test_spinning_box_rbd_properties_reject_bad_physical_values(self) -> None:
         from mabd_reproduction.rigid_baselines import spinning_box_rbd_properties
 
@@ -138,6 +183,44 @@ class RigidBaselineTests(unittest.TestCase):
             loaded.threshold["energy_drift"],
             loaded.observed["initial_energy"] * loaded.threshold["relative_energy_drift"],
         )
+
+    def test_write_spinning_box_paper_rbd_baseline_report(self) -> None:
+        from mabd_reproduction.rigid_baselines import (
+            write_spinning_box_paper_rbd_baseline_report,
+        )
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "paper_rbd_baseline.json"
+            report = write_spinning_box_paper_rbd_baseline_report(
+                path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(path)
+
+        self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(loaded.solver_mode, "paper_faithful_implicit_rbd")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_only")
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.observed["lane_gate_status"], "passed")
+        self.assertEqual(loaded.expected["lane_pass_gate"]["scope"], "required_lane_only")
+        self.assertFalse(loaded.expected["lane_pass_gate"]["full_experiment_claim_passed"])
+        self.assertTrue(loaded.observed["lane_pass_gate"]["thresholds_met"])
+        self.assertEqual(loaded.observed["solver_name"], "paper_faithful_implicit_rbd_closed_form")
+        self.assertEqual(loaded.observed["newton_step_count"], config.step_count)
+        np.testing.assert_allclose(
+            loaded.observed["final_rotation_xyzw"],
+            [0.0, -0.08827860647172615, 0.0, 0.9960958225188027],
+            atol=1.0e-15,
+        )
+        self.assertEqual(loaded.threshold["linear_momentum_error"], 1.0e-12)
+        self.assertEqual(loaded.threshold["angular_momentum_error"], 1.0e-12)
+        self.assertEqual(loaded.threshold["energy_drift"], 1.0e-12)
+        self.assertEqual(loaded.threshold["relative_energy_drift"], 1.0e-12)
+        self.assertLessEqual(loaded.observed["relative_energy_drift"], 1.0e-12)
 
 
 if __name__ == "__main__":
