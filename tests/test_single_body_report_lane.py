@@ -108,7 +108,8 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         self.assertAlmostEqual(loaded.observed["initial_energy_j"], 3005000.0)
         self.assertTrue(np.isfinite(loaded.observed["final_energy_j"]))
         self.assertTrue(np.isfinite(loaded.observed["relative_energy_drift"]))
-        self.assertGreater(loaded.observed["relative_energy_drift"], 1.0)
+        self.assertGreater(loaded.observed["relative_energy_drift"], 0.1)
+        self.assertLess(loaded.observed["relative_energy_drift"], 1.0)
         self.assertEqual(loaded.observed["initial_position_m"], [0.0, 0.05, 0.0])
         np.testing.assert_allclose(
             loaded.observed["final_position_m"],
@@ -129,18 +130,28 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         self.assertEqual(len(samples[-1]["affine_matrix"][0]), 3)
         self.assertEqual(len(samples[-1]["affine_singular_values"]), 3)
         self.assertAlmostEqual(samples[0]["affine_orthogonality_error"], 0.0)
-        self.assertGreater(samples[-1]["affine_orthogonality_error"], 1.0e6)
+        self.assertGreater(samples[-1]["affine_orthogonality_error"], 1.0)
+        self.assertLess(samples[-1]["affine_orthogonality_error"], 10.0)
         self.assertEqual(loaded.observed["initial_affine_orthogonality_error"], 0.0)
-        self.assertGreater(loaded.observed["final_affine_orthogonality_error"], 1.0e6)
-        self.assertGreater(abs(loaded.observed["final_affine_determinant"]), 1.0e6)
+        self.assertGreater(loaded.observed["final_affine_orthogonality_error"], 1.0)
+        self.assertLess(loaded.observed["final_affine_orthogonality_error"], 10.0)
+        self.assertLess(abs(loaded.observed["final_affine_determinant"]), 10.0)
         self.assertEqual(
             loaded.observed["affine_shape_diagnostic_status"],
             "development_gap_observed",
         )
-        self.assertEqual(loaded.observed["mabd_rotation_mode"], "no_polar")
+        self.assertEqual(loaded.observed["mabd_rotation_mode"], "polar")
         self.assertEqual(
             loaded.observed["material_model"],
-            "paper_linear_elastic_no_polar_development",
+            "paper_linear_elastic_corotated_development",
+        )
+        self.assertEqual(
+            loaded.observed["material_rhs_frame"],
+            "corotated_local_all_blocks",
+        )
+        self.assertEqual(
+            loaded.observed["translation_frame"],
+            "corotated_polar_all_blocks",
         )
         self.assertAlmostEqual(loaded.observed["material_young_modulus_pa"], 1.0e9)
         self.assertAlmostEqual(loaded.observed["material_poisson_ratio"], 0.3)

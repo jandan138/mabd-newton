@@ -30,7 +30,7 @@ def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOrac
         mass_matrix = np.diag(config.mass_diagonal)
         stiffness_matrix = spinning_box_mabd_material_stiffness(config)
         rest_q = mabd.pack_q(np.eye(3), config.initial_q[9:12])
-        rotation_mode = "no_polar"
+        rotation_mode = "polar"
     return mabd.MABDCPUOracleBody(
         precompute=mabd.SingleBodyABDPrecompute(
             rest_points=np.zeros((4, 3), dtype=float),
@@ -173,7 +173,9 @@ def write_spinning_box_development_report(
                 "final_affine_singular_values": final_shape["affine_singular_values"],
                 "affine_shape_diagnostic_status": "development_gap_observed",
                 "mabd_rotation_mode": oracle_body.rotation_mode,
-                "material_model": "paper_linear_elastic_no_polar_development",
+                "material_model": "paper_linear_elastic_corotated_development",
+                "material_rhs_frame": "corotated_local_all_blocks",
+                "translation_frame": "corotated_polar_all_blocks",
                 "material_young_modulus_pa": material.young_modulus_pa,
                 "material_poisson_ratio": material.poisson_ratio,
                 "material_volume_m3": material.volume_m3,
