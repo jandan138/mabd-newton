@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21 docs."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22 docs."""
 
 from __future__ import annotations
 
@@ -59,6 +59,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase19-spinning-box-comparison-finite-metrics.md",
     "docs/records/2026-05-17-phase20-spinning-box-contact-diagnostics.md",
     "docs/records/2026-05-17-phase21-spinning-box-plane-placement.md",
+    "docs/records/2026-05-17-phase22-rbd-plane-placement.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -451,6 +452,39 @@ def validate_claim_boundaries() -> None:
     for snippet in phase21_non_claims:
         if snippet not in phase21_non_claim:
             fail(f"claim-boundaries.md must bound Phase 21 plane-placement evidence: {snippet}")
+    phase22_current = claim_boundary_bullet(text, "This repository contains Phase 22")
+    phase22_verified = claim_boundary_bullet(text, "Phase 22 verifies")
+    phase22_non_claim = claim_boundary_bullet(text, "Phase 22 does not verify")
+    if "RBD development baseline configured initial placement" not in phase22_current:
+        fail("claim-boundaries.md must state Phase 22 current RBD placement evidence")
+    phase22_required = (
+        "RBD development baseline consumes the configured spinning-box initial translation",
+        "initial_position_m = [0.0, 0.05, 0.0]",
+        "final_position_m = [4.0, 0.05, 0.0]",
+        "four 10 ms free-body steps at 100 m/s",
+        "report propagation for the RBD lane",
+    )
+    for snippet in phase22_required:
+        if snippet not in phase22_verified:
+            fail(f"claim-boundaries.md must describe Phase 22 RBD placement evidence: {snippet}")
+    phase22_non_claims = (
+        "the paper spinning-box experiment",
+        "paper-faithful implicit RBD baseline",
+        "paper-faithful affine collision",
+        "collision detection",
+        "continuous collision detection",
+        "friction",
+        "implicit contact solve",
+        "gravity",
+        "rendered output",
+        "paper timing",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase22_non_claims:
+        if snippet not in phase22_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 22 RBD placement evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -1136,6 +1170,59 @@ def validate_phase21_record() -> None:
             fail(f"Phase 21 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase22_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase22-rbd-plane-placement.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit: `50816b9ba11c80e9993d067bfbbdcc579e2c5fa3`",
+        "implementation commit: `c7a22b1a0fb400da47c2a715b9ac32333aed67d2`",
+        "docs/provenance commit:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "clone drift check:",
+        "## Metrics And Thresholds",
+        "initial_position_m = [0.0, 0.05, 0.0]",
+        "final_position_m = [4.0, 0.05, 0.0]",
+        "newton_semimplicit_rbd_cpu_development",
+        "newton.solvers.SolverSemiImplicit",
+        "report status: `incomplete`",
+        "## Artifacts",
+        "`src/mabd_reproduction/rigid_baselines.py`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+        "RBD tests: Ran 5 tests, OK",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 22 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 22 verifies the paper spinning-box experiment",
+        "Phase 22 passes experiment.single_body.spinning_box",
+        "Phase 22 verifies paper-faithful implicit RBD baseline",
+        "Phase 22 verifies paper-faithful affine collision",
+        "Phase 22 verifies collision detection",
+        "Phase 22 verifies implicit contact solve",
+        "Phase 22 verifies paper timing",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 22 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -1357,13 +1444,14 @@ def main() -> int:
     validate_phase19_record()
     validate_phase20_record()
     validate_phase21_record()
+    validate_phase22_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22 "
         "docs/provenance validation passed"
     )
     return 0

@@ -792,6 +792,58 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase22_rbd_plane_placement_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 22")
+        verified = claim_boundary_bullet(text, "Phase 22 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 22 does not verify")
+
+        self.assertIn("RBD development baseline configured initial placement", current)
+        self.assertIn("RBD development baseline consumes the configured spinning-box", verified)
+        self.assertIn("initial_position_m = [0.0, 0.05, 0.0]", verified)
+        self.assertIn("final_position_m = [4.0, 0.05, 0.0]", verified)
+        self.assertIn("report propagation for the RBD lane", verified)
+        self.assertIn("the paper spinning-box experiment", non_claim)
+        self.assertIn("paper-faithful implicit RBD baseline", non_claim)
+        self.assertIn("paper-faithful affine collision", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase22_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase22-rbd-plane-placement.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit: `50816b9ba11c80e9993d067bfbbdcc579e2c5fa3`",
+            "implementation commit: `c7a22b1a0fb400da47c2a715b9ac32333aed67d2`",
+            "docs/provenance commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "## Metrics And Thresholds",
+            "initial_position_m = [0.0, 0.05, 0.0]",
+            "final_position_m = [4.0, 0.05, 0.0]",
+            "newton_semimplicit_rbd_cpu_development",
+            "newton.solvers.SolverSemiImplicit",
+            "## Artifacts",
+            "`src/mabd_reproduction/rigid_baselines.py`",
+            "generated reports: not committed",
+            "No `experiment.*` claim is passed in this phase.",
+            "RBD tests: Ran 5 tests, OK",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -823,7 +875,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

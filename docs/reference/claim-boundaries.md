@@ -58,6 +58,8 @@
   the M-ABD development lane after the Phase 20 record is created.
 - This repository contains Phase 21 spinning-box plane-aligned initial
   placement checks and reporting after the Phase 21 record is created.
+- This repository contains Phase 22 RBD development baseline configured
+  initial placement checks and reporting after the Phase 22 record is created.
 
 ## Intended
 
@@ -236,6 +238,17 @@
   baseline, paper timing, rendered output, paper trajectory agreement,
   generated report artifacts as committed evidence, or any passed
   `experiment.*` claim.
+- Phase 22 verifies that the Newton `rbd_implicit_baseline` RBD development
+  baseline consumes the configured spinning-box initial translation:
+  `initial_position_m = [0.0, 0.05, 0.0]`, `final_position_m = [4.0, 0.05,
+  0.0]` after four 10 ms free-body steps at 100 m/s, and report propagation
+  for the RBD lane.
+- Phase 22 does not verify the paper spinning-box experiment,
+  paper-faithful implicit RBD baseline, paper-faithful affine collision,
+  collision detection, continuous collision detection, friction, implicit
+  contact solve, gravity, rendered output, paper timing, paper trajectory
+  agreement, generated report artifacts as committed evidence, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -248,6 +261,8 @@
 - Phase 20 point-plane contact diagnostics are a paper-faithful collision or
   contact solve.
 - A nonpenetrating spinning-box initial pose is a paper-faithful contact solve.
+- An RBD baseline that consumes the configured initial translation is a
+  paper-faithful implicit RBD baseline.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
