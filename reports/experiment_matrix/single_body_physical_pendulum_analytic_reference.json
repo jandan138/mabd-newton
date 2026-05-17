@@ -9,6 +9,15 @@
     "formula": "theta(t)=pi/2 - 2 asin(kappa * sn(K(kappa) - omega_lin * t, kappa))",
     "full_experiment_claim_passed": false,
     "paper_claim_status": "analytic reference lane only; full experiment incomplete",
+    "paper_timing_source_audit": {
+      "finding": "No runtime timing or performance value is stated in the cited physical-pendulum source lines.",
+      "required_metric": false,
+      "runtime_timing_claim_present": false,
+      "source_lines": [
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+      ],
+      "status": "not_a_physical_pendulum_paper_metric"
+    },
     "paper_values": {
       "analytic_reference": "elliptic_integral",
       "initial_velocity": "zero",
@@ -78,6 +87,15 @@
     "lane_status": "passed",
     "max_abs_reference_identity_error": 2.220446049250313e-16,
     "omega_lin_rad_s": 3.132091952673165,
+    "paper_timing_source_audit": {
+      "finding": "No runtime timing or performance value is stated in the cited physical-pendulum source lines.",
+      "required_metric": false,
+      "runtime_timing_claim_present": false,
+      "source_lines": [
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+      ],
+      "status": "not_a_physical_pendulum_paper_metric"
+    },
     "period_count": 1,
     "period_s": 2.3678419475762373,
     "release_angle_rad": 1.5707963267948966,
@@ -94,7 +112,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "analytic_elliptic_reference",
-  "source_commit": "a2a9374",
+  "source_commit": "d1985dc",
   "status": "incomplete",
   "threshold": {
     "max_abs_reference_identity_error": 1e-12

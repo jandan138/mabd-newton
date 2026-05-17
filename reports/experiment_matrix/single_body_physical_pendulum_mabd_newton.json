@@ -15,6 +15,15 @@
       "no rendered figure or timing distribution is generated"
     ],
     "paper_claim_status": "formal M-ABD lane generated; full experiment incomplete",
+    "paper_timing_source_audit": {
+      "finding": "No runtime timing or performance value is stated in the cited physical-pendulum source lines.",
+      "required_metric": false,
+      "runtime_timing_claim_present": false,
+      "source_lines": [
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+      ],
+      "status": "not_a_physical_pendulum_paper_metric"
+    },
     "paper_values": {
       "analytic_reference": "elliptic_integral",
       "initial_velocity": "zero",
@@ -36,7 +45,7 @@
       ]
     }
   },
-  "failure_reason": "physical_pendulum mabd_newton lane remains incomplete because pendulum_geometry_unknown, joint-force waveform agreement, and paper timing are unresolved",
+  "failure_reason": "physical_pendulum mabd_newton lane remains incomplete because pendulum_geometry_unknown and joint-force waveform agreement are unresolved",
   "observed": {
     "angle_samples_rad": [
       {
@@ -127,8 +136,7 @@
     ],
     "blocking_reasons": [
       "pendulum_geometry_unknown",
-      "joint_force_waveform_agreement_missing",
-      "paper_timing_missing"
+      "joint_force_waveform_agreement_missing"
     ],
     "full_experiment_claim_passed": false,
     "lane_status": "incomplete_diagnostic_generated",
@@ -138,6 +146,15 @@
     "max_phase_drift_rad": 0.007130697850638079,
     "max_pivot_residual_m": 0.0,
     "max_world_anchor_reaction_magnitude_n": 0.009810000000011114,
+    "paper_timing_source_audit": {
+      "finding": "No runtime timing or performance value is stated in the cited physical-pendulum source lines.",
+      "required_metric": false,
+      "runtime_timing_claim_present": false,
+      "source_lines": [
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+      ],
+      "status": "not_a_physical_pendulum_paper_metric"
+    },
     "required_missing_lanes": [],
     "sample_count": 5,
     "step_count": 16,
@@ -151,7 +168,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "mabd_cpu_oracle_physical_pendulum_newton_lane",
-  "source_commit": "0b93ee1",
+  "source_commit": "d1985dc",
   "status": "incomplete",
   "threshold": {
     "max_abs_angle_error_rad": 2.0,

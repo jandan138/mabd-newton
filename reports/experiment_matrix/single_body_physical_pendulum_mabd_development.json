@@ -7,6 +7,7 @@
   "claim_id": "experiment.single_body.physical_pendulum",
   "expected": {
     "full_experiment_claim_passed": false,
+    "mabd_rotation_mode": "none",
     "nonclaim_limitations": [
       "procedural point set is not the paper's undisclosed physical-pendulum geometry",
       "no joint-force waveform comparison is generated",
@@ -14,6 +15,15 @@
       "no rendered figure or timing distribution is generated"
     ],
     "paper_claim_status": "development diagnostic only; full experiment incomplete",
+    "paper_timing_source_audit": {
+      "finding": "No runtime timing or performance value is stated in the cited physical-pendulum source lines.",
+      "required_metric": false,
+      "runtime_timing_claim_present": false,
+      "source_lines": [
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+      ],
+      "status": "not_a_physical_pendulum_paper_metric"
+    },
     "paper_values": {
       "analytic_reference": "elliptic_integral",
       "initial_velocity": "zero",
@@ -92,13 +102,23 @@
     "blocking_reasons": [
       "pendulum_geometry_unknown",
       "joint_force_comparison_missing",
-      "paper_geometry_and_timing_missing"
+      "paper_geometry_missing"
     ],
     "full_experiment_claim_passed": false,
     "lane_status": "development_diagnostic_generated",
+    "mabd_rotation_mode": "none",
     "max_abs_angle_error_rad": 0.007130697850637885,
     "max_constraint_residual_norm": 0.0,
     "max_pivot_residual_m": 0.0,
+    "paper_timing_source_audit": {
+      "finding": "No runtime timing or performance value is stated in the cited physical-pendulum source lines.",
+      "required_metric": false,
+      "runtime_timing_claim_present": false,
+      "source_lines": [
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+      ],
+      "status": "not_a_physical_pendulum_paper_metric"
+    },
     "required_missing_lanes": [
       "mabd_newton"
     ],
@@ -114,7 +134,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "mabd_cpu_oracle_physical_pendulum_development",
-  "source_commit": "88c8195",
+  "source_commit": "d1985dc",
   "status": "incomplete",
   "threshold": {
     "max_abs_angle_error_rad": 2.0,

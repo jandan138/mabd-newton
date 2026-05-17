@@ -10,7 +10,16 @@
       "physical_pendulum_mabd_development_diagnostic"
     ],
     "full_experiment_claim_passed": false,
-    "paper_claim_status": "formal M-ABD and RBD lanes are present; joint-force waveform comparison, geometry, and timing evidence remain required",
+    "paper_claim_status": "formal M-ABD and RBD lanes are present; joint-force waveform comparison, geometry, and pass gate remain required; runtime timing is not a cited physical-pendulum metric",
+    "paper_timing_source_audit": {
+      "finding": "No runtime timing or performance value is stated in the cited physical-pendulum source lines.",
+      "required_metric": false,
+      "runtime_timing_claim_present": false,
+      "source_lines": [
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+      ],
+      "status": "not_a_physical_pendulum_paper_metric"
+    },
     "required_lanes": [
       "mabd_newton",
       "analytic_reference",
@@ -25,7 +34,7 @@
       "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
     ]
   },
-  "failure_reason": "physical-pendulum comparison protocol is incomplete because joint-force waveform agreement, paper geometry, and paper timing remain missing",
+  "failure_reason": "physical-pendulum comparison protocol is incomplete because joint-force waveform agreement, paper geometry, and pass gate remain missing",
   "observed": {
     "angle_sample_differences_rad": [
       {
@@ -77,7 +86,6 @@
     "blocking_reasons": [
       "joint_force_waveform_agreement_missing",
       "pendulum_geometry_unknown",
-      "paper_timing_missing",
       "physical_pendulum_comparison_pass_gate_not_enabled"
     ],
     "full_experiment_claim_passed": false,
@@ -86,9 +94,9 @@
         "backend": "cpu_scipy_reference",
         "baseline_lane": "analytic_reference",
         "path": "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
-        "sha256": "88504c654c07241f379a885f957d4cecc01e5e36589c6f0fbe7314e90bd76829",
+        "sha256": "1fed16a661c0962c537c92fda19c7e05a0ff7993f2245ca04a97c68725d6ff37",
         "solver_mode": "analytic_elliptic_reference",
-        "source_commit": "a2a9374",
+        "source_commit": "d1985dc",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       },
@@ -96,9 +104,9 @@
         "backend": "cpu_numpy_newton_only",
         "baseline_lane": "mabd_newton",
         "path": "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
-        "sha256": "fca9bc3548ca44e278e8d7e4f51fbd5859074245bf1e9350eb0856d634ded015",
+        "sha256": "d07a1d2bebe01b226a203f400342b5c96cc4fae3e315d3a04325264ed09c41be",
         "solver_mode": "mabd_cpu_oracle_physical_pendulum_newton_lane",
-        "source_commit": "0b93ee1",
+        "source_commit": "d1985dc",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       },
@@ -106,9 +114,9 @@
         "backend": "cpu_numpy_newton_only",
         "baseline_lane": "rbd_implicit_baseline",
         "path": "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
-        "sha256": "acabe6df23ea76760d3539306f29d03b42be723fed83a6ea7f6e8cd5d78c8c3a",
+        "sha256": "9f7c7e287427d9196009e351536ff15d510c17e704dd22bd4100734adf247b64",
         "solver_mode": "physical_pendulum_scalar_implicit_rbd_development",
-        "source_commit": "88c8195",
+        "source_commit": "d1985dc",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       }
@@ -171,6 +179,15 @@
         "status": "diagnostic_available"
       }
     },
+    "paper_timing_source_audit": {
+      "finding": "No runtime timing or performance value is stated in the cited physical-pendulum source lines.",
+      "required_metric": false,
+      "runtime_timing_claim_present": false,
+      "source_lines": [
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+      ],
+      "status": "not_a_physical_pendulum_paper_metric"
+    },
     "rbd_sample_count": 5,
     "unmatched_mabd_samples": [],
     "unmatched_rbd_samples": []
@@ -184,7 +201,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "physical_pendulum_multilane_comparison_development",
-  "source_commit": "0b93ee1",
+  "source_commit": "d1985dc",
   "status": "incomplete",
   "threshold": {
     "max_mabd_rbd_abs_angle_delta_rad": 2.0
