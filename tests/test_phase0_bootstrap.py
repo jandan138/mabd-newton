@@ -14,6 +14,28 @@ from mabd_reproduction.reporting import EvidenceStatus, REQUIRED_REPORT_KEYS
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def claim_boundary_bullet(text: str, starts_with: str) -> str:
+    parts: list[str] = []
+    capturing = False
+    for line in text.splitlines():
+        if line.startswith("- "):
+            if capturing:
+                break
+            bullet = line[2:].strip()
+            if bullet.startswith(starts_with):
+                capturing = True
+                parts.append(bullet)
+            continue
+        if capturing:
+            if line.startswith("  "):
+                parts.append(line.strip())
+            elif line.strip():
+                break
+    if not parts:
+        raise AssertionError(f"missing claim boundary bullet: {starts_with}")
+    return " ".join(parts)
+
+
 class Phase0BootstrapTests(unittest.TestCase):
     def test_report_status_vocabulary_matches_spec(self) -> None:
         self.assertEqual(
@@ -652,16 +674,17 @@ class Phase0BootstrapTests(unittest.TestCase):
 
     def test_phase20_spinning_box_contact_diagnostics_is_bounded(self) -> None:
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
-        normalized_text = " ".join(text.split())
+        verified = claim_boundary_bullet(text, "Phase 20 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 20 does not verify")
 
-        self.assertIn("Phase 20 verifies procedural spinning-box cube corner derivation", text)
-        self.assertIn("configured frictionless plane metadata", normalized_text)
-        self.assertIn("point-plane normal penalty contact diagnostics", normalized_text)
-        self.assertIn("finite contact diagnostic fields", normalized_text)
-        self.assertIn("Phase 20 does not verify the paper spinning-box experiment", text)
-        self.assertIn("collision detection", normalized_text)
-        self.assertIn("implicit contact solve", normalized_text)
-        self.assertIn("any passed `experiment.*` claim", text)
+        self.assertIn("Phase 20 verifies procedural spinning-box cube corner derivation", verified)
+        self.assertIn("configured frictionless plane metadata", verified)
+        self.assertIn("point-plane normal penalty contact diagnostics", verified)
+        self.assertIn("finite contact diagnostic fields", verified)
+        self.assertIn("the paper spinning-box experiment", non_claim)
+        self.assertIn("collision detection", non_claim)
+        self.assertIn("implicit contact solve", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
 
     def test_phase20_record_has_required_evidence_fields(self) -> None:
         text = (

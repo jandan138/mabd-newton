@@ -47,4 +47,3 @@ only proves that the reproduction can derive paper-sized cube contact points
 and assemble affine generalized normal penalty force diagnostics without
 mutating the isolated environment or vendored Newton outside the existing M-ABD
 oracle module.
-

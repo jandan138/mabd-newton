@@ -91,6 +91,28 @@ def read_yaml(path: Path) -> dict[str, Any]:
     return data
 
 
+def claim_boundary_bullet(text: str, starts_with: str) -> str:
+    parts: list[str] = []
+    capturing = False
+    for line in text.splitlines():
+        if line.startswith("- "):
+            if capturing:
+                break
+            bullet = line[2:].strip()
+            if bullet.startswith(starts_with):
+                capturing = True
+                parts.append(bullet)
+            continue
+        if capturing:
+            if line.startswith("  "):
+                parts.append(line.strip())
+            elif line.strip():
+                break
+    if not parts:
+        fail(f"claim-boundaries.md missing bullet starting with: {starts_with}")
+    return " ".join(parts)
+
+
 def require_paths() -> None:
     missing = [path for path in REQUIRED_PATHS if not (ROOT / path).exists()]
     if missing:
@@ -359,7 +381,9 @@ def validate_claim_boundaries() -> None:
     for snippet in phase19_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 19 finite metric evidence: {snippet}")
-    if "Phase 20 verifies procedural spinning-box cube corner derivation" not in text:
+    phase20_verified = claim_boundary_bullet(text, "Phase 20 verifies")
+    phase20_non_claim = claim_boundary_bullet(text, "Phase 20 does not verify")
+    if "Phase 20 verifies procedural spinning-box cube corner derivation" not in phase20_verified:
         fail("claim-boundaries.md must explicitly state Phase 20 contact diagnostics evidence")
     phase20_required = (
         "configured frictionless plane metadata",
@@ -368,10 +392,10 @@ def validate_claim_boundaries() -> None:
         "M-ABD development lane report",
     )
     for snippet in phase20_required:
-        if snippet not in normalized_text:
+        if snippet not in phase20_verified:
             fail(f"claim-boundaries.md must describe Phase 20 contact diagnostics evidence: {snippet}")
     phase20_non_claims = (
-        "Phase 20 does not verify the paper spinning-box experiment",
+        "the paper spinning-box experiment",
         "collision detection",
         "continuous collision detection",
         "friction",
@@ -385,7 +409,7 @@ def validate_claim_boundaries() -> None:
         "any passed `experiment.*` claim",
     )
     for snippet in phase20_non_claims:
-        if snippet not in normalized_text:
+        if snippet not in phase20_non_claim:
             fail(f"claim-boundaries.md must bound Phase 20 contact diagnostics evidence: {snippet}")
 
 

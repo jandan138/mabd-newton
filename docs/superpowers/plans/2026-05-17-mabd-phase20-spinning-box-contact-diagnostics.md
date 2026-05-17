@@ -207,4 +207,3 @@ diagnostic fields, and report compatibility. Fix findings with tests.
 
 Fast-forward merge to `main`, rerun full gates on `main`, push, remove the
 worktree, and delete the local branch.
-
