@@ -467,6 +467,23 @@
   paper-faithful pendulum geometry, joint-force waveform agreement, paper
   timing, rendered output, paper trajectory agreement, generated videos or raw
   simulation logs, or any passed `experiment.*` claim.
+- This repository contains Phase 38 dense constrained polar CPU KKT evidence
+  and regenerated physical-pendulum `mabd_newton` polar-lane report evidence
+  after the Phase 38 record is created.
+- Phase 38 verifies dense constrained `rotation_mode = polar` CPU oracle KKT
+  assembly for a world-anchor constraint, explicit constrained `no_polar`
+  rejection because the current no-polar increment map is nonlinear, explicit
+  rotated non-dense topology rejection, `mabd_newton.rotation_mode = polar`
+  config validation, `mabd_rotation_mode = polar` in the formal
+  physical-pendulum report, `missing_required_lanes = []`,
+  `paper_metric_statuses.joint_force_error.status =
+  diagnostic_reaction_not_paper_waveform`, and top-level report status:
+  `incomplete`.
+- Phase 38 does not verify constrained `no_polar` KKT, rotated chain/tree/loop
+  or graph topology KKT, GPU/Warp KKT assembly, the full physical-pendulum
+  experiment, paper-faithful pendulum geometry, joint-force waveform agreement,
+  paper timing, rendered output, paper trajectory agreement, generated videos
+  or raw simulation logs, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -510,6 +527,10 @@
   physical-pendulum experiment, paper-faithful pendulum geometry result,
   joint-force waveform agreement, paper timing result, rendered result, or any
   passed `experiment.*` claim.
+- Phase 38 constrained polar CPU KKT support is not a passed physical-pendulum
+  experiment, constrained `no_polar` implementation, rotated non-dense topology
+  implementation, joint-force waveform agreement, paper geometry result, paper
+  timing result, or any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

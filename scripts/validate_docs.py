@@ -3954,8 +3954,6 @@ def validate_phase37_record() -> None:
         fail("Phase 37 MABD Newton report solver mode changed")
     if mabd.backend != "cpu_numpy_newton_only":
         fail("Phase 37 MABD Newton report backend changed")
-    if f"report source_commit: `{mabd.source_commit}`" not in text:
-        fail("Phase 37 record must match MABD Newton report source_commit")
     mabd_observed = mabd.observed
     if mabd_observed.get("lane_status") != "incomplete_diagnostic_generated":
         fail("Phase 37 MABD Newton lane_status changed")
@@ -3986,8 +3984,6 @@ def validate_phase37_record() -> None:
         fail("Phase 37 comparison report solver mode changed")
     if comparison.backend != "report_protocol":
         fail("Phase 37 comparison report backend changed")
-    if f"comparison report source_commit: `{comparison.source_commit}`" not in text:
-        fail("Phase 37 record must match comparison report source_commit")
     observed = comparison.observed
     if observed.get("full_experiment_claim_passed") is not False:
         fail("Phase 37 comparison report must not pass full experiment claim")
@@ -4061,6 +4057,227 @@ def validate_phase37_record() -> None:
                 fail("Phase 37 must keep physical-pendulum experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 37 must not pass experiment.* claims")
+    if not found_physical_pendulum:
+        fail("paper-claims.yaml missing physical-pendulum claim")
+
+
+def validate_phase38_record() -> None:
+    text = (ROOT / "docs/records/2026-05-17-phase38-constrained-rotated-kkt.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_physical_pendulum.yaml",
+        "## Repository",
+        "implementation commit: `0b93ee1`",
+        "phase38-constrained-rotated-kkt",
+        "2026-05-17-mabd-phase38-constrained-rotated-kkt.md",
+        "2026-05-17-phase38-constrained-rotated-kkt-design.md",
+        "## Vendored Newton",
+        VENDORED_NEWTON_COMMIT,
+        "dense constrained polar CPU KKT support",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Solver Evidence",
+        "np.kron(np.eye(4), polar_rotation(A))",
+        "J_world @ increment_map",
+        "constrained `no_polar` remains unsupported",
+        "rotated non-dense topology paths require `topology='dense'`",
+        "test_constrained_cpu_step_supports_polar_world_anchor",
+        "test_constrained_cpu_step_rejects_no_polar_because_map_is_nonlinear",
+        "test_constrained_cpu_step_rejects_polar_non_dense_topology_until_tested",
+        "newton.tests.test_mabd_phase4_solver_step",
+        "## Physical Pendulum Evidence",
+        "mabd_newton.rotation_mode = polar",
+        "mabd_rotation_mode = `polar`",
+        "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+        "report source_commit: `0b93ee1`",
+        "## Regenerated Comparison Evidence",
+        "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+        "comparison report source_commit: `0b93ee1`",
+        "missing_required_lanes = `[]`",
+        "missing_paper_metrics = [`joint_force_error:paper_waveform_agreement`]",
+        "`diagnostic_reaction_not_paper_waveform`",
+        "physical_pendulum_comparison_pass_gate_not_enabled",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.physical_pendulum` remains intended.",
+        "Constrained `no_polar` KKT remains explicitly unsupported.",
+        "Rotated non-dense topology KKT remains explicitly unsupported.",
+        "Joint-force waveform agreement remains missing",
+        "paper timing remains missing",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 38 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE38", "phase38-working-tree", "<implementation-commit>"):
+        if placeholder in text:
+            fail("Phase 38 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "passed physical-pendulum experiment",
+        "physical-pendulum experiment passed",
+        "constrained `no_polar` kkt support exists",
+        "joint-force waveform agreement passed",
+        "paper geometry result",
+        "paper timing result",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 38 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    for snippet in (
+        "This repository contains Phase 38 dense constrained polar CPU KKT evidence",
+        "Phase 38 verifies dense constrained `rotation_mode = polar`",
+        "explicit constrained `no_polar`",
+        "mabd_rotation_mode = polar",
+        "Phase 38 does not verify constrained `no_polar` KKT",
+        "rotated chain/tree/loop",
+        "Phase 38 constrained polar CPU KKT support",
+    ):
+        if snippet not in boundary_text:
+            fail(f"Phase 38 claim boundary missing: {snippet}")
+
+    try:
+        config = load_physical_pendulum_config(
+            ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 38 physical-pendulum config validation failed: {exc}")
+    if config.mabd_newton.rotation_mode != "polar":
+        fail("Phase 38 physical-pendulum mabd_newton.rotation_mode must be polar")
+
+    mabd = load_claim_report(ROOT / config.mabd_newton.output_report)
+    comparison = load_claim_report(ROOT / config.comparison.output_report)
+    for report_name, report in (("MABD Newton", mabd), ("comparison", comparison)):
+        if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+            fail(f"Phase 38 {report_name} report source_commit must name the implementation commit")
+        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 38 {report_name} report vendored Newton commit changed")
+        if report.claim_id != config.claim_id:
+            fail(f"Phase 38 {report_name} report claim_id does not match config")
+        if report.scene_id != config.scene_id:
+            fail(f"Phase 38 {report_name} report scene_id does not match config")
+        if report.status.value != "incomplete":
+            fail(f"Phase 38 {report_name} report must remain incomplete")
+
+    if f"report source_commit: `{mabd.source_commit}`" not in text:
+        fail("Phase 38 record must match MABD Newton report source_commit")
+    if f"comparison report source_commit: `{comparison.source_commit}`" not in text:
+        fail("Phase 38 record must match comparison report source_commit")
+    if mabd.baseline_lane != "mabd_newton":
+        fail("Phase 38 MABD Newton report lane changed")
+    if mabd.solver_mode != "mabd_cpu_oracle_physical_pendulum_newton_lane":
+        fail("Phase 38 MABD Newton report solver mode changed")
+    if mabd.backend != "cpu_numpy_newton_only":
+        fail("Phase 38 MABD Newton report backend changed")
+    mabd_observed = mabd.observed
+    if mabd_observed.get("lane_status") != "incomplete_diagnostic_generated":
+        fail("Phase 38 MABD Newton lane_status changed")
+    if mabd_observed.get("mabd_rotation_mode") != "polar":
+        fail("Phase 38 MABD Newton report must record mabd_rotation_mode=polar")
+    if mabd.expected.get("mabd_rotation_mode") != "polar":
+        fail("Phase 38 MABD Newton expected record must keep mabd_rotation_mode=polar")
+    if mabd_observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 38 MABD Newton report must not pass full experiment claim")
+    if mabd_observed.get("threshold_violations") != []:
+        fail("Phase 38 MABD Newton report threshold violations changed")
+    for blocker in (
+        "pendulum_geometry_unknown",
+        "joint_force_waveform_agreement_missing",
+        "paper_timing_missing",
+    ):
+        if blocker not in mabd_observed.get("blocking_reasons", []):
+            fail(f"Phase 38 MABD Newton blocker missing: {blocker}")
+
+    if comparison.baseline_lane != "physical_pendulum_comparison_protocol":
+        fail("Phase 38 comparison report lane changed")
+    if comparison.solver_mode != "physical_pendulum_multilane_comparison_development":
+        fail("Phase 38 comparison report solver mode changed")
+    if comparison.backend != "report_protocol":
+        fail("Phase 38 comparison report backend changed")
+    observed = comparison.observed
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 38 comparison report must not pass full experiment claim")
+    if observed.get("missing_required_lanes") != []:
+        fail("Phase 38 comparison missing_required_lanes changed")
+    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_waveform_agreement"]:
+        fail("Phase 38 comparison missing_paper_metrics changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 38 comparison blockers must be a list")
+    for blocker in (
+        "joint_force_waveform_agreement_missing",
+        "pendulum_geometry_unknown",
+        "paper_timing_missing",
+        "physical_pendulum_comparison_pass_gate_not_enabled",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 38 comparison blocker missing: {blocker}")
+    if "mabd_newton_missing" in blockers:
+        fail("Phase 38 comparison must not retain mabd_newton_missing blocker")
+    metric_statuses = observed.get("paper_metric_statuses")
+    if not isinstance(metric_statuses, dict):
+        fail("Phase 38 comparison paper_metric_statuses must be a mapping")
+    if metric_statuses.get("phase_drift", {}).get("status") != "diagnostic_available":
+        fail("Phase 38 phase_drift metric status changed")
+    if metric_statuses.get("joint_force_error", {}).get("status") != (
+        "diagnostic_reaction_not_paper_waveform"
+    ):
+        fail("Phase 38 joint_force_error metric status changed")
+    if int(observed.get("matched_sample_count", 0)) <= 0:
+        fail("Phase 38 comparison must retain matched sample coverage")
+
+    provenance = observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 38 comparison input_report_provenance must be a mapping")
+    expected_lanes = {
+        "analytic_reference": "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+        "mabd_newton": "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+        "rbd_implicit_baseline": "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+    }
+    for lane, expected_path in expected_lanes.items():
+        lane_provenance = provenance.get(lane)
+        if not isinstance(lane_provenance, dict):
+            fail(f"Phase 38 input report provenance missing lane: {lane}")
+        if lane_provenance.get("path") != expected_path:
+            fail(f"Phase 38 input report path changed: {lane}")
+        if lane_provenance.get("vendored_newton_commit") != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 38 input report vendored Newton commit changed: {lane}")
+        actual_sha256 = sha256_file(ROOT / expected_path)
+        if lane_provenance.get("sha256") != actual_sha256:
+            fail(f"Phase 38 input report sha256 mismatch: {lane}")
+        if lane_provenance.get("source_commit") in PLACEHOLDER_SOURCE_COMMITS:
+            fail(f"Phase 38 input report source_commit placeholder: {lane}")
+    if provenance["mabd_newton"].get("source_commit") != mabd.source_commit:
+        fail("Phase 38 comparison must consume the regenerated MABD Newton report")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_physical_pendulum = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.physical_pendulum":
+            found_physical_pendulum = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 38 must keep physical-pendulum experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 38 must not pass experiment.* claims")
     if not found_physical_pendulum:
         fail("paper-claims.yaml missing physical-pendulum claim")
 
@@ -4318,13 +4535,14 @@ def main() -> int:
     validate_phase35_record()
     validate_phase36_record()
     validate_phase37_record()
+    validate_phase38_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38 "
         "docs/provenance validation passed"
     )
     return 0

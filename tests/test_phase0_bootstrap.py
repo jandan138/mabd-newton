@@ -2365,6 +2365,117 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("sha256", str(context.exception))
 
+    def test_phase38_constrained_rotated_kkt_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        physical_pendulum = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.physical_pendulum"
+        )
+        self.assertEqual(physical_pendulum["reproduction_status"], "intended")
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 38")
+        verified = claim_boundary_bullet(text, "Phase 38 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 38 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 38 constrained polar CPU KKT support",
+        )
+
+        self.assertIn("dense constrained polar CPU KKT evidence", current)
+        self.assertIn("dense constrained `rotation_mode = polar`", verified)
+        self.assertIn("explicit constrained `no_polar` rejection", verified)
+        self.assertIn("mabd_rotation_mode = polar", verified)
+        self.assertIn("diagnostic_reaction_not_paper_waveform", verified)
+        self.assertIn("constrained `no_polar` KKT", non_claim)
+        self.assertIn("rotated chain/tree/loop", non_claim)
+        self.assertIn("full physical-pendulum experiment", non_claim)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+    def test_phase38_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-17-phase38-constrained-rotated-kkt.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_physical_pendulum.yaml",
+            "## Repository",
+            "phase38-constrained-rotated-kkt",
+            "implementation commit: `0b93ee1`",
+            "## Solver Evidence",
+            "np.kron(np.eye(4), polar_rotation(A))",
+            "J_world @ increment_map",
+            "constrained `no_polar` remains unsupported",
+            "test_constrained_cpu_step_supports_polar_world_anchor",
+            "test_constrained_cpu_step_rejects_no_polar_because_map_is_nonlinear",
+            "## Physical Pendulum Evidence",
+            "mabd_newton.rotation_mode = polar",
+            "mabd_rotation_mode = `polar`",
+            "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+            "report source_commit: `0b93ee1`",
+            "## Regenerated Comparison Evidence",
+            "comparison report source_commit: `0b93ee1`",
+            "missing_required_lanes = `[]`",
+            "diagnostic_reaction_not_paper_waveform",
+            "physical_pendulum_comparison_pass_gate_not_enabled",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains intended.",
+            "Constrained `no_polar` KKT remains explicitly unsupported.",
+            "Rotated non-dense topology KKT remains explicitly unsupported.",
+            "Joint-force waveform agreement remains missing",
+            "paper timing remains missing",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE38", text)
+        self.assertNotIn("phase38-working-tree", text)
+
+    def test_phase38_validator_rejects_missing_rotation_mode(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json"
+        )
+        stale = replace(
+            actual,
+            observed={**actual.observed, "mabd_rotation_mode": "none"},
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_physical_pendulum_mabd_newton.json"):
+                return stale
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase38_record()
+
+        self.assertIn("mabd_rotation_mode", str(context.exception))
+
+    def test_phase38_validator_rejects_comparison_pass_overclaim(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+        overclaimed = replace(
+            actual,
+            observed={**actual.observed, "full_experiment_claim_passed": True},
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_physical_pendulum_comparison.json"):
+                return overclaimed
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase38_record()
+
+        self.assertIn("full experiment", str(context.exception))
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -2396,7 +2507,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

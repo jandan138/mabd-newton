@@ -38,36 +38,36 @@
         "time_s": 0.0
       },
       {
-        "abs_angle_delta_rad": 2.1885191476764265e-07,
-        "mabd_angle_rad": 0.009809685326122591,
-        "mabd_minus_rbd_angle_rad": -2.1885191476764265e-07,
+        "abs_angle_delta_rad": 2.1885191476070376e-07,
+        "mabd_angle_rad": 0.009809685326122598,
+        "mabd_minus_rbd_angle_rad": -2.1885191476070376e-07,
         "rbd_angle_rad": 0.009809904178037359,
         "sample_index": 1,
         "step": 4,
         "time_s": 0.04
       },
       {
-        "abs_angle_delta_rad": 1.1898917984289048e-05,
-        "mabd_angle_rad": 0.03530132870528927,
-        "mabd_minus_rbd_angle_rad": -1.1898917984289048e-05,
+        "abs_angle_delta_rad": 1.1898917984254354e-05,
+        "mabd_angle_rad": 0.035301328705289306,
+        "mabd_minus_rbd_angle_rad": -1.1898917984254354e-05,
         "rbd_angle_rad": 0.03531322762327356,
         "sample_index": 2,
         "step": 8,
         "time_s": 0.08
       },
       {
-        "abs_angle_delta_rad": 0.0001255022418728824,
-        "mabd_angle_rad": 0.0763691846994714,
-        "mabd_minus_rbd_angle_rad": -0.0001255022418728824,
+        "abs_angle_delta_rad": 0.00012550224187278525,
+        "mabd_angle_rad": 0.0763691846994715,
+        "mabd_minus_rbd_angle_rad": -0.00012550224187278525,
         "rbd_angle_rad": 0.07649468694134429,
         "sample_index": 3,
         "step": 12,
         "time_s": 0.12
       },
       {
-        "abs_angle_delta_rad": 0.0006717899335180466,
-        "mabd_angle_rad": 0.13263275412431139,
-        "mabd_minus_rbd_angle_rad": -0.0006717899335180466,
+        "abs_angle_delta_rad": 0.0006717899335178523,
+        "mabd_angle_rad": 0.13263275412431158,
+        "mabd_minus_rbd_angle_rad": -0.0006717899335178523,
         "rbd_angle_rad": 0.13330454405782943,
         "sample_index": 4,
         "step": 16,
@@ -96,9 +96,9 @@
         "backend": "cpu_numpy_newton_only",
         "baseline_lane": "mabd_newton",
         "path": "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
-        "sha256": "f8edf44d2aedba330314cdbf0906899ac449ebbc95fb11860ffecda81238fec8",
+        "sha256": "fca9bc3548ca44e278e8d7e4f51fbd5859074245bf1e9350eb0856d634ded015",
         "solver_mode": "mabd_cpu_oracle_physical_pendulum_newton_lane",
-        "source_commit": "cf45239",
+        "source_commit": "0b93ee1",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       },
@@ -118,11 +118,11 @@
         "max_abs_reference_identity_error": 2.220446049250313e-16
       },
       "mabd_newton": {
-        "max_abs_angle_error_rad": 0.007130697850637885,
+        "max_abs_angle_error_rad": 0.007130697850638079,
         "max_constraint_residual_norm": 0.0,
-        "max_phase_drift_rad": 0.007130697850637885,
+        "max_phase_drift_rad": 0.007130697850638079,
         "max_pivot_residual_m": 0.0,
-        "max_world_anchor_reaction_magnitude_n": 0.00981000000001586
+        "max_world_anchor_reaction_magnitude_n": 0.009810000000011114
       },
       "rbd_implicit_baseline": {
         "max_abs_angle_error_rad": 0.0078024877841559315,
@@ -149,7 +149,7 @@
     },
     "mabd_sample_count": 5,
     "matched_sample_count": 5,
-    "max_mabd_rbd_abs_angle_delta_rad": 0.0006717899335180466,
+    "max_mabd_rbd_abs_angle_delta_rad": 0.0006717899335178523,
     "missing_paper_metrics": [
       "joint_force_error:paper_waveform_agreement"
     ],
@@ -184,7 +184,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "physical_pendulum_multilane_comparison_development",
-  "source_commit": "cf45239",
+  "source_commit": "0b93ee1",
   "status": "incomplete",
   "threshold": {
     "max_mabd_rbd_abs_angle_delta_rad": 2.0
