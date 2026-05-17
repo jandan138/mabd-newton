@@ -8,7 +8,7 @@ passed_for_heavy_top_reference_diagnostic_lane
 
 - branch: `phase49-heavy-top-reference`
 - implementation source commit:
-  `cbeff81dfbadfcac3b1c96840bc96eba0e28c8bd`
+  `6d90ccf7d3faf9e79b84b01da815dd8c861df341`
 - vendored Newton commit:
   `96713fa965463b69c229a4d30582c733ff3526bb`
 - canonical Python:
@@ -31,7 +31,7 @@ No raw simulation directories, videos, or large logs are committed.
 
 - `reports/experiment_matrix/single_body_heavy_top_rk4_reference.json`
   - sha256:
-    `d2d69700dfec8a5e767ba31ef487e8b9a6310b1e06b6e6a3f36f765e8a2d88e1`
+    `15dcdebf41987585ab0d42c9f80e845e45b838c53d67db1e7289f8441da18e31`
   - baseline lane: `rbd_rk4_reference`
   - solver mode: `heavy_top_rk4_reference_diagnostic`
   - backend: `cpu_numpy`

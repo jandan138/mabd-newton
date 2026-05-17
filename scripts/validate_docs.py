@@ -6838,7 +6838,7 @@ def validate_phase49_record() -> None:
         "## Status\n\npassed_for_heavy_top_reference_diagnostic_lane",
         "## Repository",
         "phase49-heavy-top-reference",
-        "cbeff81dfbadfcac3b1c96840bc96eba0e28c8bd",
+        "6d90ccf7d3faf9e79b84b01da815dd8c861df341",
         VENDORED_NEWTON_COMMIT,
         "## Paper Source",
         "experiment.tex:65-75",

@@ -8,6 +8,7 @@
   "expected": {
     "blocking_reasons": [
       "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
       "raw_heavy_top_reference_curve_data_missing",
       "mabd_newton_report_missing",
       "heavy_top_comparison_report_missing",
@@ -33,13 +34,14 @@
       "/tmp/mabd-paper/source/sections/experiment.tex:65-75"
     ]
   },
-  "failure_reason": "rbd_rk4_reference diagnostic only; exact_heavy_top_inertia_unknown, raw_heavy_top_reference_curve_data_missing, mabd_newton_report_missing, and heavy_top_comparison_report_missing remain incomplete",
+  "failure_reason": "rbd_rk4_reference diagnostic only; exact_heavy_top_inertia_unknown, exact_heavy_top_geometry_unknown, raw_heavy_top_reference_curve_data_missing, mabd_newton_report_missing, and heavy_top_comparison_report_missing remain incomplete",
   "observed": {
     "angular_momentum_norm_drift": 0.03936703921113005,
     "angular_momentum_norm_final": 0.519683519605565,
     "angular_momentum_norm_initial": 0.5,
     "blocking_reasons": [
       "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
       "raw_heavy_top_reference_curve_data_missing",
       "mabd_newton_report_missing",
       "heavy_top_comparison_report_missing",
@@ -166,7 +168,7 @@
   "raw_outputs": {},
   "scene_id": "single_body_heavy_top",
   "solver_mode": "heavy_top_rk4_reference_diagnostic",
-  "source_commit": "cbeff81dfbadfcac3b1c96840bc96eba0e28c8bd",
+  "source_commit": "6d90ccf7d3faf9e79b84b01da815dd8c861df341",
   "status": "incomplete",
   "threshold": {
     "max_relative_energy_drift": 1e-07,
