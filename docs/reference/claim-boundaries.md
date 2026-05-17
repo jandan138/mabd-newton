@@ -615,6 +615,21 @@
   paper scene assets, paper timing, comparative baselines, rendered output,
   generated videos or raw simulation logs, a full paper reproduction, or any
   passed `experiment.*` claim.
+- This repository contains Phase 48 physical-pendulum `mabd_newton`
+  model-derived SolverMABD lane-plumbing evidence after the Phase 48 record is
+  created.
+- Phase 48 verifies the formal physical-pendulum `mabd_newton` report lane uses
+  Newton model-derived `SolverMABD.step()` with `mabd:body`,
+  `mabd:world_constraint`, and `mabd:gravity` rows for the procedural
+  diagnostic pendulum, records `solver_model_config_source =
+  newton_model_derived`, matches the prior manual CPU-oracle diagnostic rollout
+  within numerical tolerance, keeps the regenerated comparison report
+  incomplete, and keeps `full_experiment_claim_passed = false`.
+- Phase 48 does not verify paper-faithful physical-pendulum geometry, a
+  physical-pendulum experiment pass, Newton `Contacts`, runtime Newton
+  `Control`, GPU/Warp kernels, rendered output, generated videos, paper timing,
+  comparative pass gates, raw simulation logs, a full paper reproduction, or
+  any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -703,6 +718,12 @@
   implementation, not a GPU/Warp solver, not a paper timing reproduction, not
   rendered-output evidence, not a full paper reproduction, and not any passed
   `experiment.*` claim.
+- Phase 48 physical-pendulum model-derived `mabd_newton` lane is not a passed
+  physical-pendulum experiment, not paper-faithful pendulum geometry, not a
+  contact implementation, not a runtime Newton `Control` implementation, not a
+  GPU/Warp solver, not rendered-output evidence, not paper timing reproduction,
+  not a comparative pass gate, not a full paper reproduction, and not any
+  passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

@@ -47,36 +47,36 @@
         "time_s": 0.0
       },
       {
-        "abs_angle_delta_rad": 2.1885191476070376e-07,
-        "mabd_angle_rad": 0.009809685326122598,
-        "mabd_minus_rbd_angle_rad": -2.1885191476070376e-07,
+        "abs_angle_delta_rad": 2.181939428094748e-07,
+        "mabd_angle_rad": 0.00980968598409455,
+        "mabd_minus_rbd_angle_rad": -2.181939428094748e-07,
         "rbd_angle_rad": 0.009809904178037359,
         "sample_index": 1,
         "step": 4,
         "time_s": 0.04
       },
       {
-        "abs_angle_delta_rad": 1.1898917984254354e-05,
-        "mabd_angle_rad": 0.035301328705289306,
-        "mabd_minus_rbd_angle_rad": -1.1898917984254354e-05,
+        "abs_angle_delta_rad": 1.1897296138145552e-05,
+        "mabd_angle_rad": 0.035301330327135415,
+        "mabd_minus_rbd_angle_rad": -1.1897296138145552e-05,
         "rbd_angle_rad": 0.03531322762327356,
         "sample_index": 2,
         "step": 8,
         "time_s": 0.08
       },
       {
-        "abs_angle_delta_rad": 0.00012550224187278525,
-        "mabd_angle_rad": 0.0763691846994715,
-        "mabd_minus_rbd_angle_rad": -0.00012550224187278525,
+        "abs_angle_delta_rad": 0.0001254956576323546,
+        "mabd_angle_rad": 0.07636919128371193,
+        "mabd_minus_rbd_angle_rad": -0.0001254956576323546,
         "rbd_angle_rad": 0.07649468694134429,
         "sample_index": 3,
         "step": 12,
         "time_s": 0.12
       },
       {
-        "abs_angle_delta_rad": 0.0006717899335178523,
-        "mabd_angle_rad": 0.13263275412431158,
-        "mabd_minus_rbd_angle_rad": -0.0006717899335178523,
+        "abs_angle_delta_rad": 0.0006717782126356986,
+        "mabd_angle_rad": 0.13263276584519373,
+        "mabd_minus_rbd_angle_rad": -0.0006717782126356986,
         "rbd_angle_rad": 0.13330454405782943,
         "sample_index": 4,
         "step": 16,
@@ -103,9 +103,9 @@
         "backend": "cpu_numpy_newton_only",
         "baseline_lane": "mabd_newton",
         "path": "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
-        "sha256": "cd12028fe62dffb554192f9b9b6426849d8befbc8062e684d61ab95b13670187",
+        "sha256": "582af417a66e4cc83020432fb285c64203dc1692f1a8bdc5132f9cea90590774",
         "solver_mode": "mabd_cpu_oracle_physical_pendulum_newton_lane",
-        "source_commit": "1937d40",
+        "source_commit": "d102194",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       },
@@ -135,8 +135,8 @@
           "time_s": 0.0
         },
         {
-          "mabd_abs_joint_force_error_n": 0.22115379492529486,
-          "mabd_joint_force_magnitude_n": 0.00981000000000081,
+          "mabd_abs_joint_force_error_n": 0.22115379403973284,
+          "mabd_joint_force_magnitude_n": 0.009810000885562824,
           "rbd_abs_joint_force_error_n": 0.0192421730665146,
           "rbd_joint_force_magnitude_n": 0.2502059679918103,
           "reference_delta_between_lanes_n": 0.0,
@@ -146,8 +146,8 @@
           "time_s": 0.04
         },
         {
-          "mabd_abs_joint_force_error_n": 0.9138744976459608,
-          "mabd_joint_force_magnitude_n": 0.009810000000011114,
+          "mabd_abs_joint_force_error_n": 0.9138744967603994,
+          "mabd_joint_force_magnitude_n": 0.009810000885572502,
           "rbd_abs_joint_force_error_n": 0.038363096462715296,
           "rbd_joint_force_magnitude_n": 0.9620475941086872,
           "reference_delta_between_lanes_n": 0.0,
@@ -157,8 +157,8 @@
           "time_s": 0.08
         },
         {
-          "mabd_abs_joint_force_error_n": 2.066817062356312,
-          "mabd_joint_force_magnitude_n": 0.009809999999998239,
+          "mabd_abs_joint_force_error_n": 2.0668170614707435,
+          "mabd_joint_force_magnitude_n": 0.009810000885566522,
           "rbd_abs_joint_force_error_n": 0.05681334430761531,
           "rbd_joint_force_magnitude_n": 2.1334404066639254,
           "reference_delta_between_lanes_n": 0.0,
@@ -168,8 +168,8 @@
           "time_s": 0.12
         },
         {
-          "mabd_abs_joint_force_error_n": 3.674027173124528,
-          "mabd_joint_force_magnitude_n": 0.00980999999998078,
+          "mabd_abs_joint_force_error_n": 3.6740271722389184,
+          "mabd_joint_force_magnitude_n": 0.009810000885590775,
           "rbd_abs_joint_force_error_n": 0.07322754047186475,
           "rbd_joint_force_magnitude_n": 3.7570647135963737,
           "reference_delta_between_lanes_n": 0.0,
@@ -182,7 +182,7 @@
       "limitation": "diagnostic scalar reference, not paper geometry",
       "mabd_sample_count": 5,
       "matched_sample_count": 5,
-      "max_mabd_abs_joint_force_error_n": 3.674027173124528,
+      "max_mabd_abs_joint_force_error_n": 3.6740271722389184,
       "max_rbd_abs_joint_force_error_n": 0.07322754047186475,
       "nonfinite": false,
       "rbd_sample_count": 5,
@@ -193,11 +193,11 @@
         "max_abs_reference_identity_error": 2.220446049250313e-16
       },
       "mabd_newton": {
-        "max_abs_angle_error_rad": 0.007130697850638079,
+        "max_abs_angle_error_rad": 0.007130709571520233,
         "max_constraint_residual_norm": 0.0,
-        "max_phase_drift_rad": 0.007130697850638079,
+        "max_phase_drift_rad": 0.007130709571520233,
         "max_pivot_residual_m": 0.0,
-        "max_world_anchor_reaction_magnitude_n": 0.009810000000011114
+        "max_world_anchor_reaction_magnitude_n": 0.009810000885590775
       },
       "rbd_implicit_baseline": {
         "max_abs_angle_error_rad": 0.0078024877841559315,
@@ -224,7 +224,7 @@
     },
     "mabd_sample_count": 5,
     "matched_sample_count": 5,
-    "max_mabd_rbd_abs_angle_delta_rad": 0.0006717899335178523,
+    "max_mabd_rbd_abs_angle_delta_rad": 0.0006717782126356986,
     "missing_paper_metrics": [
       "joint_force_error:paper_geometry_unknown"
     ],
@@ -269,7 +269,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "physical_pendulum_multilane_comparison_development",
-  "source_commit": "1937d40",
+  "source_commit": "d102194",
   "status": "incomplete",
   "threshold": {
     "max_mabd_rbd_abs_angle_delta_rad": 2.0

@@ -3562,6 +3562,143 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertNotIn(stale, spec)
             self.assertNotIn(stale, plan)
 
+    def test_phase48_physical_pendulum_model_derived_lane_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 48")
+        verified = claim_boundary_bullet(text, "Phase 48 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 48 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 48 physical-pendulum model-derived")
+
+        self.assertIn("physical-pendulum `mabd_newton`", current)
+        self.assertIn("model-derived SolverMABD", current)
+        self.assertIn("Newton model-derived `SolverMABD.step()`", verified)
+        self.assertIn("`mabd:body`", verified)
+        self.assertIn("`mabd:world_constraint`", verified)
+        self.assertIn("`mabd:gravity`", verified)
+        self.assertIn("solver_model_config_source = newton_model_derived", verified)
+        self.assertIn("full_experiment_claim_passed = false", verified)
+        self.assertIn("paper-faithful physical-pendulum geometry", non_claim)
+        self.assertIn("physical-pendulum experiment pass", non_claim)
+        self.assertIn("Newton `Contacts`", non_claim)
+        self.assertIn("runtime Newton `Control`", non_claim)
+        self.assertIn("GPU/Warp kernels", non_claim)
+        self.assertIn("rendered output", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("comparative pass gates", non_claim)
+        self.assertIn("raw simulation logs", non_claim)
+        self.assertIn("full paper reproduction", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+        self.assertIn("not a passed physical-pendulum experiment", forbidden)
+        self.assertIn("not paper-faithful pendulum geometry", forbidden)
+        self.assertIn("not a contact implementation", forbidden)
+        self.assertIn("not a runtime Newton `Control` implementation", forbidden)
+        self.assertIn("not a GPU/Warp solver", forbidden)
+        self.assertIn("not a comparative pass gate", forbidden)
+
+    def test_phase48_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-18-phase48-physical-pendulum-model-lane.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_physical_pendulum_model_derived_lane_slice",
+            "## Repository",
+            "phase48-physical-pendulum-model-lane",
+            "7735a3357a2660a4b014aa6e37d3bc38f9039916",
+            "42f8674",
+            "f642f69",
+            "d102194",
+            "Evidence record commit",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "Local patch status: locally patched",
+            "young_modulus == 0.0",
+            "## Implementation Evidence",
+            "manual_cpu_oracle_config",
+            "newton_model_derived",
+            "`mabd:body`",
+            "`mabd:world_constraint`",
+            "`mabd:gravity`",
+            "SolverMABD.step(state, state, None, None, dt)",
+            "solver_model_config_source = newton_model_derived",
+            "full_experiment_claim_passed = false",
+            "## RED Evidence",
+            "roll_out_physical_pendulum_mabd_model_derived",
+            "KeyError: 'solver_model_config_source'",
+            "ValueError: young_modulus must be positive",
+            "## GREEN Evidence",
+            "Ran 37 tests",
+            "## Report Artifacts",
+            "single_body_physical_pendulum_mabd_newton.json",
+            "single_body_physical_pendulum_comparison.json",
+            "source_commit = d102194",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed",
+            "Paper-faithful physical-pendulum geometry remains missing",
+            "Newton `Contacts` remain unimplemented",
+            "Runtime Newton `Control` remains unverified",
+            "GPU/Warp kernels remain unverified",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE48", text)
+        self.assertNotIn("phase48-working-tree", text)
+        self.assertNotIn("PHASE48_EVIDENCE_RECORD_COMMIT_TO_PIN", text)
+
+    def test_phase48_spec_and_plan_have_model_lane_guardrails(self) -> None:
+        spec = (
+            ROOT
+            / "docs/superpowers/specs/2026-05-18-phase48-physical-pendulum-model-lane-design.md"
+        ).read_text()
+        plan = (
+            ROOT
+            / "docs/superpowers/plans/2026-05-18-mabd-phase48-physical-pendulum-model-lane.md"
+        ).read_text()
+
+        for snippet in (
+            "Phase 48 Physical Pendulum Model-Derived MABD Lane Design",
+            "`mabd_newton` lane",
+            "`SolverMABD.step()`",
+            "`mabd:body`",
+            "`mabd:world_constraint`",
+            "`mabd:gravity`",
+            "solver_model_config_source",
+            "newton_model_derived",
+            "This is still not a passed physical-pendulum paper experiment",
+        ):
+            self.assertIn(snippet, spec)
+        for snippet in (
+            "Phase 48 Physical Pendulum Model-Derived Lane Implementation Plan",
+            "Make the physical-pendulum `mabd_newton` report lane step through Newton model-derived `SolverMABD.step()`",
+            "roll_out_physical_pendulum_mabd_model_derived",
+            "solver_model_config_source",
+            "newton_model_derived",
+            "No `experiment.*` claim is passed",
+        ):
+            self.assertIn(snippet, plan)
+        for stale in (
+            "Phase 47 Model Gravity Config Implementation Plan",
+            "passed_for_solver_model_gravity_config_slice",
+            "Phase 48 does not verify model-derived physical pendulum",
+        ):
+            self.assertNotIn(stale, spec)
+            self.assertNotIn(stale, plan)
+
+    def test_phase48_mabd_newton_report_records_model_derived_solver_source(self) -> None:
+        report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json"
+        )
+
+        self.assertEqual(report.source_commit, "d102194")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.observed["solver_model_config_source"], "newton_model_derived")
+        self.assertEqual(report.expected["solver_model_config_source"], "newton_model_derived")
+        self.assertEqual(
+            report.observed["newton_model_derived_custom_frequencies"],
+            ["mabd:body", "mabd:world_constraint", "mabd:gravity"],
+        )
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(report.observed["blocking_reasons"], ["pendulum_geometry_unknown"])
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -3593,7 +3730,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

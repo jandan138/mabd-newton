@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-47 docs and provenance contracts."""
+"""Validate Phase 0-48 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -98,6 +98,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase45-model-constraint-config.md",
     "docs/records/2026-05-18-phase46-model-world-constraints.md",
     "docs/records/2026-05-18-phase47-model-gravity-config.md",
+    "docs/records/2026-05-18-phase48-physical-pendulum-model-lane.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -130,6 +131,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase46-model-world-constraints.md",
     "docs/superpowers/specs/2026-05-18-phase47-model-gravity-config-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase47-model-gravity-config.md",
+    "docs/superpowers/specs/2026-05-18-phase48-physical-pendulum-model-lane-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase48-physical-pendulum-model-lane.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -6557,6 +6560,255 @@ def validate_phase47_record() -> None:
     validate_phase47_model_gravity_smoke()
 
 
+def validate_phase48_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase48-physical-pendulum-model-lane.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed_for_physical_pendulum_model_derived_lane_slice",
+        "## Repository",
+        "phase48-physical-pendulum-model-lane",
+        "7735a3357a2660a4b014aa6e37d3bc38f9039916",
+        "42f8674",
+        "f642f69",
+        "d102194",
+        "Evidence record commit",
+        "## Vendored Newton",
+        "https://github.com/newton-physics/newton.git",
+        VENDORED_NEWTON_COMMIT,
+        "Local patch status: locally patched",
+        "young_modulus == 0.0",
+        "## Environment",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+        "does not mutate the shared Newton/reference environment",
+        "## Implementation Evidence",
+        "manual_cpu_oracle_config",
+        "newton_model_derived",
+        "`mabd:body`",
+        "`mabd:world_constraint`",
+        "`mabd:gravity`",
+        "SolverMABD.step(state, state, None, None, dt)",
+        "solver_model_config_source = newton_model_derived",
+        "full_experiment_claim_passed = false",
+        "## RED Evidence",
+        "roll_out_physical_pendulum_mabd_model_derived",
+        "KeyError: 'solver_model_config_source'",
+        "FAILED (errors=2)",
+        "ValueError: young_modulus must be positive",
+        "FAILED (errors=1)",
+        "## GREEN Evidence",
+        "Ran 37 tests",
+        "OK",
+        "## Report Artifacts",
+        "single_body_physical_pendulum_mabd_newton.json",
+        "single_body_physical_pendulum_comparison.json",
+        "source_commit = d102194",
+        "blocking_reasons = [pendulum_geometry_unknown]",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+        'PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"',
+        "npm --prefix site run validate",
+        "git diff --check",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed",
+        "Paper-faithful physical-pendulum geometry remains missing",
+        "Newton `Contacts` remain unimplemented",
+        "Runtime Newton `Control` remains unverified",
+        "GPU/Warp kernels remain unverified",
+        "full paper reproduction remain incomplete",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 48 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE48",
+        "phase48-working-tree",
+        "<implementation-commit>",
+        "PHASE48_EVIDENCE_RECORD_COMMIT_TO_PIN",
+    ):
+        if placeholder in text:
+            fail("Phase 48 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "passed physical-pendulum experiment",
+        "physical-pendulum experiment passed",
+        "paper-faithful physical-pendulum geometry is verified",
+        "contacts are implemented",
+        "control input is implemented",
+        "gpu solver passed",
+        "warp solver passed",
+        "full paper reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 48 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 48 physical-pendulum `mabd_newton`",
+        "Phase 48 verifies the formal physical-pendulum `mabd_newton` report lane uses",
+        "Newton model-derived `SolverMABD.step()`",
+        "`mabd:body`",
+        "`mabd:world_constraint`",
+        "`mabd:gravity`",
+        "solver_model_config_source = newton_model_derived",
+        "full_experiment_claim_passed = false",
+        "Phase 48 does not verify paper-faithful physical-pendulum geometry",
+        "physical-pendulum experiment pass",
+        "Newton `Contacts`",
+        "runtime Newton `Control`",
+        "GPU/Warp kernels",
+        "rendered output",
+        "paper timing",
+        "comparative pass gates",
+        "raw simulation logs",
+        "a full paper reproduction",
+        "any passed `experiment.*` claim",
+        "Phase 48 physical-pendulum model-derived `mabd_newton` lane",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 48 claim boundary missing: {snippet}")
+
+    spec_text = (
+        ROOT / "docs/superpowers/specs/2026-05-18-phase48-physical-pendulum-model-lane-design.md"
+    ).read_text(encoding="utf-8")
+    plan_text = (
+        ROOT / "docs/superpowers/plans/2026-05-18-mabd-phase48-physical-pendulum-model-lane.md"
+    ).read_text(encoding="utf-8")
+    for snippet in (
+        "Phase 48 Physical Pendulum Model-Derived MABD Lane Design",
+        "`mabd_newton` lane",
+        "`SolverMABD.step()`",
+        "`mabd:body`",
+        "`mabd:world_constraint`",
+        "`mabd:gravity`",
+        "solver_model_config_source",
+        "newton_model_derived",
+        "This is still not a passed physical-pendulum paper experiment",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 48 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 48 Physical Pendulum Model-Derived Lane Implementation Plan",
+        "Make the physical-pendulum `mabd_newton` report lane step through Newton model-derived `SolverMABD.step()`",
+        "roll_out_physical_pendulum_mabd_model_derived",
+        "solver_model_config_source",
+        "newton_model_derived",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 48 plan missing required boundary text: {snippet}")
+    for stale in (
+        "Phase 47 Model Gravity Config Implementation Plan",
+        "passed_for_solver_model_gravity_config_slice",
+        "Phase 48 does not verify model-derived physical pendulum",
+    ):
+        if stale in spec_text or stale in plan_text:
+            fail(f"Phase 48 spec/plan contains stale copied language: {stale}")
+
+    try:
+        config = load_physical_pendulum_config(
+            ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 48 physical-pendulum config validation failed: {exc}")
+
+    mabd = load_claim_report(ROOT / config.mabd_newton.output_report)
+    comparison = load_claim_report(ROOT / config.comparison.output_report)
+    for report_name, report in (("MABD Newton", mabd), ("comparison", comparison)):
+        if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+            fail(f"Phase 48 {report_name} report source_commit must name the implementation commit")
+        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 48 {report_name} report vendored Newton commit changed")
+        if report.claim_id != config.claim_id:
+            fail(f"Phase 48 {report_name} report claim_id does not match config")
+        if report.scene_id != config.scene_id:
+            fail(f"Phase 48 {report_name} report scene_id does not match config")
+        if report.status.value != "incomplete":
+            fail(f"Phase 48 {report_name} report must remain incomplete")
+
+    if mabd.source_commit != "d102194":
+        fail("Phase 48 MABD Newton report source_commit must pin implementation commit d102194")
+    if comparison.source_commit != "d102194":
+        fail("Phase 48 comparison report source_commit must pin implementation commit d102194")
+    if mabd.baseline_lane != "mabd_newton":
+        fail("Phase 48 MABD Newton report lane changed")
+    if mabd.solver_mode != "mabd_cpu_oracle_physical_pendulum_newton_lane":
+        fail("Phase 48 MABD Newton report solver mode changed")
+    if mabd.backend != "cpu_numpy_newton_only":
+        fail("Phase 48 MABD Newton report backend changed")
+    mabd_observed = mabd.observed
+    if mabd_observed.get("lane_status") != "incomplete_diagnostic_generated":
+        fail("Phase 48 MABD Newton lane_status changed")
+    if mabd_observed.get("solver_model_config_source") != "newton_model_derived":
+        fail("Phase 48 MABD Newton report must record model-derived solver source")
+    if mabd.expected.get("solver_model_config_source") != "newton_model_derived":
+        fail("Phase 48 MABD Newton expected record must record model-derived solver source")
+    expected_frequencies = ["mabd:body", "mabd:world_constraint", "mabd:gravity"]
+    if mabd_observed.get("newton_model_derived_custom_frequencies") != expected_frequencies:
+        fail("Phase 48 MABD Newton observed custom frequencies changed")
+    if mabd.expected.get("newton_model_derived_custom_frequencies") != expected_frequencies:
+        fail("Phase 48 MABD Newton expected custom frequencies changed")
+    if mabd_observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 48 MABD Newton report must not pass full experiment claim")
+    if mabd_observed.get("threshold_violations") != []:
+        fail("Phase 48 MABD Newton report threshold violations changed")
+    if mabd_observed.get("blocking_reasons") != ["pendulum_geometry_unknown"]:
+        fail("Phase 48 MABD Newton blockers changed")
+
+    if comparison.baseline_lane != "physical_pendulum_comparison_protocol":
+        fail("Phase 48 comparison report lane changed")
+    if comparison.solver_mode != "physical_pendulum_multilane_comparison_development":
+        fail("Phase 48 comparison report solver mode changed")
+    observed = comparison.observed
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 48 comparison report must not pass full experiment claim")
+    if observed.get("missing_required_lanes") != []:
+        fail("Phase 48 comparison missing_required_lanes changed")
+    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_geometry_unknown"]:
+        fail("Phase 48 comparison missing_paper_metrics changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 48 comparison blockers must be a list")
+    for blocker in (
+        "pendulum_geometry_unknown",
+        "physical_pendulum_comparison_pass_gate_not_enabled",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 48 comparison blocker missing: {blocker}")
+    provenance = observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 48 comparison input_report_provenance must be a mapping")
+    mabd_provenance = provenance.get("mabd_newton")
+    if not isinstance(mabd_provenance, dict):
+        fail("Phase 48 comparison missing mabd_newton input provenance")
+    if mabd_provenance.get("path") != config.mabd_newton.output_report:
+        fail("Phase 48 comparison MABD input path changed")
+    if mabd_provenance.get("source_commit") != mabd.source_commit:
+        fail("Phase 48 comparison must consume the regenerated MABD Newton report")
+    if mabd_provenance.get("sha256") != sha256_file(ROOT / config.mabd_newton.output_report):
+        fail("Phase 48 comparison MABD input sha256 mismatch")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.physical_pendulum":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 48 must keep physical-pendulum experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 48 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -6820,13 +7072,14 @@ def main() -> int:
     validate_phase45_record()
     validate_phase46_record()
     validate_phase47_record()
+    validate_phase48_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48 "
         "docs/provenance validation passed"
     )
     return 0
