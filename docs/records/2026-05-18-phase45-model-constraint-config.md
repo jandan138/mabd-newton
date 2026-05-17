@@ -98,7 +98,7 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 Result:
 
 ```text
-Ran 78 tests in 0.686s
+Ran 80 tests in 0.678s
 
 OK
 ```
@@ -124,5 +124,5 @@ No `experiment.*` claim is passed.
 This is not a full paper reproduction. Phase 45 verifies only model-derived CPU
 joint-constraint configuration for `SolverMABD.step()`. It does not verify
 model-derived world constraints, Newton `Contacts`, Newton `Control` input
-ingestion, GPU/Warp kernels, paper scene assets, paper timing, comparative
-baselines, rendered output, generated videos, or raw simulation logs.
+ingestion, GPU/Warp kernels, paper scene assets, paper timing, comparative baselines,
+rendered output, generated videos, or raw simulation logs.

@@ -5931,11 +5931,15 @@ def validate_phase45_record() -> None:
         "Custom attribute 'mabd:cp_index' is not defined",
         "FAILED (errors=7)",
         "## GREEN Evidence",
-        "Ran 78 tests",
+        "Ran 80 tests",
         "OK",
         "## Claim Impact",
         "No `experiment.*` claim is passed.",
         "not a full paper reproduction",
+        "paper timing",
+        "comparative baselines",
+        "rendered output",
+        "raw simulation logs",
     )
     for snippet in required_snippets:
         if snippet not in text:
@@ -5975,6 +5979,11 @@ def validate_phase45_record() -> None:
         "Newton `Contacts`",
         "Newton `Control` input",
         "GPU/Warp kernels",
+        "paper timing",
+        "comparative baselines",
+        "rendered output",
+        "raw simulation logs",
+        "a full paper reproduction",
         "any passed `experiment.*` claim",
         "Phase 45 model-derived SolverMABD joint constraints",
     ):

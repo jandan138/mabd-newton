@@ -3245,6 +3245,11 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("Newton `Contacts`", non_claim)
         self.assertIn("Newton `Control` input", non_claim)
         self.assertIn("GPU/Warp kernels", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("comparative baselines", non_claim)
+        self.assertIn("rendered output", non_claim)
+        self.assertIn("raw simulation", non_claim)
+        self.assertIn("full paper reproduction", non_claim)
         self.assertIn("any passed `experiment.*` claim", non_claim)
         self.assertIn("not a passed paper experiment", forbidden)
         self.assertIn("not a contact implementation", forbidden)
@@ -3257,10 +3262,10 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Status\n\npassed_for_solver_model_constraint_config_slice",
             "## Repository",
             "phase45-model-constraint-config",
-            "00e5415",
-            "83534a4",
-            "ca8c8a1",
-            "2eb5e39",
+            "00e54159fcc18cd02f7c2cff74426d276b4f2e11",
+            "83534a45b9ec1be456b3eaf9512a0a06b6639402",
+            "ca8c8a100471ff0b7a5a42adbb795f64f16a90a6",
+            "2eb5e39126b12d4609aa51309c9a78d6a9016fbc",
             "## Vendored Newton",
             "https://github.com/newton-physics/newton.git",
             "96713fa965463b69c229a4d30582c733ff3526bb",
@@ -3280,11 +3285,15 @@ class Phase0BootstrapTests(unittest.TestCase):
             "Custom attribute 'mabd:cp_index' is not defined",
             "FAILED (errors=7)",
             "## GREEN Evidence",
-            "Ran 78 tests",
+            "Ran 80 tests",
             "OK",
             "## Claim Impact",
             "No `experiment.*` claim is passed.",
             "not a full paper reproduction",
+            "paper timing",
+            "comparative baselines",
+            "rendered output",
+            "raw simulation logs",
         ):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE45", text)

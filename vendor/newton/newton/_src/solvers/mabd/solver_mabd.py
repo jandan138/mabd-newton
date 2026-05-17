@@ -176,8 +176,8 @@ class SolverMABD(SolverBase):
             raise ValueError("mabd:constraint_type must be 0..5")
 
         spec_rank = self._joint_spec_rank(spec)
-        if rank != 0 and rank != spec_rank:
-            raise ValueError(f"mabd:rank must be 0 or {spec_rank} for constraint_type={constraint_type}")
+        if rank != spec_rank:
+            raise ValueError(f"mabd:rank must be {spec_rank} for constraint_type={constraint_type}")
 
         return MABDCPUOracleConstraint(
             body_a=body_a,

@@ -985,6 +985,42 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         np.testing.assert_allclose(qd_next, np.asarray(expected.qd), atol=1.0e-7)
         self.assertEqual(solver.last_step_result.topology, "dense")
 
+    def test_solver_step_model_path_matches_explicit_prismatic_constraint(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        for _ in range(2):
+            _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_constraint_row(builder, body_a=0, body_b=1, rank=5, constraint_type=5)
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        q = [_identity_q((0.1, 0.02, 0.0)), _identity_q((-0.05, 0.0, 0.03))]
+        qd = [np.zeros(12), np.zeros(12)]
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        dt = 0.05
+
+        solver.step(state, state, None, None, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=q,
+            qd=qd,
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0) for _ in range(2)],
+                constraints=[
+                    mabd.MABDCPUOracleConstraint(
+                        body_a=0,
+                        body_b=1,
+                        spec=mabd.prismatic_joint(UNIT_CT, UNIT_CT, axis=np.array([0.0, 1.0, 0.0])),
+                    )
+                ],
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next, np.asarray(expected.q), atol=1.0e-7)
+        np.testing.assert_allclose(qd_next, np.asarray(expected.qd), atol=1.0e-7)
+        self.assertEqual(solver.last_step_result.topology, "dense")
+
     def test_solver_step_manual_config_takes_precedence_over_model_constraints(self) -> None:
         model = _mabd_model_with_one_constraint()
         solver = SolverMABD(model)
@@ -1015,6 +1051,18 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         for _ in range(2):
             _add_model_body_row(builder, young_modulus=1.0)
         _add_model_constraint_row(builder, body_a=0, body_b=1, rank=5, constraint_type=2)
+        model = builder.finalize()
+        solver = SolverMABD(model)
+
+        with self.assertRaisesRegex(ValueError, "mabd:rank"):
+            solver.step(model.state(), model.state(), None, None, 0.01)
+
+    def test_solver_step_model_path_rejects_default_rank_for_explicit_constraint_type(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        for _ in range(2):
+            _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_constraint_row(builder, body_a=0, body_b=1, rank=0, constraint_type=3)
         model = builder.finalize()
         solver = SolverMABD(model)
 
