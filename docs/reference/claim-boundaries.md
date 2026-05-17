@@ -53,6 +53,9 @@
 - This repository contains Phase 19 finite required-metric validation and
   lane metric-difference reporting for the spinning-box comparison protocol
   after the Phase 19 record is created.
+- This repository contains Phase 20 contact-surface config parsing, procedural
+  spinning-box cube-corner derivation, and contact diagnostic reporting for
+  the M-ABD development lane after the Phase 20 record is created.
 
 ## Intended
 
@@ -212,6 +215,14 @@
   paper-faithful implicit RBD baseline, paper-faithful affine collision, paper
   timing, rendered output, paper trajectory agreement, generated report
   artifacts as committed evidence, or any passed `experiment.*` claim.
+- Phase 20 verifies procedural spinning-box cube corner derivation, configured
+  frictionless plane metadata, point-plane normal penalty contact diagnostics,
+  and finite contact diagnostic fields in the M-ABD development lane report.
+- Phase 20 does not verify the paper spinning-box experiment, collision
+  detection, continuous collision detection, friction, implicit contact solve,
+  paper-faithful affine collision, paper-faithful implicit RBD baseline, paper
+  timing, rendered output, paper trajectory agreement, generated report
+  artifacts as committed evidence, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -221,6 +232,8 @@
   implicit RBD baseline.
 - A rigid `body_q` proxy is paper-faithful affine collision.
 - A spinning-box comparison protocol report is a passed paper experiment.
+- Phase 20 point-plane contact diagnostics are a paper-faithful collision or
+  contact solve.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

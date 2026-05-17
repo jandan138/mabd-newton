@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19 docs."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20 docs."""
 
 from __future__ import annotations
 
@@ -54,6 +54,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase17-spinning-box-mabd-paper-metrics.md",
     "docs/records/2026-05-17-phase18-spinning-box-mabd-physical-mass.md",
     "docs/records/2026-05-17-phase19-spinning-box-comparison-finite-metrics.md",
+    "docs/records/2026-05-17-phase20-spinning-box-contact-diagnostics.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -358,6 +359,34 @@ def validate_claim_boundaries() -> None:
     for snippet in phase19_non_claims:
         if snippet not in normalized_text:
             fail(f"claim-boundaries.md must bound Phase 19 finite metric evidence: {snippet}")
+    if "Phase 20 verifies procedural spinning-box cube corner derivation" not in text:
+        fail("claim-boundaries.md must explicitly state Phase 20 contact diagnostics evidence")
+    phase20_required = (
+        "configured frictionless plane metadata",
+        "point-plane normal penalty contact diagnostics",
+        "finite contact diagnostic fields",
+        "M-ABD development lane report",
+    )
+    for snippet in phase20_required:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must describe Phase 20 contact diagnostics evidence: {snippet}")
+    phase20_non_claims = (
+        "Phase 20 does not verify the paper spinning-box experiment",
+        "collision detection",
+        "continuous collision detection",
+        "friction",
+        "implicit contact solve",
+        "paper-faithful affine collision",
+        "paper-faithful implicit RBD baseline",
+        "paper timing",
+        "rendered output",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase20_non_claims:
+        if snippet not in normalized_text:
+            fail(f"claim-boundaries.md must bound Phase 20 contact diagnostics evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -924,6 +953,65 @@ def validate_phase19_record() -> None:
             fail(f"Phase 19 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase20_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase20-spinning-box-contact-diagnostics.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit: `773a0ef60c4357a3083e30918c915f08a6eb1e88`",
+        "config commit: `d10ca0176cd678d76ed9a0c6d48339d4bdcdcf22`",
+        "implementation commit: `6bc889a6f7f9d2c19d9a487e37b9f9286ff4cf03`",
+        "report commit: `f4b5212cdf5543021dcf7d7a3b29731f237773c2`",
+        "docs/provenance commit:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "## Metrics And Thresholds",
+        "contact_surface",
+        "contact_surface_type",
+        "contact_corner_count",
+        "contact_active_count",
+        "contact_min_signed_distance_m",
+        "contact_max_penetration_m",
+        "contact_total_normal_force_n",
+        "contact_total_generalized_force",
+        "contact_corner_signed_distances_m",
+        "initial_configured_q_qd",
+        "mabd.evaluate_point_plane_penalty_contact",
+        "## Artifacts",
+        "`src/mabd_reproduction/spinning_box_physics.py`",
+        "`src/mabd_reproduction/single_body_reports.py`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+        "phase bootstrap docs tests:",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 20 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 20 verifies the paper spinning-box experiment",
+        "Phase 20 passes experiment.single_body.spinning_box",
+        "Phase 20 verifies paper-faithful implicit RBD baseline",
+        "Phase 20 verifies paper-faithful affine collision",
+        "Phase 20 verifies paper timing",
+        "Phase 20 verifies collision detection",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 20 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -1070,6 +1158,12 @@ def validate_phase13_config(
     expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
     if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
         fail("Phase 18 config validation failed: spinning-box mass_diagonal is not paper-derived")
+    if config.contact_surface["type"] != "plane":
+        fail("Phase 20 config validation failed: spinning-box contact surface must be a plane")
+    if config.contact_surface["plane_normal"] != (0.0, 1.0, 0.0):
+        fail("Phase 20 config validation failed: spinning-box contact plane normal changed")
+    if config.contact_surface["stiffness"] <= 0.0:
+        fail("Phase 20 config validation failed: spinning-box contact stiffness must be positive")
 
 
 def validate_provenance() -> None:
@@ -1120,13 +1214,14 @@ def main() -> int:
     validate_phase17_record()
     validate_phase18_record()
     validate_phase19_record()
+    validate_phase20_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20 "
         "docs/provenance validation passed"
     )
     return 0

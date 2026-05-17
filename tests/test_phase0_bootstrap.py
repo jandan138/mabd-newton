@@ -650,6 +650,64 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase20_spinning_box_contact_diagnostics_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        normalized_text = " ".join(text.split())
+
+        self.assertIn("Phase 20 verifies procedural spinning-box cube corner derivation", text)
+        self.assertIn("configured frictionless plane metadata", normalized_text)
+        self.assertIn("point-plane normal penalty contact diagnostics", normalized_text)
+        self.assertIn("finite contact diagnostic fields", normalized_text)
+        self.assertIn("Phase 20 does not verify the paper spinning-box experiment", text)
+        self.assertIn("collision detection", normalized_text)
+        self.assertIn("implicit contact solve", normalized_text)
+        self.assertIn("any passed `experiment.*` claim", text)
+
+    def test_phase20_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase20-spinning-box-contact-diagnostics.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit:",
+            "config commit:",
+            "implementation commit:",
+            "report commit:",
+            "docs/provenance commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "## Metrics And Thresholds",
+            "contact_surface",
+            "contact_surface_type",
+            "contact_corner_count",
+            "contact_active_count",
+            "contact_min_signed_distance_m",
+            "contact_max_penetration_m",
+            "contact_total_normal_force_n",
+            "contact_total_generalized_force",
+            "contact_corner_signed_distances_m",
+            "initial_configured_q_qd",
+            "mabd.evaluate_point_plane_penalty_contact",
+            "## Artifacts",
+            "`src/mabd_reproduction/spinning_box_physics.py`",
+            "`src/mabd_reproduction/single_body_reports.py`",
+            "generated reports: not committed",
+            "No `experiment.*` claim is passed in this phase.",
+            "phase bootstrap docs tests:",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -681,7 +739,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
