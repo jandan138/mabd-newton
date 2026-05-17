@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from math import isfinite
 from pathlib import Path
 
 import numpy as np
@@ -69,6 +70,267 @@ def _mabd_trajectory_sample(
         "affine_singular_values": shape.singular_values.tolist(),
         "affine_orthogonality_error": shape.orthogonality_error,
     }
+
+
+def _elastic_energy(
+    *,
+    config: SpinningBoxRunConfig,
+    q: np.ndarray,
+) -> float:
+    material = spinning_box_mabd_material_properties(config)
+    A, _t = mabd.unpack_q(q)
+    return float(
+        mabd.co_rotated_linear_elastic_energy(
+            A,
+            material.young_modulus_pa,
+            material.poisson_ratio,
+            material.volume_m3,
+        )
+    )
+
+
+def _relative_drift(value: float, initial_value: float) -> float:
+    return 0.0 if initial_value == 0.0 else abs(value - initial_value) / abs(initial_value)
+
+
+def _paper_horizon_sample_indices(step_count: int, sample_count: int) -> set[int]:
+    if sample_count >= step_count + 1:
+        return set(range(step_count + 1))
+    return {int(round(value)) for value in np.linspace(0, step_count, sample_count)}
+
+
+def _paper_horizon_state_metrics(
+    *,
+    config: SpinningBoxRunConfig,
+    q: np.ndarray,
+    qd: np.ndarray,
+    mass_matrix: np.ndarray,
+    step_index: int,
+    time_step_s: float,
+    residual_norm: float,
+    initial_kinetic_energy: float,
+    initial_total_energy: float,
+) -> dict[str, object]:
+    shape = spinning_box_affine_shape_diagnostics(q)
+    momentum = mabd_momentum_diagnostics(config, q, qd)
+    kinetic_energy = _kinetic_energy(qd, mass_matrix)
+    elastic_energy = _elastic_energy(config=config, q=q)
+    total_energy = kinetic_energy + elastic_energy
+    return {
+        "step_index": int(step_index),
+        "time_s": float(step_index * time_step_s),
+        "position_m": q[9:12].tolist(),
+        "linear_momentum_error": momentum.linear_momentum_error,
+        "angular_momentum_error": momentum.angular_momentum_error,
+        "kinetic_energy_j": kinetic_energy,
+        "elastic_energy_j": elastic_energy,
+        "total_energy_j": total_energy,
+        "relative_kinetic_energy_drift": _relative_drift(
+            kinetic_energy,
+            initial_kinetic_energy,
+        ),
+        "relative_total_energy_drift": _relative_drift(
+            total_energy,
+            initial_total_energy,
+        ),
+        "affine_determinant": shape.determinant,
+        "affine_abs_det_minus_one": abs(shape.determinant - 1.0),
+        "affine_singular_values": shape.singular_values.tolist(),
+        "affine_min_singular_value": float(np.min(shape.singular_values)),
+        "affine_max_singular_value": float(np.max(shape.singular_values)),
+        "affine_orthogonality_error": shape.orthogonality_error,
+        "residual_norm": float(residual_norm),
+    }
+
+
+def _finite_metric_value(value: object) -> bool:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return False
+    return isfinite(float(value))
+
+
+def _all_state_values_finite(q: np.ndarray, qd: np.ndarray, metrics: dict[str, object]) -> bool:
+    finite_scalars = (
+        "linear_momentum_error",
+        "angular_momentum_error",
+        "kinetic_energy_j",
+        "elastic_energy_j",
+        "total_energy_j",
+        "relative_kinetic_energy_drift",
+        "relative_total_energy_drift",
+        "affine_determinant",
+        "affine_abs_det_minus_one",
+        "affine_min_singular_value",
+        "affine_max_singular_value",
+        "affine_orthogonality_error",
+        "residual_norm",
+    )
+    return (
+        np.all(np.isfinite(q))
+        and np.all(np.isfinite(qd))
+        and all(_finite_metric_value(metrics[key]) for key in finite_scalars)
+    )
+
+
+def _threshold_violations(
+    summary: dict[str, object],
+    thresholds: dict[str, float],
+) -> list[str]:
+    violations: list[str] = []
+    for key, threshold in thresholds.items():
+        value = summary[key]
+        if not _finite_metric_value(value):
+            violations.append(key)
+            continue
+        value_float = float(value)
+        if key == "min_singular_value":
+            if value_float < threshold:
+                violations.append(key)
+        elif value_float > threshold:
+            violations.append(key)
+    if summary["first_nonfinite_step"] is not None:
+        violations.append("finite_state")
+    return violations
+
+
+def _run_spinning_box_paper_horizon_step_size(
+    *,
+    config: SpinningBoxRunConfig,
+    time_step_s: float,
+) -> dict[str, object]:
+    duration = config.paper_horizon.duration_s
+    step_count = int(round(duration / time_step_s))
+    if abs(step_count * time_step_s - duration) > 1.0e-12:
+        raise ValueError("paper_horizon duration_s must be divisible by time_step_grid_s entries")
+
+    q = config.initial_q.copy()
+    qd = config.initial_qd.copy()
+    mass_matrix = np.diag(config.mass_diagonal)
+    initial_kinetic_energy = _kinetic_energy(qd, mass_matrix)
+    initial_elastic_energy = _elastic_energy(config=config, q=q)
+    initial_total_energy = initial_kinetic_energy + initial_elastic_energy
+    sample_indices = _paper_horizon_sample_indices(
+        step_count,
+        config.paper_horizon.sample_count,
+    )
+    samples: list[dict[str, object]] = []
+    extrema: dict[str, tuple[float, int]] = {
+        "max_linear_momentum_error": (-np.inf, 0),
+        "max_angular_momentum_error": (-np.inf, 0),
+        "max_kinetic_energy_drift_j": (-np.inf, 0),
+        "max_total_energy_drift_j": (-np.inf, 0),
+        "max_relative_kinetic_energy_drift": (-np.inf, 0),
+        "max_relative_total_energy_drift": (-np.inf, 0),
+        "max_abs_det_minus_one": (-np.inf, 0),
+        "min_singular_value": (np.inf, 0),
+        "max_singular_value": (-np.inf, 0),
+        "max_affine_orthogonality_error": (-np.inf, 0),
+        "max_residual_norm": (-np.inf, 0),
+    }
+
+    def update(metrics: dict[str, object]) -> None:
+        step_index = int(metrics["step_index"])
+        candidates = {
+            "max_linear_momentum_error": float(metrics["linear_momentum_error"]),
+            "max_angular_momentum_error": float(metrics["angular_momentum_error"]),
+            "max_kinetic_energy_drift_j": abs(
+                float(metrics["kinetic_energy_j"]) - initial_kinetic_energy
+            ),
+            "max_total_energy_drift_j": abs(
+                float(metrics["total_energy_j"]) - initial_total_energy
+            ),
+            "max_relative_kinetic_energy_drift": float(
+                metrics["relative_kinetic_energy_drift"]
+            ),
+            "max_relative_total_energy_drift": float(
+                metrics["relative_total_energy_drift"]
+            ),
+            "max_abs_det_minus_one": float(metrics["affine_abs_det_minus_one"]),
+            "min_singular_value": float(metrics["affine_min_singular_value"]),
+            "max_singular_value": float(metrics["affine_max_singular_value"]),
+            "max_affine_orthogonality_error": float(
+                metrics["affine_orthogonality_error"]
+            ),
+            "max_residual_norm": float(metrics["residual_norm"]),
+        }
+        for key, value in candidates.items():
+            current, _current_step = extrema[key]
+            if key == "min_singular_value":
+                if value < current:
+                    extrema[key] = (value, step_index)
+            elif value > current:
+                extrema[key] = (value, step_index)
+
+    metrics = _paper_horizon_state_metrics(
+        config=config,
+        q=q,
+        qd=qd,
+        mass_matrix=mass_matrix,
+        step_index=0,
+        time_step_s=time_step_s,
+        residual_norm=0.0,
+        initial_kinetic_energy=initial_kinetic_energy,
+        initial_total_energy=initial_total_energy,
+    )
+    update(metrics)
+    if 0 in sample_indices:
+        samples.append(metrics)
+
+    oracle_body = _oracle_body(config)
+    oracle_config = mabd.MABDCPUOracleConfig(bodies=[oracle_body])
+    first_nonfinite_step: int | None = None
+    steps_completed = 0
+    for step_index in range(1, step_count + 1):
+        result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=time_step_s, config=oracle_config)
+        q = result.q[0]
+        qd = result.qd[0]
+        metrics = _paper_horizon_state_metrics(
+            config=config,
+            q=q,
+            qd=qd,
+            mass_matrix=mass_matrix,
+            step_index=step_index,
+            time_step_s=time_step_s,
+            residual_norm=result.residual_norm,
+            initial_kinetic_energy=initial_kinetic_energy,
+            initial_total_energy=initial_total_energy,
+        )
+        if not _all_state_values_finite(q, qd, metrics):
+            first_nonfinite_step = step_index
+            break
+        update(metrics)
+        steps_completed = step_index
+        if step_index in sample_indices:
+            samples.append(metrics)
+
+    summary: dict[str, object] = {
+        "time_step_s": float(time_step_s),
+        "duration_s": duration,
+        "steps_attempted": step_count,
+        "steps_completed": steps_completed,
+        "first_nonfinite_step": first_nonfinite_step,
+        "initial_position_m": config.initial_q[9:12].tolist(),
+        "final_position_m": q[9:12].tolist(),
+        "kinetic_energy_initial_j": initial_kinetic_energy,
+        "elastic_energy_initial_j": initial_elastic_energy,
+        "total_energy_initial_j": initial_total_energy,
+        "kinetic_energy_final_j": _kinetic_energy(qd, mass_matrix),
+        "elastic_energy_final_j": _elastic_energy(config=config, q=q),
+        "trajectory_samples": samples,
+    }
+    for key, (value, step_index) in extrema.items():
+        summary[key] = value
+        summary[f"{key}_step_index"] = step_index
+    summary["threshold_violations"] = _threshold_violations(
+        summary,
+        config.paper_horizon.thresholds,
+    )
+    summary["diagnostic_status"] = (
+        "development_gap_observed"
+        if summary["threshold_violations"]
+        else "thresholds_met_no_lane_gate"
+    )
+    return summary
 
 
 def write_spinning_box_development_report(
@@ -225,4 +487,102 @@ def write_spinning_box_development_report(
     return report
 
 
-__all__ = ["write_spinning_box_development_report"]
+def write_spinning_box_paper_horizon_report(
+    path: str | Path,
+    *,
+    config: SpinningBoxRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
+    if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
+        raise ValueError("single_body_spinning_box mass_diagonal must match paper cube ABD mass")
+    results = [
+        _run_spinning_box_paper_horizon_step_size(
+            config=config,
+            time_step_s=time_step_s,
+        )
+        for time_step_s in config.paper_horizon.time_step_grid_s
+    ]
+    all_violations = sorted(
+        {
+            violation
+            for result in results
+            for violation in result["threshold_violations"]
+        }
+    )
+    diagnostic_status = (
+        "development_gap_observed"
+        if all_violations
+        else "thresholds_met_no_lane_gate"
+    )
+    top_linear_momentum_error = max(
+        float(result["max_linear_momentum_error"]) for result in results
+    )
+    top_angular_momentum_error = max(
+        float(result["max_angular_momentum_error"]) for result in results
+    )
+    top_total_energy_drift = max(
+        float(result["max_total_energy_drift_j"]) for result in results
+    )
+    observed = {
+        "paper_horizon_duration_s": config.paper_horizon.duration_s,
+        "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        "paper_source_lines": list(config.source_lines),
+        "figure_text_source": config.paper_horizon.figure_text_source,
+        "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+        "mabd_paper_horizon_status": diagnostic_status,
+        "blocking_reasons": [
+            "mabd_newton_report_incomplete",
+            "mabd_paper_horizon_diagnostic_thresholds_violated",
+        ]
+        if all_violations
+        else ["mabd_newton_report_incomplete"],
+        "threshold_violations": all_violations,
+        "linear_momentum_error": top_linear_momentum_error,
+        "angular_momentum_error": top_angular_momentum_error,
+        "energy_drift": top_total_energy_drift,
+        "initial_position_m": config.initial_q[9:12].tolist(),
+        "final_position_m": results[0]["final_position_m"],
+        "paper_horizon_results": results,
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={"primitive_cube": "not_applicable_procedural"},
+        solver_mode="mabd_cpu_oracle_paper_horizon_diagnostic",
+        backend="cpu_numpy",
+        baseline_lane=config.baseline_lane,
+        expected={
+            "paper_claim_status": "mabd paper-horizon diagnostics must pass before lane gate",
+            "paper_horizon_duration_s": config.paper_horizon.duration_s,
+            "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+            "source_lines": list(config.source_lines),
+            "figure_text_source": config.paper_horizon.figure_text_source,
+            "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+            "phase28_mabd_gate_policy": "diagnostic_only_no_lane_gate",
+        },
+        observed=observed,
+        threshold=config.paper_horizon.thresholds,
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason="M-ABD paper-horizon diagnostics remain incomplete; shape or energy thresholds are violated",
+        timing_distribution={
+            "scope": "not_timed",
+            "step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        },
+        raw_outputs={"time_series": "compact_samples_only"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
+__all__ = [
+    "write_spinning_box_development_report",
+    "write_spinning_box_paper_horizon_report",
+]

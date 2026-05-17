@@ -7,7 +7,10 @@ from tempfile import TemporaryDirectory
 import numpy as np
 
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
-from mabd_reproduction.single_body_reports import write_spinning_box_development_report
+from mabd_reproduction.single_body_reports import (
+    write_spinning_box_development_report,
+    write_spinning_box_paper_horizon_report,
+)
 
 
 class SingleBodyReportLaneTests(unittest.TestCase):
@@ -163,6 +166,80 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         self.assertTrue(
             np.all(np.isfinite(np.asarray(loaded.observed["final_affine_singular_values"])))
         )
+
+    def test_spinning_box_paper_horizon_report_records_development_gap(self) -> None:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_spinning_box_paper_horizon.json"
+            report = write_spinning_box_paper_horizon_report(
+                path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(path)
+
+        self.assertEqual(report.scene_id, config.scene_id)
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_paper_horizon_diagnostic")
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertEqual(loaded.observed["paper_horizon_duration_s"], 10.0)
+        self.assertEqual(loaded.observed["paper_step_sizes_s"], [0.01, 0.001])
+        self.assertEqual(
+            loaded.observed["mabd_paper_horizon_status"],
+            "development_gap_observed",
+        )
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertEqual(len(loaded.observed["paper_horizon_results"]), 2)
+        self.assertIn("figure_pdf_sha256", loaded.observed)
+        self.assertEqual(
+            loaded.observed["figure_pdf_sha256"],
+            config.paper_horizon.figure_pdf_sha256,
+        )
+        self.assertIn("figure_text_source", loaded.observed)
+        self.assertGreater(loaded.observed["linear_momentum_error"], 0.0)
+        self.assertGreater(loaded.observed["angular_momentum_error"], 0.0)
+        self.assertGreater(loaded.observed["energy_drift"], 0.0)
+        self.assertEqual(loaded.observed["initial_position_m"], [0.0, 0.05, 0.0])
+        self.assertEqual(len(loaded.observed["final_position_m"]), 3)
+
+        for entry in loaded.observed["paper_horizon_results"]:
+            self.assertIn(entry["time_step_s"], [0.01, 0.001])
+            self.assertIn("steps_attempted", entry)
+            self.assertIn("steps_completed", entry)
+            self.assertIn("first_nonfinite_step", entry)
+            self.assertIn("threshold_violations", entry)
+            self.assertIn("trajectory_samples", entry)
+            self.assertLessEqual(
+                len(entry["trajectory_samples"]),
+                config.paper_horizon.sample_count,
+            )
+            self.assertIn("max_affine_orthogonality_error", entry)
+            self.assertIn("max_affine_orthogonality_error_step_index", entry)
+            self.assertIn("kinetic_energy_initial_j", entry)
+            self.assertIn("elastic_energy_initial_j", entry)
+            self.assertIn("total_energy_initial_j", entry)
+            self.assertIn("max_relative_kinetic_energy_drift", entry)
+            self.assertIn("max_relative_total_energy_drift", entry)
+            self.assertIn("max_abs_det_minus_one", entry)
+            self.assertIn("max_abs_det_minus_one", entry["threshold_violations"])
+            self.assertIn(
+                "max_relative_total_energy_drift",
+                entry["threshold_violations"],
+            )
+            self.assertGreater(entry["max_affine_orthogonality_error"], 1.0)
+            self.assertGreater(entry["max_singular_value"], 1.1)
+            self.assertIsNone(entry["first_nonfinite_step"])
+            self.assertEqual(entry["steps_completed"], entry["steps_attempted"])
+            for sample in entry["trajectory_samples"]:
+                self.assertIn("total_energy_j", sample)
+                self.assertIn("elastic_energy_j", sample)
+                self.assertIn("affine_orthogonality_error", sample)
+                self.assertTrue(np.isfinite(sample["total_energy_j"]))
 
 
 if __name__ == "__main__":
