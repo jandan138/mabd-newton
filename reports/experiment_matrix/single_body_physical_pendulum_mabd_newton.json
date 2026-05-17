@@ -6,12 +6,12 @@
   "baseline_lane": "mabd_newton",
   "claim_id": "experiment.single_body.physical_pendulum",
   "expected": {
-    "diagnostic_dual_reaction": "world-anchor dlambda[:3] magnitude, not paper waveform",
+    "diagnostic_dual_reaction": "world-anchor dlambda[:3] magnitude compared with scalar joint-force reference; not paper geometry",
     "full_experiment_claim_passed": false,
     "mabd_rotation_mode": "polar",
     "nonclaim_limitations": [
       "procedural point set is not the paper's undisclosed physical-pendulum geometry",
-      "world-anchor reaction is a solver dual diagnostic, not paper joint-force waveform agreement",
+      "scalar joint-force reference is diagnostic and not paper geometry",
       "no rendered figure or timing distribution is generated"
     ],
     "paper_claim_status": "formal M-ABD lane generated; full experiment incomplete",
@@ -45,16 +45,18 @@
       ]
     }
   },
-  "failure_reason": "physical_pendulum mabd_newton lane remains incomplete because pendulum_geometry_unknown and joint-force waveform agreement are unresolved",
+  "failure_reason": "physical_pendulum mabd_newton lane remains incomplete because pendulum_geometry_unknown and the physical-pendulum pass gate remain unresolved",
   "observed": {
     "angle_samples_rad": [
       {
         "abs_angle_error_rad": 0.0,
+        "abs_joint_force_error_n": 0.0,
         "angle_rad": 0.0,
         "constraint_residual_norm": 0.0,
         "phase_drift_rad": 0.0,
         "pivot_residual_m": 0.0,
         "reference_angle_rad": 0.0,
+        "reference_joint_force_magnitude_n": 0.0,
         "sample_index": 0,
         "step": 0,
         "time_s": 0.0,
@@ -67,11 +69,13 @@
       },
       {
         "abs_angle_error_rad": 0.001961701438305886,
+        "abs_joint_force_error_n": 0.22115379492529486,
         "angle_rad": 0.009809685326122598,
         "constraint_residual_norm": 0.0,
         "phase_drift_rad": 0.001961701438305886,
         "pivot_residual_m": 0.0,
         "reference_angle_rad": 0.007847983887816712,
+        "reference_joint_force_magnitude_n": 0.23096379492529567,
         "sample_index": 1,
         "step": 4,
         "time_s": 0.04,
@@ -84,11 +88,13 @@
       },
       {
         "abs_angle_error_rad": 0.003910359837382929,
+        "abs_joint_force_error_n": 0.9138744976459608,
         "angle_rad": 0.035301328705289306,
         "constraint_residual_norm": 0.0,
         "phase_drift_rad": 0.003910359837382929,
         "pivot_residual_m": 0.0,
         "reference_angle_rad": 0.03139096886790638,
+        "reference_joint_force_magnitude_n": 0.9236844976459719,
         "sample_index": 2,
         "step": 8,
         "time_s": 0.08,
@@ -101,11 +107,13 @@
       },
       {
         "abs_angle_error_rad": 0.005748927588147587,
+        "abs_joint_force_error_n": 2.066817062356312,
         "angle_rad": 0.0763691846994715,
         "constraint_residual_norm": 0.0,
         "phase_drift_rad": 0.005748927588147587,
         "pivot_residual_m": 0.0,
         "reference_angle_rad": 0.07062025711132391,
+        "reference_joint_force_magnitude_n": 2.07662706235631,
         "sample_index": 3,
         "step": 12,
         "time_s": 0.12,
@@ -118,11 +126,13 @@
       },
       {
         "abs_angle_error_rad": 0.007130697850638079,
+        "abs_joint_force_error_n": 3.674027173124528,
         "angle_rad": 0.13263275412431158,
         "constraint_residual_norm": 0.0,
         "phase_drift_rad": 0.007130697850638079,
         "pivot_residual_m": 0.0,
         "reference_angle_rad": 0.1255020562736735,
+        "reference_joint_force_magnitude_n": 3.683837173124509,
         "sample_index": 4,
         "step": 16,
         "time_s": 0.16,
@@ -135,13 +145,13 @@
       }
     ],
     "blocking_reasons": [
-      "pendulum_geometry_unknown",
-      "joint_force_waveform_agreement_missing"
+      "pendulum_geometry_unknown"
     ],
     "full_experiment_claim_passed": false,
     "lane_status": "incomplete_diagnostic_generated",
     "mabd_rotation_mode": "polar",
     "max_abs_angle_error_rad": 0.007130697850638079,
+    "max_abs_joint_force_error_n": 3.674027173124528,
     "max_constraint_residual_norm": 0.0,
     "max_phase_drift_rad": 0.007130697850638079,
     "max_pivot_residual_m": 0.0,
@@ -168,10 +178,11 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "mabd_cpu_oracle_physical_pendulum_newton_lane",
-  "source_commit": "d1985dc",
+  "source_commit": "1937d40",
   "status": "incomplete",
   "threshold": {
     "max_abs_angle_error_rad": 2.0,
+    "max_abs_joint_force_error_n": 100.0,
     "max_constraint_residual_norm": 1e-10,
     "max_phase_drift_rad": 2.0,
     "max_pivot_residual_m": 1e-10,

@@ -10,7 +10,7 @@
     "implicit_update": "theta_next - theta - h * (omega + h * g / L * cos(theta_next)) = 0",
     "nonclaim_limitations": [
       "procedural scalar pendulum is not the paper's undisclosed rigid geometry",
-      "joint-force magnitude is diagnostic and not waveform agreement",
+      "scalar joint-force reference is diagnostic and not paper geometry",
       "no M-ABD comparison pass is generated",
       "no rendered figure or timing distribution is generated"
     ],
@@ -33,11 +33,12 @@
       "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
     ]
   },
-  "failure_reason": "physical_pendulum rbd_implicit_baseline diagnostic only; mabd_newton, joint-force waveform agreement, and pendulum_geometry_unknown remain incomplete",
+  "failure_reason": "physical_pendulum rbd_implicit_baseline diagnostic only; mabd_newton, pendulum_geometry_unknown, and the physical-pendulum pass gate remain incomplete",
   "observed": {
     "angle_samples_rad": [
       {
         "abs_angle_error_rad": 0.0,
+        "abs_joint_force_error_n": 0.0,
         "angle_rad": 0.0,
         "angular_velocity_rad_s": 0.0,
         "implicit_residual": 0.0,
@@ -46,12 +47,14 @@
         "phase_drift_rad": 0.0,
         "previous_angle_rad": 0.0,
         "reference_angle_rad": 0.0,
+        "reference_joint_force_magnitude_n": 0.0,
         "sample_index": 0,
         "step": 0,
         "time_s": 0.0
       },
       {
         "abs_angle_error_rad": 0.001961920290220647,
+        "abs_joint_force_error_n": 0.0192421730665146,
         "angle_rad": 0.009809904178037359,
         "angular_velocity_rad_s": 0.3923931083965367,
         "implicit_residual": 0.0,
@@ -60,12 +63,14 @@
         "phase_drift_rad": 0.001961920290220647,
         "previous_angle_rad": 0.005885973094071992,
         "reference_angle_rad": 0.007847983887816712,
+        "reference_joint_force_magnitude_n": 0.23096379492529567,
         "sample_index": 1,
         "step": 4,
         "time_s": 0.04
       },
       {
         "abs_angle_error_rad": 0.003922258755367183,
+        "abs_joint_force_error_n": 0.038363096462715296,
         "angle_rad": 0.03531322762327356,
         "angular_velocity_rad_s": 0.7846635114627919,
         "implicit_residual": 0.0,
@@ -74,12 +79,14 @@
         "phase_drift_rad": 0.003922258755367183,
         "previous_angle_rad": 0.02746659250864564,
         "reference_angle_rad": 0.03139096886790638,
+        "reference_joint_force_magnitude_n": 0.9236844976459719,
         "sample_index": 2,
         "step": 8,
         "time_s": 0.08
       },
       {
         "abs_angle_error_rad": 0.005874429830020372,
+        "abs_joint_force_error_n": 0.05681334430761531,
         "angle_rad": 0.07649468694134429,
         "angular_velocity_rad_s": 1.1763329231058397,
         "implicit_residual": 0.0,
@@ -88,12 +95,14 @@
         "phase_drift_rad": 0.005874429830020372,
         "previous_angle_rad": 0.06473135771028589,
         "reference_angle_rad": 0.07062025711132391,
+        "reference_joint_force_magnitude_n": 2.07662706235631,
         "sample_index": 3,
         "step": 12,
         "time_s": 0.12
       },
       {
         "abs_angle_error_rad": 0.0078024877841559315,
+        "abs_joint_force_error_n": 0.07322754047186475,
         "angle_rad": 0.13330454405782943,
         "angular_velocity_rad_s": 1.5662747978233873,
         "implicit_residual": 0.0,
@@ -102,6 +111,7 @@
         "phase_drift_rad": 0.0078024877841559315,
         "previous_angle_rad": 0.11764179607959556,
         "reference_angle_rad": 0.1255020562736735,
+        "reference_joint_force_magnitude_n": 3.683837173124509,
         "sample_index": 4,
         "step": 16,
         "time_s": 0.16
@@ -109,7 +119,6 @@
     ],
     "blocking_reasons": [
       "mabd_newton_missing",
-      "joint_force_waveform_agreement_missing",
       "pendulum_geometry_unknown"
     ],
     "full_experiment_claim_passed": false,
@@ -124,6 +133,7 @@
     "length_m": 1.0,
     "mass_kg": 1.0,
     "max_abs_angle_error_rad": 0.0078024877841559315,
+    "max_abs_joint_force_error_n": 0.07322754047186475,
     "max_implicit_residual": 6.245004513516506e-16,
     "max_joint_force_magnitude_n": 3.7570647135963737,
     "max_length_constraint_error_m": 1.1102230246251565e-16,
@@ -154,10 +164,11 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "physical_pendulum_scalar_implicit_rbd_development",
-  "source_commit": "d1985dc",
+  "source_commit": "1937d40",
   "status": "incomplete",
   "threshold": {
     "max_abs_angle_error_rad": 2.0,
+    "max_abs_joint_force_error_n": 100.0,
     "max_implicit_residual": 1e-12,
     "max_length_constraint_error_m": 1e-12,
     "max_phase_drift_rad": 2.0
