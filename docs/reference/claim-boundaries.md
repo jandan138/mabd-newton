@@ -328,6 +328,21 @@
   implicit contact solve, gravity, rendered output, paper timing, paper
   trajectory agreement, generated report artifacts as committed evidence, or
   any passed `experiment.*` claim.
+- This repository contains Phase 28 paper-horizon M-ABD diagnostic evidence for
+  the single-body spinning-box claim. It runs the Newton M-ABD CPU oracle over
+  the 10 second figure horizon for `h = 1e-2` and `h = 1e-3`.
+- Phase 28 verifies `mabd_cpu_oracle_paper_horizon_diagnostic` report
+  generation, every-step extrema scanning, compact trajectory samples,
+  kinetic/elastic/total energy separation, finite metric snapshots,
+  `threshold_violations`, comparison-compatible scalar fields,
+  `mabd_paper_horizon_status = development_gap_observed`, no
+  `lane_gate_status`, and report status: `incomplete`.
+- Phase 28 does not verify the paper spinning-box experiment, M-ABD lane pass,
+  spinning-box comparison pass, full M-ABD dynamics, paper-faithful affine
+  collision, collision detection, continuous collision detection, friction,
+  implicit contact solve, gravity, rendered output, paper timing, paper
+  trajectory agreement, generated report artifacts as committed evidence, or
+  any passed `experiment.*` claim.
 
 ## Forbidden Claims
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-27 docs and provenance contracts."""
+"""Validate Phase 0-28 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -65,6 +65,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase25-spinning-box-no-polar-material-lane.md",
     "docs/records/2026-05-17-phase26-corotated-material-rhs.md",
     "docs/records/2026-05-17-phase27-rbd-pass-gate.md",
+    "docs/records/2026-05-17-phase28-spinning-box-paper-horizon.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -689,6 +690,49 @@ def validate_claim_boundaries() -> None:
     for snippet in phase27_non_claims:
         if snippet not in phase27_non_claim:
             fail(f"claim-boundaries.md must bound Phase 27 lane-gate evidence: {snippet}")
+    phase28_current = claim_boundary_bullet(text, "This repository contains Phase 28")
+    phase28_verified = claim_boundary_bullet(text, "Phase 28 verifies")
+    phase28_non_claim = claim_boundary_bullet(text, "Phase 28 does not verify")
+    phase28_current_required = (
+        "paper-horizon M-ABD diagnostic",
+        "10 second",
+        "h = 1e-2",
+        "h = 1e-3",
+    )
+    for snippet in phase28_current_required:
+        if snippet not in phase28_current:
+            fail(f"claim-boundaries.md must state Phase 28 paper-horizon evidence: {snippet}")
+    phase28_verified_required = (
+        "mabd_cpu_oracle_paper_horizon_diagnostic",
+        "every-step extrema",
+        "threshold_violations",
+        "mabd_paper_horizon_status = development_gap_observed",
+        "no `lane_gate_status`",
+        "report status: `incomplete`",
+    )
+    for snippet in phase28_verified_required:
+        if snippet not in phase28_verified:
+            fail(f"claim-boundaries.md must describe Phase 28 paper-horizon evidence: {snippet}")
+    phase28_non_claims = (
+        "the paper spinning-box experiment",
+        "M-ABD lane pass",
+        "spinning-box comparison pass",
+        "full M-ABD dynamics",
+        "paper-faithful affine collision",
+        "collision detection",
+        "continuous collision detection",
+        "friction",
+        "implicit contact solve",
+        "gravity",
+        "rendered output",
+        "paper timing",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase28_non_claims:
+        if snippet not in phase28_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 28 paper-horizon evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -1915,6 +1959,104 @@ def validate_phase27_record() -> None:
         fail("Phase 27 spinning-box matrix must retain incomplete comparison report blocker")
 
 
+def validate_phase28_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase28-spinning-box-paper-horizon.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "## Repository",
+        "design commit:",
+        "plan commit:",
+        "config commit:",
+        "report implementation commit:",
+        "runner/comparison commit:",
+        "docs/record commit:",
+        "independent review:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 28 does not modify vendored Newton",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "figure PDF SHA256:",
+        "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
+        "pdftotext /tmp/mabd-paper/source/images/cube/roll_cube.pdf -",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Metrics And Diagnostics",
+        "solver_mode = mabd_cpu_oracle_paper_horizon_diagnostic",
+        "baseline_lane = mabd_newton",
+        "report status: `incomplete`",
+        "mabd_paper_horizon_status = development_gap_observed",
+        "no `lane_gate_status`",
+        "paper_horizon_duration_s = 10.0",
+        "paper_step_sizes_s = [0.01, 0.001]",
+        "threshold_violations",
+        "max_relative_total_energy_drift",
+        "max_abs_det_minus_one",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "No `experiment.*` claim is passed in this phase.",
+        "## Artifacts",
+        "generated reports: not committed",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_single_body_report_lane",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_runner tests.test_spinning_box_comparison",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 28 record missing required evidence field: {snippet}")
+    if "TO_BE_BACKFILLED_PHASE28_DOCS_COMMIT" in text:
+        fail("Phase 28 record contains stale docs commit placeholder")
+    if "pending branch-local" in text:
+        fail("Phase 28 record contains pending branch-local provenance placeholder")
+    forbidden_snippets = (
+        "Phase 28 verifies the paper spinning-box experiment",
+        "Phase 28 passes experiment.single_body.spinning_box",
+        "Phase 28 passes the M-ABD lane",
+        "Phase 28 passes the spinning-box comparison",
+        "Phase 28 verifies paper-faithful affine collision",
+        "Phase 28 verifies collision detection",
+        "Phase 28 verifies implicit contact solve",
+        "Phase 28 verifies paper timing",
+        "Phase 28 verifies paper trajectory agreement",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 28 record overclaims unsupported evidence: {snippet}")
+
+    data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 28 must not pass experiment.* claims")
+
+    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    spinning_box = next(
+        experiment
+        for experiment in matrix.experiments
+        if experiment.claim_id == "experiment.single_body.spinning_box"
+    )
+    if "mabd_newton_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 28 spinning-box matrix must retain incomplete M-ABD lane blocker")
+    if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 28 spinning-box matrix must retain incomplete comparison report blocker")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -2086,6 +2228,17 @@ def validate_phase13_config(
         fail("Phase 21 config validation failed: spinning-box initial normal force must be zero")
     if not np.allclose(diagnostics.total_generalized_force, np.zeros(12), rtol=0.0, atol=1.0e-15):
         fail("Phase 21 config validation failed: spinning-box initial generalized contact force must be zero")
+    if config.paper_horizon.duration_s != 10.0:
+        fail("Phase 28 config validation failed: paper_horizon duration must be 10 seconds")
+    if config.paper_horizon.time_step_grid_s != (0.01, 0.001):
+        fail("Phase 28 config validation failed: paper_horizon step grid must be (0.01, 0.001)")
+    if config.paper_horizon.output_report == config.output_report:
+        fail("Phase 28 config validation failed: paper_horizon output must not overwrite development report")
+    if (
+        config.paper_horizon.figure_pdf_sha256
+        != "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80"
+    ):
+        fail("Phase 28 config validation failed: spinning-box figure checksum changed")
 
 
 def validate_provenance() -> None:
@@ -2144,13 +2297,14 @@ def main() -> int:
     validate_phase25_record()
     validate_phase26_record()
     validate_phase27_record()
+    validate_phase28_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28 "
         "docs/provenance validation passed"
     )
     return 0
