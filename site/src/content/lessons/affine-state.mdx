@@ -1,0 +1,67 @@
+---
+title: "仿射状态：A 和 t"
+description: "理解一个仿射体如何用 3x3 矩阵和平移向量打包成 12 维状态。"
+module: "ABD Foundations"
+order: 4
+status: "complete"
+claimStatus: "conceptual"
+repoEvidence: []
+---
+
+import ConceptCard from "../../components/ConceptCard.astro";
+import ProblemCard from "../../components/ProblemCard.astro";
+import StepFlow from "../../components/StepFlow.astro";
+import CompareGrid from "../../components/CompareGrid.astro";
+import PseudoCode from "../../components/PseudoCode.astro";
+import PitfallCard from "../../components/PitfallCard.astro";
+import RememberBox from "../../components/RememberBox.astro";
+import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+
+<ProblemCard title="它解决的问题">
+模拟器需要把一个物体的姿态和形变存成数字。仿射状态用 `A` 表示线性变换，用 `t` 表示平移，再把它们打包成 `q in R12`，方便统一求导、积分和求解。
+</ProblemCard>
+
+## 一个仿射体的状态
+
+对一个静止点 `x_rest`，仿射体把它放到世界空间：`x_world = A @ x_rest + t`。这里 `A` 是 3x3 矩阵，负责旋转、拉伸、缩放和剪切；`t` 是 3D 向量，负责整体平移。
+
+<ConceptCard title="A 管形状方向，t 管整体位置">
+把物体想成一张贴纸。`A` 决定贴纸是否被转动、拉长或斜着压；`t` 决定整张贴纸贴在桌面上的哪个位置。两者合起来才得到世界空间中的点。
+</ConceptCard>
+
+<PseudoCode title="点映射与 q 打包">
+{`def affine_point(A, t, x_rest):
+    return A @ x_rest + t
+
+def pack_q(A, t):
+    return [A[0,0], A[1,0], A[2,0], A[0,1], A[1,1], A[2,1], A[0,2], A[1,2], A[2,2], t[0], t[1], t[2]]`}
+</PseudoCode>
+
+这个 `pack_q` 使用按列打包的方式：先放 `A` 的第一列，再放第二列、第三列，最后放平移 `t`。所以一个仿射体的广义坐标是 9 个矩阵数字加 3 个平移数字，总共 12 个数字。
+
+<CompareGrid title="状态拆开看">
+  <article><h4>`A`</h4><p>3x3，共 9 个数字，描述局部基方向如何变到世界空间。</p></article>
+  <article><h4>`t`</h4><p>3 个数字，描述物体参考点或整体位置的世界平移。</p></article>
+  <article><h4>`q in R12`</h4><p>把 `A` 和 `t` 线性排成一个 12 维数组，便于求解器处理。</p></article>
+</CompareGrid>
+
+<StepFlow title="从静止点到世界点">
+  <li>取物体局部坐标里的点 `x_rest`。</li>
+  <li>用 `A` 改变它相对物体的方向和长度。</li>
+  <li>加上 `t`，把结果搬到世界位置。</li>
+  <li>对物体上的所有采样点重复同一个映射。</li>
+</StepFlow>
+
+<PitfallCard title="q 不是 12 个互不相关的旋钮">
+虽然 `q` 是一个 12 维数组，但前 9 个数字组成同一个矩阵 `A`。改变其中一个数字会改变整个物体的一个方向分量，而不是只移动某个单独顶点。
+</PitfallCard>
+
+<RepoEvidenceCard title="本页解释状态表示" status="本课为 conceptual" />
+
+<RememberBox title="核心记忆">
+  <ul>
+    <li>`A` 负责线性变形，`t` 负责平移。</li>
+    <li>`q in R12` 是 `A` 的 9 个数字加 `t` 的 3 个数字。</li>
+    <li>仿射体上的每个静止点都用同一个 `A @ x_rest + t` 映射。</li>
+  </ul>
+</RememberBox>

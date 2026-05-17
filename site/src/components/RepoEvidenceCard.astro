@@ -1,0 +1,24 @@
+---
+interface Props {
+  title: string;
+  status: string;
+  href?: string;
+}
+
+const { title, status, href } = Astro.props;
+---
+
+<section class="repo-evidence-card">
+  <p class="repo-evidence-card__status">{status}</p>
+  <h3>{title}</h3>
+  <p>
+    Linked evidence is scoped to specific records, manifests, tests, or claim-map entries. It does not imply full paper reproduction or a completed M-ABD implementation.
+  </p>
+  {
+    href && (
+      <a href={href} class="repo-evidence-card__link">
+        Open scoped evidence
+      </a>
+    )
+  }
+</section>

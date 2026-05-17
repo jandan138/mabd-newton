@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+---
+
+<section class="compare-grid">
+  {title && <h3>{title}</h3>}
+  <div class="compare-grid__items">
+    <slot />
+  </div>
+</section>

@@ -1,0 +1,77 @@
+---
+import type { LessonMeta } from "../data/lessons";
+import "../styles/learn.css";
+
+interface Props {
+  title: string;
+  description: string;
+  currentSlug?: string;
+  lessons?: LessonMeta[];
+}
+
+const { title, description, currentSlug, lessons = [] } = Astro.props;
+const baseUrl = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const withBase = (path: string) => `${baseUrl}${path.replace(/^\/+/, "")}`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title} | M-ABD Newton Learning</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <div class="learn-shell">
+      <aside class="learn-sidebar" aria-label="Lesson navigation">
+        <div class="learn-brand">
+          <a href={withBase("learn/")}>ABD/M-ABD Learn</a>
+          <p>Newton-first reproduction notes</p>
+        </div>
+        <nav class="lesson-nav">
+          <a class="lesson-nav__utility" href={withBase("learn/glossary/")}>Glossary</a>
+          <a class="lesson-nav__utility" href={withBase("learn/roadmap/")}>Roadmap</a>
+          <a class="lesson-nav__utility" href={withBase("learn/reproduction-map/")}>Evidence map</a>
+          <ol>
+            {
+              lessons.map((lesson) => (
+                <li>
+                  <a
+                    class:list={["lesson-link", { "is-current": lesson.slug === currentSlug }]}
+                    href={withBase(`learn/${lesson.slug}/`)}
+                    aria-current={lesson.slug === currentSlug ? "page" : undefined}
+                  >
+                    <span class="lesson-link__order">{lesson.order}</span>
+                    <span>
+                      <span class="lesson-link__title">{lesson.title}</span>
+                      <span class="lesson-link__module">{lesson.module}</span>
+                    </span>
+                  </a>
+                </li>
+              ))
+            }
+          </ol>
+        </nav>
+      </aside>
+
+      <main id="content" class="learn-main">
+        <div class="claim-banner" role="note">
+          This site teaches concepts from affine-body dynamics and tracks a Newton-first reproduction effort. It is not evidence of a completed full M-ABD implementation or full paper reproduction.
+        </div>
+        <header class="learn-header">
+          <p class="eyebrow">Learning path</p>
+          <h1>{title}</h1>
+          <p>{description}</p>
+        </header>
+        <article class="learn-content">
+          <slot />
+        </article>
+        <footer class="learn-footer">
+          <p>Repository evidence is scoped by records, claim maps, and documented boundaries.</p>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

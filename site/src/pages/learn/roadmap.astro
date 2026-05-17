@@ -1,0 +1,65 @@
+---
+import LearnLayout from "../../layouts/LearnLayout.astro";
+import { requiredLessons, type LessonMeta } from "../../data/lessons";
+import { availableLessons, availableLessonSlugs } from "../../lib/lessonModules";
+
+const baseUrl = import.meta.env.BASE_URL;
+const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+const withBase = (path: string) => `${normalizedBase}${path.replace(/^\/+/, "")}`;
+const navLessons = availableLessons;
+
+function byOrder(orders: number[]): LessonMeta[] {
+  return orders
+    .map((order) => requiredLessons.find((lesson) => lesson.order === order))
+    .filter((lesson): lesson is LessonMeta => lesson !== undefined);
+}
+
+const paths = [
+  {
+    title: "最快读懂论文",
+    description: "先建立论文主线需要的仿射体、分解、隐式求解和多体约束概念。",
+    lessons: byOrder([1, 2, 3, 4, 5, 7, 8, 9, 10, 11]),
+  },
+  {
+    title: "补齐完整基础",
+    description: "按首批课程顺序完整走一遍，避免在公式、物理量或仓库证据层面留下断点。",
+    lessons: requiredLessons,
+  },
+  {
+    title: "参与仓库复现",
+    description: "聚焦广义坐标、数值求解、ABD/M-ABD 概念和证据边界，再阅读记录与文档。",
+    lessons: byOrder([1, 7, 8, 9, 10, 11, 12]),
+    extra: ["docs/reference/claim-boundaries.md", "docs/reference/paper-claims.yaml", "docs/records/"],
+  },
+];
+---
+
+<LearnLayout
+  title="学习路线"
+  description="按读论文、补基础、参与复现三种目标选择 ABD/M-ABD 学习路径。"
+  lessons={navLessons}
+>
+  <section class="compare-grid__items">
+    {paths.map((path) => (
+      <article>
+        <h2>{path.title}</h2>
+        <p>{path.description}</p>
+        <ol>
+          {path.lessons.map((lesson) => (
+            <li>
+              {availableLessonSlugs.has(lesson.slug) ? (
+                <a href={withBase(`learn/${lesson.slug}/`)}>{lesson.title}</a>
+              ) : (
+                <span>{lesson.title}</span>
+              )}
+              <span> · {lesson.module}</span>
+            </li>
+          ))}
+        </ol>
+        {path.extra && (
+          <p>Then inspect repository paths: {path.extra.map((entry) => <code>{entry}</code>)}</p>
+        )}
+      </article>
+    ))}
+  </section>
+</LearnLayout>

@@ -1,0 +1,97 @@
+---
+import LearnLayout from "../../layouts/LearnLayout.astro";
+import { requiredLessons } from "../../data/lessons";
+import { availableLessons, availableLessonSlugs } from "../../lib/lessonModules";
+
+const baseUrl = import.meta.env.BASE_URL;
+const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+const withBase = (path: string) => `${normalizedBase}${path.replace(/^\/+/, "")}`;
+const navLessons = availableLessons;
+
+const modules = [
+  {
+    name: "Math",
+    description: "补齐矩阵、坐标变换、SVD 和极分解这些阅读 ABD 公式的基础。",
+  },
+  {
+    name: "Physics",
+    description: "把自由度、速度、质量和约束从刚体直觉连接到仿射体状态。",
+  },
+  {
+    name: "Numerics",
+    description: "理解隐式积分、Newton 线性化、Hessian 和 KKT 系统为什么出现。",
+  },
+  {
+    name: "ABD",
+    description: "从单个仿射体开始，建立 A、t、力映射和局部求解的核心图景。",
+  },
+  {
+    name: "M-ABD",
+    description: "把多个仿射体、关节和拓扑求解放在同一张概念地图里。",
+  },
+  {
+    name: "Reproduction",
+    description: "区分教程、方法记录、实验记录和仓库声明边界。",
+  },
+];
+---
+
+<LearnLayout
+  title="ABD/M-ABD 基础知识补充教程"
+  description="这门课把 ABD/M-ABD 论文需要的数学、物理、数值方法和本仓库复现证据拆成可逐步学习的工程概念。"
+  lessons={navLessons}
+>
+  <section class="problem-card">
+    <h2>要解决的问题</h2>
+    <p>
+      如果你能写代码但还不熟悉仿射体动力学，这里先补齐读论文、看公式、跟踪仓库证据所需的共同语言。
+    </p>
+  </section>
+
+  <section>
+    <h2>学习模块</h2>
+    <div class="compare-grid__items">
+      {modules.map((module) => (
+        <article>
+          <h3>{module.name}</h3>
+          <p>{module.description}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <h2>首批 12 节课</h2>
+    <div class="compare-grid__items">
+      {requiredLessons.map((lesson) => (
+        <article>
+          <p class="eyebrow">{lesson.module} · Lesson {lesson.order}</p>
+          {availableLessonSlugs.has(lesson.slug) ? (
+            <h3><a href={withBase(`learn/${lesson.slug}/`)}>{lesson.title}</a></h3>
+          ) : (
+            <h3>{lesson.title}</h3>
+          )}
+          <p>{availableLessonSlugs.has(lesson.slug) ? "完整课程页已生成。" : "课程内容正在生成中。"}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <h2>辅助页面</h2>
+    <div class="compare-grid__items">
+      <article>
+        <h3><a href={withBase("learn/glossary/")}>术语表</a></h3>
+        <p>快速查 ABD/M-ABD、KKT、Jacobian、provenance 等常用词。</p>
+      </article>
+      <article>
+        <h3><a href={withBase("learn/roadmap/")}>学习路线</a></h3>
+        <p>按最快读论文、完整补基础、参与仓库复现三种目标选择路径。</p>
+      </article>
+      <article>
+        <h3><a href={withBase("learn/reproduction-map/")}>复现证据地图</a></h3>
+        <p>说明方法 oracle、实验 lane、报告和 claim status 的证据层级。</p>
+      </article>
+    </div>
+  </section>
+</LearnLayout>

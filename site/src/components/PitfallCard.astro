@@ -1,0 +1,13 @@
+---
+interface Props {
+  title: string;
+  icon?: string;
+}
+
+const { title, icon = "!" } = Astro.props;
+---
+
+<section class="pitfall-card">
+  <h3><span aria-hidden="true">{icon}</span>{title}</h3>
+  <slot />
+</section>

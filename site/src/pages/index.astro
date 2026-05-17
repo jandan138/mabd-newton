@@ -1,0 +1,19 @@
+---
+const baseUrl = import.meta.env.BASE_URL;
+const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+const withBase = (path: string) => `${normalizedBase}${path.replace(/^\/+/, "")}`;
+const learnUrl = withBase("learn/");
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="refresh" content={`0; url=${learnUrl}`} />
+    <title>ABD/M-ABD Learn</title>
+  </head>
+  <body>
+    <p>Redirecting to <a href={learnUrl}>ABD/M-ABD Learn</a>.</p>
+  </body>
+</html>
