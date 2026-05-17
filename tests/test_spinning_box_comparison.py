@@ -102,29 +102,42 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
 
         config = load_spinning_box_config(CONFIG_PATH)
-        with TemporaryDirectory() as tmpdir:
-            mabd_path, rbd_path = self._write_lane_reports(tmpdir)
-            data = json.loads(mabd_path.read_text(encoding="utf-8"))
-            data["observed"]["energy_drift"] = None
-            mabd_path.write_text(json.dumps(data), encoding="utf-8")
-            output_path = Path(tmpdir) / "comparison.json"
+        for invalid_value, json_token in ((None, "NaN"), (float("nan"), "NaN"), (float("inf"), "Infinity")):
+            with self.subTest(invalid_value=invalid_value):
+                with TemporaryDirectory() as tmpdir:
+                    mabd_path, rbd_path = self._write_lane_reports(tmpdir)
+                    data = json.loads(mabd_path.read_text(encoding="utf-8"))
+                    data["observed"]["energy_drift"] = invalid_value
+                    mabd_path.write_text(json.dumps(data), encoding="utf-8")
+                    output_path = Path(tmpdir) / "comparison.json"
 
-            write_spinning_box_comparison_report(
-                output_path,
-                config=config,
-                mabd_report_path=mabd_path,
-                rbd_report_path=rbd_path,
-                source_commit="test-source",
-                vendored_newton_commit="test-newton",
-            )
-            loaded = load_claim_report(output_path)
+                    write_spinning_box_comparison_report(
+                        output_path,
+                        config=config,
+                        mabd_report_path=mabd_path,
+                        rbd_report_path=rbd_path,
+                        source_commit="test-source",
+                        vendored_newton_commit="test-newton",
+                    )
+                    payload = output_path.read_text(encoding="utf-8")
+                    loaded = load_claim_report(output_path)
 
-        self.assertNotIn("mabd_newton:energy_drift", loaded.observed["missing_required_metrics"])
-        self.assertIn("mabd_newton:energy_drift", loaded.observed["invalid_required_metrics"])
-        self.assertIn(
-            "mabd_newton:energy_drift_invalid",
-            loaded.observed["blocking_reasons"],
-        )
+                self.assertNotIn(json_token, payload)
+                self.assertNotIn(
+                    "mabd_newton:energy_drift",
+                    loaded.observed["missing_required_metrics"],
+                )
+                self.assertIn(
+                    "mabd_newton:energy_drift",
+                    loaded.observed["invalid_required_metrics"],
+                )
+                self.assertIsNone(
+                    loaded.observed["lane_metrics"]["mabd_newton"]["energy_drift"]
+                )
+                self.assertIn(
+                    "mabd_newton:energy_drift_invalid",
+                    loaded.observed["blocking_reasons"],
+                )
 
 
 if __name__ == "__main__":

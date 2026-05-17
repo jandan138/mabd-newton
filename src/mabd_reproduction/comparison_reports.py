@@ -33,15 +33,18 @@ def _require_lane_report(
     return report
 
 
-def _lane_metric_snapshot(report: ClaimReport) -> dict[str, Any]:
-    return {metric: report.observed.get(metric) for metric in SPINNING_BOX_REQUIRED_METRICS}
-
-
 def _finite_scalar(value: Any) -> float | None:
     if isinstance(value, bool) or not isinstance(value, int | float):
         return None
     result = float(value)
     return result if isfinite(result) else None
+
+
+def _lane_metric_snapshot(report: ClaimReport) -> dict[str, float | None]:
+    return {
+        metric: _finite_scalar(report.observed[metric]) if metric in report.observed else None
+        for metric in SPINNING_BOX_REQUIRED_METRICS
+    }
 
 
 def _missing_metrics(lane: str, report: ClaimReport) -> list[str]:
