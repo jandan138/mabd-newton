@@ -33,6 +33,7 @@ class SpinningBoxRBDBaselineResult:
     final_energy: float
     solver_name: str
     newton_step_count: int
+    initial_position_m: np.ndarray
     final_position_m: np.ndarray
     final_rotation_xyzw: np.ndarray
     final_linear_velocity_m_s: np.ndarray
@@ -52,7 +53,8 @@ def _rigid_energy(properties: SpinningBoxRBDProperties) -> float:
 def _run_newton_semimplicit_free_body(
     config: SpinningBoxRunConfig,
     properties: SpinningBoxRBDProperties,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    initial_position = np.asarray(config.initial_q[9:12], dtype=float)
     with redirect_stdout(sys.stderr):
         import newton
         import warp as wp
@@ -60,7 +62,7 @@ def _run_newton_semimplicit_free_body(
         inertia = wp.mat33(np.diag(properties.inertia_diag_kg_m2))
         builder = newton.ModelBuilder(gravity=0.0)
         body = builder.add_body(
-            xform=wp.transform(wp.vec3(0.0, 0.0, 0.0), wp.quat_identity()),
+            xform=wp.transform(wp.vec3(*initial_position.tolist()), wp.quat_identity()),
             mass=properties.mass_kg,
             inertia=inertia,
             lock_inertia=True,
@@ -84,13 +86,13 @@ def _run_newton_semimplicit_free_body(
 
         final_q = np.asarray(state_in.body_q.numpy()[body], dtype=float)
         final_qd = np.asarray(state_in.body_qd.numpy()[body], dtype=float)
-    return final_q, final_qd
+    return initial_position, final_q, final_qd
 
 
 def run_spinning_box_rbd_baseline(config: SpinningBoxRunConfig) -> SpinningBoxRBDBaselineResult:
     properties = spinning_box_rbd_properties(config)
     initial_energy = _rigid_energy(properties)
-    final_q, final_qd = _run_newton_semimplicit_free_body(config, properties)
+    initial_position, final_q, final_qd = _run_newton_semimplicit_free_body(config, properties)
     final_linear_velocity = final_qd[:3]
     final_angular_velocity = final_qd[3:]
     final_linear_momentum = properties.mass_kg * final_linear_velocity
@@ -119,6 +121,7 @@ def run_spinning_box_rbd_baseline(config: SpinningBoxRunConfig) -> SpinningBoxRB
         final_energy=final_energy,
         solver_name="newton.solvers.SolverSemiImplicit",
         newton_step_count=config.step_count,
+        initial_position_m=initial_position,
         final_position_m=final_q[:3],
         final_rotation_xyzw=final_q[3:],
         final_linear_velocity_m_s=final_linear_velocity,
@@ -159,6 +162,7 @@ def write_spinning_box_rbd_baseline_report(
             "inertia_diag_kg_m2": result.inertia_diag_kg_m2.tolist(),
             "linear_velocity_m_s": result.final_linear_velocity_m_s.tolist(),
             "angular_velocity_rad_s": result.final_angular_velocity_rad_s.tolist(),
+            "initial_position_m": result.initial_position_m.tolist(),
             "final_position_m": result.final_position_m.tolist(),
             "final_rotation_xyzw": result.final_rotation_xyzw.tolist(),
             "linear_momentum_error": result.linear_momentum_error,
