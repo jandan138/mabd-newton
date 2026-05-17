@@ -42,8 +42,12 @@ M-ABD, RBD, and comparison reports remain `incomplete`.
 - plan commit: `f80cdc711719306f2b8babdc4e9c24af49175f83`
 - M-ABD trajectory implementation commit: `5c42c19526de15bd662aaed65cbd0aa8ce7e50e2`
 - RBD trajectory implementation commit: `4a18387cf9211a61d91fd8d87c1dfdf551f692b4`
-- docs/provenance commit: `f79510d0cba4ededaa58f05c7040a45ca6dd3130`
-- independent review: pending branch-gate review.
+- docs/record creation commit: `f79510d0cba4ededaa58f05c7040a45ca6dd3130`
+- docs/provenance hardening commit: `089a8548a4ae3344bb6cb88507378baf12744885`
+- independent review: implementation/numerics review found no findings.
+  claim/provenance review found stale docs/provenance commit semantics and a
+  pending branch-gate review placeholder; this disposition records both review
+  outcomes and hardens the Phase 24 record gates.
 
 ## Vendored Newton
 

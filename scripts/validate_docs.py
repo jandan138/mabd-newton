@@ -1400,8 +1400,13 @@ def validate_phase24_record() -> None:
         "plan commit: `f80cdc711719306f2b8babdc4e9c24af49175f83`",
         "M-ABD trajectory implementation commit: `5c42c19526de15bd662aaed65cbd0aa8ce7e50e2`",
         "RBD trajectory implementation commit: `4a18387cf9211a61d91fd8d87c1dfdf551f692b4`",
-        "docs/provenance commit: `f79510d0cba4ededaa58f05c7040a45ca6dd3130`",
+        "docs/record creation commit: `f79510d0cba4ededaa58f05c7040a45ca6dd3130`",
+        "docs/provenance hardening commit: `089a8548a4ae3344bb6cb88507378baf12744885`",
         "independent review:",
+        "implementation/numerics review found no findings",
+        "claim/provenance review found",
+        "stale docs/provenance commit semantics",
+        "pending branch-gate review placeholder",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "## Paper Source",
@@ -1446,6 +1451,12 @@ def validate_phase24_record() -> None:
     for snippet in required_snippets:
         if snippet not in text:
             fail(f"Phase 24 record missing required evidence field: {snippet}")
+    for stale_snippet in (
+        "independent review: pending",
+        "TO_BE_BACKFILLED_PHASE24_DOCS_COMMIT",
+    ):
+        if stale_snippet in text:
+            fail(f"Phase 24 record contains stale placeholder: {stale_snippet}")
 
     forbidden_snippets = (
         "Phase 24 verifies the paper spinning-box experiment",
