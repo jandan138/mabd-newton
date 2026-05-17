@@ -575,6 +575,19 @@
   paper timing, comparative baselines, rendered output, generated videos or raw
   simulation logs, a full paper reproduction, or any passed `experiment.*`
   claim.
+- This repository contains Phase 45 SolverMABD model-derived CPU
+  joint-constraint config integration evidence after the Phase 45 record is
+  created.
+- Phase 45 verifies model-derived `mabd:constraint` rows can be translated into
+  `MABDCPUOracleConstraint` entries for dense CPU oracle stepping, including
+  ball, hinge, and universal joint specs, `mabd:cp_index`, explicit
+  `mabd:constraint_type` values, rank validation, body-index validation,
+  invalid-type rejection, and continued manual `configure_cpu_oracle(...)`
+  precedence over the model-derived path.
+- Phase 45 does not verify model-derived world constraints, Newton `Contacts`,
+  Newton `Control` input, GPU/Warp kernels, paper scene assets, paper timing,
+  comparative baselines, rendered output, generated videos or raw simulation
+  logs, a full paper reproduction, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -647,6 +660,11 @@
   experiment, not a model-derived joint/constraint implementation, not a
   contact implementation, not a GPU/Warp solver, not a paper scene or timing
   reproduction, and not any passed `experiment.*` claim.
+- Phase 45 model-derived SolverMABD joint constraints are not a passed paper
+  experiment, not a contact implementation, not a model-derived world
+  constraint implementation, not a GPU/Warp solver, not a paper scene or timing
+  reproduction, not a full paper reproduction, and not any passed
+  `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

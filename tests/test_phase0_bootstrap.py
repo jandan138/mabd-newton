@@ -3228,6 +3228,67 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE44", text)
         self.assertNotIn("phase44-working-tree", text)
 
+    def test_phase45_solver_model_constraint_config_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 45")
+        verified = claim_boundary_bullet(text, "Phase 45 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 45 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 45 model-derived SolverMABD joint constraints")
+
+        self.assertIn("SolverMABD model-derived CPU joint-constraint config integration", current)
+        self.assertIn("model-derived `mabd:constraint` rows", verified)
+        self.assertIn("`MABDCPUOracleConstraint`", verified)
+        self.assertIn("ball, hinge, and universal", verified)
+        self.assertIn("`mabd:cp_index`", verified)
+        self.assertIn("manual `configure_cpu_oracle(...)`", verified)
+        self.assertIn("model-derived world constraints", non_claim)
+        self.assertIn("Newton `Contacts`", non_claim)
+        self.assertIn("Newton `Control` input", non_claim)
+        self.assertIn("GPU/Warp kernels", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+        self.assertIn("not a passed paper experiment", forbidden)
+        self.assertIn("not a contact implementation", forbidden)
+        self.assertIn("not a GPU/Warp solver", forbidden)
+
+    def test_phase45_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-18-phase45-model-constraint-config.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_solver_model_constraint_config_slice",
+            "## Repository",
+            "phase45-model-constraint-config",
+            "00e5415",
+            "83534a4",
+            "ca8c8a1",
+            "## Vendored Newton",
+            "https://github.com/newton-physics/newton.git",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "Local patch status",
+            "locally patched",
+            "## Environment",
+            "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+            "## Implementation Evidence",
+            "model-derived `mabd:constraint` rows",
+            "`MABDCPUOracleConstraint`",
+            "`ball_joint(...)`",
+            "`hinge_joint(...)`",
+            "`universal_joint(...)`",
+            "`mabd:cp_index`",
+            "manual `configure_cpu_oracle(...)`",
+            "## RED Evidence",
+            "Custom attribute 'mabd:cp_index' is not defined",
+            "FAILED (errors=7)",
+            "## GREEN Evidence",
+            "Ran 78 tests",
+            "OK",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "not a full paper reproduction",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE45", text)
+        self.assertNotIn("phase45-working-tree", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -3259,7 +3320,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
