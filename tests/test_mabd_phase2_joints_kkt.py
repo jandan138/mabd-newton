@@ -293,6 +293,15 @@ class MABDPhase2JointAndKKTTests(unittest.TestCase):
                 "mabd:poisson_ratio": 0.25,
                 "mabd:density": 2.0,
                 "mabd:polar_mode": 1,
+                "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+                "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+                "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:point_mass0": -1.0,
+                "mabd:point_mass1": -1.0,
+                "mabd:point_mass2": -1.0,
+                "mabd:point_mass3": -1.0,
+                "mabd:volume": -1.0,
             }
         )
         builder.add_custom_values(

@@ -98,6 +98,15 @@ def _loop_model_with_mabd_constraints() -> object:
                 "mabd:poisson_ratio": 0.25,
                 "mabd:density": 1.0,
                 "mabd:polar_mode": 0,
+                "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+                "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+                "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:point_mass0": -1.0,
+                "mabd:point_mass1": -1.0,
+                "mabd:point_mass2": -1.0,
+                "mabd:point_mass3": -1.0,
+                "mabd:volume": -1.0,
             }
         )
     for edge, rank in zip(((0, 1), (1, 2), (2, 3), (3, 0)), (3, 5, 4, 3), strict=True):
@@ -288,11 +297,11 @@ class MABDPhase3TopologySolverTests(unittest.TestCase):
         self.assertEqual(graph.ranks, [3, 5, 4, 3])
         self.assertEqual(graph.classification.kind, "single_loop")
 
-    def test_solver_step_remains_unsupported_in_phase3(self) -> None:
+    def test_solver_step_rejects_model_without_mabd_custom_frequency(self) -> None:
         model = newton.ModelBuilder().finalize()
         solver = SolverMABD(model)
 
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaisesRegex(ValueError, "register_custom_attributes"):
             solver.step(model.state(), model.state(), None, None, 0.01)
 
 

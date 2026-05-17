@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 import numpy as np
+import warp as wp
 
 import newton
 from newton.solvers import SolverMABD, mabd
@@ -103,7 +104,14 @@ def _read_mabd_state(state: object) -> tuple[np.ndarray, np.ndarray]:
     return q, qd
 
 
-def _mabd_model(body_count: int = 1) -> object:
+def _mabd_model(
+    body_count: int = 1,
+    *,
+    young_modulus: float = 1.0,
+    poisson_ratio: float = 0.25,
+    density: float = 1.0,
+    polar_mode: int = 0,
+) -> object:
     builder = newton.ModelBuilder()
     SolverMABD.register_custom_attributes(builder)
     for _ in range(body_count):
@@ -111,12 +119,121 @@ def _mabd_model(body_count: int = 1) -> object:
         builder.add_custom_values(
             **{
                 "mabd:body_index": body_id,
-                "mabd:young_modulus": 1.0,
+                "mabd:young_modulus": young_modulus,
+                "mabd:poisson_ratio": poisson_ratio,
+                "mabd:density": density,
+                "mabd:polar_mode": polar_mode,
+                "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+                "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+                "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:point_mass0": -1.0,
+                "mabd:point_mass1": -1.0,
+                "mabd:point_mass2": -1.0,
+                "mabd:point_mass3": -1.0,
+                "mabd:volume": -1.0,
+            }
+        )
+    return builder.finalize()
+
+
+def _add_control_row(
+    builder: newton.ModelBuilder,
+    *,
+    body_id: int = 0,
+    enabled: int = 1,
+    stiffness: float = 0.0,
+    damping: float = 0.0,
+    target_t: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    feedforward_t: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> None:
+    builder.add_custom_values(
+        **{
+            "mabd:control_body": body_id,
+            "mabd:control_enabled": enabled,
+            "mabd:control_stiffness": stiffness,
+            "mabd:control_damping": damping,
+            "mabd:control_target_q0": wp.vec3(1.0, 0.0, 0.0),
+            "mabd:control_target_q1": wp.vec3(0.0, 1.0, 0.0),
+            "mabd:control_target_q2": wp.vec3(0.0, 0.0, 1.0),
+            "mabd:control_target_t": wp.vec3(*target_t),
+            "mabd:control_target_qd0": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:control_target_qd1": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:control_target_qd2": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:control_target_td": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:control_feedforward_q0": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:control_feedforward_q1": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:control_feedforward_q2": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:control_feedforward_t": wp.vec3(*feedforward_t),
+        }
+    )
+
+
+def _model_path_body(
+    *,
+    young_modulus: float = 1.0,
+    poisson_ratio: float = 0.25,
+    density: float = 1.0,
+    rotation_mode: str = "none",
+) -> object:
+    rest_points = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ],
+        dtype=float,
+    )
+    volume = mabd.tetra_volume(rest_points)
+    masses = np.full(4, density * volume / 4.0, dtype=float)
+    return mabd.MABDCPUOracleBody(
+        precompute=mabd.SingleBodyABDPrecompute.from_linear_elastic_points(
+            rest_points,
+            masses,
+            young_modulus=young_modulus,
+            poisson_ratio=poisson_ratio,
+            volume=volume,
+        ),
+        rest_q=_identity_q(),
+        rotation_mode=rotation_mode,
+    )
+
+
+def _mabd_model_with_one_constraint() -> object:
+    builder = newton.ModelBuilder()
+    SolverMABD.register_custom_attributes(builder)
+    for _ in range(2):
+        body_id = builder.add_body()
+        builder.add_custom_values(
+            **{
+                "mabd:body_index": body_id,
+                "mabd:young_modulus": 0.0,
                 "mabd:poisson_ratio": 0.25,
                 "mabd:density": 1.0,
                 "mabd:polar_mode": 0,
+                "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+                "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+                "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:point_mass0": -1.0,
+                "mabd:point_mass1": -1.0,
+                "mabd:point_mass2": -1.0,
+                "mabd:point_mass3": -1.0,
+                "mabd:volume": -1.0,
             }
         )
+    builder.add_custom_values(
+        **{
+            "mabd:constraint_type": 1,
+            "mabd:body_a": 0,
+            "mabd:body_b": 1,
+            "mabd:rank": 3,
+            "mabd:gradient_mode": 1,
+            "mabd:axis0": wp.vec3(0.0, 1.0, 0.0),
+            "mabd:axis1": wp.vec3(0.0, 0.0, 1.0),
+        }
+    )
     return builder.finalize()
 
 
@@ -688,11 +805,93 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertTrue(np.allclose(q_next, expected_q, atol=1.0e-7))
         self.assertTrue(np.allclose(qd_next, expected_qd, atol=1.0e-7))
 
-    def test_solver_step_requires_cpu_oracle_configuration(self) -> None:
-        model = _mabd_model()
+    def test_solver_step_builds_cpu_config_from_model_body_rows(self) -> None:
+        model = _mabd_model(young_modulus=1.0)
+        solver = SolverMABD(model)
+        q = _identity_q((0.2, -0.1, 0.3))
+        qd = np.linspace(-0.2, 0.25, 12)
+        dt = 0.02
+        state_in = model.state()
+        state_out = model.state()
+        _assign_mabd_state(state_in, q, qd)
+
+        solver.step(state_in, state_out, None, None, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(bodies=[_model_path_body(young_modulus=1.0)]),
+        )
+        q_next, qd_next = _read_mabd_state(state_out)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        self.assertEqual(solver.last_step_result.topology, "unconstrained")
+
+    def test_solver_step_model_path_consumes_enabled_control_rows(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        body_id = builder.add_body()
+        builder.add_custom_values(
+            **{
+                "mabd:body_index": body_id,
+                "mabd:young_modulus": 1.0,
+                "mabd:poisson_ratio": 0.25,
+                "mabd:density": 1.0,
+                "mabd:polar_mode": 0,
+                "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+                "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+                "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:point_mass0": -1.0,
+                "mabd:point_mass1": -1.0,
+                "mabd:point_mass2": -1.0,
+                "mabd:point_mass3": -1.0,
+                "mabd:volume": -1.0,
+            }
+        )
+        _add_control_row(
+            builder,
+            stiffness=2.0,
+            target_t=(0.5, 0.0, 0.0),
+            feedforward_t=(0.0, 0.25, 0.0),
+        )
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        q = _identity_q()
+        dt = 0.1
+        state = model.state()
+        _assign_mabd_state(state, q, np.zeros(12))
+
+        solver.step(state, state, None, None, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[np.zeros(12)],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                actuations=mabd.actuation_specs_from_model(model),
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+
+    def test_solver_step_model_path_rejects_constraint_rows_until_specs_are_stored(self) -> None:
+        model = _mabd_model_with_one_constraint()
         solver = SolverMABD(model)
 
-        with self.assertRaisesRegex(NotImplementedError, "configure_cpu_oracle"):
+        with self.assertRaisesRegex(NotImplementedError, "model-derived.*constraint"):
+            solver.step(model.state(), model.state(), None, None, 0.01)
+
+    def test_solver_step_rejects_empty_model_without_body_rows(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        model = builder.finalize()
+        solver = SolverMABD(model)
+
+        with self.assertRaisesRegex(ValueError, "mabd:body"):
             solver.step(model.state(), model.state(), None, None, 0.01)
 
     def test_solver_step_rejects_newton_control_input(self) -> None:

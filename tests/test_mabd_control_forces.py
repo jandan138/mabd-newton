@@ -18,6 +18,15 @@ def _add_mabd_body(builder: newton.ModelBuilder) -> int:
             "mabd:poisson_ratio": 0.25,
             "mabd:density": 1.0,
             "mabd:polar_mode": 0,
+            "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+            "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+            "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+            "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+            "mabd:point_mass0": -1.0,
+            "mabd:point_mass1": -1.0,
+            "mabd:point_mass2": -1.0,
+            "mabd:point_mass3": -1.0,
+            "mabd:volume": -1.0,
         }
     )
     return body_id

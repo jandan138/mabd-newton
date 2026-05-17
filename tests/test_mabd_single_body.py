@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 import numpy as np
+import warp as wp
 
 import newton
 from newton.solvers import SolverMABD, mabd
@@ -445,6 +446,9 @@ class MABDSingleBodyPublicTests(unittest.TestCase):
         SolverMABD.register_custom_attributes(builder)
         self.assertIn("mabd:body", builder.custom_frequencies)
         self.assertIn("mabd:body_index", builder.custom_attributes)
+        self.assertIn("mabd:rest_point0", builder.custom_attributes)
+        self.assertIn("mabd:point_mass0", builder.custom_attributes)
+        self.assertIn("mabd:volume", builder.custom_attributes)
         self.assertIn("mabd:q0", builder.custom_attributes)
 
         model = builder.finalize()
@@ -464,6 +468,15 @@ class MABDSingleBodyPublicTests(unittest.TestCase):
                 "mabd:poisson_ratio": 0.2,
                 "mabd:density": 3.0,
                 "mabd:polar_mode": 1,
+                "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+                "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+                "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:point_mass0": -1.0,
+                "mabd:point_mass1": -1.0,
+                "mabd:point_mass2": -1.0,
+                "mabd:point_mass3": -1.0,
+                "mabd:volume": -1.0,
             }
         )
 
@@ -473,6 +486,10 @@ class MABDSingleBodyPublicTests(unittest.TestCase):
         self.assertEqual(model.get_custom_frequency_count("mabd:body"), 1)
         self.assertEqual(int(model.mabd.body_index.numpy()[0]), body_id)
         self.assertAlmostEqual(float(model.mabd.young_modulus.numpy()[0]), 50.0)
+        self.assertTrue(np.allclose(model.mabd.rest_point0.numpy()[0], [0.0, 0.0, 0.0]))
+        self.assertTrue(np.allclose(model.mabd.rest_point1.numpy()[0], [1.0, 0.0, 0.0]))
+        self.assertAlmostEqual(float(model.mabd.point_mass0.numpy()[0]), -1.0)
+        self.assertAlmostEqual(float(model.mabd.volume.numpy()[0]), -1.0)
         self.assertTrue(np.allclose(state.mabd.q0.numpy()[0], [1.0, 0.0, 0.0]))
 
 
