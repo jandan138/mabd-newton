@@ -9,6 +9,7 @@ from mabd_reproduction.experiment_configs import load_physical_pendulum_config
 from mabd_reproduction.physical_pendulum_reports import (
     write_physical_pendulum_analytic_reference_report,
     write_physical_pendulum_mabd_development_report,
+    write_physical_pendulum_mabd_newton_report,
     write_physical_pendulum_rbd_baseline_report,
 )
 from mabd_reproduction.reporting import EvidenceStatus
@@ -31,7 +32,7 @@ class PhysicalPendulumComparisonReportTests(unittest.TestCase):
             source_commit="test-source",
             vendored_newton_commit="test-newton",
         )
-        write_physical_pendulum_mabd_development_report(
+        write_physical_pendulum_mabd_newton_report(
             mabd_path,
             config=config,
             source_commit="test-source",
@@ -93,7 +94,7 @@ class PhysicalPendulumComparisonReportTests(unittest.TestCase):
         self.assertEqual(report.backend, "report_protocol")
         self.assertEqual(report.status, EvidenceStatus.INCOMPLETE)
         self.assertFalse(report.observed["full_experiment_claim_passed"])
-        self.assertEqual(report.observed["missing_required_lanes"], ["mabd_newton"])
+        self.assertEqual(report.observed["missing_required_lanes"], [])
         self.assertIn("joint_force_waveform_agreement_missing", report.observed["blocking_reasons"])
         self.assertEqual(report.observed["matched_sample_count"], 5)
         self.assertEqual(report.observed["mabd_sample_count"], 5)
@@ -104,7 +105,15 @@ class PhysicalPendulumComparisonReportTests(unittest.TestCase):
         self.assertGreater(len(report.observed["angle_sample_differences_rad"]), 0)
         self.assertEqual(
             report.observed["paper_metric_statuses"]["joint_force_error"]["status"],
-            "missing_waveform_not_max_magnitude",
+            "diagnostic_reaction_not_paper_waveform",
+        )
+        self.assertEqual(
+            report.observed["paper_metric_statuses"]["phase_drift"]["status"],
+            "diagnostic_available",
+        )
+        self.assertEqual(
+            report.observed["input_report_provenance"]["mabd_newton"]["baseline_lane"],
+            "mabd_newton",
         )
         self.assertEqual(
             report.observed["input_report_provenance"]["rbd_implicit_baseline"]["source_commit"],
@@ -115,7 +124,7 @@ class PhysicalPendulumComparisonReportTests(unittest.TestCase):
     def test_physical_pendulum_comparison_rejects_wrong_lane_identity(self) -> None:
         cases = (
             ("analytic", "claim_id", "wrong.claim", "analytic_reference report claim_id"),
-            ("mabd", "scene_id", "wrong_scene", "physical_pendulum_mabd_development_diagnostic report scene_id"),
+            ("mabd", "scene_id", "wrong_scene", "mabd_newton report scene_id"),
             ("rbd", "baseline_lane", "wrong_lane", "rbd_implicit_baseline report must have baseline_lane"),
         )
         for lane_name, key, value, pattern in cases:
@@ -139,7 +148,7 @@ class PhysicalPendulumComparisonReportTests(unittest.TestCase):
     def test_physical_pendulum_comparison_rejects_wrong_protocol_identity(self) -> None:
         cases = (
             ("analytic", "solver_mode", "wrong_solver", "analytic_reference report solver_mode"),
-            ("mabd", "backend", "wrong_backend", "physical_pendulum_mabd_development_diagnostic report backend"),
+            ("mabd", "backend", "wrong_backend", "mabd_newton report backend"),
             ("rbd", "status", "failed", "rbd_implicit_baseline report status"),
         )
         for lane_name, key, value, pattern in cases:
@@ -159,6 +168,32 @@ class PhysicalPendulumComparisonReportTests(unittest.TestCase):
                             rbd_path=rbd_path,
                         )
                     self.assertFalse(output_path.exists())
+
+    def test_physical_pendulum_comparison_rejects_development_diagnostic_as_required_lane(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, analytic_path, mabd_path, rbd_path = self._write_lane_reports(tmpdir)
+            write_physical_pendulum_mabd_development_report(
+                mabd_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            output_path = Path(tmpdir) / "comparison.json"
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "mabd_newton report must have baseline_lane=mabd_newton",
+            ):
+                self._write_comparison(
+                    output_path=output_path,
+                    config=config,
+                    analytic_path=analytic_path,
+                    mabd_path=mabd_path,
+                    rbd_path=rbd_path,
+                )
+            self.assertFalse(output_path.exists())
 
     def test_physical_pendulum_comparison_blocks_zero_matched_samples(self) -> None:
         with TemporaryDirectory() as tmpdir:

@@ -64,7 +64,7 @@ class ExperimentRunnerTests(unittest.TestCase):
         from mabd_reproduction.experiment_configs import load_physical_pendulum_config
         from mabd_reproduction.physical_pendulum_reports import (
             write_physical_pendulum_analytic_reference_report,
-            write_physical_pendulum_mabd_development_report,
+            write_physical_pendulum_mabd_newton_report,
             write_physical_pendulum_rbd_baseline_report,
         )
 
@@ -78,7 +78,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             source_commit="test-source",
             vendored_newton_commit="test-newton",
         )
-        write_physical_pendulum_mabd_development_report(
+        write_physical_pendulum_mabd_newton_report(
             mabd_path,
             config=config,
             source_commit="test-source",
@@ -484,7 +484,7 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.report.baseline_lane, "physical_pendulum_comparison_protocol")
         self.assertEqual(loaded.baseline_lane, "physical_pendulum_comparison_protocol")
         self.assertEqual(loaded.solver_mode, "physical_pendulum_multilane_comparison_development")
-        self.assertEqual(loaded.observed["missing_required_lanes"], ["mabd_newton"])
+        self.assertEqual(loaded.observed["missing_required_lanes"], [])
         self.assertEqual(loaded.observed["matched_sample_count"], 5)
         self.assertIn("input_report_provenance", loaded.observed)
 

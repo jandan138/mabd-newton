@@ -30,8 +30,8 @@ PHYSICAL_PENDULUM_INPUT_LANES = {
         "solver_mode": "analytic_elliptic_reference",
         "backend": "cpu_scipy_reference",
     },
-    "physical_pendulum_mabd_development_diagnostic": {
-        "solver_mode": "mabd_cpu_oracle_physical_pendulum_development",
+    "mabd_newton": {
+        "solver_mode": "mabd_cpu_oracle_physical_pendulum_newton_lane",
         "backend": "cpu_numpy_newton_only",
     },
     "rbd_implicit_baseline": {
@@ -241,13 +241,13 @@ def _physical_pendulum_paper_metric_statuses() -> dict[str, dict[str, str | None
             "rbd_field": "max_abs_angle_error_rad",
         },
         "phase_drift": {
-            "status": "rbd_diagnostic_only",
-            "mabd_field": None,
+            "status": "diagnostic_available",
+            "mabd_field": "max_phase_drift_rad",
             "rbd_field": "max_phase_drift_rad",
         },
         "joint_force_error": {
-            "status": "missing_waveform_not_max_magnitude",
-            "mabd_field": None,
+            "status": "diagnostic_reaction_not_paper_waveform",
+            "mabd_diagnostic_field": "max_world_anchor_reaction_magnitude_n",
             "rbd_diagnostic_field": "max_joint_force_magnitude_n",
         },
     }
@@ -471,7 +471,7 @@ def write_physical_pendulum_comparison_report(
     mabd_report = _require_physical_pendulum_lane_report(
         mabd_report_path,
         config=config,
-        lane="physical_pendulum_mabd_development_diagnostic",
+        lane="mabd_newton",
     )
     rbd_report = _require_physical_pendulum_lane_report(
         rbd_report_path,
@@ -480,7 +480,6 @@ def write_physical_pendulum_comparison_report(
     )
     sample_diagnostics = _physical_angle_sample_differences(mabd_report, rbd_report)
     blocking_reasons = [
-        "mabd_newton_missing",
         "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
         "paper_timing_missing",
@@ -495,19 +494,17 @@ def write_physical_pendulum_comparison_report(
         "full_experiment_claim_passed": False,
         "lane_statuses": {
             "analytic_reference": analytic_report.status.value,
-            "physical_pendulum_mabd_development_diagnostic": mabd_report.status.value,
+            "mabd_newton": mabd_report.status.value,
             "rbd_implicit_baseline": rbd_report.status.value,
         },
         "lane_observed_statuses": {
             "analytic_reference": analytic_report.observed.get("lane_status"),
-            "physical_pendulum_mabd_development_diagnostic": mabd_report.observed.get(
-                "lane_status"
-            ),
+            "mabd_newton": mabd_report.observed.get("lane_status"),
             "rbd_implicit_baseline": rbd_report.observed.get("lane_status"),
         },
         "lane_solver_modes": {
             "analytic_reference": analytic_report.solver_mode,
-            "physical_pendulum_mabd_development_diagnostic": mabd_report.solver_mode,
+            "mabd_newton": mabd_report.solver_mode,
             "rbd_implicit_baseline": rbd_report.solver_mode,
         },
         "input_report_provenance": {
@@ -515,7 +512,7 @@ def write_physical_pendulum_comparison_report(
                 analytic_report_path,
                 analytic_report,
             ),
-            "physical_pendulum_mabd_development_diagnostic": _physical_lane_provenance(
+            "mabd_newton": _physical_lane_provenance(
                 mabd_report_path,
                 mabd_report,
             ),
@@ -529,12 +526,14 @@ def write_physical_pendulum_comparison_report(
                 analytic_report,
                 ("max_abs_reference_identity_error",),
             ),
-            "physical_pendulum_mabd_development_diagnostic": _physical_pendulum_metric_snapshot(
+            "mabd_newton": _physical_pendulum_metric_snapshot(
                 mabd_report,
                 (
                     "max_abs_angle_error_rad",
+                    "max_phase_drift_rad",
                     "max_pivot_residual_m",
                     "max_constraint_residual_norm",
+                    "max_world_anchor_reaction_magnitude_n",
                 ),
             ),
             "rbd_implicit_baseline": _physical_pendulum_metric_snapshot(
@@ -549,15 +548,8 @@ def write_physical_pendulum_comparison_report(
             ),
         },
         "paper_metric_statuses": _physical_pendulum_paper_metric_statuses(),
-        "missing_required_lanes": list(config.required_missing_lanes),
-        "missing_paper_metrics": [
-            "mabd_newton:pendulum_angle_error",
-            "mabd_newton:joint_force_error",
-            "mabd_newton:phase_drift",
-            "physical_pendulum_mabd_development_diagnostic:joint_force_error",
-            "physical_pendulum_mabd_development_diagnostic:phase_drift",
-            "rbd_implicit_baseline:joint_force_error",
-        ],
+        "missing_required_lanes": [],
+        "missing_paper_metrics": ["joint_force_error:paper_waveform_agreement"],
         "blocking_reasons": blocking_reasons,
         "mabd_sample_count": sample_diagnostics["mabd_sample_count"],
         "rbd_sample_count": sample_diagnostics["rbd_sample_count"],
@@ -579,8 +571,8 @@ def write_physical_pendulum_comparison_report(
         baseline_lane="physical_pendulum_comparison_protocol",
         expected={
             "paper_claim_status": (
-                "requires paper-faithful M-ABD lane, implicit RBD baseline, "
-                "joint-force waveform comparison, geometry, and timing evidence"
+                "formal M-ABD and RBD lanes are present; joint-force waveform comparison, "
+                "geometry, and timing evidence remain required"
             ),
             "required_lanes": list(config.comparison.required_lanes),
             "diagnostic_lanes": list(config.comparison.diagnostic_lanes),
@@ -593,8 +585,8 @@ def write_physical_pendulum_comparison_report(
         unit="json_report",
         status=EvidenceStatus.INCOMPLETE,
         failure_reason=(
-            "physical-pendulum comparison protocol is incomplete because mabd_newton, "
-            "joint-force waveform agreement, paper geometry, and paper timing remain missing"
+            "physical-pendulum comparison protocol is incomplete because joint-force waveform "
+            "agreement, paper geometry, and paper timing remain missing"
         ),
         timing_distribution={"scope": "not_timed"},
         raw_outputs={
