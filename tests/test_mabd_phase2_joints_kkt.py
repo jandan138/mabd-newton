@@ -313,6 +313,7 @@ class MABDPhase2JointAndKKTTests(unittest.TestCase):
                 "mabd:gradient_mode": 1,
                 "mabd:axis0": wp.vec3(0.0, 1.0, 0.0),
                 "mabd:axis1": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:cp_index": 2,
             }
         )
 
@@ -324,6 +325,7 @@ class MABDPhase2JointAndKKTTests(unittest.TestCase):
         self.assertEqual(int(model.mabd.body_a.numpy()[0]), 0)
         self.assertEqual(int(model.mabd.body_b.numpy()[0]), 0)
         self.assertEqual(int(model.mabd.rank.numpy()[0]), 3)
+        self.assertEqual(int(model.mabd.cp_index.numpy()[0]), 2)
         self.assertTrue(np.allclose(model.mabd.axis0.numpy()[0], [0.0, 1.0, 0.0]))
 
 
