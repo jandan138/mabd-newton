@@ -59,8 +59,8 @@ artifacts, or any passed `experiment.*` claim.
 - upstream commit: `96713fa965463b69c229a4d30582c733ff3526bb`
 - local patch status: Phase 25 modifies vendored Newton
   `vendor/newton/newton/_src/solvers/mabd/step_oracle.py` to route
-  unconstrained no-polar single-body steps through the existing
-  `solve_single_body_delta` helper.
+  unconstrained no-polar single-body steps through an affine-only local
+  material solve while leaving translation inertial in world coordinates.
 
 ## Paper Source
 
@@ -107,11 +107,11 @@ artifacts, or any passed `experiment.*` claim.
 - material_stiffness_trace = 6346153.846153847
 - material_stiffness_rank = 6
 - linear_momentum_error <= 1.0e-9
-- observed final `linear_momentum_error`: `1.421085527484291e-14`
+- observed final `linear_momentum_error`: `2.842170943040401e-14`
 - angular_momentum_error remains a development gap
-- observed final `angular_momentum_error`: `5327060168820.915`
+- observed final `angular_momentum_error`: `5327060168820.906`
 - relative_energy_drift remains a development gap
-- observed final `relative_energy_drift`: `53103644458.085396`
+- observed final `relative_energy_drift`: `53103644458.08528`
 - affine_shape_diagnostic_status = development_gap_observed
 - constrained CPU oracle no-polar KKT remains unsupported
 - report status: `incomplete`
