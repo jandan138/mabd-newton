@@ -1,0 +1,261 @@
+{
+  "asset_hashes": {
+    "heavy_top_procedural": "not_applicable_procedural"
+  },
+  "backend": "cpu_numpy_newton_only",
+  "baseline_lane": "mabd_newton",
+  "claim_id": "experiment.single_body.heavy_top",
+  "expected": {
+    "blocking_reasons": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing",
+      "mabd_newton_report_incomplete",
+      "heavy_top_comparison_report_missing",
+      "heavy_top_timing_evidence_missing"
+    ],
+    "figure_pdf_sha256": "c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d",
+    "figure_text_source": "pdftotext /tmp/mabd-paper/source/images/spinning_top/spinning_top.pdf -",
+    "full_experiment_claim_passed": false,
+    "known_source_gaps": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing"
+    ],
+    "lane_report": "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+    "matrix_claim_report": "reports/experiment_matrix/single_body_heavy_top.json",
+    "newton_model_derived_custom_frequencies": [
+      "mabd:body",
+      "mabd:world_constraint",
+      "mabd:gravity"
+    ],
+    "nonclaim_limitations": [
+      "procedural point-mass tetrahedron is not the paper's undisclosed heavy-top geometry",
+      "configured inertia is not matched to the paper's undisclosed heavy-top inertia",
+      "no raw paper curve digitization or curve agreement gate is generated",
+      "no ABD-vs-RBD comparison report is generated",
+      "no rendered figure or timing distribution is generated"
+    ],
+    "paper_claim_status": "formal M-ABD lane generated; full heavy-top experiment incomplete",
+    "paper_values": {
+      "angular_speed_rad_s": 10,
+      "reference_h_s": 0.0001,
+      "tilt_deg": 5
+    },
+    "solver_model_config_source": "newton_model_derived",
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:65-75"
+    ],
+    "world_anchor_constraint": {
+      "pivot_rest_point_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pivot_world_point_m": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "failure_reason": "heavy_top mabd_newton diagnostic lane remains incomplete because exact_heavy_top_inertia_unknown, exact_heavy_top_geometry_unknown, raw_heavy_top_reference_curve_data_missing, heavy_top_comparison_report_missing, and heavy_top_timing_evidence_missing remain unresolved",
+  "observed": {
+    "angle_probe_rest_point_m": [
+      0.0,
+      0.0,
+      0.25025025025
+    ],
+    "blocking_reasons": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing",
+      "mabd_newton_report_incomplete",
+      "heavy_top_comparison_report_missing",
+      "heavy_top_timing_evidence_missing"
+    ],
+    "full_experiment_claim_passed": false,
+    "gravity_m_s2": [
+      0.0,
+      -9.81,
+      0.0
+    ],
+    "lane_status": "incomplete_diagnostic_generated",
+    "mabd_rotation_mode": "polar",
+    "max_abs_precession_velocity_rad_s": 6.211950805675907e-13,
+    "max_affine_shape_spread_m": 1.026072417876121,
+    "max_constraint_residual_norm": 1.9857179087041432e-16,
+    "max_nutation_angle_deg": 159.54996086066706,
+    "max_pivot_residual_m": 1.9857179528336718e-16,
+    "max_world_anchor_reaction_magnitude_n": 0.009810000886461466,
+    "min_nutation_angle_deg": 4.999999999999992,
+    "newton_model_derived_custom_frequencies": [
+      "mabd:body",
+      "mabd:world_constraint",
+      "mabd:gravity"
+    ],
+    "pivot_rest_point_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot_world_point_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "point_masses_kg": [
+      0.001,
+      0.333,
+      0.333,
+      0.333
+    ],
+    "precession_nutation_samples": [
+      {
+        "affine_shape_spread_m": 0.0,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 4.999999999999992,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": 0.0,
+        "sample_index": 0,
+        "step": 0,
+        "time_s": 0.0,
+        "world_anchor_reaction_magnitude_n": 0.0,
+        "world_anchor_reaction_vector_n": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 0.07155428355058124,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 5.262664426176727,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": 0.0,
+        "sample_index": 1,
+        "step": 50,
+        "time_s": 0.05,
+        "world_anchor_reaction_magnitude_n": 0.009810000885629923,
+        "world_anchor_reaction_vector_n": [
+          1.1719614335654977e-14,
+          -0.009810000885629923,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 0.25110381196671994,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 6.231221743635529,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": 0.0,
+        "sample_index": 2,
+        "step": 100,
+        "time_s": 0.1,
+        "world_anchor_reaction_magnitude_n": 0.009810000885404662,
+        "world_anchor_reaction_vector_n": [
+          0.0,
+          -0.009810000885404662,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 0.48665744214559703,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 8.96847934810299,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": 0.0,
+        "sample_index": 3,
+        "step": 150,
+        "time_s": 0.15,
+        "world_anchor_reaction_magnitude_n": 0.009810000885160146,
+        "world_anchor_reaction_vector_n": [
+          0.0,
+          -0.009810000885160146,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 0.7493274231858077,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 22.709155580356665,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -2.778112649447333e-14,
+        "sample_index": 4,
+        "step": 200,
+        "time_s": 0.2,
+        "world_anchor_reaction_magnitude_n": 0.009810000885777412,
+        "world_anchor_reaction_vector_n": [
+          -1.687915003701927e-14,
+          -0.009810000885777412,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 1.026072417876121,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 159.54996086066706,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -5.884088052285287e-14,
+        "sample_index": 5,
+        "step": 250,
+        "time_s": 0.25,
+        "world_anchor_reaction_magnitude_n": 0.009810000885867112,
+        "world_anchor_reaction_vector_n": [
+          -8.924639408113921e-14,
+          -0.009810000885867112,
+          -4.495160102942529e-14
+        ]
+      }
+    ],
+    "required_missing_lanes": [],
+    "rest_points_m": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.35,
+        0.0,
+        0.25025025025
+      ],
+      [
+        -0.175,
+        0.3031088913245535,
+        0.25025025025
+      ],
+      [
+        -0.175,
+        -0.3031088913245535,
+        0.25025025025
+      ]
+    ],
+    "sample_count": 6,
+    "solver_model_config_source": "newton_model_derived",
+    "step_count": 250,
+    "threshold_violations": [],
+    "time_step_s": 0.001
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "time_series": "compact_samples_only"
+  },
+  "scene_id": "single_body_heavy_top",
+  "solver_mode": "mabd_cpu_oracle_heavy_top_newton_lane",
+  "source_commit": "45bef31db663b2d13d9385ef64a8445cbac9b613",
+  "status": "incomplete",
+  "threshold": {
+    "max_affine_shape_spread_m": 1.1,
+    "max_constraint_residual_norm": 1e-05,
+    "max_pivot_residual_m": 1e-05,
+    "min_nutation_angle_range_deg": 1e-08
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "status": "not_measured"
+  },
+  "unit": "angle_deg",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}
