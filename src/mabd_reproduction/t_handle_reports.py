@@ -89,7 +89,7 @@ def write_t_handle_rk4_reference_report(
     report = ClaimReport(
         claim_id=config.claim_id,
         scene_id=config.scene_id,
-        asset_hashes={"t_handle_procedural": "not_applicable_procedural_diagnostic"},
+        asset_hashes={"t_handle_procedural": "not_applicable_procedural"},
         solver_mode="t_handle_torque_free_rk4_reference",
         backend="cpu_numpy",
         baseline_lane=config.baseline_lane,

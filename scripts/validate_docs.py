@@ -37,6 +37,7 @@ from mabd_reproduction.spinning_box_physics import (
     spinning_box_kinematic_feasibility,
     spinning_box_mabd_mass_diagonal,
 )
+from mabd_reproduction.t_handle_reference import roll_out_t_handle_rk4_reference
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -5372,6 +5373,8 @@ def validate_phase43_record() -> None:
         fail("Phase 43 report claim_id does not match config")
     if report.scene_id != config.scene_id:
         fail("Phase 43 report scene_id does not match config")
+    if report.asset_hashes.get("t_handle_procedural") != "not_applicable_procedural":
+        fail("Phase 43 T-handle asset hash must match manifest checksum")
     if report.status.value != "incomplete":
         fail("Phase 43 T-handle report must remain incomplete")
     actual_hash = sha256_file(ROOT / report_path)
@@ -5386,6 +5389,7 @@ def validate_phase43_record() -> None:
     if report.backend != "cpu_numpy":
         fail("Phase 43 T-handle report backend changed")
     observed = report.observed
+    trajectory = roll_out_t_handle_rk4_reference(config)
     if observed.get("lane_status") != "diagnostic_generated":
         fail("Phase 43 T-handle diagnostic status changed")
     if "lane_gate_status" in observed:
@@ -5431,14 +5435,44 @@ def validate_phase43_record() -> None:
         "Phase 43 T-handle intermediate_axis_sign_flips",
     ) < config.reference.thresholds["min_intermediate_axis_sign_flips"]:
         fail("Phase 43 T-handle sign-flip count below threshold")
+    if (
+        int(observed.get("intermediate_axis_sign_flips", -1))
+        != trajectory.intermediate_axis_sign_flips
+    ):
+        fail("Phase 43 T-handle sign-flip count does not match recomputed RK4 rollout")
+    for key, expected in (
+        ("energy_initial", trajectory.energy_initial),
+        ("energy_final", trajectory.energy_final),
+        ("relative_energy_drift", trajectory.relative_energy_drift),
+        ("angular_momentum_norm_initial", trajectory.angular_momentum_norm_initial),
+        ("angular_momentum_norm_final", trajectory.angular_momentum_norm_final),
+        ("angular_momentum_norm_drift", trajectory.angular_momentum_norm_drift),
+    ):
+        actual = _require_finite_scalar(observed.get(key), f"Phase 43 T-handle {key}")
+        if not np.isclose(actual, expected, rtol=0.0, atol=1.0e-15):
+            fail(f"Phase 43 T-handle {key} does not match recomputed RK4 rollout")
     _require_finite_vector3(
         observed.get("principal_inertia_kg_m2"),
         "Phase 43 T-handle principal_inertia_kg_m2",
     )
+    if not np.allclose(
+        observed.get("principal_inertia_kg_m2"),
+        config.reference.principal_inertia_kg_m2.tolist(),
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        fail("Phase 43 T-handle inertia does not match config")
     _require_finite_vector3(
         observed.get("initial_angular_velocity_rad_s"),
         "Phase 43 T-handle initial_angular_velocity_rad_s",
     )
+    if not np.allclose(
+        observed.get("initial_angular_velocity_rad_s"),
+        config.reference.initial_angular_velocity_rad_s.tolist(),
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        fail("Phase 43 T-handle initial angular velocity does not match config")
     gravity = _require_finite_vector3(observed.get("gravity_m_s2"), "Phase 43 T-handle gravity_m_s2")
     if gravity != [0.0, 0.0, 0.0]:
         fail("Phase 43 T-handle gravity must remain zero")
@@ -5452,6 +5486,18 @@ def validate_phase43_record() -> None:
             fail("Phase 43 T-handle sample_index changed")
         for key in ("time_s", "omega_x_rad_s", "omega_y_rad_s", "omega_z_rad_s"):
             _require_finite_scalar(sample.get(key), f"Phase 43 T-handle sample {index} {key}")
+        expected_row = trajectory.samples[index]
+        for key, expected in (
+            ("time_s", expected_row[0]),
+            ("omega_x_rad_s", expected_row[1]),
+            ("omega_y_rad_s", expected_row[2]),
+            ("omega_z_rad_s", expected_row[3]),
+        ):
+            actual = float(sample[key])
+            if not np.isclose(actual, float(expected), rtol=0.0, atol=1.0e-14):
+                fail(f"Phase 43 T-handle sample {index} {key} does not match recomputed RK4 rollout")
+    if observed.get("threshold_violations") != []:
+        fail("Phase 43 T-handle threshold_violations changed")
     if report.expected.get("source_lines") != list(config.source_lines):
         fail("Phase 43 T-handle expected source_lines changed")
     if report.expected.get("figure_pdf_sha256") != config.reference.figure_pdf_sha256:
