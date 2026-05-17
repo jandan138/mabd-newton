@@ -450,6 +450,23 @@
   pass, joint-force waveform agreement, paper geometry, rendered output, paper
   timing, paper trajectory agreement, generated videos or raw simulation logs,
   or any passed `experiment.*` claim.
+- This repository contains Phase 37 formal physical-pendulum `mabd_newton`
+  lane evidence and regenerated comparison evidence after the Phase 37 record
+  is created.
+- Phase 37 verifies physical-pendulum `mabd_newton` config validation,
+  `run_physical_pendulum_mabd_newton`, `--lane physical_pendulum_mabd_newton`
+  CLI dispatch, the `mabd_cpu_oracle_physical_pendulum_newton_lane` report
+  solver mode, compact angle samples with `phase_drift_rad`,
+  `world_anchor_reaction_vector_n`, `max_world_anchor_reaction_magnitude_n`,
+  comparison acceptance of `baseline_lane = mabd_newton`,
+  `missing_required_lanes = []`, `paper_metric_statuses.phase_drift.status =
+  diagnostic_available`, `paper_metric_statuses.joint_force_error.status =
+  diagnostic_reaction_not_paper_waveform`, and top-level report status:
+  `incomplete`.
+- Phase 37 does not verify the full physical-pendulum experiment,
+  paper-faithful pendulum geometry, joint-force waveform agreement, paper
+  timing, rendered output, paper trajectory agreement, generated videos or raw
+  simulation logs, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -489,6 +506,10 @@
   physical-pendulum experiment, M-ABD lane pass, joint-force waveform
   agreement, paper geometry result, paper timing result, or any passed
   `experiment.*` claim.
+- Phase 37 physical-pendulum `mabd_newton` lane is not a passed
+  physical-pendulum experiment, paper-faithful pendulum geometry result,
+  joint-force waveform agreement, paper timing result, rendered result, or any
+  passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

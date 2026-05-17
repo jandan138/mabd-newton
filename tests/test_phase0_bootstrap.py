@@ -2179,52 +2179,135 @@ class Phase0BootstrapTests(unittest.TestCase):
         analytic = load_claim_report(
             ROOT / "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json"
         )
+        mabd = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json"
+        )
         comparison = load_claim_report(
             ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
         )
 
         self.assertEqual(analytic.baseline_lane, "analytic_reference")
         self.assertEqual(analytic.status.value, "incomplete")
-        self.assertNotIn(analytic.source_commit, {"phase36-working-tree", "pending branch-local", "<implementation-commit>"})
+        self.assertNotIn(analytic.source_commit, {"phase37-working-tree", "pending branch-local", "<implementation-commit>"})
         self.assertEqual(
             analytic.vendored_newton_commit,
             "96713fa965463b69c229a4d30582c733ff3526bb",
         )
+        self.assertEqual(mabd.baseline_lane, "mabd_newton")
+        self.assertEqual(mabd.solver_mode, "mabd_cpu_oracle_physical_pendulum_newton_lane")
+        self.assertEqual(mabd.observed["lane_status"], "incomplete_diagnostic_generated")
+        self.assertIn("max_phase_drift_rad", mabd.observed)
+        self.assertIn("max_world_anchor_reaction_magnitude_n", mabd.observed)
         self.assertEqual(comparison.baseline_lane, "physical_pendulum_comparison_protocol")
         self.assertEqual(comparison.status.value, "incomplete")
         self.assertEqual(comparison.solver_mode, "physical_pendulum_multilane_comparison_development")
         self.assertFalse(comparison.observed["full_experiment_claim_passed"])
-        self.assertEqual(comparison.observed["missing_required_lanes"], ["mabd_newton"])
+        self.assertEqual(comparison.observed["missing_required_lanes"], [])
+        self.assertEqual(
+            comparison.observed["missing_paper_metrics"],
+            ["joint_force_error:paper_waveform_agreement"],
+        )
         self.assertIn("joint_force_waveform_agreement_missing", comparison.observed["blocking_reasons"])
+        self.assertNotIn("mabd_newton_missing", comparison.observed["blocking_reasons"])
         self.assertGreater(comparison.observed["matched_sample_count"], 0)
         self.assertEqual(
             comparison.observed["paper_metric_statuses"]["joint_force_error"]["status"],
-            "missing_waveform_not_max_magnitude",
+            "diagnostic_reaction_not_paper_waveform",
+        )
+        self.assertEqual(
+            comparison.observed["paper_metric_statuses"]["phase_drift"]["status"],
+            "diagnostic_available",
         )
         self.assertEqual(
             comparison.observed["input_report_provenance"]["analytic_reference"]["source_commit"],
             analytic.source_commit,
         )
         self.assertEqual(
+            comparison.observed["input_report_provenance"]["mabd_newton"]["source_commit"],
+            mabd.source_commit,
+        )
+        self.assertEqual(
             comparison.vendored_newton_commit,
             "96713fa965463b69c229a4d30582c733ff3526bb",
         )
 
-    def test_phase36_validator_rejects_placeholder_report_source_commit(self) -> None:
+    def test_phase37_physical_pendulum_mabd_newton_lane_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        physical_pendulum = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.physical_pendulum"
+        )
+        self.assertEqual(physical_pendulum["reproduction_status"], "intended")
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 37")
+        verified = claim_boundary_bullet(text, "Phase 37 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 37 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 37 physical-pendulum `mabd_newton` lane",
+        )
+
+        self.assertIn("formal physical-pendulum `mabd_newton` lane", current)
+        self.assertIn("run_physical_pendulum_mabd_newton", verified)
+        self.assertIn("world_anchor_reaction_vector_n", verified)
+        self.assertIn("missing_required_lanes = []", verified)
+        self.assertIn("diagnostic_reaction_not_paper_waveform", verified)
+        self.assertIn("full physical-pendulum experiment", non_claim)
+        self.assertIn("paper-faithful pendulum geometry", non_claim)
+        self.assertIn("joint-force waveform agreement", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+    def test_phase37_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase37-physical-pendulum-mabd-newton-lane.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_physical_pendulum.yaml",
+            "## Repository",
+            "phase37-mabd-solver-core",
+            "implementation commit: `cf45239`",
+            "## Physical Pendulum MABD Newton Evidence",
+            "run_physical_pendulum_mabd_newton",
+            "--lane physical_pendulum_mabd_newton",
+            "mabd_cpu_oracle_physical_pendulum_newton_lane",
+            "baseline lane: `mabd_newton`",
+            "world_anchor_reaction_vector_n",
+            "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+            "## Regenerated Comparison Evidence",
+            "missing_required_lanes = `[]`",
+            "diagnostic_reaction_not_paper_waveform",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains intended.",
+            "Joint-force waveform agreement remains missing",
+            "paper timing remains missing",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE37", text)
+        self.assertNotIn("phase37-working-tree", text)
+
+    def test_phase37_validator_rejects_placeholder_report_source_commit(self) -> None:
         import scripts.validate_docs as validate_docs
 
         actual = load_claim_report(
             ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
         )
-        stale = replace(actual, source_commit="phase36-working-tree")
+        stale = replace(actual, source_commit="phase37-working-tree")
 
         with patch.object(validate_docs, "load_claim_report", return_value=stale):
             with self.assertRaises(SystemExit) as context:
-                validate_docs.validate_phase36_record()
+                validate_docs.validate_phase37_record()
 
         self.assertIn("source_commit", str(context.exception))
 
-    def test_phase36_validator_rejects_missing_metric_status(self) -> None:
+    def test_phase37_validator_rejects_missing_metric_status(self) -> None:
         import scripts.validate_docs as validate_docs
 
         actual = load_claim_report(
@@ -2241,13 +2324,18 @@ class Phase0BootstrapTests(unittest.TestCase):
             },
         )
 
-        with patch.object(validate_docs, "load_claim_report", return_value=overclaimed):
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_physical_pendulum_comparison.json"):
+                return overclaimed
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
             with self.assertRaises(SystemExit) as context:
-                validate_docs.validate_phase36_record()
+                validate_docs.validate_phase37_record()
 
         self.assertIn("joint_force_error", str(context.exception))
 
-    def test_phase36_validator_rejects_stale_input_report_sha256(self) -> None:
+    def test_phase37_validator_rejects_stale_input_report_sha256(self) -> None:
         import scripts.validate_docs as validate_docs
 
         comparison = load_claim_report(
@@ -2273,7 +2361,7 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
             with self.assertRaises(SystemExit) as context:
-                validate_docs.validate_phase36_record()
+                validate_docs.validate_phase37_record()
 
         self.assertIn("sha256", str(context.exception))
 
@@ -2308,7 +2396,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
