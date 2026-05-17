@@ -36,8 +36,7 @@ agreement, timing, external baselines, or any passed `experiment.*` claim.
 - report gate validation commit: `28a6d1e`
 - paper RBD baseline commit: `d2c4c51`
 - runner/comparison commit: `84dceb5`
-- docs/record commit: created by the Phase 27 docs/record commit containing
-  this file.
+- docs/record commit: `b8e9b8e`
 - independent review: claim/provenance review required that top-level
   experiment reports must remain incomplete and that the record include config
   path, repo commit, vendored Newton provenance, paper source version, backend,
