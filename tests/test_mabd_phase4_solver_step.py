@@ -121,6 +121,7 @@ def _mabd_model(
     poisson_ratio: float = 0.25,
     density: float = 1.0,
     polar_mode: int = 0,
+    zero_stiffness_diagnostic: int = 0,
 ) -> object:
     builder = newton.ModelBuilder()
     SolverMABD.register_custom_attributes(builder)
@@ -142,6 +143,7 @@ def _mabd_model(
                 "mabd:point_mass2": -1.0,
                 "mabd:point_mass3": -1.0,
                 "mabd:volume": -1.0,
+                "mabd:zero_stiffness_diagnostic": zero_stiffness_diagnostic,
             }
         )
     return builder.finalize()
@@ -909,8 +911,17 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
         self.assertEqual(solver.last_step_result.topology, "unconstrained")
 
-    def test_solver_step_model_body_allows_zero_young_modulus_diagnostic(self) -> None:
+    def test_solver_step_model_body_rejects_zero_young_modulus_without_diagnostic_opt_in(self) -> None:
         model = _mabd_model(young_modulus=0.0)
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        with self.assertRaisesRegex(ValueError, "young_modulus"):
+            solver.step(state, state, None, None, 0.02)
+
+    def test_solver_step_model_body_allows_zero_young_modulus_with_diagnostic_opt_in(self) -> None:
+        model = _mabd_model(young_modulus=0.0, zero_stiffness_diagnostic=1)
         solver = SolverMABD(model)
         q = _identity_q((0.2, -0.1, 0.3)) + np.linspace(-0.02, 0.03, 12)
         qd = np.linspace(-0.2, 0.25, 12)

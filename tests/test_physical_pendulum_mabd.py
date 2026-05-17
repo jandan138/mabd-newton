@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -44,16 +45,31 @@ class PhysicalPendulumMABDTests(unittest.TestCase):
         self.assertTrue(rollout.finite)
 
     def test_model_derived_rollout_matches_manual_oracle_diagnostic(self) -> None:
+        from newton.solvers import SolverMABD
+
         config = load_physical_pendulum_config(CONFIG_PATH)
+        original_step = SolverMABD.step
+        solver_calls = []
+
+        def step_spy(self, state_in, state_out, control, contacts, dt):  # type: ignore[no-untyped-def]
+            solver_calls.append(self)
+            return original_step(self, state_in, state_out, control, contacts, dt)
 
         manual = roll_out_physical_pendulum_mabd_development(config, rotation_mode="polar")
-        model = roll_out_physical_pendulum_mabd_model_derived(config, rotation_mode="polar")
+        with patch.object(SolverMABD, "step", new=step_spy):
+            model = roll_out_physical_pendulum_mabd_model_derived(config, rotation_mode="polar")
 
         self.assertEqual(model.solver_model_config_source, "newton_model_derived")
         self.assertEqual(model.rotation_mode, "polar")
         self.assertEqual(model.sample_count, manual.sample_count)
         self.assertEqual(model.step_count, manual.step_count)
         self.assertTrue(model.finite)
+        self.assertEqual(len(solver_calls), model.step_count)
+        solver_config = solver_calls[-1].model_cpu_oracle_config
+        self.assertIsNotNone(solver_config)
+        self.assertEqual(len(solver_config.bodies), 1)
+        self.assertEqual(len(solver_config.world_constraints), 1)
+        np.testing.assert_allclose(solver_config.gravity, config.mabd_development.gravity_m_s2)
         np.testing.assert_allclose(
             [sample.angle_rad for sample in model.samples],
             [sample.angle_rad for sample in manual.samples],

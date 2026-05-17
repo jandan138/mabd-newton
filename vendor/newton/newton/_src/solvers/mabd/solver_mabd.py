@@ -109,13 +109,16 @@ class SolverMABD(SolverBase):
 
         young_modulus = float(namespace.young_modulus.numpy()[row])
         poisson_ratio = float(namespace.poisson_ratio.numpy()[row])
-        precompute = SingleBodyABDPrecompute.from_linear_elastic_points(
-            rest_points,
-            masses,
-            young_modulus=young_modulus,
-            poisson_ratio=poisson_ratio,
-            volume=volume,
-        )
+        if young_modulus == 0.0 and int(namespace.zero_stiffness_diagnostic.numpy()[row]) != 0:
+            precompute = SingleBodyABDPrecompute.from_points(rest_points, masses)
+        else:
+            precompute = SingleBodyABDPrecompute.from_linear_elastic_points(
+                rest_points,
+                masses,
+                young_modulus=young_modulus,
+                poisson_ratio=poisson_ratio,
+                volume=volume,
+            )
         return MABDCPUOracleBody(
             precompute=precompute,
             rest_q=pack_q(np.eye(3), np.zeros(3)),
@@ -432,6 +435,14 @@ class SolverMABD(SolverBase):
                 assignment=Model.AttributeAssignment.MODEL,
                 dtype=wp.float32,
                 default=-1.0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="zero_stiffness_diagnostic",
+                frequency=cls.MABD_BODY_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=0,
                 namespace="mabd",
             ),
         )

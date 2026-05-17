@@ -442,6 +442,15 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.expected["solver_model_config_source"],
             "newton_model_derived",
         )
+        expected_frequencies = ["mabd:body", "mabd:world_constraint", "mabd:gravity"]
+        self.assertEqual(
+            loaded.observed["newton_model_derived_custom_frequencies"],
+            expected_frequencies,
+        )
+        self.assertEqual(
+            loaded.expected["newton_model_derived_custom_frequencies"],
+            expected_frequencies,
+        )
         self.assertIn("max_phase_drift_rad", loaded.observed)
         self.assertIn("max_world_anchor_reaction_magnitude_n", loaded.observed)
         self.assertIn("max_abs_joint_force_error_n", loaded.observed)

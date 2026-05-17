@@ -172,6 +172,7 @@ def _physical_pendulum_solver_model(
                 "mabd:point_mass2": float(lane.masses_kg[2]),
                 "mabd:point_mass3": float(lane.masses_kg[3]),
                 "mabd:volume": -1.0,
+                "mabd:zero_stiffness_diagnostic": 1,
             }
         )
         builder.add_custom_values(
