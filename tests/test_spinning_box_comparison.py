@@ -8,7 +8,7 @@ import numpy as np
 
 from mabd_reproduction.experiment_configs import load_spinning_box_config
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
-from mabd_reproduction.rigid_baselines import write_spinning_box_rbd_baseline_report
+from mabd_reproduction.rigid_baselines import write_spinning_box_paper_rbd_baseline_report
 from mabd_reproduction.single_body_reports import write_spinning_box_development_report
 
 
@@ -27,7 +27,7 @@ class SpinningBoxComparisonTests(unittest.TestCase):
             source_commit="test-source",
             vendored_newton_commit="test-newton",
         )
-        write_spinning_box_rbd_baseline_report(
+        write_spinning_box_paper_rbd_baseline_report(
             rbd_path,
             config=config,
             source_commit="test-source",
@@ -59,6 +59,8 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         self.assertEqual(loaded.backend, "report_protocol")
         self.assertEqual(loaded.observed["lane_statuses"]["mabd_newton"], "incomplete")
         self.assertEqual(loaded.observed["lane_statuses"]["rbd_implicit_baseline"], "incomplete")
+        self.assertEqual(loaded.observed["lane_gate_statuses"]["mabd_newton"], "incomplete")
+        self.assertEqual(loaded.observed["lane_gate_statuses"]["rbd_implicit_baseline"], "passed")
         self.assertNotIn("mabd_newton:linear_momentum_error", loaded.observed["missing_required_metrics"])
         self.assertNotIn("mabd_newton:angular_momentum_error", loaded.observed["missing_required_metrics"])
         self.assertNotIn("mabd_newton:energy_drift", loaded.observed["missing_required_metrics"])
@@ -98,8 +100,26 @@ class SpinningBoxComparisonTests(unittest.TestCase):
             loaded.observed["lane_metrics"]["mabd_newton"]["angular_momentum_error"],
             1.0e-9,
         )
-        self.assertIn("required lane reports remain incomplete", loaded.failure_reason)
+        self.assertEqual(
+            loaded.observed["lane_solver_modes"]["rbd_implicit_baseline"],
+            "paper_faithful_implicit_rbd",
+        )
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "spinning_box_comparison_pass_gate_not_enabled",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertNotIn(
+            "rbd_implicit_baseline_report_incomplete",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertNotIn(
+            "rbd_implicit_baseline_not_paper_faithful",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn("comparison pass gate", loaded.failure_reason)
         self.assertEqual(loaded.threshold["required_lane_status"], "passed")
+        self.assertEqual(loaded.threshold["required_lane_gate_status"], "passed")
 
     def test_spinning_box_comparison_rejects_wrong_lane_inputs(self) -> None:
         from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report

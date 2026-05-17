@@ -12,7 +12,7 @@ from .experiment_configs import (
 )
 from .experiment_contracts import load_experiment_matrix
 from .reporting import ClaimReport, EvidenceStatus
-from .rigid_baselines import write_spinning_box_rbd_baseline_report
+from .rigid_baselines import write_spinning_box_paper_rbd_baseline_report
 from .single_body_reports import write_spinning_box_development_report
 
 
@@ -110,7 +110,7 @@ def run_spinning_box_rbd_baseline(
         raise ValueError("Phase 15 RBD baseline runner requires incomplete report status")
 
     report_path = Path(output_path)
-    report = write_spinning_box_rbd_baseline_report(
+    report = write_spinning_box_paper_rbd_baseline_report(
         report_path,
         config=config,
         source_commit=source_commit,

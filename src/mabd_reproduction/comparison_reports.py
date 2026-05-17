@@ -75,6 +75,11 @@ def _lane_vector_metric_snapshot(report: ClaimReport) -> dict[str, list[float] |
     }
 
 
+def _lane_gate_status(report: ClaimReport) -> str:
+    value = report.observed.get("lane_gate_status")
+    return value if isinstance(value, str) and value else report.status.value
+
+
 def _missing_metrics(lane: str, report: ClaimReport) -> list[str]:
     return [
         f"{lane}:{metric}" for metric in SPINNING_BOX_REQUIRED_METRICS if metric not in report.observed
@@ -156,6 +161,10 @@ def write_spinning_box_comparison_report(
         "mabd_newton": mabd_report.status.value,
         "rbd_implicit_baseline": rbd_report.status.value,
     }
+    lane_gate_statuses = {
+        "mabd_newton": _lane_gate_status(mabd_report),
+        "rbd_implicit_baseline": _lane_gate_status(rbd_report),
+    }
     missing_required_metrics = _missing_metrics("mabd_newton", mabd_report) + _missing_metrics(
         "rbd_implicit_baseline",
         rbd_report,
@@ -175,7 +184,9 @@ def write_spinning_box_comparison_report(
     metric_differences = _lane_metric_differences(mabd_report, rbd_report)
     vector_metric_differences = _lane_vector_metric_differences(mabd_report, rbd_report)
     incomplete_lanes = [
-        lane for lane, status in lane_statuses.items() if status != EvidenceStatus.PASSED.value
+        lane
+        for lane, status in lane_gate_statuses.items()
+        if status != EvidenceStatus.PASSED.value
     ]
     blocking_reasons = [
         *(f"{lane}_report_{lane_statuses[lane]}" for lane in incomplete_lanes),
@@ -186,8 +197,7 @@ def write_spinning_box_comparison_report(
     ]
     if rbd_report.solver_mode != "paper_faithful_implicit_rbd":
         blocking_reasons.append("rbd_implicit_baseline_not_paper_faithful")
-    if not blocking_reasons:
-        blocking_reasons.append("experiment_pass_gate_not_enabled")
+    blocking_reasons.append("spinning_box_comparison_pass_gate_not_enabled")
 
     report = ClaimReport(
         claim_id=config.claim_id,
@@ -197,7 +207,7 @@ def write_spinning_box_comparison_report(
         backend="report_protocol",
         baseline_lane="spinning_box_comparison_protocol",
         expected={
-            "paper_claim_status": "requires passed M-ABD and paper-faithful implicit RBD lanes",
+            "paper_claim_status": "requires passed M-ABD and paper-faithful implicit RBD lane gates",
             "required_lanes": ["mabd_newton", "rbd_implicit_baseline"],
             "required_metrics": list(SPINNING_BOX_REQUIRED_METRICS),
             "required_vector_metrics": list(SPINNING_BOX_REQUIRED_VECTOR_METRICS),
@@ -205,6 +215,7 @@ def write_spinning_box_comparison_report(
         },
         observed={
             "lane_statuses": lane_statuses,
+            "lane_gate_statuses": lane_gate_statuses,
             "lane_solver_modes": {
                 "mabd_newton": mabd_report.solver_mode,
                 "rbd_implicit_baseline": rbd_report.solver_mode,
@@ -227,13 +238,14 @@ def write_spinning_box_comparison_report(
         },
         threshold={
             "required_lane_status": EvidenceStatus.PASSED.value,
+            "required_lane_gate_status": EvidenceStatus.PASSED.value,
             "required_metrics": list(SPINNING_BOX_REQUIRED_METRICS),
             "required_vector_metrics": list(SPINNING_BOX_REQUIRED_VECTOR_METRICS),
             "paper_faithful_rbd_solver_mode": "paper_faithful_implicit_rbd",
         },
         unit="json_report",
         status=EvidenceStatus.INCOMPLETE,
-        failure_reason="required lane reports remain incomplete or missing paper comparison metrics",
+        failure_reason="required lane gate statuses or comparison pass gate remain incomplete",
         timing_distribution={"scope": "not_timed"},
         raw_outputs={
             "mabd_report": Path(mabd_report_path).as_posix(),

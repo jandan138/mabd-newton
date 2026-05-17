@@ -37,7 +37,9 @@ class ExperimentRunnerTests(unittest.TestCase):
 
     def _write_spinning_box_lane_inputs(self, tmpdir: str) -> tuple[Path, Path]:
         from mabd_reproduction.experiment_configs import load_spinning_box_config
-        from mabd_reproduction.rigid_baselines import write_spinning_box_rbd_baseline_report
+        from mabd_reproduction.rigid_baselines import (
+            write_spinning_box_paper_rbd_baseline_report,
+        )
         from mabd_reproduction.single_body_reports import write_spinning_box_development_report
 
         config = load_spinning_box_config(CONFIG_PATH)
@@ -49,7 +51,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             source_commit="test-source",
             vendored_newton_commit="test-newton",
         )
-        write_spinning_box_rbd_baseline_report(
+        write_spinning_box_paper_rbd_baseline_report(
             rbd_path,
             config=config,
             source_commit="test-source",
@@ -190,9 +192,12 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
         self.assertEqual(result.report.baseline_lane, "rbd_implicit_baseline")
         self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(loaded.solver_mode, "paper_faithful_implicit_rbd")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_only")
+        self.assertEqual(loaded.observed["lane_gate_status"], "passed")
         self.assertEqual(loaded.source_commit, "test-source")
         self.assertEqual(loaded.vendored_newton_commit, "test-newton")
-        self.assertIn("development baseline", loaded.failure_reason)
+        self.assertIn("comparison pass gate", loaded.failure_reason)
 
     def test_run_spinning_box_comparison_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_comparison
@@ -217,6 +222,14 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.baseline_lane, "spinning_box_comparison_protocol")
         self.assertNotIn("mabd_newton:linear_momentum_error", loaded.observed["missing_required_metrics"])
         self.assertNotIn("mabd_newton:angular_momentum_error", loaded.observed["missing_required_metrics"])
+        self.assertEqual(
+            loaded.observed["lane_gate_statuses"]["rbd_implicit_baseline"],
+            "passed",
+        )
+        self.assertNotIn(
+            "rbd_implicit_baseline_report_incomplete",
+            loaded.observed["blocking_reasons"],
+        )
 
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
         import json
@@ -299,6 +312,9 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["baseline_lane"], "rbd_implicit_baseline")
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(loaded.solver_mode, "paper_faithful_implicit_rbd")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_only")
+        self.assertEqual(loaded.observed["lane_gate_status"], "passed")
         self.assertEqual(loaded.source_commit, "cli-source")
         self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
 
