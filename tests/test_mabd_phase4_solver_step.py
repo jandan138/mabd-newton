@@ -251,6 +251,20 @@ def _add_model_world_constraint_row(
     )
 
 
+def _add_model_gravity_row(
+    builder: newton.ModelBuilder,
+    *,
+    enabled: int = 1,
+    gravity: tuple[float, float, float] = (0.0, -9.81, 0.0),
+) -> None:
+    builder.add_custom_values(
+        **{
+            "mabd:gravity_enabled": enabled,
+            "mabd:gravity_vector": wp.vec3(*gravity),
+        }
+    )
+
+
 def _model_path_body(
     *,
     young_modulus: float = 1.0,
@@ -1104,6 +1118,91 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "mabd:world_body"):
             solver.step(state, state, None, None, 0.05)
+
+    def test_solver_step_model_path_consumes_enabled_gravity_row(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_gravity_row(builder, gravity=(0.0, -9.81, 1.25))
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        q = _identity_q((0.1, 0.2, -0.3))
+        qd = np.zeros(12)
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        dt = 0.02
+
+        solver.step(state, state, None, None, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                gravity=np.array([0.0, -9.81, 1.25], dtype=float),
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        np.testing.assert_allclose(solver.model_cpu_oracle_config.gravity, [0.0, -9.81, 1.25])
+
+    def test_solver_step_model_path_ignores_disabled_gravity_rows(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_gravity_row(builder, enabled=0, gravity=(0.0, -9.81, 1.25))
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        q = _identity_q((0.1, 0.2, -0.3))
+        qd = np.zeros(12)
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        dt = 0.02
+
+        solver.step(state, state, None, None, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(bodies=[_model_path_body(young_modulus=1.0)]),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        self.assertIsNone(solver.model_cpu_oracle_config.gravity)
+
+    def test_solver_step_model_path_rejects_multiple_enabled_gravity_rows(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_gravity_row(builder, gravity=(0.0, -9.81, 0.0))
+        _add_model_gravity_row(builder, gravity=(0.0, -1.0, 0.0))
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        with self.assertRaisesRegex(ValueError, "mabd:gravity"):
+            solver.step(state, state, None, None, 0.02)
+
+    def test_solver_step_manual_config_takes_precedence_over_model_gravity(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_gravity_row(builder, gravity=(0.0, -9.81, 1.25))
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        solver.configure_cpu_oracle(mabd.MABDCPUOracleConfig(bodies=[_body()]))
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        solver.step(state, state, None, None, 0.02)
+
+        self.assertIsNone(solver.model_cpu_oracle_config)
+        self.assertEqual(solver.last_step_result.topology, "unconstrained")
 
     def test_solver_step_model_path_rejects_unknown_constraint_type(self) -> None:
         builder = newton.ModelBuilder()
