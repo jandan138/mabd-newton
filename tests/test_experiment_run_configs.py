@@ -150,6 +150,15 @@ class ExperimentRunConfigTests(unittest.TestCase):
         )
         self.assertIn("max_pivot_residual_m", config.mabd_development.thresholds)
         self.assertIn("max_abs_angle_error_rad", config.mabd_development.thresholds)
+        self.assertEqual(
+            config.mabd_newton.output_report,
+            "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
+        )
+        self.assertIn("max_abs_angle_error_rad", config.mabd_newton.thresholds)
+        self.assertIn("max_constraint_residual_norm", config.mabd_newton.thresholds)
+        self.assertIn("max_phase_drift_rad", config.mabd_newton.thresholds)
+        self.assertIn("max_pivot_residual_m", config.mabd_newton.thresholds)
+        self.assertIn("max_world_anchor_reaction_magnitude_n", config.mabd_newton.thresholds)
         self.assertEqual(config.rbd_baseline.time_step_s, 0.01)
         self.assertEqual(config.rbd_baseline.step_count, 16)
         self.assertEqual(config.rbd_baseline.sample_count, 5)
@@ -224,6 +233,28 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(source), encoding="utf-8")
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "nondegenerate"):
+                load_physical_pendulum_config(path)
+
+    def test_physical_pendulum_config_rejects_mabd_newton_output_reuse(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_newton"]["output_report"] = source["mabd_development"]["output_report"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+            config = load_physical_pendulum_config(path)
+            matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.output_report"):
+                validate_physical_pendulum_config_against_matrix(config, matrix)
+
+    def test_physical_pendulum_config_rejects_mabd_newton_missing_threshold(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        del source["mabd_newton"]["thresholds"]["max_phase_drift_rad"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.thresholds"):
                 load_physical_pendulum_config(path)
 
     def test_physical_pendulum_config_rejects_bad_rbd_baseline_length(self) -> None:

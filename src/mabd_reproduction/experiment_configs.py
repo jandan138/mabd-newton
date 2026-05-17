@@ -81,6 +81,12 @@ class PhysicalPendulumMABDDevelopmentConfig:
 
 
 @dataclass(frozen=True)
+class PhysicalPendulumMABDNewtonConfig:
+    output_report: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class PhysicalPendulumRBDBaselineConfig:
     time_step_s: float
     step_count: int
@@ -117,6 +123,7 @@ class PhysicalPendulumRunConfig:
     paper_values: dict[str, Any]
     reference: PhysicalPendulumReferenceConfig
     mabd_development: PhysicalPendulumMABDDevelopmentConfig
+    mabd_newton: PhysicalPendulumMABDNewtonConfig
     rbd_baseline: PhysicalPendulumRBDBaselineConfig
     comparison: PhysicalPendulumComparisonConfig
     report_status: EvidenceStatus
@@ -149,6 +156,15 @@ PHYSICAL_PENDULUM_MABD_DEVELOPMENT_THRESHOLD_KEYS = frozenset(
         "max_abs_angle_error_rad",
         "max_constraint_residual_norm",
         "max_pivot_residual_m",
+    }
+)
+PHYSICAL_PENDULUM_MABD_NEWTON_THRESHOLD_KEYS = frozenset(
+    {
+        "max_abs_angle_error_rad",
+        "max_constraint_residual_norm",
+        "max_phase_drift_rad",
+        "max_pivot_residual_m",
+        "max_world_anchor_reaction_magnitude_n",
     }
 )
 PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS = frozenset(
@@ -477,6 +493,22 @@ def _require_physical_pendulum_mabd_development(
     )
 
 
+def _require_physical_pendulum_mabd_newton(
+    data: dict[str, Any],
+) -> PhysicalPendulumMABDNewtonConfig:
+    mabd_newton = _require_mapping(data, "mabd_newton")
+    thresholds = _require_float_mapping(mabd_newton, "thresholds")
+    missing = sorted(PHYSICAL_PENDULUM_MABD_NEWTON_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "mabd_newton.thresholds missing required keys: " + ", ".join(missing)
+        )
+    return PhysicalPendulumMABDNewtonConfig(
+        output_report=_require_str(mabd_newton, "output_report"),
+        thresholds=thresholds,
+    )
+
+
 def _require_physical_pendulum_rbd_baseline(
     data: dict[str, Any],
 ) -> PhysicalPendulumRBDBaselineConfig:
@@ -674,6 +706,7 @@ def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig
         paper_values=_require_mapping(data, "paper_values"),
         reference=_require_physical_pendulum_reference(data),
         mabd_development=_require_physical_pendulum_mabd_development(data),
+        mabd_newton=_require_physical_pendulum_mabd_newton(data),
         rbd_baseline=_require_physical_pendulum_rbd_baseline(data),
         comparison=_require_physical_pendulum_comparison(data),
         report_status=status,
@@ -739,6 +772,18 @@ def validate_physical_pendulum_config_against_matrix(
     if config.mabd_development.output_report == config.output_report:
         raise ExperimentRunConfigError("mabd_development.output_report must be separate from analytic output_report")
     if (
+        not config.mabd_newton.output_report.startswith(expected_prefix)
+        or not config.mabd_newton.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_newton.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.mabd_newton.output_report in (
+        config.output_report,
+        config.mabd_development.output_report,
+    ):
+        raise ExperimentRunConfigError("mabd_newton.output_report must be separate from other lane reports")
+    if (
         not config.rbd_baseline.output_report.startswith(expected_prefix)
         or not config.rbd_baseline.output_report.endswith(".json")
     ):
@@ -748,6 +793,7 @@ def validate_physical_pendulum_config_against_matrix(
     if config.rbd_baseline.output_report in (
         config.output_report,
         config.mabd_development.output_report,
+        config.mabd_newton.output_report,
     ):
         raise ExperimentRunConfigError("rbd_baseline.output_report must be separate from other lane reports")
     if (
@@ -760,6 +806,7 @@ def validate_physical_pendulum_config_against_matrix(
     if config.comparison.output_report in (
         config.output_report,
         config.mabd_development.output_report,
+        config.mabd_newton.output_report,
         config.rbd_baseline.output_report,
     ):
         raise ExperimentRunConfigError("comparison.output_report must be separate from other lane reports")
@@ -774,10 +821,12 @@ __all__ = [
     "PHYSICAL_PENDULUM_COMPARISON_REQUIRED_METRICS",
     "PHYSICAL_PENDULUM_COMPARISON_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_MABD_DEVELOPMENT_THRESHOLD_KEYS",
+    "PHYSICAL_PENDULUM_MABD_NEWTON_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_THRESHOLD_KEYS",
     "PhysicalPendulumComparisonConfig",
     "PhysicalPendulumMABDDevelopmentConfig",
+    "PhysicalPendulumMABDNewtonConfig",
     "PhysicalPendulumRBDBaselineConfig",
     "PhysicalPendulumReferenceConfig",
     "PhysicalPendulumRunConfig",
