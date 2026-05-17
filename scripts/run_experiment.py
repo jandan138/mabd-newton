@@ -12,6 +12,7 @@ import yaml
 
 from mabd_reproduction.experiment_runner import (
     run_physical_pendulum_analytic_reference,
+    run_physical_pendulum_comparison,
     run_physical_pendulum_mabd_development,
     run_physical_pendulum_rbd_baseline,
     run_spinning_box_comparison,
@@ -36,6 +37,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "analytic_reference",
             "mabd_newton",
             "mabd_paper_horizon",
+            "physical_pendulum_comparison",
             "physical_pendulum_mabd_development",
             "rbd_implicit_baseline",
             "spinning_box_comparison",
@@ -51,6 +53,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--output", help="Override report output path.")
     parser.add_argument("--output-root", help="Root under which the config output_report path is written.")
+    parser.add_argument(
+        "--analytic-report",
+        help="Existing analytic reference report for physical-pendulum comparison lane.",
+    )
     parser.add_argument("--mabd-report", help="Existing M-ABD lane report for comparison lanes.")
     parser.add_argument("--rbd-report", help="Existing RBD baseline report for comparison lanes.")
     parser.add_argument("--source-commit", required=True, help="Repository source commit recorded in the report.")
@@ -102,6 +108,19 @@ def main(argv: list[str] | None = None) -> int:
             result = run_physical_pendulum_mabd_development(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "physical_pendulum_comparison":
+            result = run_physical_pendulum_comparison(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                analytic_report_path=Path(args.analytic_report) if args.analytic_report else None,
+                mabd_report_path=Path(args.mabd_report) if args.mabd_report else None,
+                rbd_report_path=Path(args.rbd_report) if args.rbd_report else None,
                 output_path=Path(args.output) if args.output else None,
                 output_root=Path(args.output_root) if args.output_root else None,
                 source_commit=args.source_commit,

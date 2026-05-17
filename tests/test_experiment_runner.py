@@ -60,6 +60,38 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         return mabd_path, rbd_path
 
+    def _write_physical_pendulum_lane_inputs(self, tmpdir: str) -> tuple[Path, Path, Path]:
+        from mabd_reproduction.experiment_configs import load_physical_pendulum_config
+        from mabd_reproduction.physical_pendulum_reports import (
+            write_physical_pendulum_analytic_reference_report,
+            write_physical_pendulum_mabd_development_report,
+            write_physical_pendulum_rbd_baseline_report,
+        )
+
+        config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)
+        analytic_path = Path(tmpdir) / "physical_pendulum_analytic.json"
+        mabd_path = Path(tmpdir) / "physical_pendulum_mabd.json"
+        rbd_path = Path(tmpdir) / "physical_pendulum_rbd.json"
+        write_physical_pendulum_analytic_reference_report(
+            analytic_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        write_physical_pendulum_mabd_development_report(
+            mabd_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        write_physical_pendulum_rbd_baseline_report(
+            rbd_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        return analytic_path, mabd_path, rbd_path
+
     def test_run_spinning_box_experiment_writes_override_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_experiment
 
@@ -396,6 +428,34 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.source_commit, "test-source")
         self.assertEqual(loaded.vendored_newton_commit, "test-newton")
 
+    def test_run_physical_pendulum_comparison_writes_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_physical_pendulum_comparison
+
+        with TemporaryDirectory() as tmpdir:
+            analytic_path, mabd_path, rbd_path = self._write_physical_pendulum_lane_inputs(tmpdir)
+            output_path = Path(tmpdir) / "physical_pendulum_comparison.json"
+            result = run_physical_pendulum_comparison(
+                config_path=PHYSICAL_PENDULUM_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                analytic_report_path=analytic_path,
+                mabd_report_path=mabd_path,
+                rbd_report_path=rbd_path,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.physical_pendulum")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "physical_pendulum_comparison_protocol")
+        self.assertEqual(loaded.baseline_lane, "physical_pendulum_comparison_protocol")
+        self.assertEqual(loaded.solver_mode, "physical_pendulum_multilane_comparison_development")
+        self.assertEqual(loaded.observed["missing_required_lanes"], ["mabd_newton"])
+        self.assertEqual(loaded.observed["matched_sample_count"], 5)
+        self.assertIn("input_report_provenance", loaded.observed)
+
     def test_run_spinning_box_comparison_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_comparison
 
@@ -688,6 +748,96 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.solver_mode, "physical_pendulum_scalar_implicit_rbd_development")
         self.assertEqual(loaded.observed["required_missing_lanes"], ["mabd_newton"])
+
+    def test_run_experiment_cli_writes_physical_pendulum_comparison_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            analytic_path, mabd_path, rbd_path = self._write_physical_pendulum_lane_inputs(tmpdir)
+            output_path = Path(tmpdir) / "physical_pendulum_comparison_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "physical_pendulum_comparison",
+                    "--config",
+                    str(PHYSICAL_PENDULUM_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--analytic-report",
+                    str(analytic_path),
+                    "--mabd-report",
+                    str(mabd_path),
+                    "--rbd-report",
+                    str(rbd_path),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.physical_pendulum")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "physical_pendulum_comparison_protocol")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
+        self.assertEqual(
+            loaded.observed["input_report_provenance"]["analytic_reference"]["source_commit"],
+            "test-source",
+        )
+
+    def test_run_experiment_cli_physical_pendulum_comparison_requires_input_reports(self) -> None:
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "physical_pendulum_comparison",
+                    "--config",
+                    str(PHYSICAL_PENDULUM_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(Path(tmpdir) / "physical_pendulum_comparison.json"),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "physical_pendulum_comparison requires --analytic-report, --mabd-report, and --rbd-report",
+            result.stderr,
+        )
 
     def test_run_experiment_cli_rbd_baseline_requires_explicit_output(self) -> None:
         import os
