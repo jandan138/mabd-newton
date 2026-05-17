@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-29 docs and provenance contracts."""
+"""Validate Phase 0-30 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from mabd_reproduction.experiment_configs import (
     load_spinning_box_config,
     validate_spinning_box_config_against_matrix,
 )
+from mabd_reproduction.paper_source_audit import velocity_semantics_source_audit
 from mabd_reproduction.spinning_box_physics import (
     spinning_box_contact_diagnostics,
     spinning_box_kinematic_feasibility,
@@ -68,6 +69,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase27-rbd-pass-gate.md",
     "docs/records/2026-05-17-phase28-spinning-box-paper-horizon.md",
     "docs/records/2026-05-17-phase29-spinning-box-kinematic-feasibility.md",
+    "docs/records/2026-05-17-phase30-velocity-semantics-source-audit.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -772,6 +774,41 @@ def validate_claim_boundaries() -> None:
     for snippet in phase29_non_claims:
         if snippet not in phase29_non_claim:
             fail(f"claim-boundaries.md must bound Phase 29 feasibility evidence: {snippet}")
+    phase30_current = claim_boundary_bullet(text, "This repository contains Phase 30")
+    phase30_verified = claim_boundary_bullet(text, "Phase 30 verifies")
+    phase30_non_claim = claim_boundary_bullet(text, "Phase 30 does not verify")
+    phase30_current_required = (
+        "velocity semantics source audit",
+        "source_does_not_prove_decoupled_velocity_semantics",
+    )
+    for snippet in phase30_current_required:
+        if snippet not in phase30_current:
+            fail(f"claim-boundaries.md must state Phase 30 source-audit evidence: {snippet}")
+    phase30_verified_required = (
+        "implicit Euler inertia potential",
+        "`G(A)` twist mapping",
+        "`G(A)^T` wrench mapping",
+        "spinning-box twist initialization",
+        "source_does_not_specify_decoupled_velocity_semantics",
+        "source_does_not_specify_alternative_momentum_extraction",
+    )
+    for snippet in phase30_verified_required:
+        if snippet not in phase30_verified:
+            fail(f"claim-boundaries.md must describe Phase 30 source-audit evidence: {snippet}")
+    phase30_non_claims = (
+        "paper spinning-box experiment",
+        "Newton solver modification",
+        "decoupled velocity semantics",
+        "alternative momentum extraction",
+        "M-ABD lane pass",
+        "spinning-box comparison pass",
+        "paper timing",
+        "paper trajectory agreement",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase30_non_claims:
+        if snippet not in phase30_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 30 source-audit evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -2217,6 +2254,143 @@ def validate_phase29_record() -> None:
         fail("Phase 29 spinning-box matrix must retain incomplete comparison report blocker")
 
 
+def validate_phase30_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-17-phase30-velocity-semantics-source-audit.md"
+    text = record_path.read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "## Repository",
+        "base commit: `6683d92`",
+        "design/plan commit: `c97ee49`",
+        "source-audit implementation commit: `d180e58`",
+        "docs/record commit:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 30 does not modify vendored Newton",
+        "## Paper Source",
+        "arXiv ID: `2603.08079`",
+        "arXiv version: `v2`",
+        "sections/singleabd.tex SHA256:",
+        "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d",
+        "sections/solver.tex SHA256:",
+        "871dbd7ae7f5544b95c6c4dc0940cb6a0e73eca48415b1abed2e3599db90c97e",
+        "sections/experiment.tex SHA256:",
+        "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f",
+        "images/cube/roll_cube.pdf SHA256:",
+        "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
+        "singleabd.tex:34-42",
+        "solver.tex:219-241",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Metrics And Diagnostics",
+        "audit_status = source_does_not_prove_decoupled_velocity_semantics",
+        "implicit_euler_inertia_potential = present",
+        "g_map_twist_velocity = present",
+        "wrench_map_generalized_force = present",
+        "spinning_box_twist_initialization = present",
+        "source_does_not_specify_decoupled_velocity_semantics",
+        "source_does_not_specify_alternative_momentum_extraction",
+        "No `experiment.*` claim is passed in this phase.",
+        "## Artifacts",
+        "raw paper assets: not committed",
+        "generated reports: not committed",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_paper_source_audit",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 30 record missing required evidence field: {snippet}")
+    if "TO_BE_BACKFILLED_PHASE30_DOCS_COMMIT" in text:
+        fail("Phase 30 record contains stale docs commit placeholder")
+    if "pending branch-local" in text:
+        fail("Phase 30 record contains pending branch-local provenance placeholder")
+    forbidden_snippets = (
+        "Phase 30 verifies the paper spinning-box experiment",
+        "Phase 30 passes experiment.single_body.spinning_box",
+        "Phase 30 passes the M-ABD lane",
+        "Phase 30 passes the spinning-box comparison",
+        "Phase 30 fixes the M-ABD solver",
+        "Phase 30 verifies decoupled velocity semantics",
+        "Phase 30 verifies alternative momentum extraction",
+        "Phase 30 verifies paper timing",
+        "Phase 30 verifies paper trajectory agreement",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 30 record overclaims unsupported evidence: {snippet}")
+
+    audit = velocity_semantics_source_audit()
+    if audit.status != "source_does_not_prove_decoupled_velocity_semantics":
+        fail("Phase 30 source audit status changed")
+    findings = {finding.key: finding for finding in audit.findings}
+    for key in (
+        "implicit_euler_inertia_potential",
+        "g_map_twist_velocity",
+        "wrench_map_generalized_force",
+        "spinning_box_twist_initialization",
+    ):
+        if not findings[key].present:
+            fail(f"Phase 30 source audit missing positive finding: {key}")
+    if findings["decoupled_velocity_semantics"].present:
+        fail("Phase 30 source audit found unexpected decoupled velocity semantics")
+    if findings["alternative_momentum_extraction"].present:
+        fail("Phase 30 source audit found unexpected alternative momentum extraction")
+    for blocker in (
+        "source_does_not_specify_decoupled_velocity_semantics",
+        "source_does_not_specify_alternative_momentum_extraction",
+    ):
+        if blocker not in audit.blockers:
+            fail(f"Phase 30 source audit missing blocker: {blocker}")
+    for relative_path, expected_hash in {
+        "sections/singleabd.tex": (
+            "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d"
+        ),
+        "sections/solver.tex": (
+            "871dbd7ae7f5544b95c6c4dc0940cb6a0e73eca48415b1abed2e3599db90c97e"
+        ),
+        "sections/experiment.tex": (
+            "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f"
+        ),
+        "images/cube/roll_cube.pdf": (
+            "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80"
+        ),
+    }.items():
+        if audit.file_hashes[relative_path] != expected_hash:
+            fail(f"Phase 30 source audit hash changed for {relative_path}")
+
+    data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 30 must not pass experiment.* claims")
+
+    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    spinning_box = next(
+        experiment
+        for experiment in matrix.experiments
+        if experiment.claim_id == "experiment.single_body.spinning_box"
+    )
+    if "mabd_newton_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 30 spinning-box matrix must retain incomplete M-ABD lane blocker")
+    if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 30 spinning-box matrix must retain incomplete comparison report blocker")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -2459,13 +2633,14 @@ def main() -> int:
     validate_phase27_record()
     validate_phase28_record()
     validate_phase29_record()
+    validate_phase30_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30 "
         "docs/provenance validation passed"
     )
     return 0

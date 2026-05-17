@@ -1473,6 +1473,94 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE29_DOCS_COMMIT", text)
         self.assertNotIn("pending branch-local", text)
 
+    def test_phase30_velocity_semantics_source_audit_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        experiment_statuses = {
+            claim["claim_id"]: claim["reproduction_status"]
+            for claim in data["claims"]
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        self.assertNotIn("passed", set(experiment_statuses.values()))
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 30")
+        verified = claim_boundary_bullet(text, "Phase 30 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 30 does not verify")
+
+        self.assertIn("velocity semantics source audit", current)
+        self.assertIn("source_does_not_prove_decoupled_velocity_semantics", current)
+        self.assertIn("implicit Euler inertia potential", verified)
+        self.assertIn("`G(A)` twist mapping", verified)
+        self.assertIn("`G(A)^T` wrench mapping", verified)
+        self.assertIn("spinning-box twist initialization", verified)
+        self.assertIn("source_does_not_specify_decoupled_velocity_semantics", verified)
+        self.assertIn("source_does_not_specify_alternative_momentum_extraction", verified)
+        self.assertIn("Newton solver modification", non_claim)
+        self.assertIn("decoupled velocity semantics", non_claim)
+        self.assertIn("M-ABD lane pass", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase30_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase30-velocity-semantics-source-audit.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "configs/experiments/paper_experiment_matrix.yaml",
+            "## Repository",
+            "base commit: `6683d92`",
+            "design/plan commit: `c97ee49`",
+            "source-audit implementation commit:",
+            "docs/record commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status: Phase 30 does not modify vendored Newton",
+            "## Paper Source",
+            "arXiv ID: `2603.08079`",
+            "arXiv version: `v2`",
+            "sections/singleabd.tex SHA256:",
+            "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d",
+            "sections/solver.tex SHA256:",
+            "871dbd7ae7f5544b95c6c4dc0940cb6a0e73eca48415b1abed2e3599db90c97e",
+            "sections/experiment.tex SHA256:",
+            "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f",
+            "images/cube/roll_cube.pdf SHA256:",
+            "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
+            "singleabd.tex:34-42",
+            "solver.tex:219-241",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "## Metrics And Diagnostics",
+            "audit_status = source_does_not_prove_decoupled_velocity_semantics",
+            "implicit_euler_inertia_potential = present",
+            "g_map_twist_velocity = present",
+            "wrench_map_generalized_force = present",
+            "spinning_box_twist_initialization = present",
+            "source_does_not_specify_decoupled_velocity_semantics",
+            "source_does_not_specify_alternative_momentum_extraction",
+            "No `experiment.*` claim is passed in this phase.",
+            "## Artifacts",
+            "raw paper assets: not committed",
+            "generated reports: not committed",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_paper_source_audit",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE30_DOCS_COMMIT", text)
+        self.assertNotIn("pending branch-local", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1504,7 +1592,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

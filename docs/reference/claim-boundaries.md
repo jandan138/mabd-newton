@@ -355,6 +355,19 @@
   fix, decoupled velocity semantics, paper-faithful affine collision, contact
   solve, timing, generated report artifacts as committed evidence, or any
   passed `experiment.*` claim.
+- This repository contains Phase 30 velocity semantics source audit evidence
+  for the single-body spinning-box claim, with
+  `source_does_not_prove_decoupled_velocity_semantics` as the audit status.
+- Phase 30 verifies paper-source presence of the implicit Euler inertia
+  potential, `G(A)` twist mapping, `G(A)^T` wrench mapping, and spinning-box
+  twist initialization, while recording
+  `source_does_not_specify_decoupled_velocity_semantics` and
+  `source_does_not_specify_alternative_momentum_extraction`.
+- Phase 30 does not verify the paper spinning-box experiment, any Newton solver
+  modification, decoupled velocity semantics, alternative momentum extraction,
+  M-ABD lane pass, spinning-box comparison pass, paper timing, paper trajectory
+  agreement, generated report artifacts as committed evidence, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -374,6 +387,8 @@
   trajectory agreement.
 - Phase 29 kinematic feasibility diagnostics are an M-ABD lane pass or solver
   fix.
+- Phase 30 source-audit absence findings are proof of private author-code
+  behavior, a Newton solver modification, or a paper experiment pass.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
