@@ -11,6 +11,7 @@ from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "configs/experiments/single_body_spinning_box.yaml"
+HEAVY_TOP_CONFIG_PATH = ROOT / "configs/experiments/single_body_heavy_top.yaml"
 PHYSICAL_PENDULUM_CONFIG_PATH = ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
 T_HANDLE_CONFIG_PATH = ROOT / "configs/experiments/single_body_t_handle.yaml"
 MATRIX_PATH = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
@@ -673,6 +674,62 @@ class ExperimentRunnerTests(unittest.TestCase):
                 )
             self.assertFalse(output_path.exists())
 
+    def test_run_heavy_top_rk4_reference_writes_bounded_diagnostic_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_heavy_top_rk4_reference
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "heavy_top_rk4_reference.json"
+            result = run_heavy_top_rk4_reference(
+                config_path=HEAVY_TOP_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.heavy_top")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "rbd_rk4_reference")
+        self.assertEqual(loaded.solver_mode, "heavy_top_rk4_reference_diagnostic")
+        self.assertEqual(loaded.backend, "cpu_numpy")
+        self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertGreater(loaded.observed["max_abs_precession_velocity_rad_s"], 0.0)
+        self.assertGreater(
+            loaded.observed["max_nutation_angle_deg"] - loaded.observed["min_nutation_angle_deg"],
+            0.0,
+        )
+        self.assertIn("exact_heavy_top_inertia_unknown", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "raw_heavy_top_reference_curve_data_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("heavy_top_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_heavy_top_rk4_reference_requires_incomplete_status(self) -> None:
+        from mabd_reproduction.experiment_runner import run_heavy_top_rk4_reference
+
+        with TemporaryDirectory() as tmpdir:
+            source = yaml.safe_load(HEAVY_TOP_CONFIG_PATH.read_text(encoding="utf-8"))
+            source["report"]["status"] = "failed"
+            config_path = Path(tmpdir) / "single_body_heavy_top.yaml"
+            config_path.write_text(yaml.safe_dump(source), encoding="utf-8")
+            output_path = Path(tmpdir) / "heavy_top_rk4_reference.json"
+
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                run_heavy_top_rk4_reference(
+                    config_path=config_path,
+                    matrix_path=MATRIX_PATH,
+                    output_path=output_path,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+            self.assertFalse(output_path.exists())
+
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
         import json
         import os
@@ -1073,6 +1130,49 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["baseline_lane"], "rbd_rk4_reference")
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.solver_mode, "t_handle_torque_free_rk4_reference")
+        self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
+
+    def test_run_experiment_cli_writes_heavy_top_rk4_reference_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "heavy_top_rk4_reference_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "heavy_top_rk4_reference",
+                    "--config",
+                    str(HEAVY_TOP_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.heavy_top")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "rbd_rk4_reference")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.solver_mode, "heavy_top_rk4_reference_diagnostic")
         self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
 
     def test_run_experiment_cli_physical_pendulum_comparison_requires_input_reports(self) -> None:
