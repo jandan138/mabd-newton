@@ -37,7 +37,7 @@ report artifacts, or any passed `experiment.*` claim. The M-ABD report remains
 - config commit: `d10ca0176cd678d76ed9a0c6d48339d4bdcdcf22`
 - implementation commit: `6bc889a6f7f9d2c19d9a487e37b9f9286ff4cf03`
 - report commit: `f4b5212cdf5543021dcf7d7a3b29731f237773c2`
-- docs/provenance commit: pending first record commit
+- docs/provenance commit: `b24eb15a15f47fd6a0a024eebd1b815fd474c505`
 - independent review: pending after record validation
 
 ## Vendored Newton
