@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-48 docs and provenance contracts."""
+"""Validate Phase 0-49 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -20,9 +20,11 @@ from mabd_reproduction.experiment_contracts import (
 )
 from mabd_reproduction.experiment_configs import (
     ExperimentRunConfigError,
+    load_heavy_top_config,
     load_physical_pendulum_config,
     load_spinning_box_config,
     load_t_handle_config,
+    validate_heavy_top_config_against_matrix,
     validate_physical_pendulum_config_against_matrix,
     validate_spinning_box_config_against_matrix,
     validate_t_handle_config_against_matrix,
@@ -32,6 +34,7 @@ from mabd_reproduction.paper_source_audit import (
     velocity_semantics_source_audit,
 )
 from mabd_reproduction.reporting import load_claim_report
+from mabd_reproduction.heavy_top_reference import roll_out_heavy_top_rk4_reference
 from mabd_reproduction.spinning_box_physics import (
     spinning_box_contact_diagnostics,
     spinning_box_kinematic_feasibility,
@@ -99,6 +102,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase46-model-world-constraints.md",
     "docs/records/2026-05-18-phase47-model-gravity-config.md",
     "docs/records/2026-05-18-phase48-physical-pendulum-model-lane.md",
+    "docs/records/2026-05-18-phase49-heavy-top-rk4-reference.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -133,6 +137,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase47-model-gravity-config.md",
     "docs/superpowers/specs/2026-05-18-phase48-physical-pendulum-model-lane-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase48-physical-pendulum-model-lane.md",
+    "docs/superpowers/specs/2026-05-18-phase49-heavy-top-rk4-reference-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase49-heavy-top-rk4-reference.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -143,12 +149,14 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
     "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
     "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+    "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
     "configs/experiments/README.md",
     "configs/experiments/paper_experiment_matrix.yaml",
     "configs/experiments/single_body_physical_pendulum.yaml",
+    "configs/experiments/single_body_heavy_top.yaml",
     "configs/experiments/single_body_spinning_box.yaml",
     "configs/experiments/single_body_t_handle.yaml",
     "scripts/run_experiment.py",
@@ -194,6 +202,7 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "TO_BE_BACKFILLED_PHASE42",
     "TO_BE_BACKFILLED_PHASE43",
     "TO_BE_BACKFILLED_PHASE44",
+    "TO_BE_BACKFILLED_PHASE49",
 }
 
 
@@ -6821,6 +6830,287 @@ def validate_phase48_record() -> None:
             fail("Phase 48 must not pass experiment.* claims")
 
 
+def validate_phase49_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase49-heavy-top-rk4-reference.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed_for_heavy_top_reference_diagnostic_lane",
+        "## Repository",
+        "phase49-heavy-top-reference",
+        "e042307a9af2122cb5de42e7e9d9ef0602a5b0db",
+        VENDORED_NEWTON_COMMIT,
+        "## Paper Source",
+        "experiment.tex:65-75",
+        "images/spinning_top/spinning_top.pdf",
+        "c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d",
+        "## Report Artifact",
+        "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
+        "heavy_top_rk4_reference_diagnostic",
+        "rbd_rk4_reference",
+        "diagnostic_generated",
+        "exact_heavy_top_inertia_unknown",
+        "raw_heavy_top_reference_curve_data_missing",
+        "mabd_newton_report_missing",
+        "heavy_top_comparison_report_missing",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.heavy_top` remains intended",
+        "does not implement paper-faithful heavy-top inertia",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_heavy_top_reference tests.test_experiment_run_configs tests.test_experiment_runner tests.test_phase0_bootstrap",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 49 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE49",
+        "phase49-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 49 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "passed heavy-top experiment",
+        "heavy-top experiment passed",
+        "paper-faithful heavy-top inertia is verified",
+        "m-abd heavy-top dynamics passed",
+        "raw curve agreement passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 49 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 49 heavy-top RK4 reference diagnostic lane",
+        "Phase 49 verifies a source-backed `rbd_rk4_reference` diagnostic lane",
+        "`raw_heavy_top_reference_curve_data_missing`",
+        "`mabd_newton_report_missing`",
+        "`heavy_top_comparison_report_missing`",
+        "Phase 49 does not verify a passed heavy-top experiment",
+        "paper-faithful heavy-top inertia",
+        "M-ABD heavy-top dynamics",
+        "Phase 49 heavy-top RK4 reference",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 49 claim boundary missing: {snippet}")
+
+    try:
+        config = load_heavy_top_config(ROOT / "configs/experiments/single_body_heavy_top.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_heavy_top_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 49 heavy-top config validation failed: {exc}")
+
+    report_path = "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json"
+    report = load_claim_report(ROOT / report_path)
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 49 report source_commit must not be a placeholder")
+    if report.source_commit not in text:
+        fail("Phase 49 record must list the report source_commit")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 49 report vendored Newton commit changed")
+    if report.claim_id != config.claim_id:
+        fail("Phase 49 report claim_id does not match config")
+    if report.scene_id != config.scene_id:
+        fail("Phase 49 report scene_id does not match config")
+    if report.asset_hashes.get("heavy_top_procedural") != "not_applicable_procedural":
+        fail("Phase 49 heavy-top asset hash must remain procedural")
+    if report.status.value != "incomplete":
+        fail("Phase 49 heavy-top report must remain incomplete")
+    actual_hash = sha256_file(ROOT / report_path)
+    record_hash = _record_sha256_for_artifact(text, report_path)
+    if record_hash != actual_hash:
+        fail("Phase 49 heavy-top report sha256 mismatch")
+
+    if report.baseline_lane != "rbd_rk4_reference":
+        fail("Phase 49 heavy-top report lane changed")
+    if report.solver_mode != "heavy_top_rk4_reference_diagnostic":
+        fail("Phase 49 heavy-top report solver mode changed")
+    if report.backend != "cpu_numpy":
+        fail("Phase 49 heavy-top report backend changed")
+    observed = report.observed
+    trajectory = roll_out_heavy_top_rk4_reference(config)
+    if observed.get("lane_status") != "diagnostic_generated":
+        fail("Phase 49 heavy-top diagnostic status changed")
+    if "lane_gate_status" in observed:
+        fail("Phase 49 heavy-top report must not expose a passed lane gate")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 49 heavy-top report must not pass full experiment claim")
+    if observed.get("reference_not_paper_inertia") is not True:
+        fail("Phase 49 heavy-top report must mark reference_not_paper_inertia")
+    if observed.get("reference_not_paper_geometry") is not True:
+        fail("Phase 49 heavy-top report must mark reference_not_paper_geometry")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 49 heavy-top blockers must be a list")
+    for blocker in (
+        "exact_heavy_top_inertia_unknown",
+        "raw_heavy_top_reference_curve_data_missing",
+        "mabd_newton_report_missing",
+        "heavy_top_comparison_report_missing",
+        "heavy_top_timing_evidence_missing",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 49 heavy-top blocker missing: {blocker}")
+    if observed.get("required_missing_lanes") != ["mabd_newton"]:
+        fail("Phase 49 heavy-top required_missing_lanes changed")
+    if (
+        _require_finite_scalar(observed.get("time_step_s"), "Phase 49 heavy-top time_step_s")
+        != 1.0e-4
+    ):
+        fail("Phase 49 heavy-top RK4 step changed")
+    if (
+        _require_finite_scalar(observed.get("duration_s"), "Phase 49 heavy-top duration_s")
+        != 10.0
+    ):
+        fail("Phase 49 heavy-top diagnostic duration changed")
+    if abs(
+        _require_finite_scalar(
+            observed.get("relative_energy_drift"),
+            "Phase 49 heavy-top relative_energy_drift",
+        )
+    ) > config.reference.thresholds["max_relative_energy_drift"]:
+        fail("Phase 49 heavy-top relative energy drift exceeded threshold")
+    nutation_range = _require_finite_scalar(
+        observed.get("max_nutation_angle_deg"),
+        "Phase 49 heavy-top max_nutation_angle_deg",
+    ) - _require_finite_scalar(
+        observed.get("min_nutation_angle_deg"),
+        "Phase 49 heavy-top min_nutation_angle_deg",
+    )
+    if nutation_range < config.reference.thresholds["min_nutation_angle_range_deg"]:
+        fail("Phase 49 heavy-top nutation range below threshold")
+    if (
+        _require_finite_scalar(
+            observed.get("max_abs_precession_velocity_rad_s"),
+            "Phase 49 heavy-top max_abs_precession_velocity_rad_s",
+        )
+        < config.reference.thresholds["min_abs_precession_velocity_rad_s"]
+    ):
+        fail("Phase 49 heavy-top precession velocity below threshold")
+    for key, expected in (
+        ("energy_initial", trajectory.energy_initial),
+        ("energy_final", trajectory.energy_final),
+        ("relative_energy_drift", trajectory.relative_energy_drift),
+        ("min_nutation_angle_deg", trajectory.min_nutation_angle_deg),
+        ("max_nutation_angle_deg", trajectory.max_nutation_angle_deg),
+        ("max_abs_precession_velocity_rad_s", trajectory.max_abs_precession_velocity_rad_s),
+    ):
+        actual = _require_finite_scalar(observed.get(key), f"Phase 49 heavy-top {key}")
+        if not np.isclose(actual, expected, rtol=0.0, atol=1.0e-14):
+            fail(f"Phase 49 heavy-top {key} does not match recomputed RK4 rollout")
+    if not np.allclose(
+        observed.get("principal_inertia_kg_m2"),
+        config.reference.principal_inertia_kg_m2.tolist(),
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        fail("Phase 49 heavy-top inertia does not match config")
+    if not np.allclose(
+        observed.get("pivot_to_com_m"),
+        config.reference.pivot_to_com_m.tolist(),
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        fail("Phase 49 heavy-top pivot_to_com_m does not match config")
+    gravity = _require_finite_vector3(observed.get("gravity_m_s2"), "Phase 49 heavy-top gravity")
+    if gravity != [0.0, -9.81, 0.0]:
+        fail("Phase 49 heavy-top gravity changed")
+    samples = observed.get("precession_nutation_samples")
+    if not isinstance(samples, list) or len(samples) != config.reference.sample_count:
+        fail("Phase 49 heavy-top precession_nutation_samples changed")
+    for index, sample in enumerate(samples):
+        if not isinstance(sample, dict):
+            fail("Phase 49 heavy-top sample must be a mapping")
+        if sample.get("sample_index") != index:
+            fail("Phase 49 heavy-top sample_index changed")
+        expected_row = trajectory.samples[index]
+        for key, expected in (
+            ("time_s", expected_row[0]),
+            ("nutation_angle_deg", expected_row[1]),
+            ("precession_angle_rad", expected_row[2]),
+            ("precession_velocity_rad_s", expected_row[3]),
+        ):
+            actual = _require_finite_scalar(sample.get(key), f"Phase 49 sample {index} {key}")
+            if not np.isclose(actual, float(expected), rtol=0.0, atol=1.0e-14):
+                fail(f"Phase 49 heavy-top sample {index} {key} changed")
+    if observed.get("threshold_violations") != []:
+        fail("Phase 49 heavy-top threshold_violations changed")
+    if report.expected.get("source_lines") != list(config.source_lines):
+        fail("Phase 49 heavy-top expected source_lines changed")
+    if report.expected.get("figure_pdf_sha256") != config.reference.figure_pdf_sha256:
+        fail("Phase 49 heavy-top expected figure hash changed")
+    if report.expected.get("matrix_claim_report") != (
+        "reports/experiment_matrix/single_body_heavy_top.json"
+    ):
+        fail("Phase 49 heavy-top matrix claim report binding changed")
+    if report.expected.get("lane_report") != config.reference.output_report:
+        fail("Phase 49 heavy-top lane report binding changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_heavy_top = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.heavy_top":
+            found_heavy_top = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 49 must keep heavy-top experiment status intended")
+            conflict_note = str(claim.get("conflict_note", ""))
+            for blocker in (
+                "exact_heavy_top_inertia_unknown",
+                "raw_heavy_top_reference_curve_data_missing",
+                "mabd_newton_report_missing",
+                "heavy_top_comparison_report_missing",
+            ):
+                if blocker not in conflict_note:
+                    fail(f"Phase 49 heavy-top conflict_note missing {blocker}")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 49 must not pass experiment.* claims")
+    if not found_heavy_top:
+        fail("paper-claims.yaml missing heavy-top claim")
+
+    matrix_data = read_yaml(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    experiments = matrix_data.get("experiments")
+    if not isinstance(experiments, list):
+        fail("Phase 49 experiment matrix missing experiments")
+    matrix_entry = next(
+        (
+            item
+            for item in experiments
+            if isinstance(item, dict)
+            and item.get("claim_id") == "experiment.single_body.heavy_top"
+        ),
+        None,
+    )
+    if matrix_entry is None:
+        fail("Phase 49 matrix missing heavy-top experiment")
+    if matrix_entry.get("reproduction_status") != "planned":
+        fail("Phase 49 matrix must keep heavy-top planned")
+    matrix_blockers = matrix_entry.get("blocking_reasons")
+    if not isinstance(matrix_blockers, list):
+        fail("Phase 49 matrix heavy-top blockers must be a list")
+    for blocker in (
+        "exact_heavy_top_inertia_unknown",
+        "raw_heavy_top_reference_curve_data_missing",
+        "mabd_newton_report_missing",
+        "heavy_top_comparison_report_missing",
+    ):
+        if blocker not in matrix_blockers:
+            fail(f"Phase 49 matrix blocker missing: {blocker}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -7085,13 +7375,14 @@ def main() -> int:
     validate_phase46_record()
     validate_phase47_record()
     validate_phase48_record()
+    validate_phase49_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49 "
         "docs/provenance validation passed"
     )
     return 0

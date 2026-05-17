@@ -1,0 +1,182 @@
+{
+  "asset_hashes": {
+    "heavy_top_procedural": "not_applicable_procedural"
+  },
+  "backend": "cpu_numpy",
+  "baseline_lane": "rbd_rk4_reference",
+  "claim_id": "experiment.single_body.heavy_top",
+  "expected": {
+    "blocking_reasons": [
+      "exact_heavy_top_inertia_unknown",
+      "raw_heavy_top_reference_curve_data_missing",
+      "mabd_newton_report_missing",
+      "heavy_top_comparison_report_missing",
+      "heavy_top_timing_evidence_missing"
+    ],
+    "figure_pdf_sha256": "c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d",
+    "figure_text_source": "pdftotext /tmp/mabd-paper/source/images/spinning_top/spinning_top.pdf -",
+    "full_experiment_claim_passed": false,
+    "known_source_gaps": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing"
+    ],
+    "lane_report": "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
+    "matrix_claim_report": "reports/experiment_matrix/single_body_heavy_top.json",
+    "paper_claim_status": "RK4 reference diagnostic lane only; full experiment incomplete",
+    "paper_values": {
+      "angular_speed_rad_s": 10,
+      "reference_h_s": 0.0001,
+      "tilt_deg": 5
+    },
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:65-75"
+    ]
+  },
+  "failure_reason": "rbd_rk4_reference diagnostic only; exact_heavy_top_inertia_unknown, raw_heavy_top_reference_curve_data_missing, mabd_newton_report_missing, and heavy_top_comparison_report_missing remain incomplete",
+  "observed": {
+    "angular_momentum_norm_drift": 0.03936703920985818,
+    "angular_momentum_norm_final": 0.5196835196049291,
+    "angular_momentum_norm_initial": 0.5,
+    "blocking_reasons": [
+      "exact_heavy_top_inertia_unknown",
+      "raw_heavy_top_reference_curve_data_missing",
+      "mabd_newton_report_missing",
+      "heavy_top_comparison_report_missing",
+      "heavy_top_timing_evidence_missing"
+    ],
+    "duration_s": 10.0,
+    "energy_final": 4.943167497070132,
+    "energy_initial": 4.9431674970700055,
+    "full_experiment_claim_passed": false,
+    "gravity_m_s2": [
+      0.0,
+      -9.81,
+      0.0
+    ],
+    "initial_spin_rad_s": 10.0,
+    "initial_tilt_deg": 5.0,
+    "lane_status": "diagnostic_generated",
+    "mass_kg": 1.0,
+    "max_abs_precession_velocity_rad_s": 2.967093084668706,
+    "max_nutation_angle_deg": 113.19099466504511,
+    "min_nutation_angle_deg": 4.008545144471447,
+    "pivot_to_com_m": [
+      0.0,
+      0.0,
+      0.25
+    ],
+    "precession_nutation_samples": [
+      {
+        "nutation_angle_deg": 4.999999999999992,
+        "precession_angle_rad": 0.0,
+        "precession_velocity_rad_s": 0.0,
+        "sample_index": 0,
+        "time_s": 0.0
+      },
+      {
+        "nutation_angle_deg": 72.23308961611637,
+        "precession_angle_rad": -1.034860927993838,
+        "precession_velocity_rad_s": -1.034860927993838,
+        "sample_index": 1,
+        "time_s": 1.0
+      },
+      {
+        "nutation_angle_deg": 22.17614640021107,
+        "precession_angle_rad": 1.667857863844631,
+        "precession_velocity_rad_s": 2.7027187918384694,
+        "sample_index": 2,
+        "time_s": 2.0
+      },
+      {
+        "nutation_angle_deg": 19.69661122711993,
+        "precession_angle_rad": 0.8788485145491844,
+        "precession_velocity_rad_s": -0.7890093492954466,
+        "sample_index": 3,
+        "time_s": 3.0
+      },
+      {
+        "nutation_angle_deg": 78.41237318948714,
+        "precession_angle_rad": 3.6180259972750166,
+        "precession_velocity_rad_s": 2.7391774827258324,
+        "sample_index": 4,
+        "time_s": 4.0
+      },
+      {
+        "nutation_angle_deg": 4.008545144471447,
+        "precession_angle_rad": 2.4987660917003405,
+        "precession_velocity_rad_s": -1.1192599055746761,
+        "sample_index": 5,
+        "time_s": 5.0
+      },
+      {
+        "nutation_angle_deg": 42.16864263815332,
+        "precession_angle_rad": 1.8511040301040815,
+        "precession_velocity_rad_s": -0.6476620615962589,
+        "sample_index": 6,
+        "time_s": 6.0
+      },
+      {
+        "nutation_angle_deg": 38.5605573422583,
+        "precession_angle_rad": 4.483559560978345,
+        "precession_velocity_rad_s": 2.632455530874264,
+        "sample_index": 7,
+        "time_s": 7.0
+      },
+      {
+        "nutation_angle_deg": 5.781312034985031,
+        "precession_angle_rad": 3.7780389749763796,
+        "precession_velocity_rad_s": -0.7055205860019655,
+        "sample_index": 8,
+        "time_s": 8.0
+      },
+      {
+        "nutation_angle_deg": 113.19099466504511,
+        "precession_angle_rad": 2.261587960097925,
+        "precession_velocity_rad_s": -1.5164510148784545,
+        "sample_index": 9,
+        "time_s": 9.0
+      },
+      {
+        "nutation_angle_deg": 11.584040554726002,
+        "precession_angle_rad": 5.228681044766631,
+        "precession_velocity_rad_s": 2.967093084668706,
+        "sample_index": 10,
+        "time_s": 10.0
+      }
+    ],
+    "principal_inertia_kg_m2": [
+      0.18,
+      0.205,
+      0.05
+    ],
+    "reference_not_paper_geometry": true,
+    "reference_not_paper_inertia": true,
+    "reference_scope": "fixed_pivot_rbd_rk4_heavy_top_diagnostic",
+    "relative_energy_drift": 2.5514275142846053e-14,
+    "required_missing_lanes": [
+      "mabd_newton"
+    ],
+    "sample_count": 11,
+    "threshold_violations": [],
+    "time_step_s": 0.0001
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_heavy_top",
+  "solver_mode": "heavy_top_rk4_reference_diagnostic",
+  "source_commit": "e042307a9af2122cb5de42e7e9d9ef0602a5b0db",
+  "status": "incomplete",
+  "threshold": {
+    "max_relative_energy_drift": 1e-07,
+    "min_abs_precession_velocity_rad_s": 0.01,
+    "min_nutation_angle_range_deg": 0.01
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "status": "not_measured"
+  },
+  "unit": "dimensionless",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}
