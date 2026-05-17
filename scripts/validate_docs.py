@@ -1531,8 +1531,7 @@ def validate_phase25_record() -> None:
         "CPU oracle no-polar implementation commit: `80a32a1e2f5a1a3ab80bec2460562cbcfd54c0bf`",
         "spinning-box material lane implementation commit:",
         "`c0cef676e5265c659ca2bd9bd58165f357d8b1fa`",
-        "docs/record creation commit:",
-        "TO_BE_BACKFILLED_PHASE25_DOCS_COMMIT",
+        "docs/record creation commit: `aa7eb983471ac1f2f6abdf27af7641b131533ea4`",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "local patch status: Phase 25 modifies vendored Newton",
@@ -1576,7 +1575,7 @@ def validate_phase25_record() -> None:
         "vendored CPU oracle tests: Ran 6 tests, OK",
         "M-ABD report tests: Ran 2 tests, OK",
         "comparison and runner tests: Ran 21 tests, OK",
-        "phase bootstrap docs tests:",
+        "phase bootstrap docs tests: Ran 45 tests, OK",
         (
             "docs validator: Phase "
             "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25 "
@@ -1586,6 +1585,8 @@ def validate_phase25_record() -> None:
     for snippet in required_snippets:
         if snippet not in text:
             fail(f"Phase 25 record missing required evidence field: {snippet}")
+    if "TO_BE_BACKFILLED_PHASE25_DOCS_COMMIT" in text:
+        fail("Phase 25 record contains stale docs commit placeholder")
     forbidden_snippets = (
         "Phase 25 verifies the paper spinning-box experiment",
         "Phase 25 passes experiment.single_body.spinning_box",

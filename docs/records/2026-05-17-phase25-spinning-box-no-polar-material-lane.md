@@ -41,7 +41,7 @@ artifacts, or any passed `experiment.*` claim.
 - plan commit: `9cff8b74521ec3ae2395bb5ceac42651cb1f2a40`
 - CPU oracle no-polar implementation commit: `80a32a1e2f5a1a3ab80bec2460562cbcfd54c0bf`
 - spinning-box material lane implementation commit: `c0cef676e5265c659ca2bd9bd58165f357d8b1fa`
-- docs/record creation commit: `TO_BE_BACKFILLED_PHASE25_DOCS_COMMIT`
+- docs/record creation commit: `aa7eb983471ac1f2f6abdf27af7641b131533ea4`
 
 ## Vendored Newton
 
@@ -172,7 +172,7 @@ validator output still ended at Phase 24
 Docs GREEN result:
 
 ```text
-phase bootstrap docs tests: pending before docs/record creation commit
+phase bootstrap docs tests: Ran 45 tests, OK
 docs validator: Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25 docs/provenance validation passed
 ```
 
