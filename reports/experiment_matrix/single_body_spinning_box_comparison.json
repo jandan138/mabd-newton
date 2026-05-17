@@ -1,0 +1,138 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural"
+  },
+  "backend": "report_protocol",
+  "baseline_lane": "spinning_box_comparison_protocol",
+  "claim_id": "experiment.single_body.spinning_box",
+  "expected": {
+    "paper_claim_status": "requires passed M-ABD and paper-faithful implicit RBD lane gates",
+    "required_lanes": [
+      "mabd_newton",
+      "rbd_implicit_baseline"
+    ],
+    "required_metrics": [
+      "linear_momentum_error",
+      "angular_momentum_error",
+      "energy_drift"
+    ],
+    "required_vector_metrics": [
+      "initial_position_m",
+      "final_position_m"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:40-55"
+    ]
+  },
+  "failure_reason": "required lane gate statuses or comparison pass gate remain incomplete",
+  "observed": {
+    "blocking_reasons": [
+      "mabd_newton_report_incomplete",
+      "spinning_box_comparison_pass_gate_not_enabled"
+    ],
+    "invalid_required_metrics": [],
+    "invalid_required_vector_metrics": [],
+    "lane_gate_statuses": {
+      "mabd_newton": "incomplete",
+      "rbd_implicit_baseline": "passed"
+    },
+    "lane_metric_differences": {
+      "mabd_newton_minus_rbd_implicit_baseline": {
+        "angular_momentum_error": 1.472344024477934e-09,
+        "energy_drift": 1517500.055451299,
+        "linear_momentum_error": 7.679322694214913e-14
+      }
+    },
+    "lane_metrics": {
+      "mabd_newton": {
+        "angular_momentum_error": 1.472344024477934e-09,
+        "energy_drift": 1517500.055451299,
+        "linear_momentum_error": 7.679322694214913e-14
+      },
+      "rbd_implicit_baseline": {
+        "angular_momentum_error": 0.0,
+        "energy_drift": 0.0,
+        "linear_momentum_error": 0.0
+      }
+    },
+    "lane_solver_modes": {
+      "mabd_newton": "mabd_cpu_oracle_development",
+      "rbd_implicit_baseline": "paper_faithful_implicit_rbd"
+    },
+    "lane_statuses": {
+      "mabd_newton": "incomplete",
+      "rbd_implicit_baseline": "incomplete"
+    },
+    "lane_vector_metric_differences": {
+      "mabd_newton_minus_rbd_implicit_baseline": {
+        "final_position_m": [
+          -4.440892098500626e-16,
+          0.0,
+          7.109507246450778e-16
+        ],
+        "initial_position_m": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "lane_vector_metrics": {
+      "mabd_newton": {
+        "final_position_m": [
+          3.9999999999999987,
+          0.05,
+          7.109507246450778e-16
+        ],
+        "initial_position_m": [
+          0.0,
+          0.05,
+          0.0
+        ]
+      },
+      "rbd_implicit_baseline": {
+        "final_position_m": [
+          3.999999999999999,
+          0.05,
+          0.0
+        ],
+        "initial_position_m": [
+          0.0,
+          0.05,
+          0.0
+        ]
+      }
+    },
+    "missing_required_metrics": [],
+    "missing_required_vector_metrics": []
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "mabd_report": "reports/experiment_matrix/single_body_spinning_box.json",
+    "rbd_report": "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json"
+  },
+  "scene_id": "single_body_spinning_box",
+  "solver_mode": "spinning_box_multilane_comparison_development",
+  "source_commit": "75a676791084ca0f77fe16fc1902814a5bb8d148",
+  "status": "incomplete",
+  "threshold": {
+    "paper_faithful_rbd_solver_mode": "paper_faithful_implicit_rbd",
+    "required_lane_gate_status": "passed",
+    "required_lane_status": "passed",
+    "required_metrics": [
+      "linear_momentum_error",
+      "angular_momentum_error",
+      "energy_drift"
+    ],
+    "required_vector_metrics": [
+      "initial_position_m",
+      "final_position_m"
+    ]
+  },
+  "timing_distribution": {
+    "scope": "not_timed"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

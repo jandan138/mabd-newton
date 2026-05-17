@@ -1,0 +1,820 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural"
+  },
+  "backend": "cpu_numpy",
+  "baseline_lane": "mabd_newton",
+  "claim_id": "experiment.single_body.spinning_box",
+  "expected": {
+    "figure_pdf_sha256": "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
+    "figure_text_source": "pdftotext /tmp/mabd-paper/source/images/cube/roll_cube.pdf -",
+    "paper_claim_status": "mabd paper-horizon diagnostics must pass before lane gate",
+    "paper_horizon_duration_s": 10.0,
+    "paper_step_sizes_s": [
+      0.01,
+      0.001
+    ],
+    "phase28_mabd_gate_policy": "diagnostic_only_no_lane_gate",
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:40-55"
+    ]
+  },
+  "failure_reason": "M-ABD paper-horizon diagnostics remain incomplete; shape or energy thresholds are violated",
+  "observed": {
+    "angular_momentum_error": 3.662254641883743e-07,
+    "blocking_reasons": [
+      "mabd_newton_report_incomplete",
+      "mabd_paper_horizon_diagnostic_thresholds_violated",
+      "mabd_kinematic_feasibility_blocker_recorded"
+    ],
+    "energy_drift": 690003842953.7826,
+    "figure_pdf_sha256": "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
+    "figure_text_source": "pdftotext /tmp/mabd-paper/source/images/cube/roll_cube.pdf -",
+    "final_position_m": [
+      1000.0000000000002,
+      0.04999999999896883,
+      -1.025653105741477e-11
+    ],
+    "initial_position_m": [
+      0.0,
+      0.05,
+      0.0
+    ],
+    "linear_momentum_error": 3.749445450725338e-11,
+    "mabd_kinematic_feasibility_status": "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+    "mabd_kinematic_feasibility_statuses": [
+      "paper_momentum_requires_affine_stretch_under_q_delta_over_h"
+    ],
+    "mabd_paper_horizon_status": "development_gap_observed",
+    "paper_horizon_duration_s": 10.0,
+    "paper_horizon_results": [
+      {
+        "diagnostic_status": "development_gap_observed",
+        "duration_s": 10.0,
+        "elastic_energy_final_j": 713373373.6179978,
+        "elastic_energy_initial_j": 0.0,
+        "final_position_m": [
+          1000.0000000000002,
+          0.04999999999896883,
+          -1.025653105741477e-11
+        ],
+        "first_nonfinite_step": null,
+        "initial_position_m": [
+          0.0,
+          0.05,
+          0.0
+        ],
+        "kinematic_feasibility": {
+          "orthogonal_update_angular_momentum_bound_kg_m2_s": 0.1666666666666667,
+          "orthogonal_update_angular_speed_bound_rad_s": 100.0,
+          "paper_angular_momentum_norm_kg_m2_s": 100.0,
+          "paper_angular_speed_rad_s": 59999.99999999998,
+          "required_speed_to_bound_ratio": 599.9999999999998,
+          "requires_affine_stretch": true,
+          "status": "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+          "time_step_s": 0.01,
+          "velocity_update_relation": "qd_next=(q_next-q_n)/h"
+        },
+        "kinetic_energy_final_j": 15252.71705298908,
+        "kinetic_energy_initial_j": 3005000.0,
+        "max_abs_det_minus_one": 360000.00000263675,
+        "max_abs_det_minus_one_step_index": 1,
+        "max_affine_orthogonality_error": 509116.8824580432,
+        "max_affine_orthogonality_error_step_index": 1,
+        "max_angular_momentum_error": 3.662254641883743e-07,
+        "max_angular_momentum_error_step_index": 1000,
+        "max_kinetic_energy_drift_j": 2989747.282947011,
+        "max_kinetic_energy_drift_j_step_index": 1000,
+        "max_linear_momentum_error": 2.780531407160806e-12,
+        "max_linear_momentum_error_step_index": 1000,
+        "max_relative_kinetic_energy_drift": 0.9949242206146459,
+        "max_relative_kinetic_energy_drift_step_index": 1000,
+        "max_relative_total_energy_drift": 229618.58334568472,
+        "max_relative_total_energy_drift_step_index": 1,
+        "max_residual_norm": 1.1920931563751635e-07,
+        "max_residual_norm_step_index": 6,
+        "max_singular_value": 600.0008333349521,
+        "max_singular_value_step_index": 1,
+        "max_total_energy_drift_j": 690003842953.7826,
+        "max_total_energy_drift_j_step_index": 1,
+        "min_singular_value": 0.9940050849282205,
+        "min_singular_value_step_index": 2,
+        "steps_attempted": 1000,
+        "steps_completed": 1000,
+        "threshold_violations": [
+          "max_relative_kinetic_energy_drift",
+          "max_relative_total_energy_drift",
+          "max_abs_det_minus_one",
+          "max_singular_value",
+          "max_affine_orthogonality_error"
+        ],
+        "time_step_s": 0.01,
+        "total_energy_initial_j": 3005000.0,
+        "trajectory_samples": [
+          {
+            "affine_abs_det_minus_one": 0.0,
+            "affine_determinant": 1.0,
+            "affine_max_singular_value": 1.0,
+            "affine_min_singular_value": 1.0,
+            "affine_orthogonality_error": 0.0,
+            "affine_singular_values": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "angular_momentum_error": 2.842170943040401e-14,
+            "elastic_energy_j": 0.0,
+            "kinetic_energy_j": 3005000.0,
+            "linear_momentum_error": 2.842170943040401e-14,
+            "position_m": [
+              0.0,
+              0.05,
+              0.0
+            ],
+            "relative_kinetic_energy_drift": 0.0,
+            "relative_total_energy_drift": 0.0,
+            "residual_norm": 0.0,
+            "step_index": 0,
+            "time_s": 0.0,
+            "total_energy_j": 3005000.0
+          },
+          {
+            "affine_abs_det_minus_one": 50.01485116966553,
+            "affine_determinant": 51.01485116966553,
+            "affine_max_singular_value": 7.145479232019591,
+            "affine_min_singular_value": 0.999157381954124,
+            "affine_orthogonality_error": 70.79252356397431,
+            "affine_singular_values": [
+              7.145479232019591,
+              7.145479232019544,
+              0.999157381954124
+            ],
+            "angular_momentum_error": 3.661759264531597e-08,
+            "elastic_energy_j": 72622708.20127837,
+            "kinetic_energy_j": 63943.65654798979,
+            "linear_momentum_error": 4.3389286290642873e-13,
+            "position_m": [
+              100.0000000000002,
+              0.04999999999999998,
+              -1.6935132793547087e-13
+            ],
+            "relative_kinetic_energy_drift": 0.9787209129623994,
+            "relative_total_energy_drift": 23.188569669825746,
+            "residual_norm": 7.09629773283711e-11,
+            "step_index": 100,
+            "time_s": 1.0,
+            "total_energy_j": 72686651.85782637
+          },
+          {
+            "affine_abs_det_minus_one": 99.26401986520992,
+            "affine_determinant": 100.26401986520992,
+            "affine_max_singular_value": 10.01617857362678,
+            "affine_min_singular_value": 0.9994037971671221,
+            "affine_orthogonality_error": 140.4651120099404,
+            "affine_singular_values": [
+              10.01617857362678,
+              10.016178573626778,
+              0.9994037971671221
+            ],
+            "angular_momentum_error": 7.324113944175869e-08,
+            "elastic_energy_j": 156323559.44848555,
+            "kinetic_energy_j": 35036.58311413,
+            "linear_momentum_error": 6.511989130041284e-13,
+            "position_m": [
+              200.0000000000002,
+              0.04999999999994386,
+              -5.862391762512276e-13
+            ],
+            "relative_kinetic_energy_drift": 0.9883405713430516,
+            "relative_total_energy_drift": 51.03281065943417,
+            "residual_norm": 1.490607978415884e-08,
+            "step_index": 200,
+            "time_s": 2.0,
+            "total_energy_j": 156358596.03159967
+          },
+          {
+            "affine_abs_det_minus_one": 147.1544214193069,
+            "affine_determinant": 148.1544214193069,
+            "affine_max_singular_value": 12.174842667615016,
+            "affine_min_singular_value": 0.9995117444024237,
+            "affine_orthogonality_error": 208.2101287951817,
+            "affine_singular_values": [
+              12.174842667615016,
+              12.174842667615007,
+              0.9995117444024237
+            ],
+            "angular_momentum_error": 1.098641178451603e-07,
+            "elastic_energy_j": 240141990.42633867,
+            "kinetic_energy_j": 25787.483530598012,
+            "linear_momentum_error": 7.443673254982141e-13,
+            "position_m": [
+              300.0000000000002,
+              0.04999999999988231,
+              -1.182644713699904e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9914184746986362,
+            "relative_total_energy_drift": 78.92272143423271,
+            "residual_norm": 1.490925520974893e-08,
+            "step_index": 300,
+            "time_s": 3.0,
+            "total_energy_j": 240167777.90986928
+          },
+          {
+            "affine_abs_det_minus_one": 193.11546279804995,
+            "affine_determinant": 194.11546279804995,
+            "affine_max_singular_value": 13.935494495939759,
+            "affine_min_singular_value": 0.9995749490447522,
+            "affine_orthogonality_error": 273.22324150690457,
+            "affine_singular_values": [
+              13.935494495939759,
+              13.935494495939755,
+              0.9995749490447522
+            ],
+            "angular_momentum_error": 1.4648834681742331e-07,
+            "elastic_energy_j": 321776382.63682,
+            "kinetic_energy_j": 21426.701600414388,
+            "linear_momentum_error": 6.341629082039845e-13,
+            "position_m": [
+              400.0000000000002,
+              0.0499999999997509,
+              -1.8012566499808818e-12
+            ],
+            "relative_kinetic_energy_drift": 0.992869650049779,
+            "relative_total_energy_drift": 106.0874573505559,
+            "residual_norm": 4.477959021089795e-10,
+            "step_index": 400,
+            "time_s": 4.0,
+            "total_energy_j": 321797809.33842045
+          },
+          {
+            "affine_abs_det_minus_one": 236.6682246442132,
+            "affine_determinant": 237.6682246442132,
+            "affine_max_singular_value": 15.419444770548015,
+            "affine_min_singular_value": 0.9996170396002884,
+            "affine_orthogonality_error": 334.82818059715134,
+            "affine_singular_values": [
+              15.419444770548015,
+              15.41944477054801,
+              0.9996170396002884
+            ],
+            "angular_momentum_error": 1.8311042995380717e-07,
+            "elastic_energy_j": 399840527.4931062,
+            "kinetic_energy_j": 19002.281643987633,
+            "linear_momentum_error": 9.719784658051286e-13,
+            "position_m": [
+              500.0000000000002,
+              0.04999999999963279,
+              -2.567141311364728e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9936764453763768,
+            "relative_total_energy_drift": 132.06473536597343,
+            "residual_norm": 6.489948461028355e-10,
+            "step_index": 500,
+            "time_s": 5.0,
+            "total_energy_j": 399859529.7747502
+          },
+          {
+            "affine_abs_det_minus_one": 277.4440302914431,
+            "affine_determinant": 278.4440302914431,
+            "affine_max_singular_value": 16.689586854943975,
+            "affine_min_singular_value": 0.9996471663587078,
+            "affine_orthogonality_error": 392.50409807050977,
+            "affine_singular_values": [
+              16.689586854943975,
+              16.689586854943975,
+              0.9996471663587078
+            ],
+            "angular_momentum_error": 2.1973346522129736e-07,
+            "elastic_energy_j": 473384258.14224344,
+            "kinetic_energy_j": 17529.87835784436,
+            "linear_momentum_error": 1.3819951237698344e-12,
+            "position_m": [
+              600.0000000000002,
+              0.049999999999513635,
+              -3.687222753747955e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9941664298310002,
+            "relative_total_energy_drift": 156.5380326191685,
+            "residual_norm": 1.208760733605782e-10,
+            "step_index": 600,
+            "time_s": 6.0,
+            "total_energy_j": 473401788.0206013
+          },
+          {
+            "affine_abs_det_minus_one": 315.1906556212705,
+            "affine_determinant": 316.1906556212705,
+            "affine_max_singular_value": 17.784687751657934,
+            "affine_min_singular_value": 0.9996697299559291,
+            "affine_orthogonality_error": 445.89463262570104,
+            "affine_singular_values": [
+              17.784687751657934,
+              17.78468775165793,
+              0.9996697299559291
+            ],
+            "angular_momentum_error": 2.563565431216072e-07,
+            "elastic_energy_j": 541773878.5982604,
+            "kinetic_energy_j": 16587.321026586353,
+            "linear_momentum_error": 1.6237785804717155e-12,
+            "position_m": [
+              700.0000000000002,
+              0.04999999999939795,
+              -5.201829769002306e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9944800928364105,
+            "relative_total_energy_drift": 179.29632809294074,
+            "residual_norm": 5.079368750424433e-10,
+            "step_index": 700,
+            "time_s": 7.0,
+            "total_energy_j": 541790465.919287
+          },
+          {
+            "affine_abs_det_minus_one": 349.76892023179516,
+            "affine_determinant": 350.76892023179516,
+            "affine_max_singular_value": 18.731756238869632,
+            "affine_min_singular_value": 0.999687152388548,
+            "affine_orthogonality_error": 494.8031911186081,
+            "affine_singular_values": [
+              18.731756238869632,
+              18.73175623886963,
+              0.999687152388548
+            ],
+            "angular_momentum_error": 2.929789104806397e-07,
+            "elastic_energy_j": 604638174.8969159,
+            "kinetic_energy_j": 15963.596627573892,
+            "linear_momentum_error": 1.7863245684247668e-12,
+            "position_m": [
+              800.0000000000002,
+              0.049999999999249804,
+              -6.844089318686832e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9946876550324213,
+            "relative_total_energy_drift": 200.21601946540548,
+            "residual_norm": 1.4141484060597536e-09,
+            "step_index": 800,
+            "time_s": 8.0,
+            "total_energy_j": 604654138.4935435
+          },
+          {
+            "affine_abs_det_minus_one": 381.14196429100934,
+            "affine_determinant": 382.14196429100934,
+            "affine_max_singular_value": 19.55137586782664,
+            "affine_min_singular_value": 0.9997008969256349,
+            "affine_orthogonality_error": 539.1778278317572,
+            "affine_singular_values": [
+              19.55137586782664,
+              19.551375867826632,
+              0.9997008969256349
+            ],
+            "angular_momentum_error": 3.296009794118592e-07,
+            "elastic_energy_j": 661827341.0703056,
+            "kinetic_energy_j": 15541.883602291537,
+            "linear_momentum_error": 2.432088986133885e-12,
+            "position_m": [
+              900.0000000000002,
+              0.049999999999096975,
+              -8.513354791027563e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9948279921456601,
+            "relative_total_energy_drift": 219.2472156252605,
+            "residual_norm": 3.8969973838350027e-10,
+            "step_index": 900,
+            "time_s": 9.0,
+            "total_energy_j": 661842882.9539078
+          },
+          {
+            "affine_abs_det_minus_one": 409.3597421703151,
+            "affine_determinant": 410.3597421703151,
+            "affine_max_singular_value": 20.260256578254786,
+            "affine_min_singular_value": 0.9997119103889226,
+            "affine_orthogonality_error": 579.0893363090108,
+            "affine_singular_values": [
+              20.260256578254786,
+              20.26025657825478,
+              0.9997119103889226
+            ],
+            "angular_momentum_error": 3.662254641883743e-07,
+            "elastic_energy_j": 713373373.6179978,
+            "kinetic_energy_j": 15252.71705298908,
+            "linear_momentum_error": 2.780531407160806e-12,
+            "position_m": [
+              1000.0000000000002,
+              0.04999999999896883,
+              -1.025653105741477e-11
+            ],
+            "relative_kinetic_energy_drift": 0.9949242206146459,
+            "relative_total_energy_drift": 236.40054120966747,
+            "residual_norm": 1.3267721803939404e-09,
+            "step_index": 1000,
+            "time_s": 10.0,
+            "total_energy_j": 713388626.3350507
+          }
+        ]
+      },
+      {
+        "diagnostic_status": "development_gap_observed",
+        "duration_s": 10.0,
+        "elastic_energy_final_j": 88317138.6592977,
+        "elastic_energy_initial_j": 0.0,
+        "final_position_m": [
+          999.9999999999113,
+          0.050000000003100974,
+          4.566811696008609e-12
+        ],
+        "first_nonfinite_step": null,
+        "initial_position_m": [
+          0.0,
+          0.05,
+          0.0
+        ],
+        "kinematic_feasibility": {
+          "orthogonal_update_angular_momentum_bound_kg_m2_s": 1.6666666666666672,
+          "orthogonal_update_angular_speed_bound_rad_s": 1000.0,
+          "paper_angular_momentum_norm_kg_m2_s": 100.0,
+          "paper_angular_speed_rad_s": 59999.99999999998,
+          "required_speed_to_bound_ratio": 59.99999999999998,
+          "requires_affine_stretch": true,
+          "status": "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+          "time_step_s": 0.001,
+          "velocity_update_relation": "qd_next=(q_next-q_n)/h"
+        },
+        "kinetic_energy_final_j": 92783.016406724,
+        "kinetic_energy_initial_j": 3005000.0,
+        "max_abs_det_minus_one": 3600.0000000000528,
+        "max_abs_det_minus_one_step_index": 1,
+        "max_affine_orthogonality_error": 5091.168824543211,
+        "max_affine_orthogonality_error_step_index": 1,
+        "max_angular_momentum_error": 6.724733673972335e-09,
+        "max_angular_momentum_error_step_index": 10000,
+        "max_kinetic_energy_drift_j": 2912387.6965822475,
+        "max_kinetic_energy_drift_j_step_index": 204,
+        "max_linear_momentum_error": 3.749445450725338e-11,
+        "max_linear_momentum_error_step_index": 9968,
+        "max_relative_kinetic_energy_drift": 0.9691805978643087,
+        "max_relative_kinetic_energy_drift_step_index": 204,
+        "max_relative_total_energy_drift": 2228.3267211638477,
+        "max_relative_total_energy_drift_step_index": 1,
+        "max_residual_norm": 1.0537099837750183e-08,
+        "max_residual_norm_step_index": 10,
+        "max_singular_value": 60.0083327547104,
+        "max_singular_value_step_index": 1,
+        "max_total_energy_drift_j": 6696121797.097362,
+        "max_total_energy_drift_j_step_index": 1,
+        "min_singular_value": 0.9405841932700457,
+        "min_singular_value_step_index": 2,
+        "steps_attempted": 10000,
+        "steps_completed": 10000,
+        "threshold_violations": [
+          "max_relative_kinetic_energy_drift",
+          "max_relative_total_energy_drift",
+          "max_abs_det_minus_one",
+          "max_singular_value",
+          "max_affine_orthogonality_error"
+        ],
+        "time_step_s": 0.001,
+        "total_energy_initial_j": 3005000.0,
+        "trajectory_samples": [
+          {
+            "affine_abs_det_minus_one": 0.0,
+            "affine_determinant": 1.0,
+            "affine_max_singular_value": 1.0,
+            "affine_min_singular_value": 1.0,
+            "affine_orthogonality_error": 0.0,
+            "affine_singular_values": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "angular_momentum_error": 2.842170943040401e-14,
+            "elastic_energy_j": 0.0,
+            "kinetic_energy_j": 3005000.0,
+            "linear_momentum_error": 2.842170943040401e-14,
+            "position_m": [
+              0.0,
+              0.05,
+              0.0
+            ],
+            "relative_kinetic_energy_drift": 0.0,
+            "relative_total_energy_drift": 0.0,
+            "residual_norm": 0.0,
+            "step_index": 0,
+            "time_s": 0.0,
+            "total_energy_j": 3005000.0
+          },
+          {
+            "affine_abs_det_minus_one": 59.10036711047629,
+            "affine_determinant": 60.10036711047629,
+            "affine_max_singular_value": 7.778822289129408,
+            "affine_min_singular_value": 0.9932290765262561,
+            "affine_orthogonality_error": 84.15995795029694,
+            "affine_singular_values": [
+              7.778822289129408,
+              7.778822289129407,
+              0.9932290765262561
+            ],
+            "angular_momentum_error": 6.684538285521751e-10,
+            "elastic_energy_j": 88317131.42560048,
+            "kinetic_energy_j": 92783.0159845633,
+            "linear_momentum_error": 5.536605598858281e-12,
+            "position_m": [
+              99.99999999999575,
+              0.050000000000032234,
+              3.7457105593689577e-13
+            ],
+            "relative_kinetic_energy_drift": 0.9691237883578825,
+            "relative_total_energy_drift": 28.420936586217987,
+            "residual_norm": 9.430390002916496e-10,
+            "step_index": 1000,
+            "time_s": 1.0,
+            "total_energy_j": 88409914.44158505
+          },
+          {
+            "affine_abs_det_minus_one": 59.10037141349809,
+            "affine_determinant": 60.10037141349809,
+            "affine_max_singular_value": 7.778822566356367,
+            "affine_min_singular_value": 0.9932290768439925,
+            "affine_orthogonality_error": 84.15996404979782,
+            "affine_singular_values": [
+              7.778822566356367,
+              7.778822566356365,
+              0.9932290768439925
+            ],
+            "angular_momentum_error": 1.3412932489630187e-09,
+            "elastic_energy_j": 88317138.65388738,
+            "kinetic_energy_j": 92783.01640169507,
+            "linear_momentum_error": 8.83278400130287e-12,
+            "position_m": [
+              199.99999999999005,
+              0.04999999999977862,
+              9.360864516289217e-13
+            ],
+            "relative_kinetic_energy_drift": 0.9691237882190699,
+            "relative_total_energy_drift": 28.42093899177673,
+            "residual_norm": 1.0521576241772989e-09,
+            "step_index": 2000,
+            "time_s": 2.0,
+            "total_energy_j": 88409921.67028907
+          },
+          {
+            "affine_abs_det_minus_one": 59.10037141389748,
+            "affine_determinant": 60.10037141389748,
+            "affine_max_singular_value": 7.778822566382309,
+            "affine_min_singular_value": 0.9932290768439681,
+            "affine_orthogonality_error": 84.15996405036864,
+            "affine_singular_values": [
+              7.778822566382309,
+              7.778822566382309,
+              0.9932290768439681
+            ],
+            "angular_momentum_error": 2.0134667059625795e-09,
+            "elastic_energy_j": 88317138.65456338,
+            "kinetic_energy_j": 92783.01640232284,
+            "linear_momentum_error": 1.3454501400920051e-11,
+            "position_m": [
+              299.99999999997186,
+              0.049999999999253086,
+              2.0325981930710738e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9691237882188609,
+            "relative_total_energy_drift": 28.420938992001897,
+            "residual_norm": 1.897858308808686e-09,
+            "step_index": 3000,
+            "time_s": 3.0,
+            "total_energy_j": 88409921.6709657
+          },
+          {
+            "affine_abs_det_minus_one": 59.100371414296546,
+            "affine_determinant": 60.100371414296546,
+            "affine_max_singular_value": 7.7788225664082455,
+            "affine_min_singular_value": 0.9932290768439412,
+            "affine_orthogonality_error": 84.15996405093921,
+            "affine_singular_values": [
+              7.7788225664082455,
+              7.778822566408244,
+              0.9932290768439412
+            ],
+            "angular_momentum_error": 2.6859664042717663e-09,
+            "elastic_energy_j": 88317138.65523925,
+            "kinetic_energy_j": 92783.0164029512,
+            "linear_momentum_error": 1.625162204290015e-11,
+            "position_m": [
+              399.99999999993776,
+              0.04999999999953879,
+              2.8904610958370985e-12
+            ],
+            "relative_kinetic_energy_drift": 0.969123788218652,
+            "relative_total_energy_drift": 28.420938992227022,
+            "residual_norm": 2.1598153500777664e-10,
+            "step_index": 4000,
+            "time_s": 4.0,
+            "total_energy_j": 88409921.6716422
+          },
+          {
+            "affine_abs_det_minus_one": 59.10037141469711,
+            "affine_determinant": 60.10037141469711,
+            "affine_max_singular_value": 7.7788225664342665,
+            "affine_min_singular_value": 0.9932290768439141,
+            "affine_orthogonality_error": 84.15996405151179,
+            "affine_singular_values": [
+              7.7788225664342665,
+              7.778822566434266,
+              0.9932290768439141
+            ],
+            "angular_momentum_error": 3.3605270475276838e-09,
+            "elastic_energy_j": 88317138.65591723,
+            "kinetic_energy_j": 92783.01640358138,
+            "linear_momentum_error": 1.9081995070341803e-11,
+            "position_m": [
+              499.99999999990365,
+              0.04999999999973587,
+              3.481386049095527e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9691237882184421,
+            "relative_total_energy_drift": 28.42093899245285,
+            "residual_norm": 4.245246150453214e-10,
+            "step_index": 5000,
+            "time_s": 5.0,
+            "total_energy_j": 88409921.67232081
+          },
+          {
+            "affine_abs_det_minus_one": 59.10037141509677,
+            "affine_determinant": 60.10037141509677,
+            "affine_max_singular_value": 7.778822566460228,
+            "affine_min_singular_value": 0.9932290768438908,
+            "affine_orthogonality_error": 84.15996405208294,
+            "affine_singular_values": [
+              7.778822566460228,
+              7.778822566460226,
+              0.9932290768438908
+            ],
+            "angular_momentum_error": 4.033254406761323e-09,
+            "elastic_energy_j": 88317138.6565937,
+            "kinetic_energy_j": 92783.01640420989,
+            "linear_momentum_error": 2.179919921431919e-11,
+            "position_m": [
+              599.9999999999195,
+              0.04999999999968709,
+              5.186485631712358e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9691237882182331,
+            "relative_total_energy_drift": 28.42093899267817,
+            "residual_norm": 9.371812237848827e-10,
+            "step_index": 6000,
+            "time_s": 6.0,
+            "total_energy_j": 88409921.6729979
+          },
+          {
+            "affine_abs_det_minus_one": 59.100371415496205,
+            "affine_determinant": 60.100371415496205,
+            "affine_max_singular_value": 7.778822566486185,
+            "affine_min_singular_value": 0.993229076843863,
+            "affine_orthogonality_error": 84.15996405265406,
+            "affine_singular_values": [
+              7.778822566486185,
+              7.778822566486184,
+              0.993229076843863
+            ],
+            "angular_momentum_error": 4.706465253042012e-09,
+            "elastic_energy_j": 88317138.65727003,
+            "kinetic_energy_j": 92783.0164048388,
+            "linear_momentum_error": 2.508583390664751e-11,
+            "position_m": [
+              699.9999999999422,
+              0.04999999999952284,
+              6.3884114829592206e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9691237882180237,
+            "relative_total_energy_drift": 28.42093899290345,
+            "residual_norm": 1.6651703010019738e-10,
+            "step_index": 7000,
+            "time_s": 7.0,
+            "total_energy_j": 88409921.67367487
+          },
+          {
+            "affine_abs_det_minus_one": 59.10037141589511,
+            "affine_determinant": 60.10037141589511,
+            "affine_max_singular_value": 7.778822566512099,
+            "affine_min_singular_value": 0.9932290768438369,
+            "affine_orthogonality_error": 84.15996405322424,
+            "affine_singular_values": [
+              7.778822566512099,
+              7.778822566512097,
+              0.9932290768438369
+            ],
+            "angular_momentum_error": 5.378496918675773e-09,
+            "elastic_energy_j": 88317138.65794536,
+            "kinetic_energy_j": 92783.01640546645,
+            "linear_momentum_error": 3.029542636540891e-11,
+            "position_m": [
+              799.999999999965,
+              0.049999999999884505,
+              6.878807402385148e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9691237882178149,
+            "relative_total_energy_drift": 28.420938993128395,
+            "residual_norm": 9.786044654619366e-10,
+            "step_index": 8000,
+            "time_s": 8.0,
+            "total_energy_j": 88409921.67435083
+          },
+          {
+            "affine_abs_det_minus_one": 59.10037141629477,
+            "affine_determinant": 60.10037141629477,
+            "affine_max_singular_value": 7.778822566538065,
+            "affine_min_singular_value": 0.9932290768438115,
+            "affine_orthogonality_error": 84.15996405379552,
+            "affine_singular_values": [
+              7.778822566538065,
+              7.778822566538064,
+              0.9932290768438115
+            ],
+            "angular_momentum_error": 6.05221951087111e-09,
+            "elastic_energy_j": 88317138.6586219,
+            "kinetic_energy_j": 92783.01640609573,
+            "linear_momentum_error": 3.3773553815447746e-11,
+            "position_m": [
+              899.9999999999877,
+              0.050000000001394596,
+              5.910145802808781e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9691237882176055,
+            "relative_total_energy_drift": 28.420938993353744,
+            "residual_norm": 1.0899909820684417e-09,
+            "step_index": 9000,
+            "time_s": 9.0,
+            "total_energy_j": 88409921.675028
+          },
+          {
+            "affine_abs_det_minus_one": 59.100371416693946,
+            "affine_determinant": 60.100371416693946,
+            "affine_max_singular_value": 7.778822566564004,
+            "affine_min_singular_value": 0.9932290768437839,
+            "affine_orthogonality_error": 84.1599640543662,
+            "affine_singular_values": [
+              7.778822566564004,
+              7.778822566564001,
+              0.9932290768437839
+            ],
+            "angular_momentum_error": 6.724733673972335e-09,
+            "elastic_energy_j": 88317138.6592977,
+            "kinetic_energy_j": 92783.016406724,
+            "linear_momentum_error": 3.73353083217097e-11,
+            "position_m": [
+              999.9999999999113,
+              0.050000000003100974,
+              4.566811696008609e-12
+            ],
+            "relative_kinetic_energy_drift": 0.9691237882173963,
+            "relative_total_energy_drift": 28.420938993578847,
+            "residual_norm": 3.333729226568756e-10,
+            "step_index": 10000,
+            "time_s": 10.0,
+            "total_energy_j": 88409921.67570443
+          }
+        ]
+      }
+    ],
+    "paper_source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:40-55"
+    ],
+    "paper_step_sizes_s": [
+      0.01,
+      0.001
+    ],
+    "threshold_violations": [
+      "max_abs_det_minus_one",
+      "max_affine_orthogonality_error",
+      "max_relative_kinetic_energy_drift",
+      "max_relative_total_energy_drift",
+      "max_singular_value"
+    ]
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "time_series": "compact_samples_only"
+  },
+  "scene_id": "single_body_spinning_box",
+  "solver_mode": "mabd_cpu_oracle_paper_horizon_diagnostic",
+  "source_commit": "75a676791084ca0f77fe16fc1902814a5bb8d148",
+  "status": "incomplete",
+  "threshold": {
+    "max_abs_det_minus_one": 0.1,
+    "max_affine_orthogonality_error": 0.1,
+    "max_angular_momentum_error": 1e-06,
+    "max_linear_momentum_error": 1e-06,
+    "max_relative_kinetic_energy_drift": 0.1,
+    "max_relative_total_energy_drift": 0.1,
+    "max_residual_norm": 1e-06,
+    "max_singular_value": 1.1,
+    "min_singular_value": 0.9
+  },
+  "timing_distribution": {
+    "scope": "not_timed",
+    "step_sizes_s": [
+      0.01,
+      0.001
+    ]
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

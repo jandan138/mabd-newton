@@ -530,6 +530,22 @@
   code, paper-faithful physical-pendulum geometry, raw curve data, the full
   physical-pendulum experiment, rendered output, runtime performance, generated
   videos or raw simulation logs, or any passed `experiment.*` claim.
+- This repository contains Phase 42 spinning-box report-artifact evidence after
+  the Phase 42 record is created.
+- Phase 42 verifies committed compact JSON reports for the spinning-box M-ABD
+  diagnostic lane, M-ABD paper-horizon diagnostic lane, paper-faithful RBD lane
+  gate, and comparison protocol; it verifies source-stamped report provenance,
+  finite required comparison metrics, `rbd_implicit_baseline` lane gate status:
+  `passed`, `mabd_newton` lane gate status: `incomplete`, retained
+  `mabd_paper_horizon_diagnostic_thresholds_violated` and
+  `mabd_kinematic_feasibility_blocker_recorded` blockers, retained
+  `mabd_newton_report_incomplete` and
+  `spinning_box_comparison_pass_gate_not_enabled` comparison blockers, and
+  top-level report status: `incomplete`.
+- Phase 42 does not verify a passed spinning-box experiment, M-ABD lane pass,
+  paper-horizon M-ABD stability, shape or energy agreement, comparison pass
+  gate enablement, rendered output, runtime performance, generated videos or raw
+  simulation logs, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -590,6 +606,10 @@
   paper-faithful physical-pendulum geometry reconstruction, paper joint-force
   waveform reproduction, rendered result, runtime performance reproduction, or
   any passed `experiment.*` claim.
+- Phase 42 spinning-box report artifacts are not a passed spinning-box
+  experiment, M-ABD lane pass, paper-horizon stability result, comparison pass
+  gate, rendered result, runtime performance reproduction, or any passed
+  `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

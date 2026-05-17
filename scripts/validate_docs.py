@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-41 docs and provenance contracts."""
+"""Validate Phase 0-42 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -89,6 +89,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase39-physical-pendulum-timing-source-audit.md",
     "docs/records/2026-05-17-phase40-physical-pendulum-joint-force-reference.md",
     "docs/records/2026-05-17-phase41-physical-pendulum-geometry-source-audit.md",
+    "docs/records/2026-05-17-phase42-spinning-box-report-artifacts.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -109,6 +110,12 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-17-mabd-phase40-physical-pendulum-joint-force-reference.md",
     "docs/superpowers/specs/2026-05-17-phase41-physical-pendulum-geometry-source-audit-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase41-physical-pendulum-geometry-source-audit.md",
+    "docs/superpowers/specs/2026-05-17-phase42-spinning-box-report-artifacts-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase42-spinning-box-report-artifacts.md",
+    "reports/experiment_matrix/single_body_spinning_box.json",
+    "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
+    "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
+    "reports/experiment_matrix/single_body_spinning_box_comparison.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -149,11 +156,13 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase39-working-tree",
     "phase40-working-tree",
     "phase41-working-tree",
+    "phase42-working-tree",
     "pending branch-local",
     "<implementation-commit>",
     "TO_BE_BACKFILLED_PHASE39",
     "TO_BE_BACKFILLED_PHASE40",
     "TO_BE_BACKFILLED_PHASE41",
+    "TO_BE_BACKFILLED_PHASE42",
 }
 
 
@@ -4897,6 +4906,379 @@ def validate_phase41_record() -> None:
         fail("paper-claims.yaml missing physical-pendulum claim")
 
 
+def _require_finite_scalar(value: Any, context: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        fail(f"{context} must be a finite scalar")
+    result = float(value)
+    if not np.isfinite(result):
+        fail(f"{context} must be finite")
+    return result
+
+
+def _require_finite_vector3(value: Any, context: str) -> list[float]:
+    if not isinstance(value, list | tuple) or len(value) != 3:
+        fail(f"{context} must be a length-3 vector")
+    return [
+        _require_finite_scalar(component, f"{context}[{index}]")
+        for index, component in enumerate(value)
+    ]
+
+
+def _record_sha256_for_artifact(text: str, artifact_path: str) -> str:
+    lines = text.splitlines()
+    target = f"- `{artifact_path}`"
+    for start_index, line in enumerate(lines):
+        if line.strip() != target:
+            continue
+        for block_line in lines[start_index + 1:]:
+            if block_line.startswith("- `reports/experiment_matrix/"):
+                break
+            tokens = block_line.split("`")
+            for token in tokens[1::2]:
+                if len(token) == 64 and all(character in "0123456789abcdef" for character in token):
+                    return token
+        fail(f"Phase 42 record missing sha256 below {artifact_path}")
+    fail(f"Phase 42 record missing artifact path: {artifact_path}")
+
+
+def validate_phase42_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase42-spinning-box-report-artifacts.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Repository",
+        "phase42-spinning-box-report-artifacts",
+        "## Report Artifacts",
+        "reports/experiment_matrix/single_body_spinning_box.json",
+        "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
+        "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
+        "reports/experiment_matrix/single_body_spinning_box_comparison.json",
+        "mabd_cpu_oracle_development",
+        "mabd_cpu_oracle_paper_horizon_diagnostic",
+        "paper_faithful_implicit_rbd",
+        "spinning_box_multilane_comparison_development",
+        "rbd_implicit_baseline lane_gate_status = `passed`",
+        "mabd_newton lane_gate_status = `incomplete`",
+        "mabd_paper_horizon_diagnostic_thresholds_violated",
+        "mabd_kinematic_feasibility_blocker_recorded",
+        "mabd_newton_report_incomplete",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.spinning_box` remains blocked_by_baselines",
+        "does not pass the spinning-box experiment",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests -p 'test_spinning_box_report_artifacts.py'",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 42 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE42", "phase42-working-tree", "<implementation-commit>"):
+        if placeholder in text:
+            fail("Phase 42 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "spinning-box experiment passed",
+        "passed spinning-box experiment",
+        "m-abd lane passed",
+        "mabd_newton lane passed",
+        "comparison pass gate enabled",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 42 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 42 spinning-box report-artifact evidence",
+        "Phase 42 verifies committed compact JSON reports",
+        "`rbd_implicit_baseline` lane gate status: `passed`",
+        "`mabd_newton` lane gate status: `incomplete`",
+        "`mabd_paper_horizon_diagnostic_thresholds_violated`",
+        "`mabd_kinematic_feasibility_blocker_recorded`",
+        "`spinning_box_comparison_pass_gate_not_enabled`",
+        "Phase 42 does not verify a passed spinning-box experiment",
+        "Phase 42 spinning-box report artifacts",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 42 claim boundary missing: {snippet}")
+
+    try:
+        config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_spinning_box_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 42 spinning-box config validation failed: {exc}")
+
+    report_paths = {
+        "mabd": "reports/experiment_matrix/single_body_spinning_box.json",
+        "paper_horizon": "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
+        "rbd": "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
+        "comparison": "reports/experiment_matrix/single_body_spinning_box_comparison.json",
+    }
+    reports = {
+        name: load_claim_report(ROOT / path)
+        for name, path in report_paths.items()
+    }
+    source_commits = {report.source_commit for report in reports.values()}
+    if len(source_commits) != 1:
+        fail("Phase 42 reports must share the same source_commit")
+    report_source_commit = next(iter(source_commits))
+    if report_source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 42 report source_commit must not be a placeholder")
+    if report_source_commit not in text:
+        fail("Phase 42 record must list the report source_commit")
+    for name, report in reports.items():
+        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 42 {name} report vendored Newton commit changed")
+        if report.claim_id != config.claim_id:
+            fail(f"Phase 42 {name} report claim_id does not match config")
+        if report.scene_id != config.scene_id:
+            fail(f"Phase 42 {name} report scene_id does not match config")
+        if report.status.value != "incomplete":
+            fail(f"Phase 42 {name} report must remain incomplete")
+        actual_hash = sha256_file(ROOT / report_paths[name])
+        record_hash = _record_sha256_for_artifact(text, report_paths[name])
+        if record_hash != actual_hash:
+            fail(f"Phase 42 {name} report sha256 mismatch")
+
+    mabd = reports["mabd"]
+    if mabd.baseline_lane != "mabd_newton":
+        fail("Phase 42 MABD report lane changed")
+    if mabd.solver_mode != "mabd_cpu_oracle_development":
+        fail("Phase 42 MABD report solver mode changed")
+    if mabd.backend != "cpu_numpy":
+        fail("Phase 42 MABD report backend changed")
+    if "mabd_newton lane pass" not in mabd.failure_reason:
+        fail("Phase 42 MABD report must retain incomplete lane-pass failure reason")
+    for metric in (
+        "linear_momentum_error",
+        "angular_momentum_error",
+        "energy_drift",
+        "relative_energy_drift",
+        "generalized_momentum_delta_norm",
+    ):
+        _require_finite_scalar(mabd.observed.get(metric), f"Phase 42 MABD {metric}")
+    for vector_metric in ("initial_position_m", "final_position_m"):
+        _require_finite_vector3(mabd.observed.get(vector_metric), f"Phase 42 MABD {vector_metric}")
+    if mabd.observed.get("mabd_rotation_mode") != "polar":
+        fail("Phase 42 MABD report must retain polar rotation mode")
+    if "lane_gate_status" in mabd.observed:
+        fail("Phase 42 MABD report must not expose a passed lane gate")
+
+    paper_horizon = reports["paper_horizon"]
+    if paper_horizon.baseline_lane != "mabd_newton":
+        fail("Phase 42 paper-horizon report lane changed")
+    if paper_horizon.solver_mode != "mabd_cpu_oracle_paper_horizon_diagnostic":
+        fail("Phase 42 paper-horizon solver mode changed")
+    observed = paper_horizon.observed
+    if observed.get("mabd_paper_horizon_status") != "development_gap_observed":
+        fail("Phase 42 paper-horizon diagnostic status changed")
+    if observed.get("mabd_kinematic_feasibility_status") != (
+        "paper_momentum_requires_affine_stretch_under_q_delta_over_h"
+    ):
+        fail("Phase 42 paper-horizon feasibility status changed")
+    if "lane_gate_status" in observed:
+        fail("Phase 42 paper-horizon report must not expose a passed lane gate")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 42 paper-horizon blockers must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "mabd_paper_horizon_diagnostic_thresholds_violated",
+        "mabd_kinematic_feasibility_blocker_recorded",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 42 paper-horizon blocker missing: {blocker}")
+    violations = observed.get("threshold_violations")
+    if not isinstance(violations, list):
+        fail("Phase 42 paper-horizon threshold_violations must be a list")
+    for violation in (
+        "max_abs_det_minus_one",
+        "max_affine_orthogonality_error",
+        "max_relative_kinetic_energy_drift",
+        "max_relative_total_energy_drift",
+        "max_singular_value",
+    ):
+        if violation not in violations:
+            fail(f"Phase 42 paper-horizon threshold violation missing: {violation}")
+    if _require_finite_scalar(observed.get("energy_drift"), "Phase 42 paper-horizon energy_drift") <= 0.0:
+        fail("Phase 42 paper-horizon energy drift must remain positive diagnostic gap")
+
+    rbd = reports["rbd"]
+    if rbd.baseline_lane != "rbd_implicit_baseline":
+        fail("Phase 42 RBD report lane changed")
+    if rbd.solver_mode != "paper_faithful_implicit_rbd":
+        fail("Phase 42 RBD solver mode changed")
+    if rbd.backend != "cpu_numpy_newton_only":
+        fail("Phase 42 RBD backend changed")
+    if rbd.observed.get("lane_gate_status") != "passed":
+        fail("Phase 42 RBD lane gate must remain passed")
+    lane_gate = rbd.observed.get("lane_pass_gate")
+    if not isinstance(lane_gate, dict) or lane_gate.get("thresholds_met") is not True:
+        fail("Phase 42 RBD lane pass gate must keep thresholds_met=true")
+    if lane_gate.get("full_experiment_claim_passed") is not False:
+        fail("Phase 42 RBD lane gate must not pass the full experiment")
+    for metric in ("linear_momentum_error", "angular_momentum_error", "energy_drift"):
+        if _require_finite_scalar(rbd.observed.get(metric), f"Phase 42 RBD {metric}") != 0.0:
+            fail(f"Phase 42 RBD {metric} changed")
+
+    comparison = reports["comparison"]
+    if comparison.baseline_lane != "spinning_box_comparison_protocol":
+        fail("Phase 42 comparison lane changed")
+    if comparison.solver_mode != "spinning_box_multilane_comparison_development":
+        fail("Phase 42 comparison solver mode changed")
+    if comparison.backend != "report_protocol":
+        fail("Phase 42 comparison backend changed")
+    observed = comparison.observed
+    if observed.get("lane_gate_statuses", {}).get("mabd_newton") != "incomplete":
+        fail("Phase 42 comparison MABD lane gate status must remain incomplete")
+    if observed.get("lane_gate_statuses", {}).get("rbd_implicit_baseline") != "passed":
+        fail("Phase 42 comparison RBD lane gate status must remain passed")
+    for key in (
+        "missing_required_metrics",
+        "invalid_required_metrics",
+        "missing_required_vector_metrics",
+        "invalid_required_vector_metrics",
+    ):
+        if observed.get(key) != []:
+            fail(f"Phase 42 comparison {key} changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 42 comparison blockers must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "spinning_box_comparison_pass_gate_not_enabled",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 42 comparison blocker missing: {blocker}")
+    if "rbd_implicit_baseline_report_incomplete" in blockers:
+        fail("Phase 42 comparison must not mark the RBD lane gate incomplete")
+    if "rbd_implicit_baseline_not_paper_faithful" in blockers:
+        fail("Phase 42 comparison must keep the paper-faithful RBD solver identity")
+    if comparison.raw_outputs.get("mabd_report") != report_paths["mabd"]:
+        fail("Phase 42 comparison must consume committed MABD report path")
+    if comparison.raw_outputs.get("rbd_report") != report_paths["rbd"]:
+        fail("Phase 42 comparison must consume committed RBD report path")
+    lane_metrics = observed.get("lane_metrics")
+    if not isinstance(lane_metrics, dict):
+        fail("Phase 42 comparison lane_metrics must be a mapping")
+    lane_vector_metrics = observed.get("lane_vector_metrics")
+    if not isinstance(lane_vector_metrics, dict):
+        fail("Phase 42 comparison lane_vector_metrics must be a mapping")
+    required_metrics = ("linear_momentum_error", "angular_momentum_error", "energy_drift")
+    required_vector_metrics = ("initial_position_m", "final_position_m")
+    for lane, report in (("mabd_newton", mabd), ("rbd_implicit_baseline", rbd)):
+        metric_snapshot = lane_metrics.get(lane)
+        if not isinstance(metric_snapshot, dict):
+            fail(f"Phase 42 comparison lane_metrics missing lane: {lane}")
+        for metric in required_metrics:
+            actual = _require_finite_scalar(report.observed.get(metric), f"Phase 42 {lane} source {metric}")
+            snapshot = _require_finite_scalar(
+                metric_snapshot.get(metric),
+                f"Phase 42 comparison {lane} {metric}",
+            )
+            if snapshot != actual:
+                fail(f"Phase 42 comparison lane metric mismatch: {lane}:{metric}")
+        vector_snapshot = lane_vector_metrics.get(lane)
+        if not isinstance(vector_snapshot, dict):
+            fail(f"Phase 42 comparison lane_vector_metrics missing lane: {lane}")
+        for metric in required_vector_metrics:
+            actual_vector = _require_finite_vector3(
+                report.observed.get(metric),
+                f"Phase 42 {lane} source {metric}",
+            )
+            snapshot_vector = _require_finite_vector3(
+                vector_snapshot.get(metric),
+                f"Phase 42 comparison {lane} {metric}",
+            )
+            if snapshot_vector != actual_vector:
+                fail(f"Phase 42 comparison lane vector metric mismatch: {lane}:{metric}")
+    lane_differences = observed.get("lane_metric_differences")
+    if not isinstance(lane_differences, dict):
+        fail("Phase 42 comparison lane_metric_differences must be a mapping")
+    scalar_differences = lane_differences.get("mabd_newton_minus_rbd_implicit_baseline")
+    if not isinstance(scalar_differences, dict):
+        fail("Phase 42 comparison scalar lane differences missing")
+    for metric in required_metrics:
+        expected_difference = float(mabd.observed[metric]) - float(rbd.observed[metric])
+        observed_difference = _require_finite_scalar(
+            scalar_differences.get(metric),
+            f"Phase 42 comparison difference {metric}",
+        )
+        if observed_difference != expected_difference:
+            fail(f"Phase 42 comparison lane metric difference mismatch: {metric}")
+    lane_vector_differences = observed.get("lane_vector_metric_differences")
+    if not isinstance(lane_vector_differences, dict):
+        fail("Phase 42 comparison lane_vector_metric_differences must be a mapping")
+    vector_differences = lane_vector_differences.get("mabd_newton_minus_rbd_implicit_baseline")
+    if not isinstance(vector_differences, dict):
+        fail("Phase 42 comparison vector lane differences missing")
+    for metric in required_vector_metrics:
+        mabd_vector = [float(value) for value in mabd.observed[metric]]
+        rbd_vector = [float(value) for value in rbd.observed[metric]]
+        expected_vector_difference = [
+            mabd_component - rbd_component
+            for mabd_component, rbd_component in zip(mabd_vector, rbd_vector, strict=True)
+        ]
+        observed_vector_difference = _require_finite_vector3(
+            vector_differences.get(metric),
+            f"Phase 42 comparison vector difference {metric}",
+        )
+        if observed_vector_difference != expected_vector_difference:
+            fail(f"Phase 42 comparison lane vector metric difference mismatch: {metric}")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_spinning_box = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.spinning_box":
+            found_spinning_box = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 42 must keep paper-claims spinning-box experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 42 must not pass experiment.* claims")
+    if not found_spinning_box:
+        fail("paper-claims.yaml missing spinning-box claim")
+
+    matrix = read_yaml(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    experiments = matrix.get("experiments")
+    if not isinstance(experiments, list):
+        fail("Phase 42 experiment matrix missing experiments")
+    matrix_entry = next(
+        (
+            item
+            for item in experiments
+            if isinstance(item, dict)
+            and item.get("claim_id") == "experiment.single_body.spinning_box"
+        ),
+        None,
+    )
+    if matrix_entry is None:
+        fail("Phase 42 matrix missing spinning-box experiment")
+    if matrix_entry.get("reproduction_status") != "blocked_by_baselines":
+        fail("Phase 42 matrix must keep spinning-box blocked_by_baselines")
+    matrix_blockers = matrix_entry.get("blocking_reasons")
+    if not isinstance(matrix_blockers, list):
+        fail("Phase 42 matrix spinning-box blockers must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "spinning_box_comparison_report_incomplete",
+    ):
+        if blocker not in matrix_blockers:
+            fail(f"Phase 42 matrix blocker missing: {blocker}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -5154,13 +5536,14 @@ def main() -> int:
     validate_phase39_record()
     validate_phase40_record()
     validate_phase41_record()
+    validate_phase42_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42 "
         "docs/provenance validation passed"
     )
     return 0

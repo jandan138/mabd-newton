@@ -1,0 +1,331 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural"
+  },
+  "backend": "cpu_numpy",
+  "baseline_lane": "mabd_newton",
+  "claim_id": "experiment.single_body.spinning_box",
+  "expected": {
+    "paper_claim_status": "requires comparative baseline lanes before pass"
+  },
+  "failure_reason": "full paper claim still requires mabd_newton lane pass and spinning-box comparison pass gate",
+  "observed": {
+    "affine_shape_diagnostic_status": "development_gap_observed",
+    "angular_momentum_error": 1.472344024477934e-09,
+    "contact_active_count": 0,
+    "contact_corner_count": 8,
+    "contact_corner_signed_distances_m": [
+      0.0,
+      0.0,
+      0.1,
+      0.1,
+      0.0,
+      0.0,
+      0.1,
+      0.1
+    ],
+    "contact_evaluation_state": "initial_configured_q_qd",
+    "contact_max_penetration_m": 0.0,
+    "contact_min_signed_distance_m": 0.0,
+    "contact_surface_type": "plane",
+    "contact_total_generalized_force": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "contact_total_normal_force_n": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "energy_drift": 1517500.055451299,
+    "final_affine_determinant": 3.011131583264857,
+    "final_affine_orthogonality_error": 2.862240022389957,
+    "final_affine_singular_values": [
+      1.7389366164867617,
+      1.738936616486421,
+      0.995777317191541
+    ],
+    "final_angular_momentum_kg_m2_s": [
+      0.0,
+      100.00000000147234,
+      0.0
+    ],
+    "final_energy_j": 1487499.944548701,
+    "final_linear_momentum_kg_m_s": [
+      99.99999999999993,
+      0.0,
+      2.912885014506998e-14
+    ],
+    "final_position_m": [
+      3.9999999999999987,
+      0.05,
+      7.109507246450778e-16
+    ],
+    "final_spatial_twist": [
+      0.0,
+      60000.00000088339,
+      0.0,
+      99.9999999999999,
+      0.0,
+      2.912885014506997e-14
+    ],
+    "generalized_momentum_delta_norm": 60649.785439331674,
+    "initial_affine_orthogonality_error": 0.0,
+    "initial_energy_j": 3005000.0,
+    "initial_position_m": [
+      0.0,
+      0.05,
+      0.0
+    ],
+    "linear_momentum_error": 7.679322694214913e-14,
+    "mabd_mass_diagonal": [
+      0.0008333333333333334,
+      0.0008333333333333334,
+      0.0008333333333333334,
+      0.0008333333333333334,
+      0.0008333333333333334,
+      0.0008333333333333334,
+      0.0008333333333333334,
+      0.0008333333333333334,
+      0.0008333333333333334,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mabd_rotation_mode": "polar",
+    "mass_diagonal_source": "paper_uniform_centered_cube_continuous",
+    "mass_kg": 1.0000000000000002,
+    "material_model": "paper_linear_elastic_corotated_development",
+    "material_poisson_ratio": 0.3,
+    "material_rhs_frame": "corotated_local_all_blocks",
+    "material_stiffness_rank": 6,
+    "material_stiffness_trace": 6346153.846153847,
+    "material_volume_m3": 0.0010000000000000002,
+    "material_young_modulus_pa": 1000000000.0,
+    "paper_spatial_twist": [
+      0.0,
+      60000.0,
+      0.0,
+      100.0,
+      0.0,
+      0.0
+    ],
+    "relative_energy_drift": 0.5049916989854573,
+    "step_count": 4,
+    "time_step_s": 0.01,
+    "trajectory_samples": [
+      {
+        "affine_determinant": 1.0,
+        "affine_matrix": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "affine_orthogonality_error": 0.0,
+        "affine_singular_values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "angular_momentum_error": 2.842170943040401e-14,
+        "energy_j": 3005000.0,
+        "linear_momentum_error": 2.842170943040401e-14,
+        "position_m": [
+          0.0,
+          0.05,
+          0.0
+        ],
+        "step_index": 0,
+        "time_s": 0.0
+      },
+      {
+        "affine_determinant": 360001.00000263675,
+        "affine_matrix": [
+          [
+            1.0,
+            0.0,
+            600.0000000021973
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            -600.0000000021973,
+            0.0,
+            1.0
+          ]
+        ],
+        "affine_orthogonality_error": 509116.8824580432,
+        "affine_singular_values": [
+          600.0008333349521,
+          600.000833334952,
+          1.0
+        ],
+        "angular_momentum_error": 3.6625635857490124e-10,
+        "energy_j": 3005000.0000219736,
+        "linear_momentum_error": 2.842170943040401e-14,
+        "position_m": [
+          1.0,
+          0.05,
+          0.0
+        ],
+        "step_index": 1,
+        "time_s": 0.01
+      },
+      {
+        "affine_determinant": 2.0019603966358943,
+        "affine_matrix": [
+          [
+            -0.99831890104638,
+            0.0,
+            1.0086593743175172
+          ],
+          [
+            0.0,
+            0.9940050849282205,
+            0.0
+          ],
+          [
+            -1.0086593743174035,
+            0.0,
+            -0.9983189010466815
+          ]
+        ],
+        "affine_orthogonality_error": 1.4341109679744088,
+        "affine_singular_values": [
+          1.4191667842736808,
+          1.4191667842733589,
+          0.9940050849282205
+        ],
+        "angular_momentum_error": 7.382965350188897e-10,
+        "energy_j": 2994955.162029872,
+        "linear_momentum_error": 2.8898083521143274e-14,
+        "position_m": [
+          2.0,
+          0.05,
+          2.5162488737372407e-16
+        ],
+        "step_index": 2,
+        "time_s": 0.02
+      },
+      {
+        "affine_determinant": 179125.5367909046,
+        "affine_matrix": [
+          [
+            -301.1909398846211,
+            0.0,
+            -296.69971661561414
+          ],
+          [
+            0.0,
+            1.0021193827568866,
+            0.0
+          ],
+          [
+            296.69971661561414,
+            0.0,
+            -301.1909398846211
+          ]
+        ],
+        "affine_orthogonality_error": 252784.59896598116,
+        "affine_singular_values": [
+          422.78446531106977,
+          422.7844653110697,
+          1.0021193827568866
+        ],
+        "angular_momentum_error": 1.1052065929106902e-09,
+        "energy_j": 1494549.0571705955,
+        "linear_momentum_error": 2.2007131890221663e-14,
+        "position_m": [
+          2.9999999999999996,
+          0.05,
+          4.1966222319437804e-16
+        ],
+        "step_index": 3,
+        "time_s": 0.03
+      },
+      {
+        "affine_determinant": 3.011131583264857,
+        "affine_matrix": [
+          [
+            0.2800255046958,
+            0.0,
+            -1.7162419039510723
+          ],
+          [
+            0.0,
+            0.995777317191541,
+            0.0
+          ],
+          [
+            1.7162419039510723,
+            0.0,
+            0.28002550469614107
+          ]
+        ],
+        "affine_orthogonality_error": 2.862240022389957,
+        "affine_singular_values": [
+          1.7389366164867617,
+          1.738936616486421,
+          0.995777317191541
+        ],
+        "angular_momentum_error": 1.472344024477934e-09,
+        "energy_j": 1487499.944548701,
+        "linear_momentum_error": 7.679322694214913e-14,
+        "position_m": [
+          3.9999999999999987,
+          0.05,
+          7.109507246450778e-16
+        ],
+        "step_index": 4,
+        "time_s": 0.04
+      }
+    ],
+    "translation_frame": "corotated_polar_all_blocks"
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "time_series": "not_written"
+  },
+  "scene_id": "single_body_spinning_box",
+  "solver_mode": "mabd_cpu_oracle_development",
+  "source_commit": "75a676791084ca0f77fe16fc1902814a5bb8d148",
+  "status": "incomplete",
+  "threshold": {
+    "angular_momentum_error": 1e-09,
+    "energy_drift": 1e-12,
+    "generalized_momentum_delta_norm": 1e-12,
+    "linear_momentum_error": 1e-09
+  },
+  "timing_distribution": {
+    "scope": "not_timed",
+    "step_count": 4
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

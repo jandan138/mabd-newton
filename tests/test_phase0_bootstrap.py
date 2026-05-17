@@ -2883,6 +2883,178 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("geometry source audit status", str(context.exception))
 
+    def test_phase42_spinning_box_report_artifacts_are_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        spinning_box = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.spinning_box"
+        )
+        self.assertEqual(spinning_box["reproduction_status"], "intended")
+
+        matrix = yaml.safe_load((ROOT / "configs/experiments/paper_experiment_matrix.yaml").read_text())
+        matrix_entry = next(
+            item for item in matrix["experiments"] if item["claim_id"] == "experiment.single_body.spinning_box"
+        )
+        self.assertEqual(matrix_entry["reproduction_status"], "blocked_by_baselines")
+        self.assertIn("mabd_newton_report_incomplete", matrix_entry["blocking_reasons"])
+        self.assertIn("spinning_box_comparison_report_incomplete", matrix_entry["blocking_reasons"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 42")
+        verified = claim_boundary_bullet(text, "Phase 42 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 42 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 42 spinning-box report artifacts")
+
+        self.assertIn("spinning-box report-artifact evidence", current)
+        self.assertIn("committed compact JSON reports", verified)
+        self.assertIn("rbd_implicit_baseline` lane gate status: `passed", verified)
+        self.assertIn("mabd_newton` lane gate status: `incomplete", verified)
+        self.assertIn("mabd_paper_horizon_diagnostic_thresholds_violated", verified)
+        self.assertIn("mabd_kinematic_feasibility_blocker_recorded", verified)
+        self.assertIn("spinning_box_comparison_pass_gate_not_enabled", verified)
+        self.assertIn("passed spinning-box experiment", non_claim)
+        self.assertIn("M-ABD lane pass", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+        self.assertIn("not a passed spinning-box experiment", forbidden)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+    def test_phase42_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase42-spinning-box-report-artifacts.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Repository",
+            "phase42-spinning-box-report-artifacts",
+            "## Report Artifacts",
+            "reports/experiment_matrix/single_body_spinning_box.json",
+            "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
+            "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
+            "reports/experiment_matrix/single_body_spinning_box_comparison.json",
+            "mabd_cpu_oracle_development",
+            "mabd_cpu_oracle_paper_horizon_diagnostic",
+            "paper_faithful_implicit_rbd",
+            "spinning_box_multilane_comparison_development",
+            "rbd_implicit_baseline lane_gate_status = `passed`",
+            "mabd_newton lane_gate_status = `incomplete`",
+            "mabd_paper_horizon_diagnostic_thresholds_violated",
+            "mabd_kinematic_feasibility_blocker_recorded",
+            "mabd_newton_report_incomplete",
+            "spinning_box_comparison_pass_gate_not_enabled",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.spinning_box` remains blocked_by_baselines",
+            "does not pass the spinning-box experiment",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests -p 'test_spinning_box_report_artifacts.py'",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE42", text)
+        self.assertNotIn("phase42-working-tree", text)
+
+    def test_phase42_validator_rejects_spinning_box_mabd_lane_gate_pass(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_comparison.json"
+        )
+        overclaimed = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "lane_gate_statuses": {
+                    **actual.observed["lane_gate_statuses"],
+                    "mabd_newton": "passed",
+                },
+                "blocking_reasons": ["spinning_box_comparison_pass_gate_not_enabled"],
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_spinning_box_comparison.json"):
+                return overclaimed
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase42_record()
+
+        self.assertIn("MABD lane gate status", str(context.exception))
+
+    def test_phase42_validator_rejects_spinning_box_paper_horizon_lane_gate_pass(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
+        )
+        overclaimed = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "lane_gate_status": "passed",
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_spinning_box_paper_horizon.json"):
+                return overclaimed
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase42_record()
+
+        self.assertIn("paper-horizon report", str(context.exception))
+
+    def test_phase42_validator_rejects_stale_spinning_box_comparison_metrics(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_comparison.json"
+        )
+        stale = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "lane_metrics": {
+                    **actual.observed["lane_metrics"],
+                    "mabd_newton": {
+                        **actual.observed["lane_metrics"]["mabd_newton"],
+                        "energy_drift": 0.0,
+                    },
+                },
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_spinning_box_comparison.json"):
+                return stale
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase42_record()
+
+        self.assertIn("lane metric mismatch", str(context.exception))
+
+    def test_phase42_validator_rejects_record_hash_mismatch(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual_sha256_file = validate_docs.sha256_file
+
+        def fake_sha256_file(path):
+            if str(path).endswith("single_body_spinning_box.json"):
+                return "0" * 64
+            return actual_sha256_file(path)
+
+        with patch.object(validate_docs, "sha256_file", side_effect=fake_sha256_file):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase42_record()
+
+        self.assertIn("sha256 mismatch", str(context.exception))
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -2914,7 +3086,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
