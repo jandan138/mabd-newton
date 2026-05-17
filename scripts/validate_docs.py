@@ -6573,6 +6573,7 @@ def validate_phase48_record() -> None:
         "f642f69",
         "d102194",
         "Evidence record commit",
+        "0200a67f22dc38b4af20db1215202cd838379766",
         "## Vendored Newton",
         "https://github.com/newton-physics/newton.git",
         VENDORED_NEWTON_COMMIT,

@@ -12,7 +12,7 @@ passed_for_physical_pendulum_model_derived_lane_slice
 - Plan/spec commit: `42f8674`
 - RED test commit: `f642f69`
 - Implementation commit: `d102194`
-- Evidence record commit: `PHASE48_EVIDENCE_RECORD_COMMIT_TO_PIN`
+- Evidence record commit: `0200a67f22dc38b4af20db1215202cd838379766`
 - Spec: `docs/superpowers/specs/2026-05-18-phase48-physical-pendulum-model-lane-design.md`
 - Plan: `docs/superpowers/plans/2026-05-18-mabd-phase48-physical-pendulum-model-lane.md`
 

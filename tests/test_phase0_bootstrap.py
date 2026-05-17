@@ -3609,6 +3609,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "f642f69",
             "d102194",
             "Evidence record commit",
+            "0200a67f22dc38b4af20db1215202cd838379766",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "Local patch status: locally patched",
