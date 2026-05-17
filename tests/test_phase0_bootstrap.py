@@ -1015,6 +1015,100 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("independent review: pending", text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE24_DOCS_COMMIT", text)
 
+    def test_phase25_spinning_box_no_polar_material_lane_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 25")
+        verified = claim_boundary_bullet(text, "Phase 25 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 25 does not verify")
+
+        self.assertIn("no-polar", current)
+        self.assertIn("paper material stiffness", current)
+        self.assertIn("unconstrained CPU oracle", verified)
+        self.assertIn("rotation_mode = no_polar", verified)
+        self.assertIn("mabd_rotation_mode", verified)
+        self.assertIn("material_model", verified)
+        self.assertIn("material_young_modulus_pa", verified)
+        self.assertIn("material_poisson_ratio", verified)
+        self.assertIn("material_volume_m3", verified)
+        self.assertIn("material_stiffness_trace", verified)
+        self.assertIn("material_stiffness_rank", verified)
+        self.assertIn("constrained", verified)
+        self.assertIn("rotation_mode = none", verified)
+        self.assertIn("angular momentum", verified)
+        self.assertIn("energy", verified)
+        self.assertIn("development gap", verified)
+        self.assertIn("the paper spinning-box experiment", non_claim)
+        self.assertIn("multi-body no-polar constraints", non_claim)
+        self.assertIn("paper-faithful implicit RBD baseline", non_claim)
+        self.assertIn("paper-faithful affine collision", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("paper trajectory agreement", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase25_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase25-spinning-box-no-polar-material-lane.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit: `9cff8b74521ec3ae2395bb5ceac42651cb1f2a40`",
+            "CPU oracle no-polar implementation commit: `80a32a1e2f5a1a3ab80bec2460562cbcfd54c0bf`",
+            "spinning-box material lane implementation commit: `c0cef676e5265c659ca2bd9bd58165f357d8b1fa`",
+            "docs/record creation commit:",
+            "TO_BE_BACKFILLED_PHASE25_DOCS_COMMIT",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status: Phase 25 modifies vendored Newton",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "clone drift check:",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "## Metrics And Diagnostics",
+            "mabd_rotation_mode = no_polar",
+            "material_model = paper_linear_elastic_no_polar_development",
+            "material_young_modulus_pa = 1000000000.0",
+            "material_poisson_ratio = 0.3",
+            "material_volume_m3 = 0.001",
+            "material_stiffness_trace",
+            "material_stiffness_rank",
+            "linear_momentum_error <= 1.0e-9",
+            "angular_momentum_error remains a development gap",
+            "relative_energy_drift remains a development gap",
+            "affine_shape_diagnostic_status = development_gap_observed",
+            "constrained CPU oracle no-polar KKT remains unsupported",
+            "## Artifacts",
+            "`vendor/newton/newton/_src/solvers/mabd/step_oracle.py`",
+            "`src/mabd_reproduction/spinning_box_physics.py`",
+            "`src/mabd_reproduction/single_body_reports.py`",
+            "`spinning_box_mabd_material_stiffness`",
+            "`spinning_box_mabd_material_properties`",
+            "generated reports: not committed",
+            "No `experiment.*` claim is passed in this phase.",
+            "CPU oracle tests: Ran 12 tests, OK",
+            "vendored CPU oracle tests: Ran 6 tests, OK",
+            "M-ABD report tests: Ran 2 tests, OK",
+            "comparison and runner tests: Ran 21 tests, OK",
+            "phase bootstrap docs tests:",
+            (
+                "docs validator: Phase "
+                "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25 "
+                "docs/provenance validation passed"
+            ),
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1046,7 +1140,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

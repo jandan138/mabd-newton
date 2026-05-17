@@ -277,6 +277,22 @@
   contact solve, gravity, rendered output, paper timing, paper trajectory
   agreement, generated report artifacts as committed evidence, or any passed
   `experiment.*` claim.
+- This repository contains Phase 25 no-polar spinning-box material-lane
+  evidence. It wires paper material stiffness into the M-ABD development report
+  lane and enables unconstrained CPU oracle no-polar body steps.
+- Phase 25 verifies unconstrained CPU oracle `rotation_mode = no_polar`
+  routing, report fields `mabd_rotation_mode`, `material_model`,
+  `material_young_modulus_pa`, `material_poisson_ratio`,
+  `material_volume_m3`, `material_stiffness_trace`, and
+  `material_stiffness_rank`; it also verifies constrained CPU oracle KKT still
+  requires `rotation_mode = none`. Final angular momentum and energy remain a
+  development gap, recorded under incomplete report status.
+- Phase 25 does not verify the paper spinning-box experiment, full M-ABD
+  dynamics, multi-body no-polar constraints, paper-faithful implicit RBD
+  baseline, paper-faithful affine collision, collision detection, continuous
+  collision detection, friction, implicit contact solve, gravity, rendered
+  output, paper timing, paper trajectory agreement, generated report artifacts
+  as committed evidence, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
