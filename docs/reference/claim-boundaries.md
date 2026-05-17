@@ -497,6 +497,20 @@
   pendulum geometry, joint-force waveform agreement, rendered output, paper
   trajectory agreement, generated videos or raw simulation logs, or any passed
   `experiment.*` claim.
+- This repository contains Phase 40 scalar physical-pendulum joint-force
+  reference diagnostics after the Phase 40 record is created.
+- Phase 40 verifies `physical_pendulum_angular_velocity_reference`,
+  `physical_pendulum_joint_force_reference`, analytic
+  `joint_force_samples_n`, lane `max_abs_joint_force_error_n` metrics,
+  per-sample `reference_joint_force_magnitude_n` and
+  `abs_joint_force_error_n`, comparison `joint_force_waveform_diagnostics`,
+  `missing_paper_metrics = [joint_force_error:paper_geometry_unknown]`, and
+  `paper_metric_statuses.joint_force_error.status =
+  diagnostic_scalar_reference_not_paper_geometry`.
+- Phase 40 does not verify the paper's exact physical-pendulum geometry, the
+  paper joint-force waveform, the full physical-pendulum experiment, rendered
+  output, runtime performance, generated videos or raw simulation logs, or any
+  passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -548,6 +562,10 @@
   physical-pendulum experiment, runtime performance reproduction, paper timing
   result, paper-faithful pendulum geometry result, joint-force waveform
   agreement, rendered result, or any passed `experiment.*` claim.
+- Phase 40 physical-pendulum scalar joint-force diagnostics are not a passed
+  physical-pendulum experiment, paper-faithful pendulum geometry result, paper
+  joint-force waveform reproduction, rendered result, runtime performance
+  reproduction, or any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

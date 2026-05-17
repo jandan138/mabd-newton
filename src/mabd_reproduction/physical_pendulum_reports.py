@@ -9,7 +9,9 @@ import numpy as np
 from .experiment_configs import PhysicalPendulumRunConfig
 from .physical_pendulum_reference import (
     physical_pendulum_angle_reference,
+    physical_pendulum_angular_velocity_reference,
     physical_pendulum_complete_elliptic_k,
+    physical_pendulum_joint_force_reference,
     physical_pendulum_period_s,
 )
 from .physical_pendulum_mabd import (
@@ -43,7 +45,7 @@ def physical_pendulum_timing_source_audit() -> dict[str, object]:
 
 def _clean_report_float(value: float) -> float:
     result = float(value)
-    return 0.0 if abs(result) < 1.0e-15 else result
+    return 0.0 if abs(result) < 1.0e-12 else result
 
 
 def _angle_samples(
@@ -65,6 +67,49 @@ def _angle_samples(
             "angle_rad": _clean_report_float(angle_rad),
         }
         for index, (time_s, angle_rad) in enumerate(zip(times, angles, strict=True))
+    ]
+
+
+def _joint_force_samples(
+    *,
+    config: PhysicalPendulumRunConfig,
+    period_s: float,
+) -> list[dict[str, float | int]]:
+    duration = config.reference.period_count * period_s
+    times = np.linspace(0.0, duration, config.reference.sample_count)
+    angles = physical_pendulum_angle_reference(
+        times,
+        kappa=config.reference.kappa,
+        omega_lin=config.reference.omega_lin_rad_s,
+    )
+    angular_velocities = physical_pendulum_angular_velocity_reference(
+        times,
+        kappa=config.reference.kappa,
+        omega_lin=config.reference.omega_lin_rad_s,
+    )
+    gravity_magnitude = float(np.linalg.norm(config.rbd_baseline.gravity_m_s2))
+    joint_forces = physical_pendulum_joint_force_reference(
+        times,
+        kappa=config.reference.kappa,
+        omega_lin=config.reference.omega_lin_rad_s,
+        mass_kg=config.rbd_baseline.mass_kg,
+        length_m=config.rbd_baseline.length_m,
+        gravity_magnitude=gravity_magnitude,
+    )
+    return [
+        {
+            "sample_index": int(index),
+            "time_s": _clean_report_float(time_s),
+            "angle_rad": _clean_report_float(angle_rad),
+            "angular_velocity_rad_s": _clean_report_float(angular_velocity_rad_s),
+            "joint_force_magnitude_n": _clean_report_float(joint_force_magnitude_n),
+        }
+        for index, (
+            time_s,
+            angle_rad,
+            angular_velocity_rad_s,
+            joint_force_magnitude_n,
+        ) in enumerate(zip(times, angles, angular_velocities, joint_forces, strict=True))
     ]
 
 
@@ -124,6 +169,10 @@ def _mabd_newton_sample_rows(
             "world_anchor_reaction_magnitude_n": _clean_report_float(
                 sample.world_anchor_reaction_magnitude_n
             ),
+            "reference_joint_force_magnitude_n": _clean_report_float(
+                sample.reference_joint_force_magnitude_n
+            ),
+            "abs_joint_force_error_n": _clean_report_float(sample.abs_joint_force_error_n),
         }
         for sample in rollout.samples
     ]
@@ -144,6 +193,10 @@ def _rbd_sample_rows(rollout: PhysicalPendulumRBDRollout) -> list[dict[str, floa
             "implicit_residual": _clean_report_float(sample.implicit_residual),
             "length_constraint_error_m": _clean_report_float(sample.length_constraint_error_m),
             "joint_force_magnitude_n": _clean_report_float(sample.joint_force_magnitude_n),
+            "reference_joint_force_magnitude_n": _clean_report_float(
+                sample.reference_joint_force_magnitude_n
+            ),
+            "abs_joint_force_error_n": _clean_report_float(sample.abs_joint_force_error_n),
         }
         for sample in rollout.samples
     ]
@@ -162,6 +215,7 @@ def write_physical_pendulum_analytic_reference_report(
         omega_lin=config.reference.omega_lin_rad_s,
     )
     max_abs_identity_error = _identity_error(config)
+    joint_force_samples = _joint_force_samples(config=config, period_s=period_s)
     threshold_violations = (
         []
         if max_abs_identity_error <= config.thresholds["max_abs_reference_identity_error"]
@@ -184,6 +238,10 @@ def write_physical_pendulum_analytic_reference_report(
         "blocking_reasons": ["pendulum_geometry_unknown"],
         "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
         "angle_samples_rad": _angle_samples(config=config, period_s=period_s),
+        "joint_force_samples_n": joint_force_samples,
+        "max_joint_force_magnitude_n": max(
+            sample["joint_force_magnitude_n"] for sample in joint_force_samples
+        ),
     }
     report = ClaimReport(
         claim_id=config.claim_id,
@@ -202,6 +260,10 @@ def write_physical_pendulum_analytic_reference_report(
                 "sn(K(kappa) - omega_lin * t, kappa))"
             ),
             "scipy_parameterization": "ellipk/ellipj use m=kappa**2",
+            "joint_force_reference_model": "scalar_point_pendulum_radial_reaction",
+            "joint_force_reference_scope": (
+                "diagnostic scalar/procedural pendulum, not paper geometry"
+            ),
             "full_experiment_claim_passed": False,
         },
         observed=observed,
@@ -336,6 +398,8 @@ def write_physical_pendulum_mabd_newton_report(
         > thresholds["max_world_anchor_reaction_magnitude_n"]
     ):
         threshold_violations.append("max_world_anchor_reaction_magnitude_n")
+    if rollout.max_abs_joint_force_error_n > thresholds["max_abs_joint_force_error_n"]:
+        threshold_violations.append("max_abs_joint_force_error_n")
     if not rollout.finite:
         threshold_violations.append("finite_rollout")
 
@@ -356,12 +420,10 @@ def write_physical_pendulum_mabd_newton_report(
         "max_abs_angle_error_rad": rollout.max_abs_angle_error_rad,
         "max_phase_drift_rad": rollout.max_phase_drift_rad,
         "max_world_anchor_reaction_magnitude_n": rollout.max_world_anchor_reaction_magnitude_n,
+        "max_abs_joint_force_error_n": rollout.max_abs_joint_force_error_n,
         "threshold_violations": threshold_violations,
         "required_missing_lanes": [],
-        "blocking_reasons": [
-            "pendulum_geometry_unknown",
-            "joint_force_waveform_agreement_missing",
-        ],
+        "blocking_reasons": ["pendulum_geometry_unknown"],
         "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
         "angle_samples_rad": _mabd_newton_sample_rows(rollout),
     }
@@ -382,10 +444,13 @@ def write_physical_pendulum_mabd_newton_report(
                 "pivot_rest_point_m": config.mabd_development.pivot_rest_point_m.tolist(),
                 "pivot_world_point_m": config.mabd_development.pivot_world_point_m.tolist(),
             },
-            "diagnostic_dual_reaction": "world-anchor dlambda[:3] magnitude, not paper waveform",
+            "diagnostic_dual_reaction": (
+                "world-anchor dlambda[:3] magnitude compared with scalar joint-force "
+                "reference; not paper geometry"
+            ),
             "nonclaim_limitations": [
                 "procedural point set is not the paper's undisclosed physical-pendulum geometry",
-                "world-anchor reaction is a solver dual diagnostic, not paper joint-force waveform agreement",
+                "scalar joint-force reference is diagnostic and not paper geometry",
                 "no rendered figure or timing distribution is generated",
             ],
             "full_experiment_claim_passed": False,
@@ -396,7 +461,7 @@ def write_physical_pendulum_mabd_newton_report(
         status=config.report_status,
         failure_reason=(
             "physical_pendulum mabd_newton lane remains incomplete because "
-            "pendulum_geometry_unknown and joint-force waveform agreement are unresolved"
+            "pendulum_geometry_unknown and the physical-pendulum pass gate remain unresolved"
         ),
         timing_distribution={"scope": "not_timed", "lane": "mabd_newton"},
         raw_outputs={"time_series": "compact_samples_only"},
@@ -428,6 +493,8 @@ def write_physical_pendulum_rbd_baseline_report(
         threshold_violations.append("max_implicit_residual")
     if rollout.max_length_constraint_error_m > thresholds["max_length_constraint_error_m"]:
         threshold_violations.append("max_length_constraint_error_m")
+    if rollout.max_abs_joint_force_error_n > thresholds["max_abs_joint_force_error_n"]:
+        threshold_violations.append("max_abs_joint_force_error_n")
     if not rollout.finite:
         threshold_violations.append("finite_rollout")
 
@@ -454,11 +521,11 @@ def write_physical_pendulum_rbd_baseline_report(
         "max_implicit_residual": rollout.max_implicit_residual,
         "max_length_constraint_error_m": rollout.max_length_constraint_error_m,
         "max_joint_force_magnitude_n": rollout.max_joint_force_magnitude_n,
+        "max_abs_joint_force_error_n": rollout.max_abs_joint_force_error_n,
         "threshold_violations": threshold_violations,
         "required_missing_lanes": list(config.required_missing_lanes),
         "blocking_reasons": [
             "mabd_newton_missing",
-            "joint_force_waveform_agreement_missing",
             "pendulum_geometry_unknown",
         ],
         "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
@@ -482,7 +549,7 @@ def write_physical_pendulum_rbd_baseline_report(
             ),
             "nonclaim_limitations": [
                 "procedural scalar pendulum is not the paper's undisclosed rigid geometry",
-                "joint-force magnitude is diagnostic and not waveform agreement",
+                "scalar joint-force reference is diagnostic and not paper geometry",
                 "no M-ABD comparison pass is generated",
                 "no rendered figure or timing distribution is generated",
             ],
@@ -494,7 +561,7 @@ def write_physical_pendulum_rbd_baseline_report(
         status=config.report_status,
         failure_reason=(
             "physical_pendulum rbd_implicit_baseline diagnostic only; mabd_newton, "
-            "joint-force waveform agreement, and pendulum_geometry_unknown remain incomplete"
+            "pendulum_geometry_unknown, and the physical-pendulum pass gate remain incomplete"
         ),
         timing_distribution={"scope": "not_timed", "lane": "rbd_implicit_baseline"},
         raw_outputs={"time_series": "compact_samples_only"},

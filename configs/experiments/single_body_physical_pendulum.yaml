@@ -52,6 +52,7 @@ mabd_newton:
     max_constraint_residual_norm: 1.0e-10
     max_phase_drift_rad: 2.0
     max_pivot_residual_m: 1.0e-10
+    max_abs_joint_force_error_n: 100.0
     max_world_anchor_reaction_magnitude_n: 100.0
 rbd_baseline:
   time_step_s: 0.01
@@ -70,6 +71,7 @@ rbd_baseline:
     max_implicit_residual: 1.0e-12
     max_length_constraint_error_m: 1.0e-12
     max_phase_drift_rad: 2.0
+    max_abs_joint_force_error_n: 100.0
 comparison:
   output_report: reports/experiment_matrix/single_body_physical_pendulum_comparison.json
   required_lanes:

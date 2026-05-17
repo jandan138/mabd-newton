@@ -2066,7 +2066,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("diagnostic only", report.expected["paper_claim_status"])
         self.assertIn("full experiment incomplete", report.expected["paper_claim_status"])
         self.assertIn(
-            "joint-force magnitude is diagnostic and not waveform agreement",
+            "scalar joint-force reference is diagnostic and not paper geometry",
             report.expected["nonclaim_limitations"],
         )
         self.assertEqual(report.observed["sample_count"], 5)
@@ -2075,7 +2075,11 @@ class Phase0BootstrapTests(unittest.TestCase):
             report.observed["max_implicit_residual"],
             report.threshold["max_implicit_residual"],
         )
-        self.assertIn("joint_force_waveform_agreement_missing", report.observed["blocking_reasons"])
+        self.assertIn("pendulum_geometry_unknown", report.observed["blocking_reasons"])
+        self.assertNotIn(
+            "joint_force_waveform_agreement_missing",
+            report.observed["blocking_reasons"],
+        )
 
     def test_phase35_validator_rejects_placeholder_report_source_commit(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -2214,14 +2218,18 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(comparison.observed["missing_required_lanes"], [])
         self.assertEqual(
             comparison.observed["missing_paper_metrics"],
-            ["joint_force_error:paper_waveform_agreement"],
+            ["joint_force_error:paper_geometry_unknown"],
         )
-        self.assertIn("joint_force_waveform_agreement_missing", comparison.observed["blocking_reasons"])
+        self.assertIn("joint_force_waveform_diagnostics", comparison.observed)
+        self.assertNotIn(
+            "joint_force_waveform_agreement_missing",
+            comparison.observed["blocking_reasons"],
+        )
         self.assertNotIn("mabd_newton_missing", comparison.observed["blocking_reasons"])
         self.assertGreater(comparison.observed["matched_sample_count"], 0)
         self.assertEqual(
             comparison.observed["paper_metric_statuses"]["joint_force_error"]["status"],
-            "diagnostic_reaction_not_paper_waveform",
+            "diagnostic_scalar_reference_not_paper_geometry",
         )
         self.assertEqual(
             comparison.observed["paper_metric_statuses"]["phase_drift"]["status"],
@@ -2571,13 +2579,14 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         comparison = reports[-1]
         blockers = comparison.observed["blocking_reasons"]
-        self.assertIn("joint_force_waveform_agreement_missing", blockers)
+        self.assertNotIn("joint_force_waveform_agreement_missing", blockers)
         self.assertIn("pendulum_geometry_unknown", blockers)
         self.assertIn("physical_pendulum_comparison_pass_gate_not_enabled", blockers)
         self.assertEqual(
             comparison.observed["missing_paper_metrics"],
-            ["joint_force_error:paper_waveform_agreement"],
+            ["joint_force_error:paper_geometry_unknown"],
         )
+        self.assertIn("joint_force_waveform_diagnostics", comparison.observed)
 
     def test_phase39_validator_rejects_returned_physical_pendulum_timing_blocker(
         self,
@@ -2608,6 +2617,150 @@ class Phase0BootstrapTests(unittest.TestCase):
                 validate_docs.validate_phase39_record()
 
         self.assertIn("paper_timing_missing", str(context.exception))
+
+    def test_phase40_physical_pendulum_joint_force_reference_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        physical_pendulum = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.physical_pendulum"
+        )
+        self.assertEqual(physical_pendulum["reproduction_status"], "intended")
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 40")
+        verified = claim_boundary_bullet(text, "Phase 40 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 40 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 40 physical-pendulum scalar joint-force diagnostics",
+        )
+
+        self.assertIn("scalar physical-pendulum joint-force reference", current)
+        self.assertIn("physical_pendulum_angular_velocity_reference", verified)
+        self.assertIn("physical_pendulum_joint_force_reference", verified)
+        self.assertIn("max_abs_joint_force_error_n", verified)
+        self.assertIn("joint_force_waveform_diagnostics", verified)
+        self.assertIn("paper's exact physical-pendulum geometry", non_claim)
+        self.assertIn("paper joint-force waveform", non_claim)
+        self.assertIn("passed physical-pendulum experiment", forbidden)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+    def test_phase40_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase40-physical-pendulum-joint-force-reference.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_physical_pendulum.yaml",
+            "## Repository",
+            "phase40-physical-pendulum-joint-force-reference",
+            "## Scalar Joint-Force Reference Evidence",
+            "physical_pendulum_angular_velocity_reference",
+            "physical_pendulum_joint_force_reference",
+            "joint_force_samples_n",
+            "scalar_point_pendulum_radial_reaction",
+            "## Lane Report Evidence",
+            "max_abs_joint_force_error_n",
+            "reference_joint_force_magnitude_n",
+            "abs_joint_force_error_n",
+            "removed blocker: `joint_force_waveform_agreement_missing`",
+            "retained blocker: `pendulum_geometry_unknown`",
+            "## Comparison Evidence",
+            "joint_force_waveform_diagnostics",
+            "missing_paper_metrics = [`joint_force_error:paper_geometry_unknown`]",
+            "diagnostic_scalar_reference_not_paper_geometry",
+            "matched_sample_count = `5`",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains intended.",
+            "scalar/procedural diagnostic, not paper geometry",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE40", text)
+        self.assertNotIn("phase40-working-tree", text)
+
+    def test_phase40_current_physical_pendulum_reports_record_joint_force_diagnostic(
+        self,
+    ) -> None:
+        analytic = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json"
+        )
+        mabd = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json"
+        )
+        rbd = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json"
+        )
+        comparison = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+
+        self.assertEqual(
+            analytic.expected["joint_force_reference_model"],
+            "scalar_point_pendulum_radial_reaction",
+        )
+        self.assertEqual(analytic.observed["joint_force_samples_n"][0]["joint_force_magnitude_n"], 0.0)
+        self.assertGreater(analytic.observed["max_joint_force_magnitude_n"], 0.0)
+        for report in (mabd, rbd):
+            self.assertIn("max_abs_joint_force_error_n", report.observed)
+            self.assertLessEqual(
+                report.observed["max_abs_joint_force_error_n"],
+                report.threshold["max_abs_joint_force_error_n"],
+            )
+            self.assertIn(
+                "reference_joint_force_magnitude_n",
+                report.observed["angle_samples_rad"][-1],
+            )
+            self.assertIn("abs_joint_force_error_n", report.observed["angle_samples_rad"][-1])
+            self.assertIn("pendulum_geometry_unknown", report.observed["blocking_reasons"])
+            self.assertNotIn(
+                "joint_force_waveform_agreement_missing",
+                report.observed["blocking_reasons"],
+            )
+        self.assertEqual(
+            comparison.observed["missing_paper_metrics"],
+            ["joint_force_error:paper_geometry_unknown"],
+        )
+        self.assertEqual(
+            comparison.observed["paper_metric_statuses"]["joint_force_error"]["status"],
+            "diagnostic_scalar_reference_not_paper_geometry",
+        )
+        diagnostics = comparison.observed["joint_force_waveform_diagnostics"]
+        self.assertEqual(diagnostics["matched_sample_count"], 5)
+        self.assertEqual(diagnostics["reference_model"], "scalar_point_pendulum_radial_reaction")
+        self.assertEqual(len(diagnostics["joint_force_sample_differences_n"]), 5)
+
+    def test_phase40_validator_rejects_returned_joint_force_blocker(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+        overblocked = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "blocking_reasons": [
+                    *actual.observed["blocking_reasons"],
+                    "joint_force_waveform_agreement_missing",
+                ],
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_physical_pendulum_comparison.json"):
+                return overblocked
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase40_record()
+
+        self.assertIn("joint-force blocker", str(context.exception))
 
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
@@ -2640,7 +2793,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

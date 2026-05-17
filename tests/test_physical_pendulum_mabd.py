@@ -23,11 +23,15 @@ class PhysicalPendulumMABDTests(unittest.TestCase):
         self.assertEqual(rollout.rotation_mode, "none")
         self.assertTrue(rollout.finite)
         self.assertGreaterEqual(rollout.max_world_anchor_reaction_magnitude_n, 0.0)
+        self.assertTrue(np.isfinite(rollout.max_abs_joint_force_error_n))
+        self.assertGreaterEqual(rollout.max_abs_joint_force_error_n, 0.0)
         for sample in rollout.samples:
             self.assertTrue(np.isfinite(sample.phase_drift_rad))
             self.assertEqual(sample.world_anchor_reaction_vector_n.shape, (3,))
             self.assertTrue(np.all(np.isfinite(sample.world_anchor_reaction_vector_n)))
             self.assertGreaterEqual(sample.world_anchor_reaction_magnitude_n, 0.0)
+            self.assertGreaterEqual(sample.reference_joint_force_magnitude_n, 0.0)
+            self.assertGreaterEqual(sample.abs_joint_force_error_n, 0.0)
 
     def test_mabd_rollout_records_requested_polar_rotation_mode(self) -> None:
         config = load_physical_pendulum_config(CONFIG_PATH)

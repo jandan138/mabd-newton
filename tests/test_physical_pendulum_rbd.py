@@ -39,6 +39,11 @@ class PhysicalPendulumRBDBaselineTests(unittest.TestCase):
         self.assertEqual(rollout.samples[0].angle_rad, 0.0)
         self.assertEqual(rollout.samples[0].angular_velocity_rad_s, 0.0)
         self.assertGreaterEqual(rollout.samples[-1].joint_force_magnitude_n, 0.0)
+        self.assertTrue(np.isfinite(rollout.max_abs_joint_force_error_n))
+        self.assertGreaterEqual(rollout.max_abs_joint_force_error_n, 0.0)
+        for sample in rollout.samples:
+            self.assertGreaterEqual(sample.reference_joint_force_magnitude_n, 0.0)
+            self.assertGreaterEqual(sample.abs_joint_force_error_n, 0.0)
 
     def test_rbd_baseline_samples_satisfy_backward_euler_kinematic_residual(self) -> None:
         from mabd_reproduction.physical_pendulum_rbd import (

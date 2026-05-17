@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-39 docs and provenance contracts."""
+"""Validate Phase 0-40 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -84,6 +84,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase36-physical-pendulum-comparison-protocol.md",
     "docs/records/2026-05-17-phase37-physical-pendulum-mabd-newton-lane.md",
     "docs/records/2026-05-17-phase39-physical-pendulum-timing-source-audit.md",
+    "docs/records/2026-05-17-phase40-physical-pendulum-joint-force-reference.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -100,6 +101,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-17-mabd-phase37-physical-pendulum-mabd-newton-lane.md",
     "docs/superpowers/specs/2026-05-17-phase39-physical-pendulum-timing-source-audit-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase39-physical-pendulum-timing-source-audit.md",
+    "docs/superpowers/specs/2026-05-17-phase40-physical-pendulum-joint-force-reference-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase40-physical-pendulum-joint-force-reference.md",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -138,9 +141,11 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase36-working-tree",
     "phase37-working-tree",
     "phase39-working-tree",
+    "phase40-working-tree",
     "pending branch-local",
     "<implementation-commit>",
     "TO_BE_BACKFILLED_PHASE39",
+    "TO_BE_BACKFILLED_PHASE40",
 }
 
 
@@ -3652,6 +3657,7 @@ def validate_phase35_record() -> None:
         "max_phase_drift_rad",
         "max_implicit_residual",
         "max_length_constraint_error_m",
+        "max_abs_joint_force_error_n",
     ):
         if key not in lane.thresholds:
             fail(f"Phase 35 RBD diagnostic threshold missing: {key}")
@@ -3682,7 +3688,7 @@ def validate_phase35_record() -> None:
         fail("Phase 35 report expected.nonclaim_limitations must be a list")
     for limitation in (
         "procedural scalar pendulum is not the paper's undisclosed rigid geometry",
-        "joint-force magnitude is diagnostic and not waveform agreement",
+        "scalar joint-force reference is diagnostic and not paper geometry",
         "no M-ABD comparison pass is generated",
         "no rendered figure or timing distribution is generated",
     ):
@@ -3704,11 +3710,15 @@ def validate_phase35_record() -> None:
         ("max_phase_drift_rad", "max_phase_drift_rad"),
         ("max_implicit_residual", "max_implicit_residual"),
         ("max_length_constraint_error_m", "max_length_constraint_error_m"),
+        ("max_abs_joint_force_error_n", "max_abs_joint_force_error_n"),
     ):
         if float(observed.get(observed_key)) > float(report.threshold[threshold_key]):
             fail(f"Phase 35 report threshold exceeded: {observed_key}")
-    if "joint_force_waveform_agreement_missing" not in observed.get("blocking_reasons", []):
-        fail("Phase 35 report must retain joint-force waveform blocker")
+    blockers = observed.get("blocking_reasons", [])
+    if "pendulum_geometry_unknown" not in blockers:
+        fail("Phase 35 report must retain pendulum_geometry_unknown blocker")
+    if "joint_force_waveform_agreement_missing" in blockers:
+        fail("Phase 35 report must not retain obsolete joint-force waveform blocker")
     samples = observed.get("angle_samples_rad")
     if not isinstance(samples, list) or len(samples) != 5:
         fail("Phase 35 report must contain five compact angle samples")
@@ -4012,18 +4022,19 @@ def validate_phase37_record() -> None:
         fail("Phase 37 comparison report must not pass full experiment claim")
     if observed.get("missing_required_lanes") != []:
         fail("Phase 37 comparison missing_required_lanes changed")
-    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_waveform_agreement"]:
+    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_geometry_unknown"]:
         fail("Phase 37 comparison missing_paper_metrics changed")
     blockers = observed.get("blocking_reasons")
     if not isinstance(blockers, list):
         fail("Phase 37 comparison blockers must be a list")
     for blocker in (
-        "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
         "physical_pendulum_comparison_pass_gate_not_enabled",
     ):
         if blocker not in blockers:
             fail(f"Phase 37 comparison blocker missing: {blocker}")
+    if "joint_force_waveform_agreement_missing" in blockers:
+        fail("Phase 37 comparison must not retain obsolete joint-force blocker")
     if "mabd_newton_missing" in blockers:
         fail("Phase 37 comparison must not retain mabd_newton_missing blocker")
     metric_statuses = observed.get("paper_metric_statuses")
@@ -4032,7 +4043,7 @@ def validate_phase37_record() -> None:
     if metric_statuses.get("phase_drift", {}).get("status") != "diagnostic_available":
         fail("Phase 37 phase_drift metric status changed")
     if metric_statuses.get("joint_force_error", {}).get("status") != (
-        "diagnostic_reaction_not_paper_waveform"
+        "diagnostic_scalar_reference_not_paper_geometry"
     ):
         fail("Phase 37 joint_force_error metric status changed")
     if int(observed.get("matched_sample_count", 0)) <= 0:
@@ -4212,12 +4223,11 @@ def validate_phase38_record() -> None:
         fail("Phase 38 MABD Newton report must not pass full experiment claim")
     if mabd_observed.get("threshold_violations") != []:
         fail("Phase 38 MABD Newton report threshold violations changed")
-    for blocker in (
-        "pendulum_geometry_unknown",
-        "joint_force_waveform_agreement_missing",
-    ):
-        if blocker not in mabd_observed.get("blocking_reasons", []):
-            fail(f"Phase 38 MABD Newton blocker missing: {blocker}")
+    mabd_blockers = mabd_observed.get("blocking_reasons", [])
+    if "pendulum_geometry_unknown" not in mabd_blockers:
+        fail("Phase 38 MABD Newton blocker missing: pendulum_geometry_unknown")
+    if "joint_force_waveform_agreement_missing" in mabd_blockers:
+        fail("Phase 38 MABD Newton must not retain obsolete joint-force blocker")
 
     if comparison.baseline_lane != "physical_pendulum_comparison_protocol":
         fail("Phase 38 comparison report lane changed")
@@ -4230,18 +4240,19 @@ def validate_phase38_record() -> None:
         fail("Phase 38 comparison report must not pass full experiment claim")
     if observed.get("missing_required_lanes") != []:
         fail("Phase 38 comparison missing_required_lanes changed")
-    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_waveform_agreement"]:
+    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_geometry_unknown"]:
         fail("Phase 38 comparison missing_paper_metrics changed")
     blockers = observed.get("blocking_reasons")
     if not isinstance(blockers, list):
         fail("Phase 38 comparison blockers must be a list")
     for blocker in (
-        "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
         "physical_pendulum_comparison_pass_gate_not_enabled",
     ):
         if blocker not in blockers:
             fail(f"Phase 38 comparison blocker missing: {blocker}")
+    if "joint_force_waveform_agreement_missing" in blockers:
+        fail("Phase 38 comparison must not retain obsolete joint-force blocker")
     if "mabd_newton_missing" in blockers:
         fail("Phase 38 comparison must not retain mabd_newton_missing blocker")
     metric_statuses = observed.get("paper_metric_statuses")
@@ -4250,7 +4261,7 @@ def validate_phase38_record() -> None:
     if metric_statuses.get("phase_drift", {}).get("status") != "diagnostic_available":
         fail("Phase 38 phase_drift metric status changed")
     if metric_statuses.get("joint_force_error", {}).get("status") != (
-        "diagnostic_reaction_not_paper_waveform"
+        "diagnostic_scalar_reference_not_paper_geometry"
     ):
         fail("Phase 38 joint_force_error metric status changed")
     if int(observed.get("matched_sample_count", 0)) <= 0:
@@ -4411,18 +4422,20 @@ def validate_phase39_record() -> None:
             fail(f"Phase 39 {name} report must not retain paper_timing_missing blocker")
 
     mabd_blockers = reports["mabd_newton"].observed.get("blocking_reasons", [])
-    for blocker in ("pendulum_geometry_unknown", "joint_force_waveform_agreement_missing"):
-        if blocker not in mabd_blockers:
-            fail(f"Phase 39 MABD Newton blocker missing: {blocker}")
+    if "pendulum_geometry_unknown" not in mabd_blockers:
+        fail("Phase 39 MABD Newton blocker missing: pendulum_geometry_unknown")
+    if "joint_force_waveform_agreement_missing" in mabd_blockers:
+        fail("Phase 39 MABD Newton must not retain obsolete joint-force blocker")
 
     rbd_blockers = reports["rbd_implicit_baseline"].observed.get("blocking_reasons", [])
     for blocker in (
         "mabd_newton_missing",
-        "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
     ):
         if blocker not in rbd_blockers:
             fail(f"Phase 39 RBD baseline blocker missing: {blocker}")
+    if "joint_force_waveform_agreement_missing" in rbd_blockers:
+        fail("Phase 39 RBD baseline must not retain obsolete joint-force blocker")
 
     comparison = reports["comparison"]
     if comparison.baseline_lane != "physical_pendulum_comparison_protocol":
@@ -4432,18 +4445,19 @@ def validate_phase39_record() -> None:
     observed = comparison.observed
     if observed.get("missing_required_lanes") != []:
         fail("Phase 39 comparison missing_required_lanes changed")
-    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_waveform_agreement"]:
+    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_geometry_unknown"]:
         fail("Phase 39 comparison missing_paper_metrics changed")
     blockers = observed.get("blocking_reasons")
     if not isinstance(blockers, list):
         fail("Phase 39 comparison blockers must be a list")
     for blocker in (
-        "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
         "physical_pendulum_comparison_pass_gate_not_enabled",
     ):
         if blocker not in blockers:
             fail(f"Phase 39 comparison blocker missing: {blocker}")
+    if "joint_force_waveform_agreement_missing" in blockers:
+        fail("Phase 39 comparison must not retain obsolete joint-force blocker")
     if "paper_timing_missing" in blockers:
         fail("Phase 39 comparison must not retain paper_timing_missing blocker")
 
@@ -4461,6 +4475,200 @@ def validate_phase39_record() -> None:
                 fail("Phase 39 must keep physical-pendulum experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 39 must not pass experiment.* claims")
+    if not found_physical_pendulum:
+        fail("paper-claims.yaml missing physical-pendulum claim")
+
+
+def validate_phase40_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase40-physical-pendulum-joint-force-reference.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_physical_pendulum.yaml",
+        "## Repository",
+        "phase40-physical-pendulum-joint-force-reference",
+        "## Scalar Joint-Force Reference Evidence",
+        "physical_pendulum_angular_velocity_reference",
+        "physical_pendulum_joint_force_reference",
+        "joint_force_samples_n",
+        "scalar_point_pendulum_radial_reaction",
+        "## Lane Report Evidence",
+        "max_abs_joint_force_error_n",
+        "reference_joint_force_magnitude_n",
+        "abs_joint_force_error_n",
+        "removed blocker: `joint_force_waveform_agreement_missing`",
+        "retained blocker: `pendulum_geometry_unknown`",
+        "## Comparison Evidence",
+        "joint_force_waveform_diagnostics",
+        "missing_paper_metrics = [`joint_force_error:paper_geometry_unknown`]",
+        "paper_metric_statuses.joint_force_error.status =",
+        "`diagnostic_scalar_reference_not_paper_geometry`",
+        "matched_sample_count = `5`",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.physical_pendulum` remains intended.",
+        "scalar/procedural diagnostic, not paper geometry",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 40 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE40", "phase40-working-tree", "<implementation-commit>"):
+        if placeholder in text:
+            fail("Phase 40 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "physical-pendulum experiment passed",
+        "paper geometry result",
+        "paper joint-force waveform reproduced",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 40 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 40 scalar physical-pendulum joint-force reference",
+        "Phase 40 verifies `physical_pendulum_angular_velocity_reference`",
+        "`physical_pendulum_joint_force_reference`",
+        "`max_abs_joint_force_error_n`",
+        "`joint_force_waveform_diagnostics`",
+        "Phase 40 does not verify the paper's exact physical-pendulum geometry",
+        "Phase 40 physical-pendulum scalar joint-force diagnostics",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 40 claim boundary missing: {snippet}")
+
+    try:
+        config = load_physical_pendulum_config(
+            ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 40 physical-pendulum config validation failed: {exc}")
+
+    report_paths = {
+        "analytic_reference": config.output_report,
+        "mabd_newton": config.mabd_newton.output_report,
+        "rbd_implicit_baseline": config.rbd_baseline.output_report,
+        "comparison": config.comparison.output_report,
+    }
+    reports = {
+        name: load_claim_report(ROOT / path)
+        for name, path in report_paths.items()
+    }
+    for name, report in reports.items():
+        if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+            fail(f"Phase 40 {name} report source_commit must name the implementation commit")
+        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 40 {name} report vendored Newton commit changed")
+        if report.claim_id != config.claim_id:
+            fail(f"Phase 40 {name} report claim_id does not match config")
+        if report.scene_id != config.scene_id:
+            fail(f"Phase 40 {name} report scene_id does not match config")
+        if report.status.value != "incomplete":
+            fail(f"Phase 40 {name} report must remain incomplete")
+        if report.observed.get("full_experiment_claim_passed") is not False:
+            fail(f"Phase 40 {name} report must not pass full experiment claim")
+
+    analytic = reports["analytic_reference"]
+    if analytic.expected.get("joint_force_reference_model") != (
+        "scalar_point_pendulum_radial_reaction"
+    ):
+        fail("Phase 40 analytic report missing scalar joint-force reference model")
+    force_samples = analytic.observed.get("joint_force_samples_n")
+    if not isinstance(force_samples, list) or len(force_samples) != config.reference.sample_count:
+        fail("Phase 40 analytic report joint_force_samples_n changed")
+    if force_samples[0].get("joint_force_magnitude_n") != 0.0:
+        fail("Phase 40 analytic report first joint-force sample must be zero")
+    if float(analytic.observed.get("max_joint_force_magnitude_n", 0.0)) <= 0.0:
+        fail("Phase 40 analytic report max joint-force magnitude must be positive")
+
+    mabd = reports["mabd_newton"]
+    rbd = reports["rbd_implicit_baseline"]
+    for report_name, report in (("MABD Newton", mabd), ("RBD baseline", rbd)):
+        observed = report.observed
+        metric = observed.get("max_abs_joint_force_error_n")
+        if not isinstance(metric, int | float) or not np.isfinite(float(metric)):
+            fail(f"Phase 40 {report_name} missing finite max_abs_joint_force_error_n")
+        if float(metric) > float(report.threshold["max_abs_joint_force_error_n"]):
+            fail(f"Phase 40 {report_name} joint-force error exceeds threshold")
+        blockers = observed.get("blocking_reasons")
+        if not isinstance(blockers, list):
+            fail(f"Phase 40 {report_name} blockers must be a list")
+        if "pendulum_geometry_unknown" not in blockers:
+            fail(f"Phase 40 {report_name} must retain pendulum_geometry_unknown")
+        if "joint_force_waveform_agreement_missing" in blockers:
+            fail(f"Phase 40 {report_name} must not retain obsolete joint-force blocker")
+        samples = observed.get("angle_samples_rad")
+        if not isinstance(samples, list) or not samples:
+            fail(f"Phase 40 {report_name} samples missing")
+        last_sample = samples[-1]
+        if not isinstance(last_sample, dict):
+            fail(f"Phase 40 {report_name} sample rows must be mappings")
+        for field in ("reference_joint_force_magnitude_n", "abs_joint_force_error_n"):
+            if field not in last_sample:
+                fail(f"Phase 40 {report_name} sample missing {field}")
+
+    comparison = reports["comparison"]
+    observed = comparison.observed
+    if observed.get("missing_paper_metrics") != ["joint_force_error:paper_geometry_unknown"]:
+        fail("Phase 40 comparison missing_paper_metrics changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 40 comparison blockers must be a list")
+    for blocker in (
+        "pendulum_geometry_unknown",
+        "physical_pendulum_comparison_pass_gate_not_enabled",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 40 comparison blocker missing: {blocker}")
+    if "joint_force_waveform_agreement_missing" in blockers:
+        fail("Phase 40 comparison must not retain obsolete joint-force blocker")
+    metric_statuses = observed.get("paper_metric_statuses")
+    if not isinstance(metric_statuses, dict):
+        fail("Phase 40 comparison paper_metric_statuses must be a mapping")
+    if metric_statuses.get("joint_force_error", {}).get("status") != (
+        "diagnostic_scalar_reference_not_paper_geometry"
+    ):
+        fail("Phase 40 joint_force_error metric status changed")
+    diagnostics = observed.get("joint_force_waveform_diagnostics")
+    if not isinstance(diagnostics, dict):
+        fail("Phase 40 comparison joint_force_waveform_diagnostics missing")
+    if diagnostics.get("reference_model") != "scalar_point_pendulum_radial_reaction":
+        fail("Phase 40 comparison joint-force reference model changed")
+    if diagnostics.get("matched_sample_count") != 5:
+        fail("Phase 40 comparison joint-force matched sample count changed")
+    rows = diagnostics.get("joint_force_sample_differences_n")
+    if not isinstance(rows, list) or len(rows) != 5:
+        fail("Phase 40 comparison joint-force sample rows changed")
+    for key in ("max_mabd_abs_joint_force_error_n", "max_rbd_abs_joint_force_error_n"):
+        value = diagnostics.get(key)
+        if not isinstance(value, int | float) or not np.isfinite(float(value)):
+            fail(f"Phase 40 comparison diagnostic missing finite {key}")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_physical_pendulum = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.physical_pendulum":
+            found_physical_pendulum = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 40 must keep physical-pendulum experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 40 must not pass experiment.* claims")
     if not found_physical_pendulum:
         fail("paper-claims.yaml missing physical-pendulum claim")
 
@@ -4720,13 +4928,14 @@ def main() -> int:
     validate_phase37_record()
     validate_phase38_record()
     validate_phase39_record()
+    validate_phase40_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40 "
         "docs/provenance validation passed"
     )
     return 0

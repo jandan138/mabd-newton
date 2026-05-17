@@ -44,6 +44,45 @@ class PhysicalPendulumReferenceTests(unittest.TestCase):
                         omega_lin=float(case["omega_lin"]),
                     )
 
+    def test_angular_velocity_reference_matches_release_and_quarter_period(self) -> None:
+        from mabd_reproduction.physical_pendulum_reference import (
+            physical_pendulum_angular_velocity_reference,
+            physical_pendulum_complete_elliptic_k,
+        )
+
+        kappa = np.sqrt(0.5)
+        omega_lin = np.sqrt(9.81)
+        complete = physical_pendulum_complete_elliptic_k(kappa)
+        values = physical_pendulum_angular_velocity_reference(
+            [0.0, complete / omega_lin],
+            kappa=kappa,
+            omega_lin=omega_lin,
+        )
+
+        self.assertAlmostEqual(float(values[0]), 0.0, places=12)
+        self.assertAlmostEqual(float(values[1]), np.sqrt(2.0 * 9.81), places=12)
+
+    def test_joint_force_reference_uses_scalar_radial_reaction(self) -> None:
+        from mabd_reproduction.physical_pendulum_reference import (
+            physical_pendulum_complete_elliptic_k,
+            physical_pendulum_joint_force_reference,
+        )
+
+        kappa = np.sqrt(0.5)
+        omega_lin = np.sqrt(9.81)
+        complete = physical_pendulum_complete_elliptic_k(kappa)
+        values = physical_pendulum_joint_force_reference(
+            [0.0, complete / omega_lin],
+            kappa=kappa,
+            omega_lin=omega_lin,
+            mass_kg=1.0,
+            length_m=1.0,
+            gravity_magnitude=9.81,
+        )
+
+        self.assertAlmostEqual(float(values[0]), 0.0, places=12)
+        self.assertAlmostEqual(float(values[1]), 29.43, places=10)
+
 
 if __name__ == "__main__":
     unittest.main()

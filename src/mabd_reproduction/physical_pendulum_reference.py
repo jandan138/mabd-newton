@@ -28,6 +28,15 @@ def _validate_omega_lin(omega_lin: float) -> float:
     return value
 
 
+def _validate_positive_scalar(value: float, *, name: str) -> float:
+    if not isinstance(value, Real) or isinstance(value, bool):
+        raise ValueError(f"{name} must be finite and positive")
+    result = float(value)
+    if not isfinite(result) or result <= 0.0:
+        raise ValueError(f"{name} must be finite and positive")
+    return result
+
+
 def _validate_times(times: Iterable[float]) -> np.ndarray:
     values = np.asarray(list(times), dtype=float)
     if values.ndim != 1:
@@ -75,8 +84,53 @@ def physical_pendulum_angle_reference(
     return np.asarray(pi / 2.0 - 2.0 * np.arcsin(kappa_value * sn), dtype=float)
 
 
+def physical_pendulum_angular_velocity_reference(
+    times: Iterable[float],
+    *,
+    kappa: float,
+    omega_lin: float,
+) -> np.ndarray:
+    """Evaluate the analytic derivative of the paper angle reference."""
+
+    kappa_value = _validate_kappa(kappa)
+    omega_value = _validate_omega_lin(omega_lin)
+    time_values = _validate_times(times)
+    parameter_m = kappa_value * kappa_value
+    complete = special.ellipk(parameter_m)
+    sn, cn, dn, _ph = special.ellipj(complete - omega_value * time_values, parameter_m)
+    denominator = np.sqrt(np.maximum(0.0, 1.0 - parameter_m * sn * sn))
+    velocities = 2.0 * kappa_value * omega_value * cn * dn / denominator
+    return np.asarray(velocities, dtype=float)
+
+
+def physical_pendulum_joint_force_reference(
+    times: Iterable[float],
+    *,
+    kappa: float,
+    omega_lin: float,
+    mass_kg: float,
+    length_m: float,
+    gravity_magnitude: float,
+) -> np.ndarray:
+    """Return the scalar-pendulum radial joint-force magnitude reference."""
+
+    mass = _validate_positive_scalar(mass_kg, name="mass_kg")
+    length = _validate_positive_scalar(length_m, name="length_m")
+    gravity = _validate_positive_scalar(gravity_magnitude, name="gravity_magnitude")
+    angles = physical_pendulum_angle_reference(times, kappa=kappa, omega_lin=omega_lin)
+    velocities = physical_pendulum_angular_velocity_reference(
+        times,
+        kappa=kappa,
+        omega_lin=omega_lin,
+    )
+    forces = mass * np.abs(length * velocities * velocities + gravity * np.sin(angles))
+    return np.asarray(forces, dtype=float)
+
+
 __all__ = [
     "physical_pendulum_angle_reference",
+    "physical_pendulum_angular_velocity_reference",
     "physical_pendulum_complete_elliptic_k",
+    "physical_pendulum_joint_force_reference",
     "physical_pendulum_period_s",
 ]

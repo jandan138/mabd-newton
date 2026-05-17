@@ -234,6 +234,84 @@ def _physical_angle_sample_differences(
     }
 
 
+def _physical_joint_force_waveform_diagnostics(
+    analytic_report: ClaimReport,
+    mabd_report: ClaimReport,
+    rbd_report: ClaimReport,
+) -> dict[str, Any]:
+    mabd_rows = _physical_angle_rows(mabd_report)
+    rbd_rows = _physical_angle_rows(rbd_report)
+    mabd_by_key = {
+        key: row for row in mabd_rows if (key := _physical_sample_key(row)) is not None
+    }
+    rbd_by_key = {
+        key: row for row in rbd_rows if (key := _physical_sample_key(row)) is not None
+    }
+    matched_keys = sorted(set(mabd_by_key) & set(rbd_by_key))
+    rows: list[dict[str, float | int]] = []
+    nonfinite = False
+    for key in matched_keys:
+        mabd_row = mabd_by_key[key]
+        rbd_row = rbd_by_key[key]
+        reference_force = _finite_scalar(mabd_row.get("reference_joint_force_magnitude_n"))
+        rbd_reference_force = _finite_scalar(rbd_row.get("reference_joint_force_magnitude_n"))
+        mabd_force = _finite_scalar(mabd_row.get("world_anchor_reaction_magnitude_n"))
+        rbd_force = _finite_scalar(rbd_row.get("joint_force_magnitude_n"))
+        mabd_error = _finite_scalar(mabd_row.get("abs_joint_force_error_n"))
+        rbd_error = _finite_scalar(rbd_row.get("abs_joint_force_error_n"))
+        if (
+            reference_force is None
+            or rbd_reference_force is None
+            or mabd_force is None
+            or rbd_force is None
+            or mabd_error is None
+            or rbd_error is None
+        ):
+            nonfinite = True
+            continue
+        reference_delta = _finite_difference(reference_force, rbd_reference_force)
+        if reference_delta is None:
+            nonfinite = True
+            continue
+        sample_index = _finite_scalar(mabd_row.get("sample_index"))
+        rows.append(
+            {
+                "sample_index": int(sample_index) if sample_index is not None else len(rows),
+                "step": key[0],
+                "time_s": key[1],
+                "reference_joint_force_magnitude_n": reference_force,
+                "mabd_joint_force_magnitude_n": mabd_force,
+                "mabd_abs_joint_force_error_n": mabd_error,
+                "rbd_joint_force_magnitude_n": rbd_force,
+                "rbd_abs_joint_force_error_n": rbd_error,
+                "reference_delta_between_lanes_n": reference_delta,
+            }
+        )
+    return {
+        "reference_model": analytic_report.expected.get(
+            "joint_force_reference_model",
+            "scalar_point_pendulum_radial_reaction",
+        ),
+        "limitation": "diagnostic scalar reference, not paper geometry",
+        "analytic_sample_count": len(
+            analytic_report.observed.get("joint_force_samples_n", [])
+            if isinstance(analytic_report.observed.get("joint_force_samples_n"), list)
+            else []
+        ),
+        "mabd_sample_count": len(mabd_rows),
+        "rbd_sample_count": len(rbd_rows),
+        "matched_sample_count": len(matched_keys),
+        "nonfinite": nonfinite,
+        "max_mabd_abs_joint_force_error_n": _finite_scalar(
+            mabd_report.observed.get("max_abs_joint_force_error_n")
+        ),
+        "max_rbd_abs_joint_force_error_n": _finite_scalar(
+            rbd_report.observed.get("max_abs_joint_force_error_n")
+        ),
+        "joint_force_sample_differences_n": rows,
+    }
+
+
 def _physical_pendulum_paper_metric_statuses() -> dict[str, dict[str, str | None]]:
     return {
         "pendulum_angle_error": {
@@ -247,9 +325,10 @@ def _physical_pendulum_paper_metric_statuses() -> dict[str, dict[str, str | None
             "rbd_field": "max_phase_drift_rad",
         },
         "joint_force_error": {
-            "status": "diagnostic_reaction_not_paper_waveform",
-            "mabd_diagnostic_field": "max_world_anchor_reaction_magnitude_n",
-            "rbd_diagnostic_field": "max_joint_force_magnitude_n",
+            "status": "diagnostic_scalar_reference_not_paper_geometry",
+            "mabd_field": "max_abs_joint_force_error_n",
+            "rbd_field": "max_abs_joint_force_error_n",
+            "limitation": "scalar reference does not reconstruct paper geometry",
         },
     }
 
@@ -480,8 +559,12 @@ def write_physical_pendulum_comparison_report(
         lane="rbd_implicit_baseline",
     )
     sample_diagnostics = _physical_angle_sample_differences(mabd_report, rbd_report)
+    joint_force_diagnostics = _physical_joint_force_waveform_diagnostics(
+        analytic_report,
+        mabd_report,
+        rbd_report,
+    )
     blocking_reasons = [
-        "joint_force_waveform_agreement_missing",
         "pendulum_geometry_unknown",
         "physical_pendulum_comparison_pass_gate_not_enabled",
     ]
@@ -550,7 +633,7 @@ def write_physical_pendulum_comparison_report(
         "paper_metric_statuses": _physical_pendulum_paper_metric_statuses(),
         "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
         "missing_required_lanes": [],
-        "missing_paper_metrics": ["joint_force_error:paper_waveform_agreement"],
+        "missing_paper_metrics": ["joint_force_error:paper_geometry_unknown"],
         "blocking_reasons": blocking_reasons,
         "mabd_sample_count": sample_diagnostics["mabd_sample_count"],
         "rbd_sample_count": sample_diagnostics["rbd_sample_count"],
@@ -561,6 +644,7 @@ def write_physical_pendulum_comparison_report(
         "max_mabd_rbd_abs_angle_delta_rad": sample_diagnostics[
             "max_mabd_rbd_abs_angle_delta_rad"
         ],
+        "joint_force_waveform_diagnostics": joint_force_diagnostics,
     }
 
     report = ClaimReport(
@@ -572,9 +656,9 @@ def write_physical_pendulum_comparison_report(
         baseline_lane="physical_pendulum_comparison_protocol",
         expected={
             "paper_claim_status": (
-                "formal M-ABD and RBD lanes are present; joint-force waveform comparison, "
-                "geometry, and pass gate remain required; runtime timing is not a cited "
-                "physical-pendulum metric"
+                "formal M-ABD and RBD lanes are present; scalar joint-force diagnostics "
+                "exist, but paper geometry and pass gate remain required; runtime timing "
+                "is not a cited physical-pendulum metric"
             ),
             "required_lanes": list(config.comparison.required_lanes),
             "diagnostic_lanes": list(config.comparison.diagnostic_lanes),
@@ -588,8 +672,8 @@ def write_physical_pendulum_comparison_report(
         unit="json_report",
         status=EvidenceStatus.INCOMPLETE,
         failure_reason=(
-            "physical-pendulum comparison protocol is incomplete because joint-force waveform "
-            "agreement, paper geometry, and pass gate remain missing"
+            "physical-pendulum comparison protocol is incomplete because paper geometry "
+            "and the comparison pass gate remain missing"
         ),
         timing_distribution={"scope": "not_timed"},
         raw_outputs={

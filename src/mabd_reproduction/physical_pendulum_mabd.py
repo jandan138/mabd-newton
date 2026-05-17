@@ -9,7 +9,10 @@ import numpy as np
 from newton.solvers import mabd
 
 from .experiment_configs import PhysicalPendulumRunConfig
-from .physical_pendulum_reference import physical_pendulum_angle_reference
+from .physical_pendulum_reference import (
+    physical_pendulum_angle_reference,
+    physical_pendulum_joint_force_reference,
+)
 
 
 @dataclass(frozen=True)
@@ -25,6 +28,8 @@ class PhysicalPendulumMABDSample:
     constraint_residual_norm: float
     world_anchor_reaction_vector_n: np.ndarray
     world_anchor_reaction_magnitude_n: float
+    reference_joint_force_magnitude_n: float
+    abs_joint_force_error_n: float
 
 
 @dataclass(frozen=True)
@@ -39,6 +44,7 @@ class PhysicalPendulumMABDRollout:
     max_abs_angle_error_rad: float
     max_phase_drift_rad: float
     max_world_anchor_reaction_magnitude_n: float
+    max_abs_joint_force_error_n: float
     finite: bool
 
 
@@ -105,7 +111,9 @@ def roll_out_physical_pendulum_mabd_development(
     max_abs_angle_error = 0.0
     max_phase_drift = 0.0
     max_world_anchor_reaction = 0.0
+    max_abs_joint_force_error = 0.0
     latest_world_anchor_reaction = np.zeros(3, dtype=float)
+    gravity_magnitude = float(np.linalg.norm(config.rbd_baseline.gravity_m_s2))
     finite = True
 
     for step in range(lane.step_count + 1):
@@ -136,6 +144,18 @@ def roll_out_physical_pendulum_mabd_development(
         max_phase_drift = max(max_phase_drift, abs(phase_drift))
         reaction_magnitude = float(np.linalg.norm(latest_world_anchor_reaction))
         max_world_anchor_reaction = max(max_world_anchor_reaction, reaction_magnitude)
+        reference_joint_force = float(
+            physical_pendulum_joint_force_reference(
+                np.asarray([time_s], dtype=float),
+                kappa=config.reference.kappa,
+                omega_lin=config.reference.omega_lin_rad_s,
+                mass_kg=config.rbd_baseline.mass_kg,
+                length_m=config.rbd_baseline.length_m,
+                gravity_magnitude=gravity_magnitude,
+            )[0]
+        )
+        abs_joint_force_error = abs(reaction_magnitude - reference_joint_force)
+        max_abs_joint_force_error = max(max_abs_joint_force_error, abs_joint_force_error)
         if step in sample_steps:
             samples.append(
                 PhysicalPendulumMABDSample(
@@ -150,6 +170,8 @@ def roll_out_physical_pendulum_mabd_development(
                     constraint_residual_norm=max_constraint_residual,
                     world_anchor_reaction_vector_n=latest_world_anchor_reaction.copy(),
                     world_anchor_reaction_magnitude_n=reaction_magnitude,
+                    reference_joint_force_magnitude_n=reference_joint_force,
+                    abs_joint_force_error_n=abs_joint_force_error,
                 )
             )
 
@@ -181,6 +203,7 @@ def roll_out_physical_pendulum_mabd_development(
         max_abs_angle_error_rad=max_abs_angle_error,
         max_phase_drift_rad=max_phase_drift,
         max_world_anchor_reaction_magnitude_n=max_world_anchor_reaction,
+        max_abs_joint_force_error_n=max_abs_joint_force_error,
         finite=finite,
     )
 

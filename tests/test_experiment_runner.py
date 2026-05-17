@@ -304,6 +304,13 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.observed["lane_status"], "passed")
         self.assertEqual(loaded.observed["sample_count"], 9)
         self.assertEqual(loaded.observed["angle_samples_rad"][0]["angle_rad"], 0.0)
+        self.assertEqual(
+            loaded.expected["joint_force_reference_model"],
+            "scalar_point_pendulum_radial_reaction",
+        )
+        self.assertIn("joint_force_samples_n", loaded.observed)
+        self.assertEqual(loaded.observed["joint_force_samples_n"][0]["joint_force_magnitude_n"], 0.0)
+        self.assertGreater(loaded.observed["max_joint_force_magnitude_n"], 0.0)
         self.assertIn("pendulum_geometry_unknown", loaded.failure_reason)
         self.assertEqual(loaded.source_commit, "test-source")
         self.assertEqual(loaded.vendored_newton_commit, "test-newton")
@@ -428,7 +435,17 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.observed["mabd_rotation_mode"], "polar")
         self.assertIn("max_phase_drift_rad", loaded.observed)
         self.assertIn("max_world_anchor_reaction_magnitude_n", loaded.observed)
+        self.assertIn("max_abs_joint_force_error_n", loaded.observed)
         self.assertIn("world_anchor_reaction_vector_n", loaded.observed["angle_samples_rad"][-1])
+        self.assertIn(
+            "reference_joint_force_magnitude_n",
+            loaded.observed["angle_samples_rad"][-1],
+        )
+        self.assertIn("abs_joint_force_error_n", loaded.observed["angle_samples_rad"][-1])
+        self.assertNotIn(
+            "joint_force_waveform_agreement_missing",
+            loaded.observed["blocking_reasons"],
+        )
         self.assertNotIn("paper_timing_missing", loaded.observed["blocking_reasons"])
         self._assert_physical_pendulum_timing_source_audit(
             loaded.observed["paper_timing_source_audit"]
@@ -472,7 +489,16 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.observed["max_implicit_residual"],
             loaded.threshold["max_implicit_residual"],
         )
-        self.assertIn("joint_force_waveform_agreement_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("max_abs_joint_force_error_n", loaded.observed)
+        self.assertIn(
+            "reference_joint_force_magnitude_n",
+            loaded.observed["angle_samples_rad"][-1],
+        )
+        self.assertIn("abs_joint_force_error_n", loaded.observed["angle_samples_rad"][-1])
+        self.assertNotIn(
+            "joint_force_waveform_agreement_missing",
+            loaded.observed["blocking_reasons"],
+        )
         self.assertNotIn("paper_timing_missing", loaded.observed["blocking_reasons"])
         self._assert_physical_pendulum_timing_source_audit(
             loaded.observed["paper_timing_source_audit"]
@@ -514,9 +540,22 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.observed["matched_sample_count"], 5)
         self.assertIn("input_report_provenance", loaded.observed)
         self.assertNotIn("paper_timing_missing", loaded.observed["blocking_reasons"])
-        self.assertIn(
+        self.assertNotIn(
             "joint_force_waveform_agreement_missing",
             loaded.observed["blocking_reasons"],
+        )
+        self.assertEqual(
+            loaded.observed["missing_paper_metrics"],
+            ["joint_force_error:paper_geometry_unknown"],
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["joint_force_error"]["status"],
+            "diagnostic_scalar_reference_not_paper_geometry",
+        )
+        self.assertIn("joint_force_waveform_diagnostics", loaded.observed)
+        self.assertEqual(
+            loaded.observed["joint_force_waveform_diagnostics"]["matched_sample_count"],
+            5,
         )
         self.assertIn("pendulum_geometry_unknown", loaded.observed["blocking_reasons"])
         self.assertIn(

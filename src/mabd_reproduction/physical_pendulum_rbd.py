@@ -7,7 +7,10 @@ from dataclasses import dataclass
 import numpy as np
 
 from .experiment_configs import PhysicalPendulumRunConfig
-from .physical_pendulum_reference import physical_pendulum_angle_reference
+from .physical_pendulum_reference import (
+    physical_pendulum_angle_reference,
+    physical_pendulum_joint_force_reference,
+)
 
 
 @dataclass(frozen=True)
@@ -24,6 +27,8 @@ class PhysicalPendulumRBDSample:
     implicit_residual: float
     length_constraint_error_m: float
     joint_force_magnitude_n: float
+    reference_joint_force_magnitude_n: float
+    abs_joint_force_error_n: float
 
 
 @dataclass(frozen=True)
@@ -37,6 +42,7 @@ class PhysicalPendulumRBDRollout:
     max_implicit_residual: float
     max_length_constraint_error_m: float
     max_joint_force_magnitude_n: float
+    max_abs_joint_force_error_n: float
     finite: bool
 
 
@@ -113,6 +119,7 @@ def roll_out_physical_pendulum_rbd_baseline(
     max_implicit_residual = 0.0
     max_length_constraint_error = 0.0
     max_joint_force = 0.0
+    max_abs_joint_force_error = 0.0
     finite = True
     step_residual = 0.0
 
@@ -136,11 +143,23 @@ def roll_out_physical_pendulum_rbd_baseline(
             angle_rad=theta,
             angular_velocity_rad_s=omega,
         )
+        reference_joint_force = float(
+            physical_pendulum_joint_force_reference(
+                np.asarray([time_s], dtype=float),
+                kappa=config.reference.kappa,
+                omega_lin=config.reference.omega_lin_rad_s,
+                mass_kg=lane.mass_kg,
+                length_m=lane.length_m,
+                gravity_magnitude=gravity_magnitude,
+            )[0]
+        )
+        abs_joint_force_error = abs(joint_force - reference_joint_force)
 
         max_abs_angle_error = max(max_abs_angle_error, abs_error)
         max_phase_drift = max(max_phase_drift, abs(phase_drift))
         max_length_constraint_error = max(max_length_constraint_error, length_error)
         max_joint_force = max(max_joint_force, joint_force)
+        max_abs_joint_force_error = max(max_abs_joint_force_error, abs_joint_force_error)
         finite = finite and bool(
             np.all(
                 np.isfinite(
@@ -153,6 +172,8 @@ def roll_out_physical_pendulum_rbd_baseline(
                         step_residual,
                         length_error,
                         joint_force,
+                        reference_joint_force,
+                        abs_joint_force_error,
                     ]
                 )
             )
@@ -173,6 +194,8 @@ def roll_out_physical_pendulum_rbd_baseline(
                     implicit_residual=step_residual,
                     length_constraint_error_m=length_error,
                     joint_force_magnitude_n=joint_force,
+                    reference_joint_force_magnitude_n=reference_joint_force,
+                    abs_joint_force_error_n=abs_joint_force_error,
                 )
             )
 
@@ -200,6 +223,7 @@ def roll_out_physical_pendulum_rbd_baseline(
         max_implicit_residual=max_implicit_residual,
         max_length_constraint_error_m=max_length_constraint_error,
         max_joint_force_magnitude_n=max_joint_force,
+        max_abs_joint_force_error_n=max_abs_joint_force_error,
         finite=finite,
     )
 
