@@ -12,14 +12,25 @@ import ConceptCard from "../../components/ConceptCard.astro";
 import ProblemCard from "../../components/ProblemCard.astro";
 import StepFlow from "../../components/StepFlow.astro";
 import CompareGrid from "../../components/CompareGrid.astro";
+import Figure from "../../components/Figure.astro";
 import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import affineStateMap from "../../assets/diagrams/affine-state-map.svg";
 
 <ProblemCard title="它解决的问题">
 模拟器需要把一个物体的姿态和形变存成数字。仿射状态用 `A` 表示线性变换，用 `t` 表示平移，再把它们打包成 `q in R12`，方便统一求导、积分和求解。
 </ProblemCard>
+
+<Figure
+  src={affineStateMap}
+  alt="Rest-space shape mapped to world-space shape by x_world equals A x_rest plus t, then packed as q in R12"
+  caption="Conceptual affine-state map: `x_world = A x_rest + t` and `q in R12` show representation, not solver evidence."
+  kind="diagram"
+  provenance="authored-svg"
+  claimStatus="conceptual"
+/>
 
 ## 一个仿射体的状态
 

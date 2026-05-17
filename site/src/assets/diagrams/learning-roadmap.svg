@@ -1,0 +1,40 @@
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" fill="#fff7eb"/>
+  <rect x="56" y="52" width="848" height="436" rx="28" fill="#fffaf3" stroke="#6b4028" stroke-width="3"/>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">
+    <text x="480" y="102" font-size="34" font-weight="700">Learning Path</text>
+    <text x="480" y="134" font-size="18" fill="#8a6a55">concept to checked evidence</text>
+  </g>
+  <g stroke="#6b4028" stroke-width="3" fill="#fff7eb">
+    <rect x="96" y="210" width="128" height="86" rx="18"/>
+    <rect x="276" y="210" width="128" height="86" rx="18"/>
+    <rect x="456" y="210" width="128" height="86" rx="18"/>
+    <rect x="636" y="210" width="128" height="86" rx="18"/>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="700" text-anchor="middle">
+    <text x="160" y="260">concept</text>
+    <text x="340" y="260">formula</text>
+    <text x="520" y="260">code</text>
+    <text x="700" y="260">record</text>
+  </g>
+  <g stroke="#d8742f" stroke-width="5" fill="none" stroke-linecap="round">
+    <line x1="226" y1="253" x2="270" y2="253"/>
+    <line x1="406" y1="253" x2="450" y2="253"/>
+    <line x1="586" y1="253" x2="630" y2="253"/>
+  </g>
+  <g fill="#d8742f">
+    <polygon points="270,253 254,243 254,263"/>
+    <polygon points="450,253 434,243 434,263"/>
+    <polygon points="630,253 614,243 614,263"/>
+  </g>
+  <g>
+    <path d="M700 296 C700 348 616 374 480 374 C344 374 160 350 160 298" fill="none" stroke="#4f82aa" stroke-width="4" stroke-dasharray="12 10" stroke-linecap="round"/>
+    <polygon points="160,298 150,318 174,313" fill="#4f82aa"/>
+    <circle cx="810" cy="253" r="43" fill="#f0e7ff" stroke="#7d5bb2" stroke-width="4"/>
+    <path d="M792 252 L805 266 L830 236" fill="none" stroke="#7d5bb2" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">
+    <text x="810" y="323" font-size="18" font-weight="700" fill="#7d5bb2">claim check</text>
+    <text x="480" y="410" font-size="18" fill="#4f82aa">evidence loop</text>
+  </g>
+</svg>

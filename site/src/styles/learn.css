@@ -354,6 +354,29 @@ pre,
   font-weight: 800;
 }
 
+.lesson-figure {
+  background: #fffaf3;
+  border: 1px solid #ead5bc;
+  border-radius: 18px;
+  box-shadow: 0 16px 36px rgba(57, 32, 16, 0.08);
+  margin: 28px 0;
+  overflow: hidden;
+}
+
+.lesson-figure img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.lesson-figure figcaption {
+  border-top: 1px solid #ead5bc;
+  color: #6f5a49;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 12px 16px;
+}
+
 .learn-footer {
   margin-top: 3rem;
   border-top: 1px solid #ead5bc;

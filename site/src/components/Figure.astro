@@ -1,0 +1,22 @@
+---
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  caption: string;
+  kind: "diagram";
+  provenance: "authored-svg";
+  claimStatus: "conceptual" | "not_evidence";
+}
+
+const { src, alt, caption, kind, provenance, claimStatus } = Astro.props;
+---
+
+<figure
+  class="lesson-figure"
+  data-figure-kind={kind}
+  data-provenance={provenance}
+  data-claim-status={claimStatus}
+>
+  <img src={src.src} width={src.width} height={src.height} alt={alt} loading="lazy" decoding="async" />
+  <figcaption>{caption}</figcaption>
+</figure>

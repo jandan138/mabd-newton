@@ -12,14 +12,25 @@ import ConceptCard from "../../components/ConceptCard.astro";
 import ProblemCard from "../../components/ProblemCard.astro";
 import StepFlow from "../../components/StepFlow.astro";
 import CompareGrid from "../../components/CompareGrid.astro";
+import Figure from "../../components/Figure.astro";
 import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import rigidVsAffineDof from "../../assets/diagrams/rigid-vs-affine-dof.svg";
 
 <ProblemCard title="它解决的问题">
 刚体是理解 ABD 的重要参照：它只有平移和旋转，没有拉伸和剪切。先理解 6 DOF、角速度和惯量，再看 12 维仿射状态，会更清楚 ABD 多出来的自由度在表达什么。
 </ProblemCard>
+
+<Figure
+  src={rigidVsAffineDof}
+  alt="Rigid body with move and rotate arrows compared to affine body with additional stretch and shear arrows"
+  caption="Conceptual DOF comparison: rigid bodies use 6 DOF, while affine state uses 12 numbers for `A` and `t`."
+  kind="diagram"
+  provenance="authored-svg"
+  claimStatus="conceptual"
+/>
 
 ## 6 DOF：三个位置，加三个姿态
 

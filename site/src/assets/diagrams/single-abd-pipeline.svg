@@ -1,0 +1,42 @@
+<svg width="960" height="540" viewBox="0 0 960 540" role="img" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" fill="#fff7eb"/>
+  <rect x="58" y="54" width="844" height="432" rx="28" fill="#fffaf3" stroke="#6b4028" stroke-width="3"/>
+  <text x="480" y="104" fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="32" font-weight="700" text-anchor="middle">Single ABD Pipeline</text>
+  <g stroke="#6b4028" stroke-width="4" fill="#fff7eb">
+    <rect x="98" y="196" width="140" height="116" rx="18"/>
+    <rect x="284" y="196" width="140" height="116" rx="18" fill="#f7edff"/>
+    <rect x="470" y="196" width="140" height="116" rx="18"/>
+    <rect x="656" y="196" width="140" height="116" rx="18" fill="#fff7eb"/>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" text-anchor="middle">
+    <text x="168" y="240" font-size="20">state</text>
+    <text x="168" y="268" font-size="17" fill="#8a6a55">A + t</text>
+    <text x="354" y="240" font-size="20">mass</text>
+    <text x="354" y="268" font-size="17" fill="#8a6a55">inertia</text>
+    <text x="540" y="240" font-size="20">material</text>
+    <text x="540" y="268" font-size="17" fill="#8a6a55">force</text>
+    <text x="726" y="240" font-size="20">oracle</text>
+    <text x="726" y="268" font-size="17" fill="#8a6a55">dense solve</text>
+  </g>
+  <g stroke="#d8742f" stroke-width="5" fill="none" stroke-linecap="round">
+    <line x1="238" y1="254" x2="284" y2="254"/>
+    <line x1="424" y1="254" x2="470" y2="254"/>
+    <line x1="610" y1="254" x2="656" y2="254"/>
+    <path d="M726 312 C696 382 262 382 168 312"/>
+  </g>
+  <g fill="#d8742f">
+    <polygon points="284,254 260,242 260,266"/>
+    <polygon points="470,254 446,242 446,266"/>
+    <polygon points="656,254 632,242 632,266"/>
+    <polygon points="168,312 194,309 180,332"/>
+  </g>
+  <g stroke="#7d5bb2" stroke-width="3" fill="none">
+    <polygon points="142,352 192,334 218,376 166,396"/>
+    <path d="M520 352 C544 334 582 334 606 352 C582 374 544 374 520 352"/>
+  </g>
+  <g fill="#6b4028" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">
+    <text x="480" y="156" font-size="20" fill="#4f82aa">concept path for a scoped CPU reference step</text>
+    <text x="354" y="402" font-size="18" fill="#7d5bb2">update q, then check residual again</text>
+    <text x="540" y="386" font-size="17" fill="#8a6a55">polar or no-polar lane</text>
+  </g>
+</svg>
