@@ -32,7 +32,7 @@ the spinning-box comparison, or any paper experiment.
 - base commit: `6683d92`
 - design/plan commit: `c97ee49`
 - source-audit implementation commit: `d180e58`
-- docs/record commit: to be recorded after the Phase 30 docs commit.
+- docs/record commit: `ee188d0`
 - independent review: source audit is intentionally bounded to the public
   arXiv TeX/PDF figure source available locally; it does not infer private
   author-code behavior.
