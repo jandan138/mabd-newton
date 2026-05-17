@@ -1,0 +1,108 @@
+{
+  "asset_hashes": {
+    "physical_pendulum_procedural": "not_applicable_procedural"
+  },
+  "backend": "cpu_scipy_reference",
+  "baseline_lane": "analytic_reference",
+  "claim_id": "experiment.single_body.physical_pendulum",
+  "expected": {
+    "formula": "theta(t)=pi/2 - 2 asin(kappa * sn(K(kappa) - omega_lin * t, kappa))",
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "analytic reference lane only; full experiment incomplete",
+    "paper_values": {
+      "analytic_reference": "elliptic_integral",
+      "initial_velocity": "zero",
+      "release_angle": "horizontal"
+    },
+    "scipy_parameterization": "ellipk/ellipj use m=kappa**2",
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+    ]
+  },
+  "failure_reason": "analytic_reference lane only; mabd_newton dynamics, joint-force comparison, and pendulum_geometry_unknown remain incomplete",
+  "observed": {
+    "angle_samples_rad": [
+      {
+        "angle_rad": 0.0,
+        "sample_index": 0,
+        "time_s": 0.0
+      },
+      {
+        "angle_rad": 0.427078586392476,
+        "sample_index": 1,
+        "time_s": 0.29598024344702967
+      },
+      {
+        "angle_rad": 1.5707963267948966,
+        "sample_index": 2,
+        "time_s": 0.5919604868940593
+      },
+      {
+        "angle_rad": 2.7145140671973174,
+        "sample_index": 3,
+        "time_s": 0.887940730341089
+      },
+      {
+        "angle_rad": 3.141592653589793,
+        "sample_index": 4,
+        "time_s": 1.1839209737881187
+      },
+      {
+        "angle_rad": 2.7145140671973174,
+        "sample_index": 5,
+        "time_s": 1.4799012172351484
+      },
+      {
+        "angle_rad": 1.5707963267948968,
+        "sample_index": 6,
+        "time_s": 1.775881460682178
+      },
+      {
+        "angle_rad": 0.42707858639247687,
+        "sample_index": 7,
+        "time_s": 2.0718617041292076
+      },
+      {
+        "angle_rad": 0.0,
+        "sample_index": 8,
+        "time_s": 2.3678419475762373
+      }
+    ],
+    "blocking_reasons": [
+      "pendulum_geometry_unknown"
+    ],
+    "duration_s": 2.3678419475762373,
+    "full_experiment_claim_passed": false,
+    "initial_angle_rad": 0.0,
+    "kappa": 0.7071067811865476,
+    "lane_status": "passed",
+    "max_abs_reference_identity_error": 2.220446049250313e-16,
+    "omega_lin_rad_s": 3.132091952673165,
+    "period_count": 1,
+    "period_s": 2.3678419475762373,
+    "release_angle_rad": 1.5707963267948966,
+    "required_missing_lanes": [
+      "mabd_newton"
+    ],
+    "sample_count": 9,
+    "threshold_violations": []
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "time_series": "compact_samples_only"
+  },
+  "scene_id": "single_body_physical_pendulum",
+  "solver_mode": "analytic_elliptic_reference",
+  "source_commit": "a2a9374",
+  "status": "incomplete",
+  "threshold": {
+    "max_abs_reference_identity_error": 1e-12
+  },
+  "timing_distribution": {
+    "lane": "analytic_reference",
+    "scope": "not_timed"
+  },
+  "unit": "angle_rad",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

@@ -2104,6 +2104,149 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("expected", str(context.exception))
 
+    def test_phase36_physical_pendulum_comparison_protocol_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        physical_pendulum = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.physical_pendulum"
+        )
+        self.assertEqual(physical_pendulum["reproduction_status"], "intended")
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 36")
+        verified = claim_boundary_bullet(text, "Phase 36 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 36 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 36 physical-pendulum comparison protocol",
+        )
+
+        self.assertIn("physical-pendulum comparison protocol", current)
+        self.assertIn("input report provenance", verified)
+        self.assertIn("matched/unmatched sample coverage", verified)
+        self.assertIn("paper_metric_statuses", verified)
+        self.assertIn("full physical-pendulum experiment", non_claim)
+        self.assertIn("M-ABD lane pass", non_claim)
+        self.assertIn("joint-force waveform agreement", non_claim)
+        self.assertIn("paper geometry", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+    def test_phase36_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase36-physical-pendulum-comparison-protocol.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_physical_pendulum.yaml",
+            "configs/experiments/paper_experiment_matrix.yaml",
+            "## Repository",
+            "phase36-physical-pendulum-comparison-protocol",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status: Phase 36 does not modify vendored Newton",
+            "## Physical Pendulum Comparison Evidence",
+            "run_physical_pendulum_comparison",
+            "--lane physical_pendulum_comparison",
+            "physical_pendulum_multilane_comparison_development",
+            "baseline lane: `physical_pendulum_comparison_protocol`",
+            "top-level report status: `incomplete`",
+            "input_report_provenance",
+            "paper_metric_statuses",
+            "matched_sample_count",
+            "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+            "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+            "analytic report source_commit:",
+            "comparison report source_commit:",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains intended.",
+            "required physical-pendulum `mabd_newton` experiment lane remains missing",
+            "Joint-force waveform agreement remains missing",
+            "Paper-faithful pendulum geometry remains missing",
+            "paper timing remains missing",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_physical_pendulum_comparison_reports tests.test_experiment_runner",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE36", text)
+        self.assertNotIn("pending branch-local", text)
+
+    def test_phase36_report_artifacts_are_machine_checkable(self) -> None:
+        analytic = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json"
+        )
+        comparison = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+
+        self.assertEqual(analytic.baseline_lane, "analytic_reference")
+        self.assertEqual(analytic.status.value, "incomplete")
+        self.assertNotIn(analytic.source_commit, {"phase36-working-tree", "pending branch-local", "<implementation-commit>"})
+        self.assertEqual(
+            analytic.vendored_newton_commit,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+        )
+        self.assertEqual(comparison.baseline_lane, "physical_pendulum_comparison_protocol")
+        self.assertEqual(comparison.status.value, "incomplete")
+        self.assertEqual(comparison.solver_mode, "physical_pendulum_multilane_comparison_development")
+        self.assertFalse(comparison.observed["full_experiment_claim_passed"])
+        self.assertEqual(comparison.observed["missing_required_lanes"], ["mabd_newton"])
+        self.assertIn("joint_force_waveform_agreement_missing", comparison.observed["blocking_reasons"])
+        self.assertGreater(comparison.observed["matched_sample_count"], 0)
+        self.assertEqual(
+            comparison.observed["paper_metric_statuses"]["joint_force_error"]["status"],
+            "missing_waveform_not_max_magnitude",
+        )
+        self.assertEqual(
+            comparison.observed["input_report_provenance"]["analytic_reference"]["source_commit"],
+            analytic.source_commit,
+        )
+        self.assertEqual(
+            comparison.vendored_newton_commit,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+        )
+
+    def test_phase36_validator_rejects_placeholder_report_source_commit(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+        stale = replace(actual, source_commit="phase36-working-tree")
+
+        with patch.object(validate_docs, "load_claim_report", return_value=stale):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase36_record()
+
+        self.assertIn("source_commit", str(context.exception))
+
+    def test_phase36_validator_rejects_missing_metric_status(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+        )
+        overclaimed = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "paper_metric_statuses": {
+                    **actual.observed["paper_metric_statuses"],
+                    "joint_force_error": {"status": "passed"},
+                },
+            },
+        )
+
+        with patch.object(validate_docs, "load_claim_report", return_value=overclaimed):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase36_record()
+
+        self.assertIn("joint_force_error", str(context.exception))
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -2135,7 +2278,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

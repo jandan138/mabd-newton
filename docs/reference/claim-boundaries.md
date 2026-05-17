@@ -436,6 +436,20 @@
   joint-force waveform agreement, rendered output, paper timing, paper
   trajectory agreement, generated videos or raw simulation logs, or any passed
   `experiment.*` claim.
+- This repository contains Phase 36 physical-pendulum comparison protocol
+  evidence after the Phase 36 record is created.
+- Phase 36 verifies `physical_pendulum_comparison` config validation,
+  `run_physical_pendulum_comparison`, `--lane physical_pendulum_comparison`
+  CLI dispatch, explicit `--analytic-report`/`--mabd-report`/`--rbd-report`
+  inputs, input report provenance with per-lane source commits and SHA256,
+  matched/unmatched sample coverage, `paper_metric_statuses` for the physical
+  pendulum matrix metrics, `missing_required_lanes = [mabd_newton]`, the
+  `physical_pendulum_multilane_comparison_development` report solver mode, and
+  top-level report status: `incomplete`.
+- Phase 36 does not verify the full physical-pendulum experiment, M-ABD lane
+  pass, joint-force waveform agreement, paper geometry, rendered output, paper
+  timing, paper trajectory agreement, generated videos or raw simulation logs,
+  or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -471,6 +485,10 @@
 - Phase 35 physical-pendulum RBD diagnostic is a passed physical-pendulum
   experiment, paper-faithful pendulum geometry result, M-ABD dynamics result,
   joint-force agreement result, or paper timing result.
+- Phase 36 physical-pendulum comparison protocol is not a passed
+  physical-pendulum experiment, M-ABD lane pass, joint-force waveform
+  agreement, paper geometry result, paper timing result, or any passed
+  `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

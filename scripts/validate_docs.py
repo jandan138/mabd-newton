@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-35 docs and provenance contracts."""
+"""Validate Phase 0-36 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -80,6 +80,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase33-physical-pendulum-analytic-reference.md",
     "docs/records/2026-05-17-phase34-world-anchor-physical-pendulum-mabd.md",
     "docs/records/2026-05-17-phase35-physical-pendulum-rbd-baseline.md",
+    "docs/records/2026-05-17-phase36-physical-pendulum-comparison-protocol.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -90,8 +91,12 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-17-mabd-phase34-world-anchor-physical-pendulum-mabd.md",
     "docs/superpowers/specs/2026-05-17-phase35-physical-pendulum-rbd-baseline-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase35-physical-pendulum-rbd-baseline.md",
+    "docs/superpowers/specs/2026-05-17-phase36-physical-pendulum-comparison-protocol-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase36-physical-pendulum-comparison-protocol.md",
+    "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+    "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -114,6 +119,13 @@ STATUS_VALUES = {
     "not_verified",
     "unsupported",
     "qualitative_reconstruction",
+}
+VENDORED_NEWTON_COMMIT = "96713fa965463b69c229a4d30582c733ff3526bb"
+PLACEHOLDER_SOURCE_COMMITS = {
+    "test-source",
+    "phase36-working-tree",
+    "pending branch-local",
+    "<implementation-commit>",
 }
 
 
@@ -191,6 +203,8 @@ def validate_claim_boundaries() -> None:
         fail("claim-boundaries.md contains stale Phase 34 placeholder")
     if "TO_BE_BACKFILLED_PHASE35" in text:
         fail("claim-boundaries.md contains stale Phase 35 placeholder")
+    if "TO_BE_BACKFILLED_PHASE36" in text:
+        fail("claim-boundaries.md contains stale Phase 36 placeholder")
     for heading in ("## Current", "## Intended", "## Verified", "## Forbidden Claims"):
         if heading not in text:
             fail(f"claim-boundaries.md missing {heading}")
@@ -1091,6 +1105,52 @@ def validate_claim_boundaries() -> None:
     ):
         if snippet not in phase35_forbidden:
             fail(f"claim-boundaries.md must forbid Phase 35 overclaim: {snippet}")
+    phase36_current = claim_boundary_bullet(text, "This repository contains Phase 36")
+    phase36_verified = claim_boundary_bullet(text, "Phase 36 verifies")
+    phase36_non_claim = claim_boundary_bullet(text, "Phase 36 does not verify")
+    for snippet in (
+        "physical-pendulum comparison protocol",
+        "Phase 36 record",
+    ):
+        if snippet not in phase36_current:
+            fail(f"claim-boundaries.md must state Phase 36 comparison evidence: {snippet}")
+    for snippet in (
+        "physical_pendulum_comparison",
+        "run_physical_pendulum_comparison",
+        "`--lane physical_pendulum_comparison`",
+        "input report provenance",
+        "matched/unmatched sample coverage",
+        "paper_metric_statuses",
+        "`missing_required_lanes = [mabd_newton]`",
+        "`physical_pendulum_multilane_comparison_development`",
+        "top-level report status: `incomplete`",
+    ):
+        if snippet not in phase36_verified:
+            fail(f"claim-boundaries.md must describe Phase 36 comparison evidence: {snippet}")
+    for snippet in (
+        "full physical-pendulum experiment",
+        "M-ABD lane pass",
+        "joint-force waveform agreement",
+        "paper geometry",
+        "paper timing",
+        "paper trajectory agreement",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in phase36_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 36 comparison evidence: {snippet}")
+    phase36_forbidden = claim_boundary_bullet(
+        text, "Phase 36 physical-pendulum comparison protocol"
+    )
+    for snippet in (
+        "passed physical-pendulum experiment",
+        "M-ABD lane pass",
+        "joint-force waveform agreement",
+        "paper geometry result",
+        "paper timing result",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in phase36_forbidden:
+            fail(f"claim-boundaries.md must forbid Phase 36 overclaim: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -3577,6 +3637,223 @@ def validate_phase35_record() -> None:
                 fail("Phase 35 must not pass experiment.* claims")
 
 
+def validate_phase36_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-17-phase36-physical-pendulum-comparison-protocol.md"
+    text = record_path.read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_physical_pendulum.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "## Repository",
+        "implementation commit: `a2a9374`",
+        "phase36-physical-pendulum-comparison-protocol",
+        "2026-05-17-mabd-phase36-physical-pendulum-comparison-protocol.md",
+        "2026-05-17-phase36-physical-pendulum-comparison-protocol-design.md",
+        "## Vendored Newton",
+        VENDORED_NEWTON_COMMIT,
+        "local patch status: Phase 36 does not modify vendored Newton",
+        "## Paper Source",
+        "arXiv ID: `2603.08079`",
+        "arXiv version: `v2`",
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Physical Pendulum Comparison Evidence",
+        "write_physical_pendulum_comparison_report",
+        "run_physical_pendulum_comparison",
+        "--lane physical_pendulum_comparison",
+        "physical_pendulum_multilane_comparison_development",
+        "report_protocol",
+        "baseline lane: `physical_pendulum_comparison_protocol`",
+        "top-level report status: `incomplete`",
+        "input_report_provenance",
+        "paper_metric_statuses",
+        "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+        "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+        "analytic report source_commit:",
+        "comparison report source_commit:",
+        "## Metrics And Thresholds",
+        "required_missing_lanes = [`mabd_newton`]",
+        "matched_sample_count = `5`",
+        "max_mabd_rbd_abs_angle_delta_rad = 0.0006717899335180466",
+        "joint_force_error status = `missing_waveform_not_max_magnitude`",
+        "## TDD Evidence",
+        "tests.test_physical_pendulum_comparison_reports",
+        "run_physical_pendulum_comparison",
+        "--analytic-report",
+        "Ran 22 tests",
+        "Ran 5 tests",
+        "Ran 33 tests",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.physical_pendulum` remains intended.",
+        "required physical-pendulum `mabd_newton` experiment lane remains missing",
+        "Joint-force waveform agreement remains missing",
+        "Paper-faithful pendulum geometry remains missing",
+        "paper timing remains missing",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_physical_pendulum_comparison_reports tests.test_experiment_runner",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 36 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE36", "pending branch-local", "<implementation-commit>"):
+        if placeholder in text:
+            fail("Phase 36 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "passed physical-pendulum experiment",
+        "physical-pendulum experiment passed",
+        "m-abd lane pass achieved",
+        "joint-force waveform agreement passed",
+        "paper geometry result",
+        "paper timing result",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 36 record overclaims unsupported evidence: {snippet}")
+
+    try:
+        config = load_physical_pendulum_config(
+            ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 36 physical-pendulum config validation failed: {exc}")
+    if config.comparison.output_report != (
+        "reports/experiment_matrix/single_body_physical_pendulum_comparison.json"
+    ):
+        fail("Phase 36 comparison output report changed")
+    if config.comparison.required_lanes != (
+        "mabd_newton",
+        "analytic_reference",
+        "rbd_implicit_baseline",
+    ):
+        fail("Phase 36 comparison required lanes changed")
+    if config.comparison.required_metrics != (
+        "pendulum_angle_error",
+        "joint_force_error",
+        "phase_drift",
+    ):
+        fail("Phase 36 comparison required metrics changed")
+
+    comparison = load_claim_report(ROOT / config.comparison.output_report)
+    if comparison.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 36 comparison report source_commit must name the implementation commit")
+    if comparison.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 36 comparison report vendored Newton commit changed")
+    if comparison.claim_id != config.claim_id:
+        fail("Phase 36 comparison report claim_id does not match config")
+    if comparison.scene_id != config.scene_id:
+        fail("Phase 36 comparison report scene_id does not match config")
+    if comparison.status.value != "incomplete":
+        fail("Phase 36 comparison report must remain incomplete")
+    if comparison.baseline_lane != "physical_pendulum_comparison_protocol":
+        fail("Phase 36 comparison report lane changed")
+    if comparison.solver_mode != "physical_pendulum_multilane_comparison_development":
+        fail("Phase 36 comparison report solver mode changed")
+    if comparison.backend != "report_protocol":
+        fail("Phase 36 comparison report backend changed")
+    if f"comparison report source_commit: `{comparison.source_commit}`" not in text:
+        fail("Phase 36 record must match comparison report source_commit")
+
+    observed = comparison.observed
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 36 comparison report must not pass the full experiment claim")
+    if observed.get("missing_required_lanes") != ["mabd_newton"]:
+        fail("Phase 36 comparison missing_required_lanes changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 36 comparison blockers must be a list")
+    for blocker in (
+        "mabd_newton_missing",
+        "joint_force_waveform_agreement_missing",
+        "pendulum_geometry_unknown",
+        "paper_timing_missing",
+        "physical_pendulum_comparison_pass_gate_not_enabled",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 36 comparison blocker missing: {blocker}")
+    if int(observed.get("matched_sample_count", 0)) <= 0:
+        fail("Phase 36 comparison must retain matched sample coverage")
+    if observed.get("unmatched_mabd_samples") != [] or observed.get("unmatched_rbd_samples") != []:
+        fail("Phase 36 comparison sample alignment changed")
+    if float(observed.get("max_mabd_rbd_abs_angle_delta_rad", 999.0)) > float(
+        comparison.threshold["max_mabd_rbd_abs_angle_delta_rad"]
+    ):
+        fail("Phase 36 comparison angle delta exceeds threshold")
+    metric_statuses = observed.get("paper_metric_statuses")
+    if not isinstance(metric_statuses, dict):
+        fail("Phase 36 comparison paper_metric_statuses must be a mapping")
+    joint_force = metric_statuses.get("joint_force_error")
+    if not isinstance(joint_force, dict) or joint_force.get("status") != (
+        "missing_waveform_not_max_magnitude"
+    ):
+        fail("Phase 36 joint_force_error metric status must remain missing_waveform_not_max_magnitude")
+
+    provenance = observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 36 comparison input_report_provenance must be a mapping")
+    expected_lanes = {
+        "analytic_reference": "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+        "physical_pendulum_mabd_development_diagnostic": "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
+        "rbd_implicit_baseline": "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+    }
+    for lane, expected_path in expected_lanes.items():
+        lane_provenance = provenance.get(lane)
+        if not isinstance(lane_provenance, dict):
+            fail(f"Phase 36 input report provenance missing lane: {lane}")
+        if lane_provenance.get("path") != expected_path:
+            fail(f"Phase 36 input report path changed: {lane}")
+        if lane_provenance.get("vendored_newton_commit") != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 36 input report vendored Newton commit changed: {lane}")
+        if not lane_provenance.get("sha256"):
+            fail(f"Phase 36 input report sha256 missing: {lane}")
+        if lane_provenance.get("source_commit") in PLACEHOLDER_SOURCE_COMMITS:
+            fail(f"Phase 36 input report source_commit placeholder: {lane}")
+
+    analytic = load_claim_report(ROOT / config.output_report)
+    if analytic.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 36 analytic report source_commit must name the implementation commit")
+    if analytic.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 36 analytic report vendored Newton commit changed")
+    if analytic.baseline_lane != "analytic_reference":
+        fail("Phase 36 analytic report lane changed")
+    if analytic.status.value != "incomplete":
+        fail("Phase 36 analytic report must remain incomplete")
+    if f"analytic report source_commit: `{analytic.source_commit}`" not in text:
+        fail("Phase 36 record must match analytic report source_commit")
+    if provenance["analytic_reference"].get("source_commit") != analytic.source_commit:
+        fail("Phase 36 comparison provenance must match analytic report source_commit")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_physical_pendulum = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.physical_pendulum":
+            found_physical_pendulum = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 36 must keep physical-pendulum experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 36 must not pass experiment.* claims")
+    if not found_physical_pendulum:
+        fail("paper-claims.yaml missing physical-pendulum claim")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -3828,13 +4105,14 @@ def main() -> int:
     validate_phase33_record()
     validate_phase34_record()
     validate_phase35_record()
+    validate_phase36_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36 "
         "docs/provenance validation passed"
     )
     return 0

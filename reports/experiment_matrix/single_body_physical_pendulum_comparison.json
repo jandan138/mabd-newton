@@ -1,0 +1,203 @@
+{
+  "asset_hashes": {
+    "physical_pendulum_procedural": "not_applicable_procedural"
+  },
+  "backend": "report_protocol",
+  "baseline_lane": "physical_pendulum_comparison_protocol",
+  "claim_id": "experiment.single_body.physical_pendulum",
+  "expected": {
+    "diagnostic_lanes": [
+      "physical_pendulum_mabd_development_diagnostic"
+    ],
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "requires paper-faithful M-ABD lane, implicit RBD baseline, joint-force waveform comparison, geometry, and timing evidence",
+    "required_lanes": [
+      "mabd_newton",
+      "analytic_reference",
+      "rbd_implicit_baseline"
+    ],
+    "required_metrics": [
+      "pendulum_angle_error",
+      "joint_force_error",
+      "phase_drift"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:77-91"
+    ]
+  },
+  "failure_reason": "physical-pendulum comparison protocol is incomplete because mabd_newton, joint-force waveform agreement, paper geometry, and paper timing remain missing",
+  "observed": {
+    "angle_sample_differences_rad": [
+      {
+        "abs_angle_delta_rad": 0.0,
+        "mabd_angle_rad": 0.0,
+        "mabd_minus_rbd_angle_rad": 0.0,
+        "rbd_angle_rad": 0.0,
+        "sample_index": 0,
+        "step": 0,
+        "time_s": 0.0
+      },
+      {
+        "abs_angle_delta_rad": 2.1885191476764265e-07,
+        "mabd_angle_rad": 0.009809685326122591,
+        "mabd_minus_rbd_angle_rad": -2.1885191476764265e-07,
+        "rbd_angle_rad": 0.009809904178037359,
+        "sample_index": 1,
+        "step": 4,
+        "time_s": 0.04
+      },
+      {
+        "abs_angle_delta_rad": 1.1898917984289048e-05,
+        "mabd_angle_rad": 0.03530132870528927,
+        "mabd_minus_rbd_angle_rad": -1.1898917984289048e-05,
+        "rbd_angle_rad": 0.03531322762327356,
+        "sample_index": 2,
+        "step": 8,
+        "time_s": 0.08
+      },
+      {
+        "abs_angle_delta_rad": 0.0001255022418728824,
+        "mabd_angle_rad": 0.0763691846994714,
+        "mabd_minus_rbd_angle_rad": -0.0001255022418728824,
+        "rbd_angle_rad": 0.07649468694134429,
+        "sample_index": 3,
+        "step": 12,
+        "time_s": 0.12
+      },
+      {
+        "abs_angle_delta_rad": 0.0006717899335180466,
+        "mabd_angle_rad": 0.13263275412431139,
+        "mabd_minus_rbd_angle_rad": -0.0006717899335180466,
+        "rbd_angle_rad": 0.13330454405782943,
+        "sample_index": 4,
+        "step": 16,
+        "time_s": 0.16
+      }
+    ],
+    "blocking_reasons": [
+      "mabd_newton_missing",
+      "joint_force_waveform_agreement_missing",
+      "pendulum_geometry_unknown",
+      "paper_timing_missing",
+      "physical_pendulum_comparison_pass_gate_not_enabled"
+    ],
+    "full_experiment_claim_passed": false,
+    "input_report_provenance": {
+      "analytic_reference": {
+        "backend": "cpu_scipy_reference",
+        "baseline_lane": "analytic_reference",
+        "path": "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+        "sha256": "88504c654c07241f379a885f957d4cecc01e5e36589c6f0fbe7314e90bd76829",
+        "solver_mode": "analytic_elliptic_reference",
+        "source_commit": "a2a9374",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      },
+      "physical_pendulum_mabd_development_diagnostic": {
+        "backend": "cpu_numpy_newton_only",
+        "baseline_lane": "physical_pendulum_mabd_development_diagnostic",
+        "path": "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
+        "sha256": "869bcf7a8cc59bf778a024f41b9c2ce3727fe0d21640f9913d41106ffd56b58c",
+        "solver_mode": "mabd_cpu_oracle_physical_pendulum_development",
+        "source_commit": "88c8195",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      },
+      "rbd_implicit_baseline": {
+        "backend": "cpu_numpy_newton_only",
+        "baseline_lane": "rbd_implicit_baseline",
+        "path": "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+        "sha256": "acabe6df23ea76760d3539306f29d03b42be723fed83a6ea7f6e8cd5d78c8c3a",
+        "solver_mode": "physical_pendulum_scalar_implicit_rbd_development",
+        "source_commit": "88c8195",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      }
+    },
+    "lane_metrics": {
+      "analytic_reference": {
+        "max_abs_reference_identity_error": 2.220446049250313e-16
+      },
+      "physical_pendulum_mabd_development_diagnostic": {
+        "max_abs_angle_error_rad": 0.007130697850637885,
+        "max_constraint_residual_norm": 0.0,
+        "max_pivot_residual_m": 0.0
+      },
+      "rbd_implicit_baseline": {
+        "max_abs_angle_error_rad": 0.0078024877841559315,
+        "max_implicit_residual": 6.245004513516506e-16,
+        "max_joint_force_magnitude_n": 3.7570647135963737,
+        "max_length_constraint_error_m": 1.1102230246251565e-16,
+        "max_phase_drift_rad": 0.0078024877841559315
+      }
+    },
+    "lane_observed_statuses": {
+      "analytic_reference": "passed",
+      "physical_pendulum_mabd_development_diagnostic": "development_diagnostic_generated",
+      "rbd_implicit_baseline": "development_diagnostic_generated"
+    },
+    "lane_solver_modes": {
+      "analytic_reference": "analytic_elliptic_reference",
+      "physical_pendulum_mabd_development_diagnostic": "mabd_cpu_oracle_physical_pendulum_development",
+      "rbd_implicit_baseline": "physical_pendulum_scalar_implicit_rbd_development"
+    },
+    "lane_statuses": {
+      "analytic_reference": "incomplete",
+      "physical_pendulum_mabd_development_diagnostic": "incomplete",
+      "rbd_implicit_baseline": "incomplete"
+    },
+    "mabd_sample_count": 5,
+    "matched_sample_count": 5,
+    "max_mabd_rbd_abs_angle_delta_rad": 0.0006717899335180466,
+    "missing_paper_metrics": [
+      "mabd_newton:pendulum_angle_error",
+      "mabd_newton:joint_force_error",
+      "mabd_newton:phase_drift",
+      "physical_pendulum_mabd_development_diagnostic:joint_force_error",
+      "physical_pendulum_mabd_development_diagnostic:phase_drift",
+      "rbd_implicit_baseline:joint_force_error"
+    ],
+    "missing_required_lanes": [
+      "mabd_newton"
+    ],
+    "paper_metric_statuses": {
+      "joint_force_error": {
+        "mabd_field": null,
+        "rbd_diagnostic_field": "max_joint_force_magnitude_n",
+        "status": "missing_waveform_not_max_magnitude"
+      },
+      "pendulum_angle_error": {
+        "mabd_field": "max_abs_angle_error_rad",
+        "rbd_field": "max_abs_angle_error_rad",
+        "status": "diagnostic_available"
+      },
+      "phase_drift": {
+        "mabd_field": null,
+        "rbd_field": "max_phase_drift_rad",
+        "status": "rbd_diagnostic_only"
+      }
+    },
+    "rbd_sample_count": 5,
+    "unmatched_mabd_samples": [],
+    "unmatched_rbd_samples": []
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "analytic_report": "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+    "mabd_report": "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
+    "rbd_report": "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json"
+  },
+  "scene_id": "single_body_physical_pendulum",
+  "solver_mode": "physical_pendulum_multilane_comparison_development",
+  "source_commit": "a2a9374",
+  "status": "incomplete",
+  "threshold": {
+    "max_mabd_rbd_abs_angle_delta_rad": 2.0
+  },
+  "timing_distribution": {
+    "scope": "not_timed"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}
