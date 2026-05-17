@@ -97,6 +97,30 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         return analytic_path, mabd_path, rbd_path
 
+    def _write_heavy_top_lane_inputs(self, tmpdir: str) -> tuple[Path, Path]:
+        from mabd_reproduction.experiment_configs import load_heavy_top_config
+        from mabd_reproduction.heavy_top_reports import (
+            write_heavy_top_mabd_newton_report,
+            write_heavy_top_rk4_reference_report,
+        )
+
+        config = load_heavy_top_config(HEAVY_TOP_CONFIG_PATH)
+        rk4_path = Path(tmpdir) / "heavy_top_rk4.json"
+        mabd_path = Path(tmpdir) / "heavy_top_mabd.json"
+        write_heavy_top_rk4_reference_report(
+            rk4_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        write_heavy_top_mabd_newton_report(
+            mabd_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        return rk4_path, mabd_path
+
     def _assert_physical_pendulum_timing_source_audit(self, payload: dict[str, object]) -> None:
         self.assertEqual(payload["source_lines"], PHYSICAL_PENDULUM_TIMING_SOURCE_LINES)
         self.assertEqual(payload["status"], "not_a_physical_pendulum_paper_metric")
@@ -707,7 +731,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.observed["blocking_reasons"],
         )
         self.assertIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
-        self.assertIn("heavy_top_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("heavy_top_comparison_report_incomplete", loaded.observed["blocking_reasons"])
         self.assertIn("exact_heavy_top_geometry_unknown", loaded.observed["blocking_reasons"])
         self.assertNotIn("lane_gate_status", loaded.observed)
 
@@ -764,10 +788,51 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertNotIn("lane_gate_status", loaded.observed)
         self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
         self.assertIn("exact_heavy_top_geometry_unknown", loaded.observed["blocking_reasons"])
-        self.assertIn("heavy_top_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("heavy_top_comparison_report_incomplete", loaded.observed["blocking_reasons"])
         self.assertGreater(
             loaded.observed["max_nutation_angle_deg"] - loaded.observed["min_nutation_angle_deg"],
             0.0,
+        )
+
+    def test_run_heavy_top_comparison_writes_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_heavy_top_comparison
+
+        with TemporaryDirectory() as tmpdir:
+            rk4_path, mabd_path = self._write_heavy_top_lane_inputs(tmpdir)
+            result = run_heavy_top_comparison(
+                config_path=HEAVY_TOP_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                rk4_report_path=rk4_path,
+                mabd_report_path=mabd_path,
+                output_root=tmpdir,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(
+            result.report_path,
+            Path(tmpdir) / "reports/experiment_matrix/single_body_heavy_top_comparison.json",
+        )
+        self.assertEqual(result.claim_id, "experiment.single_body.heavy_top")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "heavy_top_comparison_protocol")
+        self.assertEqual(loaded.baseline_lane, "heavy_top_comparison_protocol")
+        self.assertEqual(loaded.solver_mode, "heavy_top_multilane_comparison_development")
+        self.assertEqual(loaded.observed["missing_required_lanes"], [])
+        self.assertIn("input_report_provenance", loaded.observed)
+        self.assertIn("sample_time_grid_mismatch", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "heavy_top_comparison_pass_gate_not_enabled",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertEqual(
+            loaded.observed["missing_paper_metrics"],
+            [
+                "precession_velocity_error:mabd_precession_velocity_samples_missing",
+                "nutation_angle_error:paper_reference_curve_missing",
+                "energy_drift:mabd_energy_drift_missing",
+            ],
         )
 
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:
@@ -1214,6 +1279,96 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.solver_mode, "heavy_top_rk4_reference_diagnostic")
         self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
+
+    def test_run_experiment_cli_writes_heavy_top_comparison_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            rk4_path, mabd_path = self._write_heavy_top_lane_inputs(tmpdir)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "heavy_top_comparison",
+                    "--config",
+                    str(HEAVY_TOP_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--mabd-report",
+                    str(mabd_path),
+                    "--rbd-report",
+                    str(rk4_path),
+                    "--output-root",
+                    tmpdir,
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            output_path = (
+                Path(tmpdir) / "reports/experiment_matrix/single_body_heavy_top_comparison.json"
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.heavy_top")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "heavy_top_comparison_protocol")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
+        self.assertEqual(
+            loaded.observed["input_report_provenance"]["rbd_rk4_reference"]["source_commit"],
+            "test-source",
+        )
+
+    def test_run_experiment_cli_heavy_top_comparison_requires_input_reports(self) -> None:
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "heavy_top_comparison",
+                    "--config",
+                    str(HEAVY_TOP_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output-root",
+                    tmpdir,
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            "heavy_top_comparison requires --mabd-report and --rbd-report",
+            result.stderr,
+        )
 
     def test_run_experiment_cli_physical_pendulum_comparison_requires_input_reports(self) -> None:
         import os

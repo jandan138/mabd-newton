@@ -100,7 +100,7 @@ experiments:
       - exact_heavy_top_geometry_unknown
       - raw_heavy_top_reference_curve_data_missing
       - mabd_newton_report_incomplete
-      - heavy_top_comparison_report_missing
+      - heavy_top_comparison_report_incomplete
     output_report: reports/experiment_matrix/single_body_heavy_top.json
   - claim_id: experiment.single_body.physical_pendulum
     scene_id: single_body_physical_pendulum

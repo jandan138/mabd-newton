@@ -199,6 +199,14 @@ class HeavyTopMABDNewtonConfig:
 
 
 @dataclass(frozen=True)
+class HeavyTopComparisonConfig:
+    output_report: str
+    required_lanes: tuple[str, ...]
+    required_metrics: tuple[str, ...]
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class HeavyTopRunConfig:
     schema_version: int
     claim_id: str
@@ -210,6 +218,7 @@ class HeavyTopRunConfig:
     paper_values: dict[str, Any]
     reference: HeavyTopReferenceConfig
     mabd_newton: HeavyTopMABDNewtonConfig
+    comparison: HeavyTopComparisonConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -318,6 +327,13 @@ HEAVY_TOP_MABD_NEWTON_THRESHOLD_KEYS = frozenset(
 )
 HEAVY_TOP_MABD_NEWTON_ROTATION_MODES = frozenset({"polar"})
 HEAVY_TOP_REQUIRED_MISSING_LANES: tuple[str, ...] = ()
+HEAVY_TOP_COMPARISON_REQUIRED_LANES = ("mabd_newton", "rbd_rk4_reference")
+HEAVY_TOP_COMPARISON_REQUIRED_METRICS = (
+    "precession_velocity_error",
+    "nutation_angle_error",
+    "energy_drift",
+)
+HEAVY_TOP_COMPARISON_THRESHOLD_KEYS = frozenset({"max_sample_time_delta_s"})
 HEAVY_TOP_EXPECTED_FIGURE_PDF_SHA256 = (
     "c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d"
 )
@@ -330,7 +346,7 @@ HEAVY_TOP_REQUIRED_BLOCKERS = frozenset(
         "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
         "mabd_newton_report_incomplete",
-        "heavy_top_comparison_report_missing",
+        "heavy_top_comparison_report_incomplete",
     }
 )
 
@@ -888,6 +904,30 @@ def _require_heavy_top_mabd_newton(data: dict[str, Any]) -> HeavyTopMABDNewtonCo
     )
 
 
+def _require_heavy_top_comparison(data: dict[str, Any]) -> HeavyTopComparisonConfig:
+    comparison = _require_mapping(data, "comparison")
+    required_lanes = _require_str_tuple(comparison, "required_lanes")
+    if required_lanes != HEAVY_TOP_COMPARISON_REQUIRED_LANES:
+        raise ExperimentRunConfigError("comparison.required_lanes must match heavy-top paper lanes")
+    required_metrics = _require_str_tuple(comparison, "required_metrics")
+    if required_metrics != HEAVY_TOP_COMPARISON_REQUIRED_METRICS:
+        raise ExperimentRunConfigError("comparison.required_metrics must match heavy-top matrix metrics")
+    if not isinstance(comparison.get("thresholds"), dict) or not comparison["thresholds"]:
+        raise ExperimentRunConfigError("comparison.thresholds must be a non-empty mapping")
+    thresholds = _require_float_mapping(comparison, "thresholds")
+    missing = sorted(HEAVY_TOP_COMPARISON_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "comparison.thresholds missing required keys: " + ", ".join(missing)
+        )
+    return HeavyTopComparisonConfig(
+        output_report=_require_str(comparison, "output_report"),
+        required_lanes=required_lanes,
+        required_metrics=required_metrics,
+        thresholds=thresholds,
+    )
+
+
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     config_path = Path(path)
     data = _read_mapping(config_path)
@@ -1270,6 +1310,7 @@ def load_heavy_top_config(path: str | Path) -> HeavyTopRunConfig:
         paper_values=_require_mapping(data, "paper_values"),
         reference=_require_heavy_top_reference(data),
         mabd_newton=_require_heavy_top_mabd_newton(data),
+        comparison=_require_heavy_top_comparison(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1331,6 +1372,10 @@ def validate_heavy_top_config_against_matrix(
     for metric in ("precession_velocity_error", "nutation_angle_error", "energy_drift"):
         if metric not in entry.metrics:
             raise ExperimentRunConfigError("heavy-top metrics must match the paper matrix")
+    if set(config.comparison.required_lanes) != set(entry.required_lanes):
+        raise ExperimentRunConfigError("comparison.required_lanes must match experiment matrix")
+    if config.comparison.required_metrics != entry.metrics:
+        raise ExperimentRunConfigError("comparison.required_metrics must match experiment matrix")
     if config.reference.figure_pdf_sha256 != HEAVY_TOP_EXPECTED_FIGURE_PDF_SHA256:
         raise ExperimentRunConfigError("reference.figure_pdf_sha256 changed")
     if config.reference.figure_text_source != HEAVY_TOP_EXPECTED_FIGURE_TEXT_SOURCE:
@@ -1360,6 +1405,18 @@ def validate_heavy_top_config_against_matrix(
         )
     if config.mabd_newton.output_report == config.reference.output_report:
         raise ExperimentRunConfigError("mabd_newton.output_report must be separate from reference output_report")
+    if (
+        not config.comparison.output_report.startswith(expected_prefix)
+        or not config.comparison.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "comparison.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.comparison.output_report in (
+        config.reference.output_report,
+        config.mabd_newton.output_report,
+    ):
+        raise ExperimentRunConfigError("comparison.output_report must be separate from lane reports")
     if not np.isclose(
         float(np.sum(config.mabd_newton.point_masses_kg)),
         config.reference.mass_kg,
@@ -1383,6 +1440,9 @@ __all__ = [
     "ExperimentRunConfigError",
     "HEAVY_TOP_EXPECTED_FIGURE_PDF_SHA256",
     "HEAVY_TOP_EXPECTED_FIGURE_TEXT_SOURCE",
+    "HEAVY_TOP_COMPARISON_REQUIRED_LANES",
+    "HEAVY_TOP_COMPARISON_REQUIRED_METRICS",
+    "HEAVY_TOP_COMPARISON_THRESHOLD_KEYS",
     "HEAVY_TOP_MABD_NEWTON_ROTATION_MODES",
     "HEAVY_TOP_MABD_NEWTON_THRESHOLD_KEYS",
     "HEAVY_TOP_REQUIRED_BLOCKERS",
@@ -1403,6 +1463,7 @@ __all__ = [
     "T_HANDLE_REQUIRED_BLOCKERS",
     "T_HANDLE_REQUIRED_MISSING_LANES",
     "T_HANDLE_THRESHOLD_KEYS",
+    "HeavyTopComparisonConfig",
     "HeavyTopMABDNewtonConfig",
     "HeavyTopReferenceConfig",
     "HeavyTopRunConfig",

@@ -23,7 +23,7 @@ HEAVY_TOP_REPORT_BLOCKERS = (
     "exact_heavy_top_geometry_unknown",
     "raw_heavy_top_reference_curve_data_missing",
     "mabd_newton_report_missing",
-    "heavy_top_comparison_report_missing",
+    "heavy_top_comparison_report_incomplete",
     "heavy_top_timing_evidence_missing",
 )
 HEAVY_TOP_MABD_REPORT_BLOCKERS = (
@@ -31,7 +31,7 @@ HEAVY_TOP_MABD_REPORT_BLOCKERS = (
     "exact_heavy_top_geometry_unknown",
     "raw_heavy_top_reference_curve_data_missing",
     "mabd_newton_report_incomplete",
-    "heavy_top_comparison_report_missing",
+    "heavy_top_comparison_report_incomplete",
     "heavy_top_timing_evidence_missing",
 )
 
@@ -256,7 +256,7 @@ def write_heavy_top_mabd_newton_report(
                 "procedural point-mass tetrahedron is not the paper's undisclosed heavy-top geometry",
                 "configured inertia is not matched to the paper's undisclosed heavy-top inertia",
                 "no raw paper curve digitization or curve agreement gate is generated",
-                "no ABD-vs-RBD comparison report is generated",
+                "no ABD-vs-RBD comparison pass gate is generated",
                 "no rendered figure or timing distribution is generated",
             ],
             "blocking_reasons": list(HEAVY_TOP_MABD_REPORT_BLOCKERS),
@@ -269,7 +269,7 @@ def write_heavy_top_mabd_newton_report(
         failure_reason=(
             "heavy_top mabd_newton diagnostic lane remains incomplete because "
             "exact_heavy_top_inertia_unknown, exact_heavy_top_geometry_unknown, "
-            "raw_heavy_top_reference_curve_data_missing, heavy_top_comparison_report_missing, "
+            "raw_heavy_top_reference_curve_data_missing, heavy_top_comparison_report_incomplete, "
             "and heavy_top_timing_evidence_missing remain unresolved"
         ),
         timing_distribution={"status": "not_measured", "paper_comparable": False},

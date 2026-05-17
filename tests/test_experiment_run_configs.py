@@ -340,6 +340,16 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("max_pivot_residual_m", config.mabd_newton.thresholds)
         self.assertIn("max_constraint_residual_norm", config.mabd_newton.thresholds)
         self.assertIn("min_nutation_angle_range_deg", config.mabd_newton.thresholds)
+        self.assertEqual(
+            config.comparison.output_report,
+            "reports/experiment_matrix/single_body_heavy_top_comparison.json",
+        )
+        self.assertEqual(config.comparison.required_lanes, ("mabd_newton", "rbd_rk4_reference"))
+        self.assertEqual(
+            config.comparison.required_metrics,
+            ("precession_velocity_error", "nutation_angle_error", "energy_drift"),
+        )
+        self.assertIn("max_sample_time_delta_s", config.comparison.thresholds)
 
     def test_heavy_top_config_matches_experiment_matrix_without_overclaiming(self) -> None:
         config = load_heavy_top_config(HEAVY_TOP_CONFIG_PATH)
@@ -369,6 +379,36 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton_report_incomplete"):
             validate_heavy_top_config_against_matrix(config, drifted_matrix)
+
+    def test_heavy_top_config_rejects_bad_comparison_lanes(self) -> None:
+        source = yaml.safe_load(HEAVY_TOP_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["comparison"]["required_lanes"] = ["mabd_newton"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_heavy_top.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.required_lanes"):
+                load_heavy_top_config(path)
+
+    def test_heavy_top_config_rejects_bad_comparison_metrics(self) -> None:
+        source = yaml.safe_load(HEAVY_TOP_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["comparison"]["required_metrics"] = ["nutation_angle_error"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_heavy_top.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.required_metrics"):
+                load_heavy_top_config(path)
+
+    def test_heavy_top_config_rejects_empty_comparison_thresholds(self) -> None:
+        source = yaml.safe_load(HEAVY_TOP_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["comparison"]["thresholds"] = {}
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_heavy_top.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.thresholds"):
+                load_heavy_top_config(path)
 
     def test_heavy_top_config_rejects_passed_status(self) -> None:
         source = yaml.safe_load(HEAVY_TOP_CONFIG_PATH.read_text(encoding="utf-8"))
