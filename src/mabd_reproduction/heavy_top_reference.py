@@ -245,15 +245,180 @@ def _precession_angle_rad(q: np.ndarray) -> float:
     return atan2(float(axis[2]), float(axis[0]))
 
 
+def _normalize_quat_components(
+    qw: float,
+    qx: float,
+    qy: float,
+    qz: float,
+) -> tuple[float, float, float, float]:
+    norm = (qw * qw + qx * qx + qy * qy + qz * qz) ** 0.5
+    if norm <= 0.0 or not np.isfinite(norm):
+        raise ValueError("orientation quaternion became invalid")
+    qw /= norm
+    qx /= norm
+    qy /= norm
+    qz /= norm
+    if qw < 0.0:
+        return -qw, -qx, -qy, -qz
+    return qw, qx, qy, qz
+
+
+def _rotation_entries(
+    qw: float,
+    qx: float,
+    qy: float,
+    qz: float,
+) -> tuple[float, float, float, float, float, float, float, float, float]:
+    return (
+        1.0 - 2.0 * (qy * qy + qz * qz),
+        2.0 * (qx * qy - qz * qw),
+        2.0 * (qx * qz + qy * qw),
+        2.0 * (qx * qy + qz * qw),
+        1.0 - 2.0 * (qx * qx + qz * qz),
+        2.0 * (qy * qz - qx * qw),
+        2.0 * (qx * qz - qy * qw),
+        2.0 * (qy * qz + qx * qw),
+        1.0 - 2.0 * (qx * qx + qy * qy),
+    )
+
+
+def _rhs_scalar(
+    state: tuple[float, float, float, float, float, float, float],
+    *,
+    inertia: tuple[float, float, float],
+    mass_kg: float,
+    pivot_to_com_m: tuple[float, float, float],
+    gravity_m_s2: tuple[float, float, float],
+) -> tuple[float, float, float, float, float, float, float]:
+    qw, qx, qy, qz, wx, wy, wz = state
+    nqw, nqx, nqy, nqz = _normalize_quat_components(qw, qx, qy, qz)
+    r00, r01, r02, r10, r11, r12, r20, r21, r22 = _rotation_entries(nqw, nqx, nqy, nqz)
+    gx, gy, gz = gravity_m_s2
+    fx = mass_kg * (r00 * gx + r10 * gy + r20 * gz)
+    fy = mass_kg * (r01 * gx + r11 * gy + r21 * gz)
+    fz = mass_kg * (r02 * gx + r12 * gy + r22 * gz)
+    px, py, pz = pivot_to_com_m
+    tau_x = py * fz - pz * fy
+    tau_y = pz * fx - px * fz
+    tau_z = px * fy - py * fx
+    ix, iy, iz = inertia
+    lx = ix * wx
+    ly = iy * wy
+    lz = iz * wz
+    domega_x = (tau_x - (wy * lz - wz * ly)) / ix
+    domega_y = (tau_y - (wz * lx - wx * lz)) / iy
+    domega_z = (tau_z - (wx * ly - wy * lx)) / iz
+    return (
+        -0.5 * (qx * wx + qy * wy + qz * wz),
+        0.5 * (qw * wx + qy * wz - qz * wy),
+        0.5 * (qw * wy - qx * wz + qz * wx),
+        0.5 * (qw * wz + qx * wy - qy * wx),
+        domega_x,
+        domega_y,
+        domega_z,
+    )
+
+
+def _add_state_scalar(
+    state: tuple[float, float, float, float, float, float, float],
+    scale: float,
+    derivative: tuple[float, float, float, float, float, float, float],
+) -> tuple[float, float, float, float, float, float, float]:
+    return tuple(value + scale * delta for value, delta in zip(state, derivative, strict=True))
+
+
+def _rk4_step_scalar(
+    state: tuple[float, float, float, float, float, float, float],
+    *,
+    dt: float,
+    inertia: tuple[float, float, float],
+    mass_kg: float,
+    pivot_to_com_m: tuple[float, float, float],
+    gravity_m_s2: tuple[float, float, float],
+) -> tuple[float, float, float, float, float, float, float]:
+    kwargs = {
+        "inertia": inertia,
+        "mass_kg": mass_kg,
+        "pivot_to_com_m": pivot_to_com_m,
+        "gravity_m_s2": gravity_m_s2,
+    }
+    k1 = _rhs_scalar(state, **kwargs)
+    k2 = _rhs_scalar(_add_state_scalar(state, 0.5 * dt, k1), **kwargs)
+    k3 = _rhs_scalar(_add_state_scalar(state, 0.5 * dt, k2), **kwargs)
+    k4 = _rhs_scalar(_add_state_scalar(state, dt, k3), **kwargs)
+    next_state = tuple(
+        value + (dt / 6.0) * (d1 + 2.0 * d2 + 2.0 * d3 + d4)
+        for value, d1, d2, d3, d4 in zip(state, k1, k2, k3, k4, strict=True)
+    )
+    qw, qx, qy, qz = _normalize_quat_components(*next_state[:4])
+    return (qw, qx, qy, qz, next_state[4], next_state[5], next_state[6])
+
+
+def _energy_scalar(
+    state: tuple[float, float, float, float, float, float, float],
+    *,
+    inertia: tuple[float, float, float],
+    mass_kg: float,
+    pivot_to_com_m: tuple[float, float, float],
+    gravity_m_s2: tuple[float, float, float],
+) -> float:
+    qw, qx, qy, qz, wx, wy, wz = state
+    r00, r01, r02, r10, r11, r12, r20, r21, r22 = _rotation_entries(qw, qx, qy, qz)
+    ix, iy, iz = inertia
+    px, py, pz = pivot_to_com_m
+    gx, gy, gz = gravity_m_s2
+    rx = r00 * px + r01 * py + r02 * pz
+    ry = r10 * px + r11 * py + r12 * pz
+    rz = r20 * px + r21 * py + r22 * pz
+    rotational = 0.5 * (ix * wx * wx + iy * wy * wy + iz * wz * wz)
+    potential = -mass_kg * (gx * rx + gy * ry + gz * rz)
+    return rotational + potential
+
+
+def _angular_momentum_norm_scalar(
+    state: tuple[float, float, float, float, float, float, float],
+    inertia: tuple[float, float, float],
+) -> float:
+    _, _, _, _, wx, wy, wz = state
+    ix, iy, iz = inertia
+    return ((ix * wx) ** 2 + (iy * wy) ** 2 + (iz * wz) ** 2) ** 0.5
+
+
+def _nutation_angle_deg_scalar(
+    state: tuple[float, float, float, float, float, float, float],
+) -> float:
+    qw, qx, qy, qz = state[:4]
+    _, _, _, _, _, r12, _, _, _ = _rotation_entries(qw, qx, qy, qz)
+    return degrees(float(np.arccos(np.clip(r12, -1.0, 1.0))))
+
+
+def _precession_angle_rad_scalar(
+    state: tuple[float, float, float, float, float, float, float],
+) -> float:
+    qw, qx, qy, qz = state[:4]
+    _, _, r02, _, _, _, _, _, r22 = _rotation_entries(qw, qx, qy, qz)
+    return atan2(r22, r02)
+
+
 def roll_out_heavy_top_rk4_reference(
     config: HeavyTopRunConfig | HeavyTopReferenceConfig,
 ) -> HeavyTopReferenceTrajectory:
     reference = _reference_config(config)
     _validate_reference(reference)
 
-    inertia = reference.principal_inertia_kg_m2.astype(float, copy=True)
-    q = _initial_orientation(reference.initial_tilt_deg)
-    omega = np.asarray([0.0, 0.0, reference.initial_spin_rad_s], dtype=float)
+    inertia = tuple(float(value) for value in reference.principal_inertia_kg_m2)
+    initial_q = _initial_orientation(reference.initial_tilt_deg)
+    state = (
+        float(initial_q[0]),
+        float(initial_q[1]),
+        float(initial_q[2]),
+        float(initial_q[3]),
+        0.0,
+        0.0,
+        float(reference.initial_spin_rad_s),
+    )
+    pivot_to_com = tuple(float(value) for value in reference.pivot_to_com_m)
+    gravity = tuple(float(value) for value in reference.gravity_m_s2)
     dt = float(reference.time_step_s)
     step_count = int(round(reference.duration_s / dt))
     sample_indices = set(
@@ -261,15 +426,14 @@ def roll_out_heavy_top_rk4_reference(
         for index in np.rint(np.linspace(0, step_count, reference.sample_count)).astype(int)
     )
 
-    energy_initial = _energy(
-        q,
-        omega,
+    energy_initial = _energy_scalar(
+        state,
         inertia=inertia,
         mass_kg=reference.mass_kg,
-        pivot_to_com_m=reference.pivot_to_com_m,
-        gravity_m_s2=reference.gravity_m_s2,
+        pivot_to_com_m=pivot_to_com,
+        gravity_m_s2=gravity,
     )
-    momentum_norm_initial = _angular_momentum_norm(omega, inertia)
+    momentum_norm_initial = _angular_momentum_norm_scalar(state, inertia)
     if abs(energy_initial) <= 1.0e-15 or momentum_norm_initial <= 0.0:
         raise ValueError("initial state must produce nonzero energy and angular momentum")
 
@@ -280,18 +444,17 @@ def roll_out_heavy_top_rk4_reference(
     for step in range(step_count + 1):
         if step in sample_indices:
             sample_times.append(step * dt)
-            nutation_angles_deg.append(_nutation_angle_deg(q))
-            precession_angles_rad.append(_precession_angle_rad(q))
+            nutation_angles_deg.append(_nutation_angle_deg_scalar(state))
+            precession_angles_rad.append(_precession_angle_rad_scalar(state))
         if step == step_count:
             break
-        q, omega = _rk4_step(
-            q,
-            omega,
+        state = _rk4_step_scalar(
+            state,
             dt=dt,
             inertia=inertia,
             mass_kg=reference.mass_kg,
-            pivot_to_com_m=reference.pivot_to_com_m,
-            gravity_m_s2=reference.gravity_m_s2,
+            pivot_to_com_m=pivot_to_com,
+            gravity_m_s2=gravity,
         )
 
     times = np.asarray(sample_times, dtype=float)
@@ -301,15 +464,14 @@ def roll_out_heavy_top_rk4_reference(
     if len(precession) > 1:
         precession_velocity[1:] = np.diff(precession) / np.diff(times)
 
-    energy_final = _energy(
-        q,
-        omega,
+    energy_final = _energy_scalar(
+        state,
         inertia=inertia,
         mass_kg=reference.mass_kg,
-        pivot_to_com_m=reference.pivot_to_com_m,
-        gravity_m_s2=reference.gravity_m_s2,
+        pivot_to_com_m=pivot_to_com,
+        gravity_m_s2=gravity,
     )
-    momentum_norm_final = _angular_momentum_norm(omega, inertia)
+    momentum_norm_final = _angular_momentum_norm_scalar(state, inertia)
     samples = np.column_stack((times, nutation, precession, precession_velocity))
     return HeavyTopReferenceTrajectory(
         samples=samples,
