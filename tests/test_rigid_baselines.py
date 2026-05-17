@@ -64,6 +64,20 @@ class RigidBaselineTests(unittest.TestCase):
         self.assertEqual(result.newton_step_count, config.step_count)
         np.testing.assert_allclose(result.initial_position_m, [0.0, 0.05, 0.0], atol=1.0e-15)
         np.testing.assert_allclose(result.final_position_m, [4.0, 0.05, 0.0], atol=1.0e-6)
+        self.assertEqual(len(result.trajectory_samples), config.step_count + 1)
+        self.assertEqual(result.trajectory_samples[0]["step_index"], 0)
+        self.assertEqual(result.trajectory_samples[-1]["step_index"], config.step_count)
+        np.testing.assert_allclose(
+            result.trajectory_samples[0]["position_m"],
+            [0.0, 0.05, 0.0],
+            atol=1.0e-15,
+        )
+        np.testing.assert_allclose(
+            result.trajectory_samples[-1]["position_m"],
+            [4.0, 0.05, 0.0],
+            atol=1.0e-6,
+        )
+        self.assertIn("rotation_xyzw", result.trajectory_samples[-1])
         self.assertFalse(np.allclose(result.final_rotation_xyzw, [0.0, 0.0, 0.0, 1.0]))
         self.assertLessEqual(result.linear_momentum_error, 1.0e-6)
         self.assertLessEqual(result.angular_momentum_error, 1.0e-3)
@@ -115,6 +129,9 @@ class RigidBaselineTests(unittest.TestCase):
         self.assertIn("angular_momentum_error", loaded.observed)
         self.assertIn("energy_drift", loaded.observed)
         self.assertIn("relative_energy_drift", loaded.observed)
+        self.assertIn("trajectory_samples", loaded.observed)
+        self.assertEqual(len(loaded.observed["trajectory_samples"]), config.step_count + 1)
+        self.assertIn("rotation_xyzw", loaded.observed["trajectory_samples"][-1])
         self.assertIn("energy_drift", loaded.threshold)
         self.assertLessEqual(loaded.observed["energy_drift"], loaded.threshold["energy_drift"])
         self.assertAlmostEqual(

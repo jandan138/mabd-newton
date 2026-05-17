@@ -38,6 +38,7 @@ class SpinningBoxRBDBaselineResult:
     final_rotation_xyzw: np.ndarray
     final_linear_velocity_m_s: np.ndarray
     final_angular_velocity_rad_s: np.ndarray
+    trajectory_samples: tuple[dict[str, object], ...]
 
 
 def spinning_box_rbd_properties(config: SpinningBoxRunConfig) -> SpinningBoxRBDProperties:
@@ -50,11 +51,43 @@ def _rigid_energy(properties: SpinningBoxRBDProperties) -> float:
     return linear + angular
 
 
+def _rbd_trajectory_sample(
+    *,
+    config: SpinningBoxRunConfig,
+    properties: SpinningBoxRBDProperties,
+    q: np.ndarray,
+    qd: np.ndarray,
+    step_index: int,
+) -> dict[str, object]:
+    linear_velocity = qd[:3]
+    angular_velocity = qd[3:]
+    linear_momentum = properties.mass_kg * linear_velocity
+    angular_momentum = properties.inertia_diag_kg_m2 * angular_velocity
+    energy = float(
+        0.5 * properties.mass_kg * (linear_velocity @ linear_velocity)
+        + 0.5 * (angular_velocity @ (properties.inertia_diag_kg_m2 * angular_velocity))
+    )
+    return {
+        "step_index": int(step_index),
+        "time_s": float(step_index * config.time_step_s),
+        "position_m": q[:3].tolist(),
+        "rotation_xyzw": q[3:].tolist(),
+        "energy_j": energy,
+        "linear_momentum_error": float(
+            np.linalg.norm(linear_momentum - properties.linear_momentum_kg_m_s)
+        ),
+        "angular_momentum_error": float(
+            np.linalg.norm(angular_momentum - properties.angular_momentum_kg_m2_s)
+        ),
+    }
+
+
 def _run_newton_semimplicit_free_body(
     config: SpinningBoxRunConfig,
     properties: SpinningBoxRBDProperties,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[dict[str, object], ...]]:
     initial_position = np.asarray(config.initial_q[9:12], dtype=float)
+    trajectory_samples: list[dict[str, object]] = []
     with redirect_stdout(sys.stderr):
         import newton
         import warp as wp
@@ -76,23 +109,44 @@ def _run_newton_semimplicit_free_body(
             [properties.linear_velocity_m_s, properties.angular_velocity_rad_s]
         ).astype(np.float32)
         state_in.body_qd.assign(body_qd)
+        trajectory_samples.append(
+            _rbd_trajectory_sample(
+                config=config,
+                properties=properties,
+                q=np.asarray(state_in.body_q.numpy()[body], dtype=float),
+                qd=np.asarray(state_in.body_qd.numpy()[body], dtype=float),
+                step_index=0,
+            )
+        )
 
         solver = newton.solvers.SolverSemiImplicit(model, angular_damping=0.0)
         control = model.control()
-        for _step in range(config.step_count):
+        for step_index in range(1, config.step_count + 1):
             state_in.clear_forces()
             solver.step(state_in, state_out, control, None, config.time_step_s)
             state_in, state_out = state_out, state_in
+            trajectory_samples.append(
+                _rbd_trajectory_sample(
+                    config=config,
+                    properties=properties,
+                    q=np.asarray(state_in.body_q.numpy()[body], dtype=float),
+                    qd=np.asarray(state_in.body_qd.numpy()[body], dtype=float),
+                    step_index=step_index,
+                )
+            )
 
         final_q = np.asarray(state_in.body_q.numpy()[body], dtype=float)
         final_qd = np.asarray(state_in.body_qd.numpy()[body], dtype=float)
-    return initial_position, final_q, final_qd
+    return initial_position, final_q, final_qd, tuple(trajectory_samples)
 
 
 def run_spinning_box_rbd_baseline(config: SpinningBoxRunConfig) -> SpinningBoxRBDBaselineResult:
     properties = spinning_box_rbd_properties(config)
     initial_energy = _rigid_energy(properties)
-    initial_position, final_q, final_qd = _run_newton_semimplicit_free_body(config, properties)
+    initial_position, final_q, final_qd, trajectory_samples = _run_newton_semimplicit_free_body(
+        config,
+        properties,
+    )
     final_linear_velocity = final_qd[:3]
     final_angular_velocity = final_qd[3:]
     final_linear_momentum = properties.mass_kg * final_linear_velocity
@@ -126,6 +180,7 @@ def run_spinning_box_rbd_baseline(config: SpinningBoxRunConfig) -> SpinningBoxRB
         final_rotation_xyzw=final_q[3:],
         final_linear_velocity_m_s=final_linear_velocity,
         final_angular_velocity_rad_s=final_angular_velocity,
+        trajectory_samples=trajectory_samples,
     )
 
 
@@ -171,6 +226,7 @@ def write_spinning_box_rbd_baseline_report(
             "relative_energy_drift": result.relative_energy_drift,
             "initial_energy": result.initial_energy,
             "final_energy": result.final_energy,
+            "trajectory_samples": list(result.trajectory_samples),
         },
         threshold={
             "linear_momentum_error": 1.0e-6,
