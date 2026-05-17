@@ -1193,6 +1193,21 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "mabd:gravity"):
             solver.step(state, state, None, None, 0.02)
 
+    def test_solver_step_model_path_allows_one_enabled_and_one_disabled_gravity_row(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_gravity_row(builder, enabled=0, gravity=(0.0, -1.0, 0.0))
+        _add_model_gravity_row(builder, gravity=(0.0, -9.81, 1.25))
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        solver.step(state, state, None, None, 0.02)
+
+        np.testing.assert_allclose(solver.model_cpu_oracle_config.gravity, [0.0, -9.81, 1.25])
+
     def test_solver_step_manual_config_takes_precedence_over_model_gravity(self) -> None:
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)
