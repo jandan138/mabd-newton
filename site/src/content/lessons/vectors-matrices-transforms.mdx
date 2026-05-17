@@ -1,0 +1,74 @@
+---
+title: "向量、矩阵与坐标变换"
+description: "用箭头、数字表和变换机器理解 ABD 中反复出现的矩阵运算。"
+module: "Math"
+order: 3
+status: "complete"
+claimStatus: "conceptual"
+repoEvidence: []
+---
+
+import ConceptCard from "../../components/ConceptCard.astro";
+import ProblemCard from "../../components/ProblemCard.astro";
+import StepFlow from "../../components/StepFlow.astro";
+import CompareGrid from "../../components/CompareGrid.astro";
+import PseudoCode from "../../components/PseudoCode.astro";
+import PitfallCard from "../../components/PitfallCard.astro";
+import RememberBox from "../../components/RememberBox.astro";
+import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+
+<ProblemCard title="它解决的问题">
+ABD 里的位置、速度、力、旋转和形变都会变成向量或矩阵。如果把矩阵只看成一堆数字，很容易迷路；把它看成“改变箭头的机器”，公式就更像程序数据流。
+</ProblemCard>
+
+## 向量：箭头，也是数字列表
+
+一个 2D 向量 `[3, 1]` 可以看成从原点指向右 3、上 1 的箭头，也可以看成程序里的两个数字。物理直觉喜欢箭头，代码喜欢数组；两种看法说的是同一个对象。
+
+<ConceptCard title="矩阵是变换机器">
+矩阵接收一个向量，输出另一个向量。旋转矩阵让箭头转向，缩放矩阵让箭头变长或变短，剪切矩阵让方格变斜。ABD 中的 3x3 矩阵 `A` 就是一台可以同时做这些事的机器。
+</ConceptCard>
+
+## 先看 2D，再看 3D
+
+2D 里，一个矩阵有两列。第一列告诉你单位 x 方向会被送到哪里，第二列告诉你单位 y 方向会被送到哪里。
+
+<PseudoCode title="2D 基向量列">
+{`A = [[2, 0],
+     [0, 1]]
+
+e_x = [1, 0]
+e_y = [0, 1]
+
+A @ e_x  # -> [2, 0], x 方向被拉长
+A @ e_y  # -> [0, 1], y 方向不变`}
+</PseudoCode>
+
+到了 3D，矩阵变成 3x3，有三列，分别描述物体局部 x、y、z 三个基方向在世界空间中的样子。ABD 频繁出现 3x3 矩阵，是因为三维物体的线性变换需要同时管理三个方向。
+
+<CompareGrid title="几个常见直觉">
+  <article><h4>基列</h4><p>矩阵的列像新坐标轴。看列向量能直接看出方块被拉向哪里。</p></article>
+  <article><h4>转置</h4><p>对旋转矩阵，转置像把世界方向投回局部坐标；它也常出现在内积和 Jacobian 转换中。</p></article>
+  <article><h4>逆矩阵</h4><p>逆矩阵像“撤销机器”。先用 A 变换，再用 A 的逆变回去。</p></article>
+  <article><h4>3x3 矩阵</h4><p>在 3D ABD 中，`A` 同时编码旋转、缩放和剪切，因此自然是 3x3。</p></article>
+</CompareGrid>
+
+<StepFlow title="读矩阵公式的顺序">
+  <li>先问输入向量是什么坐标系里的量。</li>
+  <li>再看矩阵的列：它把局部基方向送到哪里。</li>
+  <li>最后看输出向量要给谁用，是世界位置、局部方向，还是力映射。</li>
+</StepFlow>
+
+<PitfallCard title="不要只背乘法规则">
+矩阵乘法的行列规则很重要，但只背规则会丢掉几何意义。读 ABD 公式时，优先问“这个乘法把哪个空间里的箭头变到哪个空间”。
+</PitfallCard>
+
+<RepoEvidenceCard title="数学基础页不等于实现证据" status="本课为 conceptual" />
+
+<RememberBox title="核心记忆">
+  <ul>
+    <li>向量既是箭头，也是数字数组。</li>
+    <li>矩阵是变换机器，列向量描述基方向的去处。</li>
+    <li>3D ABD 中的 3x3 `A` 管理三个方向的整体变形。</li>
+  </ul>
+</RememberBox>

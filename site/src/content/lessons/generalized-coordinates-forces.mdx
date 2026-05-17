@@ -1,0 +1,71 @@
+---
+title: "广义坐标、Jacobian 与力映射"
+description: "用 q、qd、虚功和 J^T f 理解物理力如何变成求解器里的广义力。"
+module: "Simulation"
+order: 7
+status: "complete"
+claimStatus: "conceptual"
+repoEvidence: []
+---
+
+import ConceptCard from "../../components/ConceptCard.astro";
+import ProblemCard from "../../components/ProblemCard.astro";
+import StepFlow from "../../components/StepFlow.astro";
+import CompareGrid from "../../components/CompareGrid.astro";
+import PseudoCode from "../../components/PseudoCode.astro";
+import PitfallCard from "../../components/PitfallCard.astro";
+import RememberBox from "../../components/RememberBox.astro";
+import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+
+<ProblemCard title="它解决的问题">
+模拟器真正积分的通常不是每个表面点的位置，而是一组控制状态，例如刚体的 6 个自由度或仿射体的 `q in R12`。本课解释一个世界空间里的力 `f` 怎样通过 Jacobian 变成这些状态变量上的广义力。
+</ProblemCard>
+
+## 从点到旋钮
+
+`q` 是广义坐标，可以理解为控制物体的旋钮；`qd` 是这些旋钮的速度。一个点的位置 `x(q)` 由旋钮决定，所以点的小变化满足 `dx = J dq`，这里的 `J = partial x / partial q` 就是 Jacobian。
+
+<ConceptCard title="手推点，旋钮受力">
+物理力像一只手推世界空间中的某个点。广义力不是另一只手，而是这个推力对控制旋钮产生的效果：哪个旋钮会被推动、推动多少、方向是什么。`J^T f` 就是在回答“这只手的推力应该分摊到哪些旋钮上”。
+</ConceptCard>
+
+<StepFlow title="力映射的四步">
+  <li>写出点位置函数 `x(q)`。</li>
+  <li>求 Jacobian：`J = partial x / partial q`。</li>
+  <li>用虚功相等：`f dot dx = tau dot dq`。</li>
+  <li>代入 `dx = J dq`，得到广义力 `tau = J^T f`。</li>
+</StepFlow>
+
+## 虚功为什么有用
+
+虚功可以理解成“很小、想象中的位移做了多少功”。如果点受到力 `f`，点移动 `dx` 的功是 `f dot dx`。同一件事从广义坐标看，是广义力 `tau` 推动旋钮变化 `dq`，功是 `tau dot dq`。两边必须相同，才不会凭空多出或少掉能量记账。
+
+<PseudoCode title="把点力映射到广义力">
+{`# x(q): point position controlled by generalized coordinates
+# f: physical force on that point
+J = jacobian(x, q)
+tau = transpose(J) @ f
+
+# qd maps to point velocity in the opposite direction
+xd = J @ qd`}
+</PseudoCode>
+
+<CompareGrid title="两种视角">
+  <article><h4>物理空间</h4><p>看见的是点、方向和牛顿力，例如某个角点被向右推。</p></article>
+  <article><h4>广义坐标空间</h4><p>看见的是 `q` 的每个分量该增加还是减少，以及变化强度。</p></article>
+  <article><h4>Jacobian</h4><p>像翻译器：`J qd` 把旋钮速度翻译成点速度，`J^T f` 把点力翻译成旋钮力。</p></article>
+</CompareGrid>
+
+<PitfallCard title="J^T f 不是随便转置一下">
+转置来自虚功守恒，不是记忆技巧。如果 `J` 描述“旋钮怎么移动点”，那么 `J^T` 描述“点上的力如何反馈到旋钮”。形状和单位对不上时，通常说明点位置函数或坐标打包顺序没理清。
+</PitfallCard>
+
+<RepoEvidenceCard title="本页解释通用模拟概念" status="本课为 conceptual" />
+
+<RememberBox title="核心记忆">
+  <ul>
+    <li>`q` 是状态旋钮，`qd` 是旋钮速度。</li>
+    <li>`J` 把广义速度映射成点速度。</li>
+    <li>`J^T f` 用虚功把物理力映射成广义力。</li>
+  </ul>
+</RememberBox>

@@ -1,0 +1,69 @@
+---
+import LearnLayout from "../../layouts/LearnLayout.astro";
+import { availableLessons } from "../../lib/lessonModules";
+
+const navLessons = availableLessons;
+
+const layers = [
+  {
+    title: "Claim boundaries",
+    path: "docs/reference/claim-boundaries.md",
+    description: "定义本仓库当前能说什么、不能说什么，避免把教程或局部实验误写成完整论文复现。",
+  },
+  {
+    title: "Paper claim map",
+    path: "docs/reference/paper-claims.yaml",
+    description: "把论文中的声明拆成可跟踪条目，并记录每条声明的状态、证据需求和缺口。",
+  },
+  {
+    title: "Dated records",
+    path: "docs/records/",
+    description: "保存带日期的检查、实验、来源和结论记录；这些记录是报告和状态更新的输入。",
+  },
+  {
+    title: "Method oracles",
+    path: "tests/ and docs/superpowers/specs/",
+    description: "用小规模可检查问题和设计记录约束方法实现，先验证局部数学和接口。",
+  },
+  {
+    title: "Experiment lanes",
+    path: "configs/ and scripts/",
+    description: "描述可重复运行的实验路径；只有安装、运行并记录后才能支持对应比较或性能说法。",
+  },
+];
+---
+
+<LearnLayout
+  title="复现证据地图"
+  description="区分方法 oracle、实验 lane、报告和 claim status，说明它们如何共同约束本仓库的复现声明。"
+  lessons={navLessons}
+>
+  <section class="problem-card">
+    <h2>证据不是同一种东西</h2>
+    <p>
+      教程页面帮助学习概念；方法 oracle 检查局部数学；实验 lane 组织可运行流程；报告汇总已经执行的结果；claim status 才描述某个论文声明当前被支持、未验证还是不完整。
+    </p>
+  </section>
+
+  <section>
+    <h2>证据层级</h2>
+    <div class="compare-grid__items">
+      {layers.map((layer) => (
+        <article>
+          <h3>{layer.title}</h3>
+          <p>{layer.description}</p>
+          <p>Repository path: <code>{layer.path}</code></p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="remember-box">
+    <h2>阅读顺序</h2>
+    <ol>
+      <li>先读 <code>docs/reference/claim-boundaries.md</code>，确认声明边界。</li>
+      <li>再读 <code>docs/reference/paper-claims.yaml</code>，找到论文声明和状态。</li>
+      <li>最后检查 <code>docs/records/</code> 中的日期记录，判断证据是否已经运行并可追溯。</li>
+    </ol>
+  </section>
+</LearnLayout>

@@ -1,0 +1,11 @@
+---
+interface Props {
+  name: string;
+  definition: string;
+}
+
+const { name, definition } = Astro.props;
+const hasSlot = Astro.slots.has("default");
+---
+
+<abbr class="term" title={definition}>{hasSlot ? <slot /> : name}</abbr>

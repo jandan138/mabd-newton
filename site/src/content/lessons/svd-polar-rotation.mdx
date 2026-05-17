@@ -1,0 +1,69 @@
+---
+title: "SVD、Polar Decomposition 与旋转提取"
+description: "理解如何从仿射变形中分离旋转、拉伸和剪切的几何含义。"
+module: "Math"
+order: 5
+status: "complete"
+claimStatus: "conceptual"
+repoEvidence: []
+---
+
+import ConceptCard from "../../components/ConceptCard.astro";
+import ProblemCard from "../../components/ProblemCard.astro";
+import StepFlow from "../../components/StepFlow.astro";
+import CompareGrid from "../../components/CompareGrid.astro";
+import PseudoCode from "../../components/PseudoCode.astro";
+import PitfallCard from "../../components/PitfallCard.astro";
+import RememberBox from "../../components/RememberBox.astro";
+import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+
+<ProblemCard title="它解决的问题">
+仿射矩阵 `A` 里同时混着旋转、拉伸和剪切。很多弹性模型需要知道“物体只是转了”还是“物体真的被拉变形了”，所以必须把纯旋转部分从变形里提取出来。
+</ProblemCard>
+
+## 变形里混着什么
+
+如果你把一本书整体转 30 度，书没有被拉伸；如果你把书页斜着推，形状就变了。对矩阵 `A` 来说，这两件事都藏在同一个 3x3 数字表里。旋转提取的任务，是把“整体转动”与“真实拉伸/剪切”分开。
+
+<ConceptCard title="SVD 的几何直觉">
+SVD 可以想成三步：先换一个观察方向，再沿主方向缩放，最后再换到输出方向。写成 `A = U S V^T` 时，`S` 像三把尺子，告诉我们主要方向上被拉长或压缩了多少；`U` 和 `V` 描述这些方向如何旋转。
+</ConceptCard>
+
+<ConceptCard title="Polar decomposition：找最近的纯旋转">
+极分解把 `A` 分成一个旋转 `R` 和一个对称拉伸部分。直觉上，它问的是：在所有纯旋转矩阵里，哪一个最像当前的 `A`？这个 `R` 常被用来把整体转动拿走，再分析剩下的形变。
+</ConceptCard>
+
+<PseudoCode title="从 SVD 得到旋转的概念伪代码">
+{`U, sigma, Vt = svd(A)
+R = U @ Vt
+stretch = Vt.T @ diag(sigma) @ Vt`}
+</PseudoCode>
+
+这段伪代码表达的是几何分离思想，不是对某个具体实现的声明。真实代码还需要处理数值稳定性、反射符号、退化奇异值等边界情况。
+
+<StepFlow title="为什么 ABD 需要旋转提取">
+  <li>仿射状态允许 `A` 同时包含旋转和形变。</li>
+  <li>弹性力通常不应该惩罚纯旋转，因为物体整体转动不等于被拉坏。</li>
+  <li>通过 polar decomposition 找到旋转部分 `R`。</li>
+  <li>把剩余部分解释为拉伸或剪切，再用于能量或力的计算。</li>
+</StepFlow>
+
+<CompareGrid title="分离后的角色">
+  <article><h4>`A`</h4><p>完整仿射变形，包含旋转、拉伸、缩放和剪切。</p></article>
+  <article><h4>`R`</h4><p>最近的纯旋转，保持长度和角度，不表达拉伸。</p></article>
+  <article><h4>stretch/shear</h4><p>剩下的真实形变，可用于衡量物体被压缩或拉伸多少。</p></article>
+</CompareGrid>
+
+<PitfallCard title="这里的 SVD 不是魔法压缩">
+机器学习里常把 SVD 和低秩压缩联系起来；本课语境下，它主要是几何分离工具，用来把仿射变形拆成方向、尺度和旋转，而不是为了压缩数据。
+</PitfallCard>
+
+<RepoEvidenceCard title="本页解释数学工具" status="本课为 conceptual" />
+
+<RememberBox title="核心记忆">
+  <ul>
+    <li>`A` 同时包含旋转、拉伸和剪切。</li>
+    <li>Polar decomposition 可以理解为找最接近 `A` 的纯旋转。</li>
+    <li>分离旋转是为了避免把整体转动误当成弹性变形。</li>
+  </ul>
+</RememberBox>
