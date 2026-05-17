@@ -114,6 +114,28 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             [4.0, 0.05, 0.0],
             atol=1.0e-12,
         )
+        samples = loaded.observed["trajectory_samples"]
+        self.assertEqual(len(samples), config.step_count + 1)
+        self.assertEqual(samples[0]["step_index"], 0)
+        self.assertEqual(samples[-1]["step_index"], config.step_count)
+        self.assertEqual(samples[0]["position_m"], [0.0, 0.05, 0.0])
+        np.testing.assert_allclose(
+            samples[-1]["position_m"],
+            [4.0, 0.05, 0.0],
+            atol=1.0e-12,
+        )
+        self.assertEqual(len(samples[-1]["affine_matrix"]), 3)
+        self.assertEqual(len(samples[-1]["affine_matrix"][0]), 3)
+        self.assertEqual(len(samples[-1]["affine_singular_values"]), 3)
+        self.assertAlmostEqual(samples[0]["affine_orthogonality_error"], 0.0)
+        self.assertGreater(samples[-1]["affine_orthogonality_error"], 1.0e6)
+        self.assertEqual(loaded.observed["initial_affine_orthogonality_error"], 0.0)
+        self.assertGreater(loaded.observed["final_affine_orthogonality_error"], 1.0e6)
+        self.assertGreater(loaded.observed["final_affine_determinant"], 1.0e6)
+        self.assertEqual(
+            loaded.observed["affine_shape_diagnostic_status"],
+            "development_gap_observed",
+        )
 
 
 if __name__ == "__main__":

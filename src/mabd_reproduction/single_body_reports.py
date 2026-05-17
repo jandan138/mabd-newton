@@ -12,6 +12,7 @@ from .reporting import ClaimReport, EvidenceStatus, write_claim_report
 from .spinning_box_physics import (
     abd_generalized_velocity_from_paper_momenta,
     mabd_momentum_diagnostics,
+    spinning_box_affine_shape_diagnostics,
     spinning_box_contact_diagnostics,
     spinning_box_mabd_mass_diagonal,
     spinning_box_physical_properties,
@@ -34,6 +35,30 @@ def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOrac
 
 def _kinetic_energy(qd: np.ndarray, mass_matrix: np.ndarray) -> float:
     return float(0.5 * qd @ mass_matrix @ qd)
+
+
+def _mabd_trajectory_sample(
+    *,
+    config: SpinningBoxRunConfig,
+    q: np.ndarray,
+    qd: np.ndarray,
+    mass_matrix: np.ndarray,
+    step_index: int,
+) -> dict[str, object]:
+    shape = spinning_box_affine_shape_diagnostics(q)
+    momentum = mabd_momentum_diagnostics(config, q, qd)
+    return {
+        "step_index": int(step_index),
+        "time_s": float(step_index * config.time_step_s),
+        "position_m": q[9:12].tolist(),
+        "energy_j": _kinetic_energy(qd, mass_matrix),
+        "linear_momentum_error": momentum.linear_momentum_error,
+        "angular_momentum_error": momentum.angular_momentum_error,
+        "affine_matrix": shape.affine_matrix.tolist(),
+        "affine_determinant": shape.determinant,
+        "affine_singular_values": shape.singular_values.tolist(),
+        "affine_orthogonality_error": shape.orthogonality_error,
+    }
 
 
 def write_spinning_box_development_report(
@@ -61,11 +86,32 @@ def write_spinning_box_development_report(
     initial_energy = _kinetic_energy(qd, mass_matrix)
     initial_diagnostics = mabd_momentum_diagnostics(config, q, qd) if config is not None else None
     contact_diagnostics = spinning_box_contact_diagnostics(config, q, qd) if config is not None else None
+    trajectory_samples: list[dict[str, object]] = []
+    if config is not None:
+        trajectory_samples.append(
+            _mabd_trajectory_sample(
+                config=config,
+                q=q,
+                qd=qd,
+                mass_matrix=mass_matrix,
+                step_index=0,
+            )
+        )
     oracle_config = mabd.MABDCPUOracleConfig(bodies=[_oracle_body(config)])
-    for _step in range(step_count):
+    for step_index in range(1, step_count + 1):
         result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=dt, config=oracle_config)
         q = result.q[0]
         qd = result.qd[0]
+        if config is not None:
+            trajectory_samples.append(
+                _mabd_trajectory_sample(
+                    config=config,
+                    q=q,
+                    qd=qd,
+                    mass_matrix=mass_matrix,
+                    step_index=step_index,
+                )
+            )
     final_energy = _kinetic_energy(qd, mass_matrix)
     energy_drift = abs(final_energy - initial_energy)
     momentum_delta = float(np.linalg.norm(qd - initial_momentum))
@@ -83,6 +129,8 @@ def write_spinning_box_development_report(
     }
     if initial_diagnostics is not None and final_diagnostics is not None:
         properties = spinning_box_physical_properties(config)
+        initial_shape = trajectory_samples[0]
+        final_shape = trajectory_samples[-1]
         observed.update(
             {
                 "mass_kg": properties.mass_kg,
@@ -101,6 +149,16 @@ def write_spinning_box_development_report(
                 "angular_momentum_error": final_diagnostics.angular_momentum_error,
                 "initial_position_m": initial_q[9:12].tolist(),
                 "final_position_m": q[9:12].tolist(),
+                "trajectory_samples": trajectory_samples,
+                "initial_affine_orthogonality_error": initial_shape[
+                    "affine_orthogonality_error"
+                ],
+                "final_affine_orthogonality_error": final_shape[
+                    "affine_orthogonality_error"
+                ],
+                "final_affine_determinant": final_shape["affine_determinant"],
+                "final_affine_singular_values": final_shape["affine_singular_values"],
+                "affine_shape_diagnostic_status": "development_gap_observed",
             }
         )
     if contact_diagnostics is not None and config is not None:

@@ -34,6 +34,14 @@ class SpinningBoxMABDMomentumDiagnostics:
 
 
 @dataclass(frozen=True)
+class SpinningBoxAffineShapeDiagnostics:
+    affine_matrix: np.ndarray
+    determinant: float
+    singular_values: np.ndarray
+    orthogonality_error: float
+
+
+@dataclass(frozen=True)
 class SpinningBoxContactDiagnostics:
     corner_count: int
     active_contact_count: int
@@ -120,6 +128,16 @@ def spinning_box_cube_corners(config: SpinningBoxRunConfig) -> np.ndarray:
     )
 
 
+def spinning_box_affine_shape_diagnostics(q: np.ndarray) -> SpinningBoxAffineShapeDiagnostics:
+    A, _t = mabd.unpack_q(q)
+    return SpinningBoxAffineShapeDiagnostics(
+        affine_matrix=A,
+        determinant=float(np.linalg.det(A)),
+        singular_values=np.linalg.svd(A, compute_uv=False),
+        orthogonality_error=float(np.linalg.norm(A.T @ A - np.eye(3))),
+    )
+
+
 def spinning_box_contact_diagnostics(
     config: SpinningBoxRunConfig,
     q: np.ndarray,
@@ -186,10 +204,12 @@ def mabd_momentum_diagnostics(
 
 
 __all__ = [
+    "SpinningBoxAffineShapeDiagnostics",
     "SpinningBoxContactDiagnostics",
     "SpinningBoxMABDMomentumDiagnostics",
     "SpinningBoxPhysicalProperties",
     "abd_generalized_velocity_from_paper_momenta",
+    "spinning_box_affine_shape_diagnostics",
     "mabd_momentum_diagnostics",
     "paper_spatial_twist_from_momenta",
     "spinning_box_contact_diagnostics",
