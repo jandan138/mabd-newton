@@ -12,6 +12,7 @@ passed
 ## Repository
 
 - base commit: `7778469`
+- implementation commit: `ba6651d`
 - branch: `phase35-physical-pendulum-rbd-baseline`
 - plan:
   `docs/superpowers/plans/2026-05-17-mabd-phase35-physical-pendulum-rbd-baseline.md`
@@ -55,6 +56,7 @@ passed
 - required_missing_lanes = [`mabd_newton`]
 - report:
   `reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json`
+- report source_commit: `ba6651d`
 - joint-force magnitude is diagnostic only; this is not paper waveform
   agreement.
 - the diagnostic uses a scalar implicit pendulum update and point-position

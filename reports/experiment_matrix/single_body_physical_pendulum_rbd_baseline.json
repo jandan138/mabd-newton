@@ -137,7 +137,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "physical_pendulum_scalar_implicit_rbd_development",
-  "source_commit": "phase35-working-tree",
+  "source_commit": "ba6651d",
   "status": "incomplete",
   "threshold": {
     "max_abs_angle_error_rad": 2.0,
