@@ -588,6 +588,20 @@
   Newton `Control` input, GPU/Warp kernels, paper scene assets, paper timing,
   comparative baselines, rendered output, generated videos or raw simulation
   logs, a full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 46 SolverMABD model-derived CPU
+  world-constraint config integration evidence after the Phase 46 record is
+  created.
+- Phase 46 verifies model-derived `mabd:world_constraint` rows can be
+  translated into `MABDCPUOracleWorldConstraint` entries for dense CPU oracle
+  stepping, including `mabd:world_body`, `mabd:world_rest_point`,
+  `mabd:world_point`, body-index validation, cached model-derived config
+  behavior, dense world-anchor residual correction, reaction-vector
+  availability through `dlambda`, and continued manual
+  `configure_cpu_oracle(...)` precedence over the model-derived path.
+- Phase 46 does not verify Newton `Contacts`, Newton `Control` input,
+  GPU/Warp kernels, paper scene assets, paper timing, comparative baselines,
+  rendered output, generated videos or raw simulation logs, a full paper
+  reproduction, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -663,6 +677,11 @@
 - Phase 45 model-derived SolverMABD joint constraints are not a passed paper
   experiment, not a contact implementation, not a model-derived world
   constraint implementation, not a GPU/Warp solver, not a paper scene or timing
+  reproduction, not a full paper reproduction, and not any passed
+  `experiment.*` claim.
+- Phase 46 model-derived SolverMABD world constraints are not a passed paper
+  experiment, not a contact implementation, not a Newton `Control` input
+  implementation, not a GPU/Warp solver, not a paper scene or timing
   reproduction, not a full paper reproduction, and not any passed
   `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.

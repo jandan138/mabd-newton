@@ -3300,6 +3300,82 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE45", text)
         self.assertNotIn("phase45-working-tree", text)
 
+    def test_phase46_solver_model_world_constraint_config_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 46")
+        verified = claim_boundary_bullet(text, "Phase 46 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 46 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 46 model-derived SolverMABD world constraints")
+
+        self.assertIn("SolverMABD model-derived CPU world-constraint config integration", current)
+        self.assertIn("model-derived `mabd:world_constraint` rows", verified)
+        self.assertIn("`MABDCPUOracleWorldConstraint`", verified)
+        self.assertIn("`mabd:world_body`", verified)
+        self.assertIn("`mabd:world_rest_point`", verified)
+        self.assertIn("`mabd:world_point`", verified)
+        self.assertIn("body-index validation", verified)
+        self.assertIn("reaction-vector availability through `dlambda`", verified)
+        self.assertIn("manual `configure_cpu_oracle(...)`", verified)
+        self.assertIn("Newton `Contacts`", non_claim)
+        self.assertIn("Newton `Control` input", non_claim)
+        self.assertIn("GPU/Warp kernels", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("comparative baselines", non_claim)
+        self.assertIn("rendered output", non_claim)
+        self.assertIn("raw simulation", non_claim)
+        self.assertIn("full paper reproduction", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+        self.assertIn("not a passed paper experiment", forbidden)
+        self.assertIn("not a contact implementation", forbidden)
+        self.assertIn("not a Newton `Control` input implementation", forbidden)
+        self.assertIn("not a GPU/Warp solver", forbidden)
+
+    def test_phase46_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-18-phase46-model-world-constraints.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_solver_model_world_constraint_config_slice",
+            "## Repository",
+            "phase46-model-world-constraints",
+            "f88b3e990dde2bf50810f5b8551c049c34106f1e",
+            "bec91f550c320b00406c112cf8d9573d923ebd92",
+            "dee93c4029cde024a6bd64cfa8b8cb9c7bf73ef6",
+            "0cef329e201d7d4a3d2b285420e092dc26d23ea4",
+            "## Vendored Newton",
+            "https://github.com/newton-physics/newton.git",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "Local patch status",
+            "locally patched",
+            "## Environment",
+            "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+            "## Implementation Evidence",
+            "`mabd:world_constraint`",
+            "`mabd:world_body`",
+            "`mabd:world_rest_point`",
+            "`mabd:world_point`",
+            "`MABDCPUOracleWorldConstraint`",
+            "`dlambda`",
+            "manual `configure_cpu_oracle(...)`",
+            "## RED Evidence",
+            "Custom attribute 'mabd:world_body' is not defined",
+            "FAILED (errors=3)",
+            "## GREEN Evidence",
+            "Ran 37 tests",
+            "OK",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "not a full paper reproduction",
+            "Newton `Contacts`",
+            "Newton `Control` input",
+            "paper timing",
+            "comparative baselines",
+            "rendered output",
+            "raw simulation logs",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE46", text)
+        self.assertNotIn("phase46-working-tree", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -3331,7 +3407,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
