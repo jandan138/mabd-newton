@@ -13,6 +13,7 @@ passed_for_solver_model_world_constraint_config_slice
 - Plan commit: `bec91f550c320b00406c112cf8d9573d923ebd92`
 - RED test commit: `dee93c4029cde024a6bd64cfa8b8cb9c7bf73ef6`
 - Implementation commit: `0cef329e201d7d4a3d2b285420e092dc26d23ea4`
+- Evidence record commit: `413b03e76ec52595fc83532ba4e89828d4e02029`
 - Worktree:
   `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase46-model-world-constraints`
 

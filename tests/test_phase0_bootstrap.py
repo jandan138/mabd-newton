@@ -3341,6 +3341,8 @@ class Phase0BootstrapTests(unittest.TestCase):
             "bec91f550c320b00406c112cf8d9573d923ebd92",
             "dee93c4029cde024a6bd64cfa8b8cb9c7bf73ef6",
             "0cef329e201d7d4a3d2b285420e092dc26d23ea4",
+            "Evidence record commit",
+            "413b03e76ec52595fc83532ba4e89828d4e02029",
             "## Vendored Newton",
             "https://github.com/newton-physics/newton.git",
             "96713fa965463b69c229a4d30582c733ff3526bb",
@@ -3362,6 +3364,13 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## GREEN Evidence",
             "Ran 37 tests",
             "OK",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+            'PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"',
+            "git diff --check",
             "## Claim Impact",
             "No `experiment.*` claim is passed.",
             "not a full paper reproduction",
@@ -3375,6 +3384,43 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE46", text)
         self.assertNotIn("phase46-working-tree", text)
+
+    def test_phase46_spec_and_plan_have_world_constraint_guardrails(self) -> None:
+        spec = (
+            ROOT / "docs/superpowers/specs/2026-05-18-phase46-model-world-constraints-design.md"
+        ).read_text()
+        plan = (
+            ROOT / "docs/superpowers/plans/2026-05-18-mabd-phase46-model-world-constraints.md"
+        ).read_text()
+
+        for snippet in (
+            "Phase 46 Solver Model World Constraint Config Design",
+            "`mabd:world_constraint`",
+            "`mabd:world_body`",
+            "`mabd:world_rest_point`",
+            "`mabd:world_point`",
+            "dense CPU world-anchor constraints only",
+            "This is still not a paper experiment pass",
+            "Phase 46 does not implement Newton `Contacts`",
+        ):
+            self.assertIn(snippet, spec)
+        for snippet in (
+            "Phase 46 Model World Constraints Implementation Plan",
+            "Let `SolverMABD.step()` build CPU oracle world-anchor constraints",
+            "`MABDCPUOracleWorldConstraint`",
+            "manual `configure_cpu_oracle(...)` remains authoritative",
+            "registered custom attribute",
+            "claim impact saying no `experiment.*` claim is passed",
+        ):
+            self.assertIn(snippet, plan)
+        for stale in (
+            "Phase 45 Model Constraint Config Implementation Plan",
+            "passed_for_solver_model_constraint_config_slice",
+            "model-derived `mabd:constraint` rows are verified",
+            "Phase 46 does not verify model-derived world constraints",
+        ):
+            self.assertNotIn(stale, spec)
+            self.assertNotIn(stale, plan)
 
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
