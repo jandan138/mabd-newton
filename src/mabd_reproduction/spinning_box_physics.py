@@ -25,6 +25,13 @@ class SpinningBoxPhysicalProperties:
 
 
 @dataclass(frozen=True)
+class SpinningBoxMaterialProperties:
+    young_modulus_pa: float
+    poisson_ratio: float
+    volume_m3: float
+
+
+@dataclass(frozen=True)
 class SpinningBoxMABDMomentumDiagnostics:
     spatial_twist: np.ndarray
     linear_momentum_kg_m_s: np.ndarray
@@ -112,6 +119,32 @@ def spinning_box_mabd_mass_diagonal(config: SpinningBoxRunConfig) -> np.ndarray:
             np.full(9, affine_second_moment, dtype=float),
             np.full(3, properties.mass_kg, dtype=float),
         ]
+    )
+
+
+def spinning_box_mabd_material_properties(config: SpinningBoxRunConfig) -> SpinningBoxMaterialProperties:
+    properties = spinning_box_physical_properties(config)
+    young_modulus_pa = _paper_float(
+        config.paper_values.get("material_E"),
+        "material_E",
+        positive=True,
+    )
+    poisson_ratio = _paper_float(config.paper_values.get("poisson_ratio"), "poisson_ratio")
+    if not -1.0 < poisson_ratio < 0.5:
+        raise ValueError("poisson_ratio must be in the open interval (-1, 0.5)")
+    return SpinningBoxMaterialProperties(
+        young_modulus_pa=young_modulus_pa,
+        poisson_ratio=poisson_ratio,
+        volume_m3=properties.cube_size_m**3,
+    )
+
+
+def spinning_box_mabd_material_stiffness(config: SpinningBoxRunConfig) -> np.ndarray:
+    material = spinning_box_mabd_material_properties(config)
+    return mabd.rest_generalized_stiffness_matrix(
+        material.young_modulus_pa,
+        material.poisson_ratio,
+        material.volume_m3,
     )
 
 
@@ -207,6 +240,7 @@ __all__ = [
     "SpinningBoxAffineShapeDiagnostics",
     "SpinningBoxContactDiagnostics",
     "SpinningBoxMABDMomentumDiagnostics",
+    "SpinningBoxMaterialProperties",
     "SpinningBoxPhysicalProperties",
     "abd_generalized_velocity_from_paper_momenta",
     "spinning_box_affine_shape_diagnostics",
@@ -214,6 +248,8 @@ __all__ = [
     "paper_spatial_twist_from_momenta",
     "spinning_box_contact_diagnostics",
     "spinning_box_cube_corners",
+    "spinning_box_mabd_material_properties",
+    "spinning_box_mabd_material_stiffness",
     "spinning_box_mabd_mass_diagonal",
     "spinning_box_physical_properties",
 ]

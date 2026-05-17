@@ -15,21 +15,31 @@ from .spinning_box_physics import (
     spinning_box_affine_shape_diagnostics,
     spinning_box_contact_diagnostics,
     spinning_box_mabd_mass_diagonal,
+    spinning_box_mabd_material_properties,
+    spinning_box_mabd_material_stiffness,
     spinning_box_physical_properties,
 )
 
 
 def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOracleBody:
     mass_matrix = np.eye(12)
+    stiffness_matrix = np.zeros((12, 12), dtype=float)
+    rest_q = None
+    rotation_mode = "none"
     if config is not None:
         mass_matrix = np.diag(config.mass_diagonal)
+        stiffness_matrix = spinning_box_mabd_material_stiffness(config)
+        rest_q = mabd.pack_q(np.eye(3), config.initial_q[9:12])
+        rotation_mode = "no_polar"
     return mabd.MABDCPUOracleBody(
         precompute=mabd.SingleBodyABDPrecompute(
             rest_points=np.zeros((4, 3), dtype=float),
             masses=np.ones(4, dtype=float),
             mass_matrix=mass_matrix,
-            stiffness_matrix=np.zeros((12, 12), dtype=float),
-        )
+            stiffness_matrix=stiffness_matrix,
+        ),
+        rest_q=rest_q,
+        rotation_mode=rotation_mode,
     )
 
 
@@ -97,7 +107,8 @@ def write_spinning_box_development_report(
                 step_index=0,
             )
         )
-    oracle_config = mabd.MABDCPUOracleConfig(bodies=[_oracle_body(config)])
+    oracle_body = _oracle_body(config)
+    oracle_config = mabd.MABDCPUOracleConfig(bodies=[oracle_body])
     for step_index in range(1, step_count + 1):
         result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=dt, config=oracle_config)
         q = result.q[0]
@@ -129,6 +140,8 @@ def write_spinning_box_development_report(
     }
     if initial_diagnostics is not None and final_diagnostics is not None:
         properties = spinning_box_physical_properties(config)
+        material = spinning_box_mabd_material_properties(config)
+        material_stiffness = oracle_body.precompute.stiffness_matrix
         initial_shape = trajectory_samples[0]
         final_shape = trajectory_samples[-1]
         observed.update(
@@ -159,6 +172,13 @@ def write_spinning_box_development_report(
                 "final_affine_determinant": final_shape["affine_determinant"],
                 "final_affine_singular_values": final_shape["affine_singular_values"],
                 "affine_shape_diagnostic_status": "development_gap_observed",
+                "mabd_rotation_mode": oracle_body.rotation_mode,
+                "material_model": "paper_linear_elastic_no_polar_development",
+                "material_young_modulus_pa": material.young_modulus_pa,
+                "material_poisson_ratio": material.poisson_ratio,
+                "material_volume_m3": material.volume_m3,
+                "material_stiffness_trace": float(np.trace(material_stiffness)),
+                "material_stiffness_rank": int(np.linalg.matrix_rank(material_stiffness)),
             }
         )
     if contact_diagnostics is not None and config is not None:

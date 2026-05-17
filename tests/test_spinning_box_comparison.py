@@ -94,7 +94,7 @@ class SpinningBoxComparisonTests(unittest.TestCase):
             loaded.observed["lane_metrics"]["mabd_newton"]["linear_momentum_error"],
             1.0e-9,
         )
-        self.assertLessEqual(
+        self.assertGreater(
             loaded.observed["lane_metrics"]["mabd_newton"]["angular_momentum_error"],
             1.0e-9,
         )

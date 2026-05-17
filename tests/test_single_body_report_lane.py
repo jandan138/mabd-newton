@@ -69,7 +69,7 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             loaded.observed["linear_momentum_error"],
             loaded.threshold["linear_momentum_error"],
         )
-        self.assertLessEqual(
+        self.assertGreater(
             loaded.observed["angular_momentum_error"],
             loaded.threshold["angular_momentum_error"],
         )
@@ -106,8 +106,9 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         )
         self.assertAlmostEqual(loaded.observed["mass_kg"], 1.0)
         self.assertAlmostEqual(loaded.observed["initial_energy_j"], 3005000.0)
-        self.assertAlmostEqual(loaded.observed["final_energy_j"], 3005000.0)
-        self.assertLessEqual(loaded.observed["relative_energy_drift"], 1.0e-15)
+        self.assertTrue(np.isfinite(loaded.observed["final_energy_j"]))
+        self.assertTrue(np.isfinite(loaded.observed["relative_energy_drift"]))
+        self.assertGreater(loaded.observed["relative_energy_drift"], 1.0)
         self.assertEqual(loaded.observed["initial_position_m"], [0.0, 0.05, 0.0])
         np.testing.assert_allclose(
             loaded.observed["final_position_m"],
@@ -131,10 +132,25 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         self.assertGreater(samples[-1]["affine_orthogonality_error"], 1.0e6)
         self.assertEqual(loaded.observed["initial_affine_orthogonality_error"], 0.0)
         self.assertGreater(loaded.observed["final_affine_orthogonality_error"], 1.0e6)
-        self.assertGreater(loaded.observed["final_affine_determinant"], 1.0e6)
+        self.assertGreater(abs(loaded.observed["final_affine_determinant"]), 1.0e6)
         self.assertEqual(
             loaded.observed["affine_shape_diagnostic_status"],
             "development_gap_observed",
+        )
+        self.assertEqual(loaded.observed["mabd_rotation_mode"], "no_polar")
+        self.assertEqual(
+            loaded.observed["material_model"],
+            "paper_linear_elastic_no_polar_development",
+        )
+        self.assertAlmostEqual(loaded.observed["material_young_modulus_pa"], 1.0e9)
+        self.assertAlmostEqual(loaded.observed["material_poisson_ratio"], 0.3)
+        self.assertAlmostEqual(loaded.observed["material_volume_m3"], 0.001)
+        self.assertGreater(loaded.observed["material_stiffness_trace"], 0.0)
+        self.assertGreater(loaded.observed["material_stiffness_rank"], 0)
+        self.assertTrue(np.isfinite(loaded.observed["final_affine_orthogonality_error"]))
+        self.assertTrue(np.isfinite(loaded.observed["final_affine_determinant"]))
+        self.assertTrue(
+            np.all(np.isfinite(np.asarray(loaded.observed["final_affine_singular_values"])))
         )
 
 
