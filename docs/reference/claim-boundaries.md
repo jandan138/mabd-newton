@@ -422,6 +422,20 @@
   joint-force waveform agreement, rendered output, paper timing, topology
   solvers for world anchors beyond dense CPU oracle, generated report artifacts
   as committed evidence, or any passed `experiment.*` claim.
+- This repository contains Phase 35 physical-pendulum RBD implicit baseline
+  diagnostic lane evidence after the Phase 35 record is created.
+- Phase 35 verifies physical-pendulum `rbd_baseline` config validation,
+  scalar implicit-RBD CPU rollout generation, `rbd_implicit_baseline` CLI
+  dispatch, the `physical_pendulum_scalar_implicit_rbd_development` report
+  solver mode, compact angle samples, finite implicit residual and length
+  constraint diagnostics, `lane_status = development_diagnostic_generated`,
+  `required_missing_lanes = [mabd_newton]`, and top-level report status:
+  `incomplete`.
+- Phase 35 does not verify the full physical-pendulum experiment,
+  paper-faithful pendulum geometry, M-ABD physical-pendulum experiment lane,
+  joint-force waveform agreement, rendered output, paper timing, paper
+  trajectory agreement, generated videos or raw simulation logs, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -454,6 +468,9 @@
 - Phase 34 physical-pendulum M-ABD development diagnostic is a passed
   physical-pendulum experiment, paper-faithful pendulum geometry result, RBD
   baseline result, joint-force agreement result, or paper timing result.
+- Phase 35 physical-pendulum RBD diagnostic is a passed physical-pendulum
+  experiment, paper-faithful pendulum geometry result, M-ABD dynamics result,
+  joint-force agreement result, or paper timing result.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

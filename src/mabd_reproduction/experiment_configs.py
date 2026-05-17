@@ -81,6 +81,22 @@ class PhysicalPendulumMABDDevelopmentConfig:
 
 
 @dataclass(frozen=True)
+class PhysicalPendulumRBDBaselineConfig:
+    time_step_s: float
+    step_count: int
+    sample_count: int
+    length_m: float
+    mass_kg: float
+    gravity_m_s2: np.ndarray
+    initial_angle_rad: float
+    initial_angular_velocity_rad_s: float
+    newton_iteration_limit: int
+    newton_residual_tolerance: float
+    output_report: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class PhysicalPendulumRunConfig:
     schema_version: int
     claim_id: str
@@ -92,6 +108,7 @@ class PhysicalPendulumRunConfig:
     paper_values: dict[str, Any]
     reference: PhysicalPendulumReferenceConfig
     mabd_development: PhysicalPendulumMABDDevelopmentConfig
+    rbd_baseline: PhysicalPendulumRBDBaselineConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -124,7 +141,15 @@ PHYSICAL_PENDULUM_MABD_DEVELOPMENT_THRESHOLD_KEYS = frozenset(
         "max_pivot_residual_m",
     }
 )
-PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES = ("mabd_newton", "rbd_implicit_baseline")
+PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS = frozenset(
+    {
+        "max_abs_angle_error_rad",
+        "max_implicit_residual",
+        "max_length_constraint_error_m",
+        "max_phase_drift_rad",
+    }
+)
+PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES = ("mabd_newton",)
 
 
 def _read_mapping(path: Path) -> dict[str, Any]:
@@ -413,6 +438,44 @@ def _require_physical_pendulum_mabd_development(
     )
 
 
+def _require_physical_pendulum_rbd_baseline(
+    data: dict[str, Any],
+) -> PhysicalPendulumRBDBaselineConfig:
+    rbd_baseline = _require_mapping(data, "rbd_baseline")
+    step_count = _require_positive_int(rbd_baseline, "step_count")
+    sample_count = _require_positive_int(rbd_baseline, "sample_count")
+    if sample_count < 2:
+        raise ExperimentRunConfigError("rbd_baseline.sample_count must be at least 2")
+    if sample_count > step_count + 1:
+        raise ExperimentRunConfigError("rbd_baseline.sample_count must be at most step_count + 1")
+    thresholds = _require_float_mapping(rbd_baseline, "thresholds")
+    missing = sorted(PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "rbd_baseline.thresholds missing required keys: " + ", ".join(missing)
+        )
+    return PhysicalPendulumRBDBaselineConfig(
+        time_step_s=_require_positive_float(rbd_baseline, "time_step_s"),
+        step_count=step_count,
+        sample_count=sample_count,
+        length_m=_require_positive_float(rbd_baseline, "length_m"),
+        mass_kg=_require_positive_float(rbd_baseline, "mass_kg"),
+        gravity_m_s2=_require_vec3_array(rbd_baseline, "gravity_m_s2"),
+        initial_angle_rad=_require_finite_number(rbd_baseline, "initial_angle_rad"),
+        initial_angular_velocity_rad_s=_require_finite_number(
+            rbd_baseline,
+            "initial_angular_velocity_rad_s",
+        ),
+        newton_iteration_limit=_require_positive_int(rbd_baseline, "newton_iteration_limit"),
+        newton_residual_tolerance=_require_positive_float(
+            rbd_baseline,
+            "newton_residual_tolerance",
+        ),
+        output_report=_require_str(rbd_baseline, "output_report"),
+        thresholds=thresholds,
+    )
+
+
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     config_path = Path(path)
     data = _read_mapping(config_path)
@@ -538,6 +601,7 @@ def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig
         paper_values=_require_mapping(data, "paper_values"),
         reference=_require_physical_pendulum_reference(data),
         mabd_development=_require_physical_pendulum_mabd_development(data),
+        rbd_baseline=_require_physical_pendulum_rbd_baseline(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -598,6 +662,18 @@ def validate_physical_pendulum_config_against_matrix(
         )
     if config.mabd_development.output_report == config.output_report:
         raise ExperimentRunConfigError("mabd_development.output_report must be separate from analytic output_report")
+    if (
+        not config.rbd_baseline.output_report.startswith(expected_prefix)
+        or not config.rbd_baseline.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_baseline.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.rbd_baseline.output_report in (
+        config.output_report,
+        config.mabd_development.output_report,
+    ):
+        raise ExperimentRunConfigError("rbd_baseline.output_report must be separate from other lane reports")
 
 
 __all__ = [
@@ -605,8 +681,10 @@ __all__ = [
     "PAPER_HORIZON_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES",
     "PHYSICAL_PENDULUM_MABD_DEVELOPMENT_THRESHOLD_KEYS",
+    "PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_THRESHOLD_KEYS",
     "PhysicalPendulumMABDDevelopmentConfig",
+    "PhysicalPendulumRBDBaselineConfig",
     "PhysicalPendulumReferenceConfig",
     "PhysicalPendulumRunConfig",
     "SpinningBoxPaperHorizonConfig",

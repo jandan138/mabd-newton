@@ -17,7 +17,7 @@
 - Modify: `src/mabd_reproduction/experiment_configs.py`
 - Modify: `tests/test_experiment_run_configs.py`
 
-- [ ] **Step 1: Write failing config tests**
+- [x] **Step 1: Write failing config tests**
 
 Add assertions to `test_physical_pendulum_config_is_machine_checkable`:
 
@@ -53,7 +53,7 @@ def test_physical_pendulum_config_rejects_bad_rbd_baseline_length(self) -> None:
             load_physical_pendulum_config(path)
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs
@@ -61,7 +61,7 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 
 Expected: missing `rbd_baseline` attribute or parser error.
 
-- [ ] **Step 3: Implement config support**
+- [x] **Step 3: Implement config support**
 
 Add `PhysicalPendulumRBDBaselineConfig`:
 
@@ -133,7 +133,7 @@ rbd_baseline:
     max_phase_drift_rad: 2.0
 ```
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
 ```bash
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs
@@ -147,7 +147,7 @@ Expected: config tests pass.
 - Create: `src/mabd_reproduction/physical_pendulum_rbd.py`
 - Create: `tests/test_physical_pendulum_rbd.py`
 
-- [ ] **Step 1: Write failing rollout tests**
+- [x] **Step 1: Write failing rollout tests**
 
 Create tests that load `single_body_physical_pendulum.yaml` and assert:
 
@@ -176,7 +176,7 @@ residual = (
 self.assertLess(abs(residual), 1.0e-12)
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_physical_pendulum_rbd
@@ -184,7 +184,7 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 
 Expected: module import fails.
 
-- [ ] **Step 3: Implement rollout module**
+- [x] **Step 3: Implement rollout module**
 
 Implement:
 
@@ -249,7 +249,7 @@ point = np.array([length * np.cos(theta), -length * np.sin(theta), 0.0])
 length_error = abs(np.linalg.norm(point) - length)
 ```
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
 ```bash
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_physical_pendulum_rbd
@@ -265,7 +265,7 @@ Expected: rollout tests pass.
 - Modify: `scripts/run_experiment.py`
 - Modify: `tests/test_experiment_runner.py`
 
-- [ ] **Step 1: Write failing report and CLI tests**
+- [x] **Step 1: Write failing report and CLI tests**
 
 Add `test_run_physical_pendulum_rbd_baseline_writes_report` asserting:
 
@@ -294,7 +294,7 @@ scripts/run_experiment.py --lane rbd_implicit_baseline \
 
 Expected summary baseline lane: `rbd_implicit_baseline`.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_runner
@@ -302,7 +302,7 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 
 Expected: missing runner or CLI dispatch failure for physical-pendulum config.
 
-- [ ] **Step 3: Implement report and dispatch**
+- [x] **Step 3: Implement report and dispatch**
 
 Add `write_physical_pendulum_rbd_baseline_report` to
 `physical_pendulum_reports.py`.
@@ -316,7 +316,7 @@ spinning-box runner. Keep the existing explicit `--output` requirement for the
 spinning-box runner; allow the physical-pendulum runner to use either explicit
 `--output`, `--output-root`, or the configured `rbd_baseline.output_report`.
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
 ```bash
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_runner
@@ -333,7 +333,7 @@ Expected: report and CLI tests pass.
 - Create: `docs/records/2026-05-17-phase35-physical-pendulum-rbd-baseline.md`
 - Create: `reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json`
 
-- [ ] **Step 1: Write failing docs tests**
+- [x] **Step 1: Write failing docs tests**
 
 Add Phase 35 tests requiring:
 
@@ -344,7 +344,7 @@ Add Phase 35 tests requiring:
 - current config `required_missing_lanes == ("mabd_newton",)`
 - Phase 34 historical report still records its original missing lanes
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap
@@ -352,7 +352,7 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 
 Expected: missing Phase 35 docs/record/validator snippets.
 
-- [ ] **Step 3: Implement docs and validators**
+- [x] **Step 3: Implement docs and validators**
 
 Update `validate_docs.py` to Phase 0-35. Require:
 
@@ -375,7 +375,7 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
   --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb
 ```
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
 ```bash
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap

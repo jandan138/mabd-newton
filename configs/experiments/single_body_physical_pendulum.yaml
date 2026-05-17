@@ -8,7 +8,6 @@ asset_ids:
 baseline_lane: analytic_reference
 required_missing_lanes:
   - mabd_newton
-  - rbd_implicit_baseline
 paper_values:
   release_angle: horizontal
   initial_velocity: zero
@@ -45,12 +44,28 @@ mabd_development:
     max_pivot_residual_m: 1.0e-10
     max_constraint_residual_norm: 1.0e-10
     max_abs_angle_error_rad: 2.0
+rbd_baseline:
+  time_step_s: 0.01
+  step_count: 16
+  sample_count: 5
+  length_m: 1.0
+  mass_kg: 1.0
+  gravity_m_s2: [0.0, -9.81, 0.0]
+  initial_angle_rad: 0.0
+  initial_angular_velocity_rad_s: 0.0
+  newton_iteration_limit: 12
+  newton_residual_tolerance: 1.0e-12
+  output_report: reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json
+  thresholds:
+    max_abs_angle_error_rad: 2.0
+    max_implicit_residual: 1.0e-12
+    max_length_constraint_error_m: 1.0e-12
+    max_phase_drift_rad: 2.0
 report:
   status: incomplete
   failure_reason: >-
-    analytic_reference lane only; mabd_newton dynamics, rbd_implicit_baseline
-    dynamics, joint-force comparison, and pendulum_geometry_unknown remain
-    incomplete
+    analytic_reference lane only; mabd_newton dynamics, joint-force comparison,
+    and pendulum_geometry_unknown remain incomplete
   output_report: reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json
   thresholds:
     max_abs_reference_identity_error: 1.0e-12

@@ -8,14 +8,24 @@ import json
 import sys
 from pathlib import Path
 
+import yaml
+
 from mabd_reproduction.experiment_runner import (
     run_physical_pendulum_analytic_reference,
     run_physical_pendulum_mabd_development,
+    run_physical_pendulum_rbd_baseline,
     run_spinning_box_comparison,
     run_spinning_box_experiment,
     run_spinning_box_paper_horizon,
     run_spinning_box_rbd_baseline,
 )
+
+
+def _config_claim_id(path: Path) -> str:
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or not isinstance(data.get("claim_id"), str):
+        raise ValueError("config must contain a string claim_id")
+    return data["claim_id"]
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -98,13 +108,30 @@ def main(argv: list[str] | None = None) -> int:
                 vendored_newton_commit=args.vendored_newton_commit,
                 paper_source_version=args.paper_source_version,
             )
+        elif args.lane == "rbd_implicit_baseline":
+            claim_id = _config_claim_id(Path(args.config))
+            if claim_id == "experiment.single_body.physical_pendulum":
+                result = run_physical_pendulum_rbd_baseline(
+                    config_path=Path(args.config),
+                    matrix_path=Path(args.matrix),
+                    output_path=Path(args.output) if args.output else None,
+                    output_root=Path(args.output_root) if args.output_root else None,
+                    source_commit=args.source_commit,
+                    vendored_newton_commit=args.vendored_newton_commit,
+                    paper_source_version=args.paper_source_version,
+                )
+            else:
+                result = run_spinning_box_rbd_baseline(
+                    config_path=Path(args.config),
+                    matrix_path=Path(args.matrix),
+                    output_path=Path(args.output) if args.output else None,
+                    output_root=Path(args.output_root) if args.output_root else None,
+                    source_commit=args.source_commit,
+                    vendored_newton_commit=args.vendored_newton_commit,
+                    paper_source_version=args.paper_source_version,
+                )
         else:
-            runner = (
-                run_spinning_box_rbd_baseline
-                if args.lane == "rbd_implicit_baseline"
-                else run_spinning_box_experiment
-            )
-            result = runner(
+            result = run_spinning_box_experiment(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

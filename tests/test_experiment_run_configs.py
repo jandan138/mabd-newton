@@ -128,6 +128,7 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertEqual(config.scene_id, "single_body_physical_pendulum")
         self.assertEqual(config.asset_ids, ("physical_pendulum_procedural",))
         self.assertEqual(config.baseline_lane, "analytic_reference")
+        self.assertEqual(config.required_missing_lanes, ("mabd_newton",))
         self.assertEqual(config.report_status, EvidenceStatus.INCOMPLETE)
         self.assertEqual(config.reference.sample_count, 9)
         self.assertEqual(config.reference.initial_angle_rad, 0.0)
@@ -149,13 +150,31 @@ class ExperimentRunConfigTests(unittest.TestCase):
         )
         self.assertIn("max_pivot_residual_m", config.mabd_development.thresholds)
         self.assertIn("max_abs_angle_error_rad", config.mabd_development.thresholds)
+        self.assertEqual(config.rbd_baseline.time_step_s, 0.01)
+        self.assertEqual(config.rbd_baseline.step_count, 16)
+        self.assertEqual(config.rbd_baseline.sample_count, 5)
+        self.assertEqual(config.rbd_baseline.length_m, 1.0)
+        self.assertEqual(config.rbd_baseline.mass_kg, 1.0)
+        np.testing.assert_allclose(config.rbd_baseline.gravity_m_s2, [0.0, -9.81, 0.0])
+        self.assertEqual(config.rbd_baseline.initial_angle_rad, 0.0)
+        self.assertEqual(config.rbd_baseline.initial_angular_velocity_rad_s, 0.0)
+        self.assertEqual(config.rbd_baseline.newton_iteration_limit, 12)
+        self.assertEqual(config.rbd_baseline.newton_residual_tolerance, 1.0e-12)
+        self.assertEqual(
+            config.rbd_baseline.output_report,
+            "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+        )
+        self.assertIn("max_abs_angle_error_rad", config.rbd_baseline.thresholds)
+        self.assertIn("max_implicit_residual", config.rbd_baseline.thresholds)
+        self.assertIn("max_length_constraint_error_m", config.rbd_baseline.thresholds)
+        self.assertIn("max_phase_drift_rad", config.rbd_baseline.thresholds)
         self.assertEqual(
             config.output_report,
             "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
         )
         self.assertIn("pendulum_geometry_unknown", config.failure_reason)
         self.assertIn("mabd_newton", config.failure_reason)
-        self.assertIn("rbd_implicit_baseline", config.failure_reason)
+        self.assertNotIn("rbd_implicit_baseline", config.failure_reason)
 
     def test_physical_pendulum_config_matches_experiment_matrix(self) -> None:
         config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)
@@ -188,6 +207,34 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(source), encoding="utf-8")
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "nondegenerate"):
+                load_physical_pendulum_config(path)
+
+    def test_physical_pendulum_config_rejects_bad_rbd_baseline_length(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["rbd_baseline"] = {
+            "time_step_s": 0.01,
+            "step_count": 16,
+            "sample_count": 5,
+            "length_m": 0.0,
+            "mass_kg": 1.0,
+            "gravity_m_s2": [0.0, -9.81, 0.0],
+            "initial_angle_rad": 0.0,
+            "initial_angular_velocity_rad_s": 0.0,
+            "newton_iteration_limit": 12,
+            "newton_residual_tolerance": 1.0e-12,
+            "output_report": "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+            "thresholds": {
+                "max_abs_angle_error_rad": 2.0,
+                "max_implicit_residual": 1.0e-12,
+                "max_length_constraint_error_m": 1.0e-12,
+                "max_phase_drift_rad": 2.0,
+            },
+        }
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "length_m"):
                 load_physical_pendulum_config(path)
 
     def test_physical_pendulum_config_rejects_passed_experiment_status(self) -> None:

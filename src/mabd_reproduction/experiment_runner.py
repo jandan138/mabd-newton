@@ -16,6 +16,7 @@ from .experiment_contracts import load_experiment_matrix
 from .physical_pendulum_reports import (
     write_physical_pendulum_analytic_reference_report,
     write_physical_pendulum_mabd_development_report,
+    write_physical_pendulum_rbd_baseline_report,
 )
 from .reporting import ClaimReport, EvidenceStatus
 from .rigid_baselines import write_spinning_box_paper_rbd_baseline_report
@@ -287,10 +288,47 @@ def run_physical_pendulum_mabd_development(
     )
 
 
+def run_physical_pendulum_rbd_baseline(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    config = load_physical_pendulum_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_physical_pendulum_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError("Phase 35 physical-pendulum RBD runner requires incomplete status")
+    report_path = _resolve_output_path(
+        config.rbd_baseline.output_report,
+        output_path=output_path,
+        output_root=output_root,
+    )
+    report = write_physical_pendulum_rbd_baseline_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
 __all__ = [
     "ExperimentRunResult",
     "run_physical_pendulum_analytic_reference",
     "run_physical_pendulum_mabd_development",
+    "run_physical_pendulum_rbd_baseline",
     "run_spinning_box_comparison",
     "run_spinning_box_experiment",
     "run_spinning_box_paper_horizon",

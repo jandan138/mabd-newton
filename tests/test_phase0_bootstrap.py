@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from mabd_reproduction.reporting import EvidenceStatus, REQUIRED_REPORT_KEYS
+from mabd_reproduction.reporting import EvidenceStatus, REQUIRED_REPORT_KEYS, load_claim_report
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1943,6 +1943,112 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE34", text)
         self.assertNotIn("pending branch-local", text)
 
+    def test_phase35_physical_pendulum_rbd_baseline_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        experiment_statuses = {
+            claim["claim_id"]: claim["reproduction_status"]
+            for claim in data["claims"]
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        self.assertNotIn("passed", set(experiment_statuses.values()))
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 35")
+        verified = claim_boundary_bullet(text, "Phase 35 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 35 does not verify")
+
+        self.assertIn("physical-pendulum RBD implicit baseline diagnostic lane", current)
+        self.assertIn("rbd_baseline", verified)
+        self.assertIn("`rbd_implicit_baseline` CLI dispatch", verified)
+        self.assertIn("`physical_pendulum_scalar_implicit_rbd_development`", verified)
+        self.assertIn("`required_missing_lanes = [mabd_newton]`", verified)
+        self.assertIn("top-level report status: `incomplete`", verified)
+        self.assertIn("full physical-pendulum experiment", non_claim)
+        self.assertIn("paper-faithful pendulum geometry", non_claim)
+        self.assertIn("joint-force waveform agreement", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase35_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase35-physical-pendulum-rbd-baseline.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_physical_pendulum.yaml",
+            "configs/experiments/paper_experiment_matrix.yaml",
+            "## Repository",
+            "base commit: `7778469`",
+            "phase35-physical-pendulum-rbd-baseline",
+            "## Vendored Newton",
+            "local patch status: Phase 35 does not modify vendored Newton",
+            "## Paper Source",
+            "/tmp/mabd-paper/source/sections/experiment.tex:77-91",
+            "implicit RBD baseline against the analytic solution",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "## Physical Pendulum RBD Evidence",
+            "src/mabd_reproduction/physical_pendulum_rbd.py",
+            "run_physical_pendulum_rbd_baseline",
+            "--lane rbd_implicit_baseline",
+            "physical_pendulum_scalar_implicit_rbd_development",
+            "baseline lane: `rbd_implicit_baseline`",
+            "lane_status = development_diagnostic_generated",
+            "top-level report status: `incomplete`",
+            "required_missing_lanes = [`mabd_newton`]",
+            "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
+            "joint-force magnitude is diagnostic only",
+            "## Metrics And Thresholds",
+            "time_step_s: `0.01`",
+            "step_count: `16`",
+            "compact sample count: `5`",
+            "max_implicit_residual",
+            "max_length_constraint_error_m",
+            "threshold status: `passed`",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains not passed.",
+            "required physical-pendulum `mabd_newton` experiment lane remains missing",
+            "RBD implicit baseline diagnostic is now present",
+            "Joint-force waveform agreement remains missing",
+            "Paper-faithful pendulum geometry remains missing",
+            "`pendulum_geometry_unknown` remains a blocker",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_physical_pendulum_rbd tests.test_experiment_run_configs tests.test_experiment_runner",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE35", text)
+        self.assertNotIn("pending branch-local", text)
+
+    def test_phase35_rbd_report_artifact_is_machine_checkable(self) -> None:
+        report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json"
+        )
+
+        self.assertEqual(report.claim_id, "experiment.single_body.physical_pendulum")
+        self.assertEqual(report.scene_id, "single_body_physical_pendulum")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(report.solver_mode, "physical_pendulum_scalar_implicit_rbd_development")
+        self.assertEqual(report.backend, "cpu_numpy_newton_only")
+        self.assertEqual(report.observed["lane_status"], "development_diagnostic_generated")
+        self.assertEqual(report.observed["required_missing_lanes"], ["mabd_newton"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(report.observed["sample_count"], 5)
+        self.assertEqual(report.observed["threshold_violations"], [])
+        self.assertLessEqual(
+            report.observed["max_implicit_residual"],
+            report.threshold["max_implicit_residual"],
+        )
+        self.assertIn("joint_force_waveform_agreement_missing", report.observed["blocking_reasons"])
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1974,7 +2080,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
