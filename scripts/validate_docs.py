@@ -3336,7 +3336,7 @@ def validate_phase34_record() -> None:
         fail("Phase 34 report lane_status changed")
     if observed.get("full_experiment_claim_passed") is not False:
         fail("Phase 34 report must not pass the full experiment claim")
-    if observed.get("required_missing_lanes") != ["mabd_newton", "rbd_implicit_baseline"]:
+    if observed.get("required_missing_lanes") != ["mabd_newton"]:
         fail("Phase 34 report required missing lanes changed")
     if observed.get("threshold_violations") != []:
         fail("Phase 34 report threshold violations must remain empty")
@@ -3520,6 +3520,27 @@ def validate_phase35_record() -> None:
         fail("Phase 35 report solver mode changed")
     if report.backend != "cpu_numpy_newton_only":
         fail("Phase 35 report backend changed")
+    if report.source_commit in {"phase35-working-tree", "pending branch-local"}:
+        fail("Phase 35 report source_commit must name the implementation commit")
+    if f"report source_commit: `{report.source_commit}`" not in text:
+        fail("Phase 35 record must match report source_commit")
+    expected = report.expected
+    if expected.get("full_experiment_claim_passed") is not False:
+        fail("Phase 35 report expected.full_experiment_claim_passed must be false")
+    paper_claim_status = str(expected.get("paper_claim_status", "")).lower()
+    if "diagnostic only" not in paper_claim_status or "incomplete" not in paper_claim_status:
+        fail("Phase 35 report expected.paper_claim_status must stay diagnostic-only")
+    nonclaim_limitations = expected.get("nonclaim_limitations")
+    if not isinstance(nonclaim_limitations, list):
+        fail("Phase 35 report expected.nonclaim_limitations must be a list")
+    for limitation in (
+        "procedural scalar pendulum is not the paper's undisclosed rigid geometry",
+        "joint-force magnitude is diagnostic and not waveform agreement",
+        "no M-ABD comparison pass is generated",
+        "no rendered figure or timing distribution is generated",
+    ):
+        if limitation not in nonclaim_limitations:
+            fail(f"Phase 35 report expected.nonclaim_limitations missing: {limitation}")
     observed = report.observed
     if observed.get("lane_status") != "development_diagnostic_generated":
         fail("Phase 35 report lane_status changed")

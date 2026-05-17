@@ -303,6 +303,17 @@ def _require_vec3_array(data: dict[str, Any], key: str) -> np.ndarray:
     return np.asarray(result, dtype=float)
 
 
+def _require_negative_y_gravity_array(data: dict[str, Any], key: str) -> np.ndarray:
+    gravity = _require_vec3_array(data, key)
+    if not (
+        np.isclose(gravity[0], 0.0, rtol=0.0, atol=1.0e-15)
+        and gravity[1] < 0.0
+        and np.isclose(gravity[2], 0.0, rtol=0.0, atol=1.0e-15)
+    ):
+        raise ExperimentRunConfigError(f"{key} must point along the negative y axis")
+    return gravity
+
+
 def _require_points(data: dict[str, Any], key: str) -> np.ndarray:
     value = data.get(key)
     if not isinstance(value, list) or len(value) < 4:
@@ -460,7 +471,7 @@ def _require_physical_pendulum_rbd_baseline(
         sample_count=sample_count,
         length_m=_require_positive_float(rbd_baseline, "length_m"),
         mass_kg=_require_positive_float(rbd_baseline, "mass_kg"),
-        gravity_m_s2=_require_vec3_array(rbd_baseline, "gravity_m_s2"),
+        gravity_m_s2=_require_negative_y_gravity_array(rbd_baseline, "gravity_m_s2"),
         initial_angle_rad=_require_finite_number(rbd_baseline, "initial_angle_rad"),
         initial_angular_velocity_rad_s=_require_finite_number(
             rbd_baseline,
@@ -633,9 +644,7 @@ def validate_physical_pendulum_config_against_matrix(
     if config.baseline_lane in config.required_missing_lanes:
         raise ExperimentRunConfigError("baseline_lane cannot be listed as missing")
     if config.required_missing_lanes != PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES:
-        raise ExperimentRunConfigError(
-            "required_missing_lanes must be mabd_newton and rbd_implicit_baseline"
-        )
+        raise ExperimentRunConfigError("required_missing_lanes must be mabd_newton only")
     if "pendulum_geometry_unknown" not in entry.blocking_reasons:
         raise ExperimentRunConfigError("matrix must retain pendulum_geometry_unknown blocker")
     if entry.reproduction_status != "planned":

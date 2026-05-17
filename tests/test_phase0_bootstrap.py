@@ -4,7 +4,9 @@ import os
 import subprocess
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -1943,6 +1945,15 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE34", text)
         self.assertNotIn("pending branch-local", text)
 
+    def test_phase34_mabd_report_artifact_tracks_current_missing_lanes(self) -> None:
+        report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json"
+        )
+
+        self.assertEqual(report.observed["required_missing_lanes"], ["mabd_newton"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertNotIn("rbd_implicit_baseline", report.failure_reason)
+
     def test_phase35_physical_pendulum_rbd_baseline_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         experiment_statuses = {
@@ -2038,9 +2049,17 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(report.baseline_lane, "rbd_implicit_baseline")
         self.assertEqual(report.solver_mode, "physical_pendulum_scalar_implicit_rbd_development")
         self.assertEqual(report.backend, "cpu_numpy_newton_only")
+        self.assertNotEqual(report.source_commit, "phase35-working-tree")
         self.assertEqual(report.observed["lane_status"], "development_diagnostic_generated")
         self.assertEqual(report.observed["required_missing_lanes"], ["mabd_newton"])
         self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertFalse(report.expected["full_experiment_claim_passed"])
+        self.assertIn("diagnostic only", report.expected["paper_claim_status"])
+        self.assertIn("full experiment incomplete", report.expected["paper_claim_status"])
+        self.assertIn(
+            "joint-force magnitude is diagnostic and not waveform agreement",
+            report.expected["nonclaim_limitations"],
+        )
         self.assertEqual(report.observed["sample_count"], 5)
         self.assertEqual(report.observed["threshold_violations"], [])
         self.assertLessEqual(
@@ -2048,6 +2067,42 @@ class Phase0BootstrapTests(unittest.TestCase):
             report.threshold["max_implicit_residual"],
         )
         self.assertIn("joint_force_waveform_agreement_missing", report.observed["blocking_reasons"])
+
+    def test_phase35_validator_rejects_placeholder_report_source_commit(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json"
+        )
+        stale = replace(actual, source_commit="phase35-working-tree")
+
+        with patch.object(validate_docs, "load_claim_report", return_value=stale):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase35_record()
+
+        self.assertIn("source_commit", str(context.exception))
+
+    def test_phase35_validator_rejects_expected_overclaim(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json"
+        )
+        overclaimed = replace(
+            actual,
+            expected={
+                **actual.expected,
+                "paper_claim_status": "physical pendulum experiment passed",
+                "full_experiment_claim_passed": True,
+                "nonclaim_limitations": [],
+            },
+        )
+
+        with patch.object(validate_docs, "load_claim_report", return_value=overclaimed):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase35_record()
+
+        self.assertIn("expected", str(context.exception))
 
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(

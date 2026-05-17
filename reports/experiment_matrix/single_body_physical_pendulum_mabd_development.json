@@ -35,7 +35,7 @@
       ]
     }
   },
-  "failure_reason": "physical_pendulum_mabd_development diagnostic only; required mabd_newton lane, rbd_implicit_baseline, joint-force comparison, and pendulum_geometry_unknown remain incomplete",
+  "failure_reason": "physical_pendulum_mabd_development diagnostic only; required mabd_newton lane, joint-force comparison, and pendulum_geometry_unknown remain incomplete",
   "observed": {
     "angle_samples_rad": [
       {
@@ -91,7 +91,6 @@
     ],
     "blocking_reasons": [
       "pendulum_geometry_unknown",
-      "rbd_implicit_baseline",
       "joint_force_comparison_missing",
       "paper_geometry_and_timing_missing"
     ],
@@ -101,8 +100,7 @@
     "max_constraint_residual_norm": 0.0,
     "max_pivot_residual_m": 0.0,
     "required_missing_lanes": [
-      "mabd_newton",
-      "rbd_implicit_baseline"
+      "mabd_newton"
     ],
     "sample_count": 5,
     "step_count": 16,
@@ -116,7 +114,7 @@
   },
   "scene_id": "single_body_physical_pendulum",
   "solver_mode": "mabd_cpu_oracle_physical_pendulum_development",
-  "source_commit": "f811d6de39bb0e655c6b121d35bccc2b7132af0a",
+  "source_commit": "phase35-review-working-tree",
   "status": "incomplete",
   "threshold": {
     "max_abs_angle_error_rad": 2.0,

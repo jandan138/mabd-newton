@@ -187,7 +187,7 @@ class ExperimentRunConfigTests(unittest.TestCase):
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
         drifted = replace(config, required_missing_lanes=())
 
-        with self.assertRaisesRegex(ExperimentRunConfigError, "required_missing_lanes"):
+        with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton only"):
             validate_physical_pendulum_config_against_matrix(drifted, matrix)
 
     def test_physical_pendulum_config_rejects_reference_drift(self) -> None:
@@ -235,6 +235,16 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(source), encoding="utf-8")
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "length_m"):
+                load_physical_pendulum_config(path)
+
+    def test_physical_pendulum_config_rejects_rbd_gravity_direction_drift(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["rbd_baseline"]["gravity_m_s2"] = [9.81, 0.0, 0.0]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "gravity_m_s2"):
                 load_physical_pendulum_config(path)
 
     def test_physical_pendulum_config_rejects_passed_experiment_status(self) -> None:
