@@ -39,17 +39,21 @@ paper scenes.
 ## Report Gate
 
 The existing report validator rejects `status=passed` for `experiment.*`
-reports. Phase 27 keeps that default safety behavior unless the report carries
-a dedicated experiment pass-gate payload:
+reports. Phase 27 keeps that default safety behavior. The new gate records that
+one required lane has passed without changing the top-level experiment report
+status:
 
-- `expected["experiment_pass_gate"]`
-- `observed["experiment_pass_gate"]`
+- `expected["lane_pass_gate"]`
+- `observed["lane_pass_gate"]`
+- `observed["lane_gate_status"] = "passed"`
 
 For Phase 27, the gate scope is `required_lane_only`, the baseline lane is
-`rbd_implicit_baseline`, and `full_experiment_claim_passed` must be `false`.
-The gate allows a lane report to use `status=passed` while preserving the
-project-wide rule that the full paper experiment claim remains unpassed until
-the M-ABD lane and comparison report also pass their gates.
+`rbd_implicit_baseline`, `solver_mode` is `paper_faithful_implicit_rbd`,
+`backend` is `cpu_numpy_newton_only`, and
+`full_experiment_claim_passed` must be `false`. The report itself remains
+`status=incomplete` with a failure reason naming the missing M-ABD and
+comparison gates. Consumers must read `observed["lane_gate_status"]` to see the
+passed lane evidence and must not treat it as a passed paper experiment claim.
 
 ## Config And Matrix Impact
 
@@ -81,14 +85,20 @@ Phase 27 does not:
 
 Evidence must include:
 
-- tests proving default passed `experiment.*` reports remain rejected without a
-  pass gate;
-- tests proving the RBD pass-gate report is accepted and machine-readable;
-- tests proving the RBD lane report has `status=passed`,
-  `solver_mode=paper_faithful_implicit_rbd`, and finite metrics within
+- tests proving passed `experiment.*` reports remain rejected, even when lane
+  gate fields are present;
+- tests proving the incomplete RBD lane-gate report is accepted and
+  machine-readable;
+- tests proving the RBD lane report has `status=incomplete`,
+  `observed["lane_gate_status"]="passed"`,
+  `solver_mode=paper_faithful_implicit_rbd`,
+  `backend=cpu_numpy_newton_only`, and finite metrics within strict
   thresholds;
+- tests proving the closed-form orientation path records the expected xyzw
+  quaternion, unit norm, and per-sample time and position values;
 - tests proving the comparison report consumes the passed RBD lane while still
   remaining `incomplete` because the M-ABD lane and comparison gate are not
   passed;
-- updated claim boundaries, docs validator, and Phase 27 record.
-
+- updated claim boundaries, docs validator, and Phase 27 record with config
+  path, repo commit, vendored Newton provenance, paper source version, backend,
+  seed policy, raw artifact paths, gate status, and explicit non-claims.

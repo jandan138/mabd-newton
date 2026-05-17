@@ -4,7 +4,7 @@
 
 **Goal:** Add a dedicated lane-level pass gate for the single-body spinning-box RBD baseline without passing the full paper experiment claim.
 
-**Architecture:** Keep the existing development RBD baseline available, add a paper-scoped RBD baseline path for the uniform cube, and require an explicit report pass-gate payload for any passed `experiment.*` lane report. The comparison protocol can consume the passed RBD lane but remains incomplete until the M-ABD lane and comparison pass gate are implemented.
+**Architecture:** Keep the existing development RBD baseline available, add a paper-scoped RBD baseline path for the uniform cube, and require an explicit lane-gate payload for the RBD required-lane evidence. Top-level `experiment.*` reports remain `status=incomplete`; the comparison protocol consumes `observed["lane_gate_status"]="passed"` for the RBD lane but remains incomplete until the M-ABD lane and comparison pass gate are implemented.
 
 **Tech Stack:** Python 3.10, NumPy, existing `ClaimReport` JSON schema, existing experiment runner and unittest gates.
 
@@ -18,9 +18,10 @@
 
 - [ ] **Step 1: Write failing tests**
 
-Add tests showing that a passed experiment report without a gate is rejected,
-that a passed required-lane report with a gate is accepted, and that a report
-claiming full experiment pass through the lane gate is rejected.
+Add tests showing that a passed experiment report is rejected even when lane
+gate fields are present, that an incomplete required-lane report with
+`observed["lane_gate_status"]="passed"` is accepted, and that mismatched or
+over-claiming lane gates are rejected.
 
 Run:
 
@@ -28,20 +29,32 @@ Run:
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_reporting_contracts
 ```
 
-Expected before implementation: fail on accepted pass-gate report.
+Expected before implementation: fail because invalid lane-gate reports are
+accepted without validation.
 
 - [ ] **Step 2: Implement gate validation**
 
-Add a helper in `reporting.py` that accepts `status=passed` for `experiment.*`
-only when both `expected["experiment_pass_gate"]` and
-`observed["experiment_pass_gate"]` are mappings with:
+Add a helper in `reporting.py` that keeps rejecting `status=passed` for
+`experiment.*`, but validates optional lane gate fields when present. Require
+both `expected["lane_pass_gate"]` and `observed["lane_pass_gate"]` to be
+mappings with:
 
 - `gate_version = "required_lane_v1"`
 - matching `claim_id`
 - matching `baseline_lane`
+- matching `solver_mode`
+- matching `backend`
 - `scope = "required_lane_only"`
 - `full_experiment_claim_passed = false`
 - observed `thresholds_met = true`
+
+Also require the allowlisted top-level report fields:
+
+- `claim_id = "experiment.single_body.spinning_box"`
+- `baseline_lane = "rbd_implicit_baseline"`
+- `solver_mode = "paper_faithful_implicit_rbd"`
+- `backend = "cpu_numpy_newton_only"`
+- `status = "incomplete"`
 
 - [ ] **Step 3: Run focused test**
 
@@ -51,7 +64,7 @@ Run the same command and expect all reporting contract tests to pass.
 
 ```bash
 git add src/mabd_reproduction/reporting.py tests/test_reporting_contracts.py
-git commit -m "feat: add experiment lane pass gate"
+git commit -m "feat: add experiment lane gate validation"
 ```
 
 ### Task 2: Paper-Scoped RBD Baseline
@@ -65,13 +78,17 @@ git commit -m "feat: add experiment lane pass gate"
 Add tests for `run_spinning_box_paper_rbd_baseline(config)` and
 `write_spinning_box_paper_rbd_baseline_report(...)`:
 
-- result/report status is `passed`;
+- result/report status is `incomplete`;
+- `observed["lane_gate_status"] = "passed"`;
 - `baseline_lane = rbd_implicit_baseline`;
 - `solver_mode = paper_faithful_implicit_rbd`;
 - `backend = cpu_numpy_newton_only`;
 - initial/final position is `[0, 0.05, 0]` to `[4, 0.05, 0]`;
-- momentum and relative energy errors are within thresholds;
-- the report contains the pass-gate payload.
+- every sample records the expected time and position;
+- final orientation matches the closed-form xyzw quaternion and every
+  quaternion has unit norm;
+- momentum and relative energy errors are within strict thresholds;
+- the report contains the lane-gate payload.
 
 Run:
 
@@ -90,8 +107,9 @@ Newton xyzw order and record trajectory samples at step 0 through
 
 - [ ] **Step 3: Implement report writer**
 
-Add `write_spinning_box_paper_rbd_baseline_report(...)` that writes a passed
-lane report with pass-gate metadata and strict finite thresholds.
+Add `write_spinning_box_paper_rbd_baseline_report(...)` that writes an
+incomplete top-level experiment report with lane-gate metadata and strict
+finite thresholds.
 
 - [ ] **Step 4: Run focused test**
 
@@ -115,10 +133,12 @@ git commit -m "feat: add paper-scoped spinning-box RBD baseline"
 
 - [ ] **Step 1: Write failing tests**
 
-Update the RBD runner/CLI tests to expect `status=passed` and
-`paper_faithful_implicit_rbd`. Update comparison tests so the RBD lane status
-is `passed`, `rbd_implicit_baseline_not_paper_faithful` is absent, and the
-comparison report remains `incomplete` due to `mabd_newton_report_incomplete`.
+Update the RBD runner/CLI tests to expect `status=incomplete`,
+`observed["lane_gate_status"]="passed"`, and `paper_faithful_implicit_rbd`.
+Update comparison tests so the RBD lane gate status is `passed`,
+`rbd_implicit_baseline_not_paper_faithful` is absent, and the comparison
+report remains `incomplete` due to `mabd_newton_report_incomplete` and an
+explicit comparison pass gate blocker.
 
 Run:
 
@@ -131,13 +151,14 @@ Expected before implementation: failures around RBD status/solver mode.
 - [ ] **Step 2: Wire runner**
 
 Change `run_spinning_box_rbd_baseline(...)` and the `rbd_implicit_baseline`
-CLI lane to write the paper-scoped passed RBD report. Keep the old
+CLI lane to write the paper-scoped RBD lane-gated report. Keep the old
 development function exported under a distinct name if needed by tests.
 
-- [ ] **Step 3: Let comparison load passed lane reports**
+- [ ] **Step 3: Let comparison load lane-gated RBD reports**
 
-Use the updated reporting validator so comparison can load the passed RBD lane
-report, while the comparison report itself still writes `status=incomplete`.
+Use the updated reporting validator so comparison can load the RBD lane-gated
+report. Keep report-status snapshots separate from lane-gate-status snapshots
+so `status=incomplete` cannot be mistaken for a failed RBD lane gate.
 
 - [ ] **Step 4: Run focused tests**
 
@@ -190,7 +211,9 @@ as described above.
 - [ ] **Step 3: Add Phase 27 docs and validator requirements**
 
 Add bounded claim-boundary bullets and a dated record with commands, commits,
-environment, metrics, thresholds, pass-gate status, and non-claims.
+config path, environment, vendored Newton provenance, paper source version,
+backend, seed policy, raw artifact paths, metrics, thresholds, lane-gate
+status, and non-claims.
 
 - [ ] **Step 4: Run focused docs tests**
 
@@ -225,4 +248,3 @@ rerun the failed gate before rerunning the full list.
 - [ ] **Step 3: Commit any verification hardening**
 
 If docs/record commit backfills are needed, commit them separately.
-
