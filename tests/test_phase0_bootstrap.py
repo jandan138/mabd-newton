@@ -576,6 +576,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Repository",
             "plan commit:",
             "implementation commit:",
+            "docs/provenance commit: `632946ffa567ef7cac15868b92b8a5db936ec739`",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "## Paper Source",

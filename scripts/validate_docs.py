@@ -809,6 +809,7 @@ def validate_phase18_record() -> None:
         "## Repository",
         "plan commit: `5f8c3de029f20b157b9a50d624223d05e21a7720`",
         "implementation commit: `c7710f0f3ab6656a41968b3fe230e274d5f77f8b`",
+        "docs/provenance commit: `632946ffa567ef7cac15868b92b8a5db936ec739`",
         "## Vendored Newton",
         "96713fa965463b69c229a4d30582c733ff3526bb",
         "## Paper Source",
