@@ -8,6 +8,8 @@ passed_for_heavy_top_mabd_newton_diagnostic_lane
 
 - worktree: `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase50-heavy-top-mabd-lane`
 - source commit: `45bef31db663b2d13d9385ef64a8445cbac9b613`
+- current artifact regeneration source commit:
+  `6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a`
 - vendored Newton upstream commit: `96713fa965463b69c229a4d30582c733ff3526bb`
 - paper source version: `2603.08079v2`
 - Python: `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python`
@@ -21,7 +23,7 @@ passed_for_heavy_top_mabd_newton_diagnostic_lane
 - matrix: `configs/experiments/paper_experiment_matrix.yaml`
 - `reports/experiment_matrix/single_body_heavy_top_mabd_newton.json`
 - lane report sha256:
-  `5dd5658243fbb7486225ec1fad819fba29e5a794c62bbf029993059b7111b9da`
+  `b71b71fdd06d5daed97efae29eb6428dd1a9e000662329e7b05b4c004512f149`
 - solver mode: `mabd_cpu_oracle_heavy_top_newton_lane`
 - baseline lane: `mabd_newton`
 - backend: `cpu_numpy_newton_only`
@@ -33,7 +35,7 @@ passed_for_heavy_top_mabd_newton_diagnostic_lane
 - retained blocker: `exact_heavy_top_inertia_unknown`
 - retained blocker: `exact_heavy_top_geometry_unknown`
 - retained blocker: `raw_heavy_top_reference_curve_data_missing`
-- retained blocker: `heavy_top_comparison_report_missing`
+- retained blocker: `heavy_top_comparison_report_incomplete`
 - retained blocker: `heavy_top_timing_evidence_missing`
 
 ## Result Boundary

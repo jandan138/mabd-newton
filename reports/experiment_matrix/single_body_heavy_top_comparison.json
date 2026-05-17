@@ -1,0 +1,267 @@
+{
+  "asset_hashes": {
+    "heavy_top_procedural": "not_applicable_procedural"
+  },
+  "backend": "report_protocol",
+  "baseline_lane": "heavy_top_comparison_protocol",
+  "claim_id": "experiment.single_body.heavy_top",
+  "expected": {
+    "full_experiment_claim_passed": false,
+    "known_source_gaps": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing"
+    ],
+    "paper_claim_status": "formal RK4 and M-ABD diagnostic lanes are present, but paper geometry, inertia, raw reference curves, timing evidence, and the comparison pass gate remain required",
+    "paper_values": {
+      "angular_speed_rad_s": 10,
+      "reference_h_s": 0.0001,
+      "tilt_deg": 5
+    },
+    "required_lanes": [
+      "mabd_newton",
+      "rbd_rk4_reference"
+    ],
+    "required_metrics": [
+      "precession_velocity_error",
+      "nutation_angle_error",
+      "energy_drift"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:65-75"
+    ]
+  },
+  "failure_reason": "heavy-top comparison protocol is incomplete because paper reference curves, paper-faithful inertia/geometry, M-ABD energy/precession comparison metrics, timing evidence, and the comparison pass gate remain missing",
+  "observed": {
+    "blocking_reasons": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing",
+      "mabd_newton_report_incomplete",
+      "heavy_top_comparison_report_incomplete",
+      "heavy_top_timing_evidence_missing",
+      "heavy_top_comparison_pass_gate_not_enabled",
+      "sample_time_grid_mismatch"
+    ],
+    "full_experiment_claim_passed": false,
+    "input_report_provenance": {
+      "mabd_newton": {
+        "backend": "cpu_numpy_newton_only",
+        "baseline_lane": "mabd_newton",
+        "path": "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+        "sha256": "b71b71fdd06d5daed97efae29eb6428dd1a9e000662329e7b05b4c004512f149",
+        "solver_mode": "mabd_cpu_oracle_heavy_top_newton_lane",
+        "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      },
+      "rbd_rk4_reference": {
+        "backend": "cpu_numpy",
+        "baseline_lane": "rbd_rk4_reference",
+        "path": "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
+        "sha256": "2359c0108d10bccbeaeac9ba99896c5d02ac8e0b392c6145597e63f2b3a07156",
+        "solver_mode": "heavy_top_rk4_reference_diagnostic",
+        "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      }
+    },
+    "lane_metrics": {
+      "mabd_newton": {
+        "energy_drift": null,
+        "max_abs_precession_velocity_rad_s": 6.211950805675907e-13,
+        "max_affine_shape_spread_m": 1.026072417876121,
+        "max_constraint_residual_norm": 1.9857179087041432e-16,
+        "max_pivot_residual_m": 1.9857179528336718e-16,
+        "nutation_angle_range_deg": 154.54996086066706,
+        "source_relative_energy_drift": null
+      },
+      "rbd_rk4_reference": {
+        "energy_drift": 3.4498174841031286e-14,
+        "max_abs_precession_velocity_rad_s": 2.9670930846532526,
+        "max_affine_shape_spread_m": null,
+        "max_constraint_residual_norm": null,
+        "max_pivot_residual_m": null,
+        "nutation_angle_range_deg": 109.18244951927839,
+        "source_relative_energy_drift": 3.4498174841031286e-14
+      }
+    },
+    "lane_observed_statuses": {
+      "mabd_newton": "incomplete_diagnostic_generated",
+      "rbd_rk4_reference": "diagnostic_generated"
+    },
+    "lane_solver_modes": {
+      "mabd_newton": "mabd_cpu_oracle_heavy_top_newton_lane",
+      "rbd_rk4_reference": "heavy_top_rk4_reference_diagnostic"
+    },
+    "lane_statuses": {
+      "mabd_newton": "incomplete",
+      "rbd_rk4_reference": "incomplete"
+    },
+    "mabd_sample_count": 6,
+    "matched_sample_index_count": 6,
+    "max_abs_nutation_delta_deg": 155.5414157161976,
+    "max_abs_precession_delta_rad": 3.618025997274943,
+    "max_sample_time_delta_s": 4.75,
+    "missing_paper_metrics": [
+      "precession_velocity_error:mabd_precession_velocity_samples_missing",
+      "nutation_angle_error:paper_reference_curve_missing",
+      "energy_drift:mabd_energy_drift_missing"
+    ],
+    "missing_required_lanes": [],
+    "paper_metric_statuses": {
+      "energy_drift": {
+        "mabd_field": null,
+        "rk4_field": "relative_energy_drift",
+        "status": "mabd_energy_drift_missing"
+      },
+      "nutation_angle_error": {
+        "mabd_field": "precession_nutation_samples.nutation_angle_deg",
+        "rk4_field": "precession_nutation_samples.nutation_angle_deg",
+        "status": "paper_reference_curve_missing"
+      },
+      "precession_velocity_error": {
+        "mabd_field": null,
+        "rk4_field": "max_abs_precession_velocity_rad_s",
+        "status": "missing_mabd_precession_velocity_samples"
+      }
+    },
+    "rk4_sample_count": 11,
+    "sample_index_differences": [
+      {
+        "abs_nutation_delta_deg": 0.0,
+        "abs_precession_delta_rad": 0.0,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_nutation_angle_deg": 0.0,
+        "mabd_minus_rk4_precession_angle_rad": 0.0,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_nutation_angle_deg": 4.999999999999992,
+        "mabd_precession_angle_rad": 0.0,
+        "mabd_time_s": 0.0,
+        "rk4_nutation_angle_deg": 4.999999999999992,
+        "rk4_precession_angle_rad": 0.0,
+        "rk4_time_s": 0.0,
+        "sample_index": 0
+      },
+      {
+        "abs_nutation_delta_deg": 66.97042518993963,
+        "abs_precession_delta_rad": 1.0348609279938394,
+        "abs_sample_time_delta_s": 0.95,
+        "mabd_minus_rk4_nutation_angle_deg": -66.97042518993963,
+        "mabd_minus_rk4_precession_angle_rad": 1.0348609279938394,
+        "mabd_minus_rk4_time_s": -0.95,
+        "mabd_nutation_angle_deg": 5.262664426176727,
+        "mabd_precession_angle_rad": 0.0,
+        "mabd_time_s": 0.05,
+        "rk4_nutation_angle_deg": 72.23308961611636,
+        "rk4_precession_angle_rad": -1.0348609279938394,
+        "rk4_time_s": 1.0,
+        "sample_index": 1
+      },
+      {
+        "abs_nutation_delta_deg": 15.944924656575814,
+        "abs_precession_delta_rad": 1.667857863844633,
+        "abs_sample_time_delta_s": 1.9,
+        "mabd_minus_rk4_nutation_angle_deg": -15.944924656575814,
+        "mabd_minus_rk4_precession_angle_rad": -1.667857863844633,
+        "mabd_minus_rk4_time_s": -1.9,
+        "mabd_nutation_angle_deg": 6.231221743635529,
+        "mabd_precession_angle_rad": 0.0,
+        "mabd_time_s": 0.1,
+        "rk4_nutation_angle_deg": 22.176146400211344,
+        "rk4_precession_angle_rad": 1.667857863844633,
+        "rk4_time_s": 2.0,
+        "sample_index": 2
+      },
+      {
+        "abs_nutation_delta_deg": 10.72813187902698,
+        "abs_precession_delta_rad": 0.8788485145492098,
+        "abs_sample_time_delta_s": 2.85,
+        "mabd_minus_rk4_nutation_angle_deg": -10.72813187902698,
+        "mabd_minus_rk4_precession_angle_rad": -0.8788485145492098,
+        "mabd_minus_rk4_time_s": -2.85,
+        "mabd_nutation_angle_deg": 8.96847934810299,
+        "mabd_precession_angle_rad": 0.0,
+        "mabd_time_s": 0.15,
+        "rk4_nutation_angle_deg": 19.69661122712997,
+        "rk4_precession_angle_rad": 0.8788485145492098,
+        "rk4_time_s": 3.0,
+        "sample_index": 3
+      },
+      {
+        "abs_nutation_delta_deg": 55.70321760909442,
+        "abs_precession_delta_rad": 3.618025997274943,
+        "abs_sample_time_delta_s": 3.8,
+        "mabd_minus_rk4_nutation_angle_deg": -55.70321760909442,
+        "mabd_minus_rk4_precession_angle_rad": -3.618025997274943,
+        "mabd_minus_rk4_time_s": -3.8,
+        "mabd_nutation_angle_deg": 22.709155580356665,
+        "mabd_precession_angle_rad": -2.778112649447333e-14,
+        "mabd_time_s": 0.2,
+        "rk4_nutation_angle_deg": 78.41237318945109,
+        "rk4_precession_angle_rad": 3.618025997274915,
+        "rk4_time_s": 4.0,
+        "sample_index": 4
+      },
+      {
+        "abs_nutation_delta_deg": 155.5414157161976,
+        "abs_precession_delta_rad": 2.4987660916987022,
+        "abs_sample_time_delta_s": 4.75,
+        "mabd_minus_rk4_nutation_angle_deg": 155.5414157161976,
+        "mabd_minus_rk4_precession_angle_rad": -2.4987660916987022,
+        "mabd_minus_rk4_time_s": -4.75,
+        "mabd_nutation_angle_deg": 159.54996086066706,
+        "mabd_precession_angle_rad": -5.884088052285287e-14,
+        "mabd_time_s": 0.25,
+        "rk4_nutation_angle_deg": 4.008545144469445,
+        "rk4_precession_angle_rad": 2.4987660916986436,
+        "rk4_time_s": 5.0,
+        "sample_index": 5
+      }
+    ],
+    "sample_nonfinite": false,
+    "time_grid_mismatch": true,
+    "unmatched_mabd_samples": [],
+    "unmatched_rk4_samples": [
+      {
+        "sample_index": 6,
+        "time_s": 6.0
+      },
+      {
+        "sample_index": 7,
+        "time_s": 7.0
+      },
+      {
+        "sample_index": 8,
+        "time_s": 8.0
+      },
+      {
+        "sample_index": 9,
+        "time_s": 9.0
+      },
+      {
+        "sample_index": 10,
+        "time_s": 10.0
+      }
+    ]
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "mabd_report": "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+    "rk4_report": "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json"
+  },
+  "scene_id": "single_body_heavy_top",
+  "solver_mode": "heavy_top_multilane_comparison_development",
+  "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+  "status": "incomplete",
+  "threshold": {
+    "max_sample_time_delta_s": 1e-12
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "not_timed"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

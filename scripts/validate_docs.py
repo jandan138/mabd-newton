@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-50 docs and provenance contracts."""
+"""Validate Phase 0-51 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -109,6 +109,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase48-physical-pendulum-model-lane.md",
     "docs/records/2026-05-18-phase49-heavy-top-rk4-reference.md",
     "docs/records/2026-05-18-phase50-heavy-top-mabd-newton-lane.md",
+    "docs/records/2026-05-18-phase51-heavy-top-comparison-protocol.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -147,6 +148,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase49-heavy-top-rk4-reference.md",
     "docs/superpowers/specs/2026-05-18-phase50-heavy-top-mabd-newton-lane-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase50-heavy-top-mabd-newton-lane.md",
+    "docs/superpowers/specs/2026-05-18-phase51-heavy-top-comparison-protocol-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase51-heavy-top-comparison-protocol.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -159,6 +162,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
     "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
     "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+    "reports/experiment_matrix/single_body_heavy_top_comparison.json",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -212,6 +216,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "TO_BE_BACKFILLED_PHASE43",
     "TO_BE_BACKFILLED_PHASE44",
     "TO_BE_BACKFILLED_PHASE49",
+    "TO_BE_BACKFILLED_PHASE51",
+    "phase51-working-tree",
 }
 
 
@@ -6848,6 +6854,7 @@ def validate_phase49_record() -> None:
         "## Repository",
         "phase49-heavy-top-reference",
         "6d90ccf7d3faf9e79b84b01da815dd8c861df341",
+        "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
         VENDORED_NEWTON_COMMIT,
         "## Paper Source",
         "experiment.tex:65-75",
@@ -6861,8 +6868,8 @@ def validate_phase49_record() -> None:
         "exact_heavy_top_inertia_unknown",
         "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
-        "mabd_newton_report_missing",
-        "heavy_top_comparison_report_missing",
+        "mabd_newton_report_incomplete",
+        "heavy_top_comparison_report_incomplete",
         "heavy_top_timing_evidence_missing",
         "## Claim Impact",
         "No `experiment.*` claim is passed.",
@@ -6904,8 +6911,8 @@ def validate_phase49_record() -> None:
         "Phase 49 verifies a source-backed `rbd_rk4_reference` diagnostic lane",
         "`exact_heavy_top_geometry_unknown`",
         "`raw_heavy_top_reference_curve_data_missing`",
-        "`mabd_newton_report_missing`",
-        "`heavy_top_comparison_report_missing`",
+        "`mabd_newton_report_incomplete`",
+        "`heavy_top_comparison_report_incomplete`",
         "`heavy_top_timing_evidence_missing`",
         "Phase 49 does not verify a passed heavy-top experiment",
         "paper-faithful heavy-top inertia",
@@ -6968,13 +6975,13 @@ def validate_phase49_record() -> None:
         "exact_heavy_top_inertia_unknown",
         "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
-        "mabd_newton_report_missing",
-        "heavy_top_comparison_report_missing",
+        "mabd_newton_report_incomplete",
+        "heavy_top_comparison_report_incomplete",
         "heavy_top_timing_evidence_missing",
     ):
         if blocker not in blockers:
             fail(f"Phase 49 heavy-top blocker missing: {blocker}")
-    if observed.get("required_missing_lanes") != ["mabd_newton"]:
+    if observed.get("required_missing_lanes") != []:
         fail("Phase 49 heavy-top required_missing_lanes changed")
     if (
         _require_finite_scalar(observed.get("time_step_s"), "Phase 49 heavy-top time_step_s")
@@ -7087,7 +7094,7 @@ def validate_phase49_record() -> None:
                 "exact_heavy_top_geometry_unknown",
                 "raw_heavy_top_reference_curve_data_missing",
                 "mabd_newton_report_incomplete",
-                "heavy_top_comparison_report_missing",
+                "heavy_top_comparison_report_incomplete",
             ):
                 if blocker not in conflict_note:
                     fail(f"Phase 49 heavy-top conflict_note missing {blocker}")
@@ -7123,7 +7130,7 @@ def validate_phase49_record() -> None:
         "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
         "mabd_newton_report_incomplete",
-        "heavy_top_comparison_report_missing",
+        "heavy_top_comparison_report_incomplete",
     ):
         if blocker not in matrix_blockers:
             fail(f"Phase 49 matrix blocker missing: {blocker}")
@@ -7139,9 +7146,10 @@ def validate_phase50_record() -> None:
         "## Status\n\npassed_for_heavy_top_mabd_newton_diagnostic_lane",
         "phase50-heavy-top-mabd-lane",
         "45bef31db663b2d13d9385ef64a8445cbac9b613",
+        "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
         VENDORED_NEWTON_COMMIT,
         "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
-        "5dd5658243fbb7486225ec1fad819fba29e5a794c62bbf029993059b7111b9da",
+        "b71b71fdd06d5daed97efae29eb6428dd1a9e000662329e7b05b4c004512f149",
         "mabd_cpu_oracle_heavy_top_newton_lane",
         "mabd_newton",
         "cpu_numpy_newton_only",
@@ -7154,7 +7162,7 @@ def validate_phase50_record() -> None:
         "exact_heavy_top_inertia_unknown",
         "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
-        "heavy_top_comparison_report_missing",
+        "heavy_top_comparison_report_incomplete",
         "heavy_top_timing_evidence_missing",
         "No `experiment.*` claim is passed.",
         "`experiment.single_body.heavy_top` remains intended",
@@ -7280,7 +7288,7 @@ def validate_phase50_record() -> None:
         "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
         "mabd_newton_report_incomplete",
-        "heavy_top_comparison_report_missing",
+        "heavy_top_comparison_report_incomplete",
         "heavy_top_timing_evidence_missing",
     ):
         if blocker not in blockers:
@@ -7422,6 +7430,192 @@ def validate_phase50_record() -> None:
         fail("Phase 50 matrix must not keep mabd_newton_report_missing")
 
 
+def validate_phase51_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase51-heavy-top-comparison-protocol.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed_for_heavy_top_comparison_protocol",
+        "phase51-heavy-top-comparison-protocol",
+        "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+        VENDORED_NEWTON_COMMIT,
+        "reports/experiment_matrix/single_body_heavy_top_comparison.json",
+        "4525c71a24f841cfee98332c1bfb68d3365065df82dedc54a31713f0a9438ec9",
+        "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
+        "2359c0108d10bccbeaeac9ba99896c5d02ac8e0b392c6145597e63f2b3a07156",
+        "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+        "b71b71fdd06d5daed97efae29eb6428dd1a9e000662329e7b05b4c004512f149",
+        "heavy_top_multilane_comparison_development",
+        "heavy_top_comparison_protocol",
+        "report_protocol",
+        "mabd_newton_report_incomplete",
+        "heavy_top_comparison_report_incomplete",
+        "heavy_top_comparison_pass_gate_not_enabled",
+        "sample_time_grid_mismatch",
+        "precession_velocity_error:mabd_precession_velocity_samples_missing",
+        "nutation_angle_error:paper_reference_curve_missing",
+        "energy_drift:mabd_energy_drift_missing",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.heavy_top` remains intended",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_heavy_top_comparison_reports tests.test_experiment_runner",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 51 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE51",
+        "phase51-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 51 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "passed heavy-top experiment",
+        "heavy-top experiment passed",
+        "paper-faithful heavy-top inertia is verified",
+        "raw curve agreement passed",
+        "abd-vs-rbd comparison passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 51 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 51 heavy-top comparison protocol evidence",
+        "Phase 51 verifies an executable `heavy_top_comparison_protocol` report",
+        "input report provenance and sha256 hashes",
+        "sample time-grid mismatch",
+        "`heavy_top_comparison_report_incomplete`",
+        "Phase 51 does not verify a passed heavy-top experiment",
+        "comparison pass gate",
+        "Phase 51 heavy-top comparison protocol",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 51 claim boundary missing: {snippet}")
+
+    try:
+        config = load_heavy_top_config(ROOT / "configs/experiments/single_body_heavy_top.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_heavy_top_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 51 heavy-top config validation failed: {exc}")
+
+    comparison_path = "reports/experiment_matrix/single_body_heavy_top_comparison.json"
+    rk4_path = "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json"
+    mabd_path = "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json"
+    report = load_claim_report(ROOT / comparison_path)
+    rk4_report = load_claim_report(ROOT / rk4_path)
+    mabd_report = load_claim_report(ROOT / mabd_path)
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 51 report source_commit must not be a placeholder")
+    if report.source_commit not in text:
+        fail("Phase 51 record must list the report source_commit")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 51 report vendored Newton commit changed")
+    if report.claim_id != config.claim_id or report.scene_id != config.scene_id:
+        fail("Phase 51 report identity does not match config")
+    if report.asset_hashes.get("heavy_top_procedural") != "not_applicable_procedural":
+        fail("Phase 51 heavy-top asset hash must remain procedural")
+    if report.status.value != "incomplete":
+        fail("Phase 51 heavy-top comparison report must remain incomplete")
+    if _record_sha256_for_artifact(text, comparison_path) != sha256_file(ROOT / comparison_path):
+        fail("Phase 51 heavy-top comparison report sha256 mismatch")
+    if report.baseline_lane != "heavy_top_comparison_protocol":
+        fail("Phase 51 heavy-top comparison lane changed")
+    if report.solver_mode != "heavy_top_multilane_comparison_development":
+        fail("Phase 51 heavy-top comparison solver mode changed")
+    if report.backend != "report_protocol":
+        fail("Phase 51 heavy-top comparison backend changed")
+
+    observed = report.observed
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 51 heavy-top comparison must not pass full experiment claim")
+    if observed.get("missing_required_lanes") != []:
+        fail("Phase 51 heavy-top comparison missing lanes changed")
+    expected_missing_metrics = [
+        "precession_velocity_error:mabd_precession_velocity_samples_missing",
+        "nutation_angle_error:paper_reference_curve_missing",
+        "energy_drift:mabd_energy_drift_missing",
+    ]
+    if observed.get("missing_paper_metrics") != expected_missing_metrics:
+        fail("Phase 51 heavy-top comparison missing paper metrics changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 51 heavy-top comparison blockers must be a list")
+    for blocker in (
+        "exact_heavy_top_inertia_unknown",
+        "exact_heavy_top_geometry_unknown",
+        "raw_heavy_top_reference_curve_data_missing",
+        "mabd_newton_report_incomplete",
+        "heavy_top_comparison_report_incomplete",
+        "heavy_top_timing_evidence_missing",
+        "heavy_top_comparison_pass_gate_not_enabled",
+        "sample_time_grid_mismatch",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 51 heavy-top comparison blocker missing: {blocker}")
+    if observed.get("time_grid_mismatch") is not True:
+        fail("Phase 51 heavy-top comparison must record sample time-grid mismatch")
+    if observed.get("sample_nonfinite") is not False:
+        fail("Phase 51 heavy-top comparison sample_nonfinite changed")
+    if _require_finite_scalar(
+        observed.get("matched_sample_index_count"),
+        "Phase 51 matched_sample_index_count",
+    ) < 1:
+        fail("Phase 51 heavy-top comparison must retain matched samples")
+    if _require_finite_scalar(
+        observed.get("max_sample_time_delta_s"),
+        "Phase 51 max_sample_time_delta_s",
+    ) <= config.comparison.thresholds["max_sample_time_delta_s"]:
+        fail("Phase 51 heavy-top comparison expected a time-grid mismatch")
+
+    provenance = observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 51 comparison missing input_report_provenance")
+    for lane, path, lane_report in (
+        ("rbd_rk4_reference", rk4_path, rk4_report),
+        ("mabd_newton", mabd_path, mabd_report),
+    ):
+        lane_provenance = provenance.get(lane)
+        if not isinstance(lane_provenance, dict):
+            fail(f"Phase 51 comparison missing {lane} input provenance")
+        if lane_provenance.get("path") != path:
+            fail(f"Phase 51 {lane} input path changed")
+        if lane_provenance.get("sha256") != sha256_file(ROOT / path):
+            fail(f"Phase 51 {lane} input sha256 mismatch")
+        if lane_provenance.get("source_commit") != lane_report.source_commit:
+            fail(f"Phase 51 {lane} source_commit provenance mismatch")
+        if lane_report.source_commit != report.source_commit:
+            fail(f"Phase 51 {lane} report must be regenerated with comparison source_commit")
+        if lane_report.status.value != "incomplete":
+            fail(f"Phase 51 {lane} input report must remain incomplete")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.heavy_top":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 51 must keep heavy-top experiment status intended")
+            conflict_note = str(claim.get("conflict_note", ""))
+            if "heavy_top_comparison_report_incomplete" not in conflict_note:
+                fail("Phase 51 heavy-top conflict_note missing comparison blocker")
+            if "heavy_top_comparison_report_missing" in conflict_note:
+                fail("Phase 51 heavy-top conflict_note must not keep missing comparison blocker")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 51 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -7558,6 +7752,19 @@ def validate_experiment_contracts() -> None:
         fail("Phase 16 spinning-box matrix must not keep stale missing-comparison-protocol blocker")
     if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
         fail("Phase 16 spinning-box matrix must record incomplete comparison report blocker")
+    heavy_top = next(
+        experiment
+        for experiment in matrix.experiments
+        if experiment.claim_id == "experiment.single_body.heavy_top"
+    )
+    if "mabd_newton_report_incomplete" not in heavy_top.blocking_reasons:
+        fail("Phase 51 heavy-top matrix must record incomplete M-ABD lane blocker")
+    if "heavy_top_comparison_report_incomplete" not in heavy_top.blocking_reasons:
+        fail("Phase 51 heavy-top matrix must record incomplete comparison report blocker")
+    if "mabd_newton_report_missing" in heavy_top.blocking_reasons:
+        fail("Phase 51 heavy-top matrix must not keep missing M-ABD lane blocker")
+    if "heavy_top_comparison_report_missing" in heavy_top.blocking_reasons:
+        fail("Phase 51 heavy-top matrix must not keep missing comparison report blocker")
 
 
 def validate_phase13_config(
@@ -7688,13 +7895,14 @@ def main() -> int:
     validate_phase48_record()
     validate_phase49_record()
     validate_phase50_record()
+    validate_phase51_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51 "
         "docs/provenance validation passed"
     )
     return 0

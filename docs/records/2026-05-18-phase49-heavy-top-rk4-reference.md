@@ -9,6 +9,8 @@ passed_for_heavy_top_reference_diagnostic_lane
 - branch: `phase49-heavy-top-reference`
 - implementation source commit:
   `6d90ccf7d3faf9e79b84b01da815dd8c861df341`
+- current artifact regeneration source commit:
+  `6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a`
 - vendored Newton commit:
   `96713fa965463b69c229a4d30582c733ff3526bb`
 - canonical Python:
@@ -31,7 +33,7 @@ No raw simulation directories, videos, or large logs are committed.
 
 - `reports/experiment_matrix/single_body_heavy_top_rk4_reference.json`
   - sha256:
-    `15dcdebf41987585ab0d42c9f80e845e45b838c53d67db1e7289f8441da18e31`
+    `2359c0108d10bccbeaeac9ba99896c5d02ac8e0b392c6145597e63f2b3a07156`
   - baseline lane: `rbd_rk4_reference`
   - solver mode: `heavy_top_rk4_reference_diagnostic`
   - backend: `cpu_numpy`
@@ -40,8 +42,8 @@ No raw simulation directories, videos, or large logs are committed.
   - retained blocker: `exact_heavy_top_inertia_unknown`
   - retained blocker: `exact_heavy_top_geometry_unknown`
   - retained blocker: `raw_heavy_top_reference_curve_data_missing`
-  - retained blocker: `mabd_newton_report_missing`
-  - retained blocker: `heavy_top_comparison_report_missing`
+  - retained blocker: `mabd_newton_report_incomplete`
+  - retained blocker: `heavy_top_comparison_report_incomplete`
   - retained blocker: `heavy_top_timing_evidence_missing`
 
 ## Claim Impact

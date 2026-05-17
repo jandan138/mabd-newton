@@ -11,7 +11,7 @@
       "exact_heavy_top_geometry_unknown",
       "raw_heavy_top_reference_curve_data_missing",
       "mabd_newton_report_incomplete",
-      "heavy_top_comparison_report_missing",
+      "heavy_top_comparison_report_incomplete",
       "heavy_top_timing_evidence_missing"
     ],
     "figure_pdf_sha256": "c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d",
@@ -33,7 +33,7 @@
       "procedural point-mass tetrahedron is not the paper's undisclosed heavy-top geometry",
       "configured inertia is not matched to the paper's undisclosed heavy-top inertia",
       "no raw paper curve digitization or curve agreement gate is generated",
-      "no ABD-vs-RBD comparison report is generated",
+      "no ABD-vs-RBD comparison pass gate is generated",
       "no rendered figure or timing distribution is generated"
     ],
     "paper_claim_status": "formal M-ABD lane generated; full heavy-top experiment incomplete",
@@ -59,7 +59,7 @@
       ]
     }
   },
-  "failure_reason": "heavy_top mabd_newton diagnostic lane remains incomplete because exact_heavy_top_inertia_unknown, exact_heavy_top_geometry_unknown, raw_heavy_top_reference_curve_data_missing, heavy_top_comparison_report_missing, and heavy_top_timing_evidence_missing remain unresolved",
+  "failure_reason": "heavy_top mabd_newton diagnostic lane remains incomplete because exact_heavy_top_inertia_unknown, exact_heavy_top_geometry_unknown, raw_heavy_top_reference_curve_data_missing, heavy_top_comparison_report_incomplete, and heavy_top_timing_evidence_missing remain unresolved",
   "observed": {
     "angle_probe_rest_point_m": [
       0.0,
@@ -71,7 +71,7 @@
       "exact_heavy_top_geometry_unknown",
       "raw_heavy_top_reference_curve_data_missing",
       "mabd_newton_report_incomplete",
-      "heavy_top_comparison_report_missing",
+      "heavy_top_comparison_report_incomplete",
       "heavy_top_timing_evidence_missing"
     ],
     "full_experiment_claim_passed": false,
@@ -244,7 +244,7 @@
   },
   "scene_id": "single_body_heavy_top",
   "solver_mode": "mabd_cpu_oracle_heavy_top_newton_lane",
-  "source_commit": "45bef31db663b2d13d9385ef64a8445cbac9b613",
+  "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
   "status": "incomplete",
   "threshold": {
     "max_affine_shape_spread_m": 1.1,

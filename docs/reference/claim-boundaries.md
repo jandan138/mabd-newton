@@ -639,8 +639,8 @@
   nutation samples for the configured diagnostic inertia, small relative
   energy drift, retained `exact_heavy_top_inertia_unknown`,
   `exact_heavy_top_geometry_unknown`,
-  `raw_heavy_top_reference_curve_data_missing`, `mabd_newton_report_missing`,
-  `heavy_top_comparison_report_missing`, and `heavy_top_timing_evidence_missing`
+  `raw_heavy_top_reference_curve_data_missing`, `mabd_newton_report_incomplete`,
+  `heavy_top_comparison_report_incomplete`, and `heavy_top_timing_evidence_missing`
   blockers, and top-level report status: `incomplete`.
 - Phase 49 does not verify a passed heavy-top experiment, paper-faithful
   heavy-top inertia or geometry, raw figure curve agreement, M-ABD heavy-top
@@ -660,6 +660,22 @@
   comparison, rendered output, runtime performance, generated videos or raw
   simulation logs, a full paper reproduction, or any passed `experiment.*`
   claim.
+- This repository contains Phase 51 heavy-top comparison protocol evidence
+  after the Phase 51 record is created.
+- Phase 51 verifies an executable `heavy_top_comparison_protocol` report that
+  consumes the current `rbd_rk4_reference` and `mabd_newton` heavy-top lane
+  reports, records input report provenance and sha256 hashes, maps RK4
+  `relative_energy_drift` to the paper `energy_drift` diagnostic field, records
+  missing M-ABD precession/energy and raw paper reference-curve gaps, detects
+  the current sample time-grid mismatch, retains
+  `mabd_newton_report_incomplete`, `heavy_top_comparison_report_incomplete`,
+  and `heavy_top_timing_evidence_missing` blockers, and keeps
+  `full_experiment_claim_passed = false`.
+- Phase 51 does not verify a passed heavy-top experiment, paper-faithful
+  heavy-top inertia or geometry, raw figure curve agreement, paper timing,
+  rendered output, runtime performance, generated videos or raw simulation
+  logs, a comparison pass gate, a full paper reproduction, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -764,6 +780,11 @@
   curve agreement, not an ABD-vs-RBD comparison result, not a paper timing
   result, not rendered-output evidence, not a full paper reproduction, and not
   any passed `experiment.*` claim.
+- Phase 51 heavy-top comparison protocol is not a passed heavy-top experiment,
+  not paper-faithful heavy-top inertia or geometry reconstruction, not raw
+  curve agreement, not a comparison pass gate, not a paper timing result, not
+  rendered-output evidence, not a full paper reproduction, and not any passed
+  `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

@@ -10,8 +10,8 @@
       "exact_heavy_top_inertia_unknown",
       "exact_heavy_top_geometry_unknown",
       "raw_heavy_top_reference_curve_data_missing",
-      "mabd_newton_report_missing",
-      "heavy_top_comparison_report_missing",
+      "mabd_newton_report_incomplete",
+      "heavy_top_comparison_report_incomplete",
       "heavy_top_timing_evidence_missing"
     ],
     "figure_pdf_sha256": "c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d",
@@ -34,7 +34,7 @@
       "/tmp/mabd-paper/source/sections/experiment.tex:65-75"
     ]
   },
-  "failure_reason": "rbd_rk4_reference diagnostic only; exact_heavy_top_inertia_unknown, exact_heavy_top_geometry_unknown, raw_heavy_top_reference_curve_data_missing, mabd_newton_report_missing, and heavy_top_comparison_report_missing remain incomplete",
+  "failure_reason": "rbd_rk4_reference diagnostic only; exact_heavy_top_inertia_unknown, exact_heavy_top_geometry_unknown, raw_heavy_top_reference_curve_data_missing, mabd_newton_report_incomplete, and heavy_top_comparison_report_incomplete remain incomplete",
   "observed": {
     "angular_momentum_norm_drift": 0.03936703921113005,
     "angular_momentum_norm_final": 0.519683519605565,
@@ -43,8 +43,8 @@
       "exact_heavy_top_inertia_unknown",
       "exact_heavy_top_geometry_unknown",
       "raw_heavy_top_reference_curve_data_missing",
-      "mabd_newton_report_missing",
-      "heavy_top_comparison_report_missing",
+      "mabd_newton_report_incomplete",
+      "heavy_top_comparison_report_incomplete",
       "heavy_top_timing_evidence_missing"
     ],
     "duration_s": 10.0,
@@ -156,9 +156,7 @@
     "reference_not_paper_inertia": true,
     "reference_scope": "fixed_pivot_rbd_rk4_heavy_top_diagnostic",
     "relative_energy_drift": 3.4498174841031286e-14,
-    "required_missing_lanes": [
-      "mabd_newton"
-    ],
+    "required_missing_lanes": [],
     "sample_count": 11,
     "threshold_violations": [],
     "time_step_s": 0.0001
@@ -168,7 +166,7 @@
   "raw_outputs": {},
   "scene_id": "single_body_heavy_top",
   "solver_mode": "heavy_top_rk4_reference_diagnostic",
-  "source_commit": "6d90ccf7d3faf9e79b84b01da815dd8c861df341",
+  "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
   "status": "incomplete",
   "threshold": {
     "max_relative_energy_drift": 1e-07,
