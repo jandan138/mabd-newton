@@ -3343,6 +3343,8 @@ class Phase0BootstrapTests(unittest.TestCase):
             "0cef329e201d7d4a3d2b285420e092dc26d23ea4",
             "Evidence record commit",
             "413b03e76ec52595fc83532ba4e89828d4e02029",
+            "Review hardening commit",
+            "f3246df7df1461838a6a80e21dc8e2f7723288bd",
             "## Vendored Newton",
             "https://github.com/newton-physics/newton.git",
             "96713fa965463b69c229a4d30582c733ff3526bb",
