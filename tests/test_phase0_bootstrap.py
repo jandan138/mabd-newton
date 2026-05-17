@@ -1565,6 +1565,91 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("to be recorded after the Phase 30 docs commit", text)
         self.assertNotIn("pending branch-local", text)
 
+    def test_phase31_official_artifact_audit_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        experiment_statuses = {
+            claim["claim_id"]: claim["reproduction_status"]
+            for claim in data["claims"]
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        self.assertNotIn("passed", set(experiment_statuses.values()))
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 31")
+        verified = claim_boundary_bullet(text, "Phase 31 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 31 does not verify")
+
+        self.assertIn("official artifact availability audit", current)
+        self.assertIn(
+            "official_project_and_video_found_implementation_code_coming_soon_as_of_2026-05-17",
+            current,
+        )
+        self.assertIn("arXiv", verified)
+        self.assertIn("SIGGRAPH 2026 schedule", verified)
+        self.assertIn("Minghao Guo", verified)
+        self.assertIn("first-author project page", verified)
+        self.assertIn("MINSUGLLY/mabd", verified)
+        self.assertIn("supplementary video were found", verified)
+        self.assertIn("Code (coming soon)", verified)
+        self.assertIn("Yin Yang", verified)
+        self.assertIn("GitHub repository search", verified)
+        self.assertIn("private author-code absence", non_claim)
+        self.assertIn("paper experiment pass", non_claim)
+        self.assertIn("Newton solver modification", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase31_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase31-official-artifact-availability.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/paper_experiment_matrix.yaml",
+            "docs/reference/official-artifact-sources.yaml",
+            "## Repository",
+            "base commit: `6093ae4`",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status: Phase 31 does not modify vendored Newton",
+            "## Paper Source",
+            "arXiv ID: `2603.08079`",
+            "arXiv version: `v2`",
+            "## External Source Audit",
+            "audited_on_utc: `2026-05-17`",
+            (
+                "status: "
+                "`official_project_and_video_found_implementation_code_coming_soon_as_of_2026-05-17`"
+            ),
+            "https://arxiv.org/abs/2603.08079",
+            "https://s2026.conference-schedule.org/presentation/?id=papers_116&sess=sess102",
+            "https://www.minghaoguo.com/",
+            "https://minsuglly.github.io/content.json",
+            "https://minsuglly.github.io/mabd/",
+            "https://www.youtube-nocookie.com/embed/xnLCdUfq52w?rel=0",
+            "https://github.com/MINSUGLLY/mabd",
+            "https://yangzzzy.github.io/",
+            "https://api.github.com/search/repositories?q=",
+            "official_implementation_code_marked_coming_soon",
+            "official_implementation_code_not_found_in_audited_public_sources",
+            "not proof of private author-code absence",
+            "No `experiment.*` claim is passed in this phase.",
+            "## Artifacts",
+            "raw web pages: not committed",
+            "generated reports: not committed",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_official_artifact_audit",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE31_DOCS_COMMIT", text)
+        self.assertNotIn("pending branch-local", text)
+        self.assertNotIn("official_project_page_url_missing", text)
+        self.assertNotIn("official_supplementary_video_url_missing", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1596,7 +1681,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

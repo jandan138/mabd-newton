@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-30 docs and provenance contracts."""
+"""Validate Phase 0-31 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -39,6 +39,7 @@ REQUIRED_PATHS = (
     "pyproject.toml",
     "docs/operations/environment.md",
     "docs/reference/claim-boundaries.md",
+    "docs/reference/official-artifact-sources.yaml",
     "docs/reference/paper-claims.yaml",
     "docs/records/README.md",
     "docs/records/2026-05-16-phase1-single-body-abd.md",
@@ -71,6 +72,9 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase28-spinning-box-paper-horizon.md",
     "docs/records/2026-05-17-phase29-spinning-box-kinematic-feasibility.md",
     "docs/records/2026-05-17-phase30-velocity-semantics-source-audit.md",
+    "docs/records/2026-05-17-phase31-official-artifact-availability.md",
+    "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -158,6 +162,9 @@ def validate_environment_contract() -> None:
 def validate_claim_boundaries() -> None:
     text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
     normalized_text = " ".join(text.split())
+    for placeholder in ("TO_BE_BACKFILLED_PHASE31", "pending branch-local"):
+        if placeholder in text:
+            fail("claim-boundaries.md contains stale Phase 31 placeholder")
     for heading in ("## Current", "## Intended", "## Verified", "## Forbidden Claims"):
         if heading not in text:
             fail(f"claim-boundaries.md missing {heading}")
@@ -810,6 +817,56 @@ def validate_claim_boundaries() -> None:
     for snippet in phase30_non_claims:
         if snippet not in phase30_non_claim:
             fail(f"claim-boundaries.md must bound Phase 30 source-audit evidence: {snippet}")
+    phase31_current = claim_boundary_bullet(text, "This repository contains Phase 31")
+    phase31_verified = claim_boundary_bullet(text, "Phase 31 verifies")
+    phase31_non_claim = claim_boundary_bullet(text, "Phase 31 does not verify")
+    phase31_current_required = (
+        "official artifact availability audit",
+        "official_project_and_video_found_implementation_code_coming_soon_as_of_2026-05-17",
+    )
+    for snippet in phase31_current_required:
+        if snippet not in phase31_current:
+            fail(f"claim-boundaries.md must state Phase 31 artifact-audit evidence: {snippet}")
+    phase31_verified_required = (
+        "arXiv page",
+        "SIGGRAPH 2026 schedule page",
+        "Minghao Guo author page",
+        "first-author homepage data",
+        "first-author project page",
+        "MINSUGLLY/mabd",
+        "Yin Yang author page",
+        "GitHub repository search",
+        "supplementary video were found",
+        "Code (coming soon)",
+        "released implementation-code URL",
+    )
+    for snippet in phase31_verified_required:
+        if snippet not in phase31_verified:
+            fail(f"claim-boundaries.md must describe Phase 31 artifact-audit evidence: {snippet}")
+    phase31_non_claims = (
+        "private author-code absence",
+        "unpublished implementation-code absence",
+        "paper experiment pass",
+        "Newton solver modification",
+        "M-ABD lane pass",
+        "spinning-box comparison pass",
+        "paper timing",
+        "paper trajectory agreement",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase31_non_claims:
+        if snippet not in phase31_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 31 artifact-audit evidence: {snippet}")
+    phase31_forbidden = claim_boundary_bullet(
+        text, "Phase 31 project-page/video availability"
+    )
+    for snippet in (
+        "private author code",
+        "unpublished implementation code",
+        "author-owned solver artifacts do not exist",
+    ):
+        if snippet not in phase31_forbidden:
+            fail(f"claim-boundaries.md must forbid Phase 31 overclaim: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -2408,6 +2465,237 @@ def validate_phase30_record() -> None:
         fail("Phase 30 spinning-box matrix must retain incomplete comparison report blocker")
 
 
+def validate_phase31_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-17-phase31-official-artifact-availability.md"
+    text = record_path.read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "docs/reference/official-artifact-sources.yaml",
+        "## Repository",
+        "base commit: `6093ae4`",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 31 does not modify vendored Newton",
+        "## Paper Source",
+        "arXiv ID: `2603.08079`",
+        "arXiv version: `v2`",
+        "sections/experiment.tex:38",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## External Source Audit",
+        "audited_on_utc: `2026-05-17`",
+        (
+            "status: "
+            "`official_project_and_video_found_implementation_code_coming_soon_as_of_2026-05-17`"
+        ),
+        "https://arxiv.org/abs/2603.08079",
+        "https://s2026.conference-schedule.org/presentation/?id=papers_116&sess=sess102",
+        "https://www.minghaoguo.com/",
+        "https://minsuglly.github.io/content.json",
+        "https://minsuglly.github.io/mabd/",
+        "https://www.youtube-nocookie.com/embed/xnLCdUfq52w?rel=0",
+        "https://github.com/MINSUGLLY/mabd",
+        "https://yangzzzy.github.io/",
+        "https://api.github.com/search/repositories?q=",
+        "total_count = 0",
+        "incomplete_results = false",
+        "official_implementation_code_marked_coming_soon",
+        "official_implementation_code_not_found_in_audited_public_sources",
+        "not proof of private author-code absence",
+        "No `experiment.*` claim is passed in this phase.",
+        "## Artifacts",
+        "structured manifest: `docs/reference/official-artifact-sources.yaml`",
+        "raw web pages: not committed",
+        "generated reports: not committed",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_official_artifact_audit",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 31 record missing required evidence field: {snippet}")
+    if "TO_BE_BACKFILLED_PHASE31_DOCS_COMMIT" in text:
+        fail("Phase 31 record contains stale docs commit placeholder")
+    if "pending branch-local" in text:
+        fail("Phase 31 record contains pending branch-local provenance placeholder")
+    for stale_snippet in (
+        "not_found_in_audited_public_sources_as_of_2026-05-17",
+        "official_code_repository_url_missing",
+        "official_project_page_url_missing",
+        "official_supplementary_video_url_missing",
+    ):
+        if stale_snippet in text:
+            fail(f"Phase 31 record contains stale artifact-audit status: {stale_snippet}")
+
+    lower_text = text.lower()
+    forbidden_snippets = (
+        "official code does not exist",
+        "no private author code exists",
+        "full reproduction complete",
+        "phase 31 verifies the paper spinning-box experiment",
+        "phase 31 passes experiment.single_body.spinning_box",
+        "phase 31 fixes the m-abd solver",
+        "phase 31 verifies paper timing",
+        "phase 31 verifies paper trajectory agreement",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in lower_text:
+            fail(f"Phase 31 record overclaims unsupported evidence: {snippet}")
+
+    manifest = read_yaml(ROOT / "docs/reference/official-artifact-sources.yaml")
+    audit = manifest.get("audit")
+    if not isinstance(audit, dict):
+        fail("official-artifact-sources.yaml missing audit mapping")
+    if audit.get("id") != "phase31-official-artifact-availability":
+        fail("Phase 31 artifact manifest has wrong audit id")
+    if audit.get("audited_on_utc") != "2026-05-17":
+        fail("Phase 31 artifact manifest has wrong audit date")
+    if (
+        audit.get("status")
+        != "official_project_and_video_found_implementation_code_coming_soon_as_of_2026-05-17"
+    ):
+        fail("Phase 31 artifact manifest has wrong scoped status")
+    scope_boundary = str(audit.get("scope_boundary", ""))
+    if "not proof of private author-code absence" not in scope_boundary:
+        fail("Phase 31 artifact manifest must keep private-code boundary")
+    blockers = audit.get("blockers")
+    if not isinstance(blockers, list):
+        fail("Phase 31 artifact manifest missing blockers list")
+    for blocker in (
+        "official_implementation_code_marked_coming_soon",
+        "official_implementation_code_not_found_in_audited_public_sources",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 31 artifact manifest missing blocker: {blocker}")
+    for stale_blocker in (
+        "official_code_repository_url_missing",
+        "official_project_page_url_missing",
+        "official_supplementary_video_url_missing",
+    ):
+        if stale_blocker in blockers:
+            fail(f"Phase 31 artifact manifest contains stale blocker: {stale_blocker}")
+
+    paper = manifest.get("paper")
+    if not isinstance(paper, dict):
+        fail("official-artifact-sources.yaml missing paper mapping")
+    if paper.get("arxiv_id") != "2603.08079" or paper.get("arxiv_version") != "v2":
+        fail("Phase 31 artifact manifest has wrong arXiv metadata")
+
+    sources = manifest.get("audited_sources")
+    if not isinstance(sources, list):
+        fail("official-artifact-sources.yaml missing audited_sources list")
+    source_map = {source.get("source_id"): source for source in sources if isinstance(source, dict)}
+    required_source_ids = (
+        "arxiv_abs_2603_08079",
+        "siggraph_2026_schedule_papers_116",
+        "minghao_guo_author_page",
+        "zhiyong_he_author_content",
+        "first_author_project_page",
+        "first_author_github_mabd_repo",
+        "yin_yang_author_page",
+        "paper_tex_source_tree",
+        "github_repository_exact_search",
+    )
+    for source_id in required_source_ids:
+        if source_id not in source_map:
+            fail(f"Phase 31 artifact manifest missing audited source: {source_id}")
+    for source_id, source in source_map.items():
+        if "url" not in source or "observation" not in source:
+            fail(f"Phase 31 source {source_id} must include url and observation")
+        if source.get("has_official_implementation_code_link") is not False:
+            fail(f"Phase 31 source {source_id} must not report implementation code")
+    if source_map["github_repository_exact_search"].get("official") is not False:
+        fail("GitHub repository search must not be classified as an official source")
+    if source_map["github_repository_exact_search"].get("observed_total_count") != 0:
+        fail("GitHub repository exact search result changed from total_count 0")
+    if source_map["github_repository_exact_search"].get("incomplete_results") is not False:
+        fail("GitHub repository exact search must report incomplete_results false")
+    tex_source = source_map["paper_tex_source_tree"]
+    if tex_source.get("mentions_supplementary_video") is not True:
+        fail("Phase 31 TeX source audit must record supplementary-video mention")
+    if tex_source.get("has_supplementary_video_url") is not False:
+        fail("Phase 31 TeX source audit must record missing supplementary-video URL")
+    if source_map["zhiyong_he_author_content"].get("has_official_project_page_link") is not True:
+        fail("Phase 31 first-author homepage data must record the project page link")
+    project_page = source_map["first_author_project_page"]
+    if project_page.get("has_official_project_page_link") is not True:
+        fail("Phase 31 first-author project page must be recorded as found")
+    if project_page.get("implementation_code_status") != "coming_soon":
+        fail("Phase 31 first-author project page must mark implementation code coming soon")
+    if project_page.get("has_supplementary_video_url") is not True:
+        fail("Phase 31 first-author project page must record supplementary video availability")
+    if (
+        project_page.get("supplementary_video_url")
+        != "https://www.youtube-nocookie.com/embed/xnLCdUfq52w?rel=0"
+    ):
+        fail("Phase 31 first-author project page must record the supplementary video URL")
+    github_page_repo = source_map["first_author_github_mabd_repo"]
+    if github_page_repo.get("repository_url") != "https://github.com/MINSUGLLY/mabd":
+        fail("Phase 31 first-author mabd repository must record its GitHub URL")
+    if github_page_repo.get("repository_language") != "HTML":
+        fail("Phase 31 first-author mabd repository must be HTML project-page source")
+    if github_page_repo.get("root_contents") != ["index.html", "static"]:
+        fail("Phase 31 first-author mabd repository must record project-page root contents")
+    if github_page_repo.get("has_pages") is not True:
+        fail("Phase 31 first-author mabd repository must record GitHub Pages availability")
+    if github_page_repo.get("has_supplementary_video_url") is not False:
+        fail("Phase 31 first-author mabd repository must not duplicate project-page video evidence")
+    if github_page_repo.get("implementation_code_status") != "project_page_source_only":
+        fail("Phase 31 first-author mabd repository must not be treated as solver code")
+
+    manifest_text = (ROOT / "docs/reference/official-artifact-sources.yaml").read_text(
+        encoding="utf-8"
+    )
+    for placeholder in ("TO_BE_BACKFILLED_PHASE31", "pending branch-local"):
+        if placeholder in manifest_text:
+            fail("Phase 31 artifact manifest contains stale docs commit placeholder")
+    manifest_lower = manifest_text.lower()
+    for snippet in (
+        "official code does not exist",
+        "no private author code exists",
+        "full reproduction complete",
+    ):
+        if snippet in manifest_lower:
+            fail(f"Phase 31 artifact manifest overclaims unsupported evidence: {snippet}")
+    for stale_snippet in (
+        "official_code_repository_url_missing",
+        "official_project_page_url_missing",
+        "official_supplementary_video_url_missing",
+    ):
+        if stale_snippet in manifest_text:
+            fail(f"Phase 31 artifact manifest contains stale availability gap: {stale_snippet}")
+
+    data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 31 must not pass experiment.* claims")
+
+    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    spinning_box = next(
+        experiment
+        for experiment in matrix.experiments
+        if experiment.claim_id == "experiment.single_body.spinning_box"
+    )
+    if "mabd_newton_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 31 spinning-box matrix must retain incomplete M-ABD lane blocker")
+    if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 31 spinning-box matrix must retain incomplete comparison report blocker")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -2651,13 +2939,14 @@ def main() -> int:
     validate_phase28_record()
     validate_phase29_record()
     validate_phase30_record()
+    validate_phase31_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31 "
         "docs/provenance validation passed"
     )
     return 0

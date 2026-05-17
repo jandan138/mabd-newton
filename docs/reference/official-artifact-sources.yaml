@@ -1,0 +1,168 @@
+audit:
+  id: phase31-official-artifact-availability
+  audited_on_utc: "2026-05-17"
+  status: official_project_and_video_found_implementation_code_coming_soon_as_of_2026-05-17
+  scope_boundary: >-
+    Public-source availability audit only; not proof of private author-code
+    absence, not proof of unpublished implementation-code absence, and not
+    evidence that any paper experiment is reproduced. The official first-author
+    project page and video were found; implementation code is marked coming
+    soon on the audited project page.
+  blockers:
+    - official_implementation_code_marked_coming_soon
+    - official_implementation_code_not_found_in_audited_public_sources
+
+paper:
+  title: "M-ABD: Scalable, Efficient, and Robust Multi-Affine-Body Dynamics"
+  arxiv_id: "2603.08079"
+  arxiv_version: "v2"
+  conference_schedule_id: "papers_116"
+  conference_session_id: "sess102"
+
+audited_sources:
+  - source_id: arxiv_abs_2603_08079
+    source_type: official_paper_index
+    official: true
+    url: "https://arxiv.org/abs/2603.08079"
+    evidence_locator: "browser lines 28-64 and 118-127"
+    observation: >-
+      The arXiv page lists v2, authors, PDF, HTML, and TeX Source links. The
+      audited page text did not expose an author-provided implementation code
+      link.
+    has_official_implementation_code_link: false
+    has_official_project_page_link: false
+    has_supplementary_video_url: false
+
+  - source_id: siggraph_2026_schedule_papers_116
+    source_type: official_conference_schedule
+    official: true
+    url: "https://s2026.conference-schedule.org/presentation/?id=papers_116&sess=sess102"
+    evidence_locator: "browser lines 23-28 and 76-84"
+    observation: >-
+      The SIGGRAPH 2026 schedule page lists the M-ABD presentation, session,
+      authors, event type, time, and location. No implementation code URL is
+      present in the audited page text.
+    has_official_implementation_code_link: false
+    has_official_project_page_link: false
+    has_supplementary_video_url: false
+
+  - source_id: minghao_guo_author_page
+    source_type: official_author_page
+    official: true
+    url: "https://www.minghaoguo.com/"
+    evidence_locator: "browser lines 69-73"
+    observation: >-
+      The author page lists the M-ABD title, authors, venue, and PDF link. It
+      links the first author, whose public homepage provides the M-ABD project
+      page recorded separately in this manifest.
+    has_official_implementation_code_link: false
+    has_official_project_page_link: false
+    has_supplementary_video_url: false
+
+  - source_id: zhiyong_he_author_content
+    source_type: official_author_page_data
+    official: true
+    url: "https://minsuglly.github.io/content.json"
+    evidence_locator: "browser lines 0-3"
+    observation: >-
+      The first-author homepage data lists the M-ABD publication with Paper and
+      Page links, including the official project page
+      https://minsuglly.github.io/mabd/.
+    has_official_implementation_code_link: false
+    has_official_project_page_link: true
+    has_supplementary_video_url: false
+
+  - source_id: first_author_project_page
+    source_type: official_project_page
+    official: true
+    url: "https://minsuglly.github.io/mabd/"
+    evidence_locator: "browser lines 0-16; curl lines containing nav links and iframe"
+    observation: >-
+      The first-author project page lists arXiv, Code (coming soon), Video, and
+      BibTeX links. The page embeds a YouTube-nocookie video and marks
+      implementation code as coming soon rather than providing a released
+      implementation-code URL.
+    has_official_implementation_code_link: false
+    implementation_code_status: coming_soon
+    has_official_project_page_link: true
+    has_supplementary_video_url: true
+    supplementary_video_url: "https://www.youtube-nocookie.com/embed/xnLCdUfq52w?rel=0"
+
+  - source_id: first_author_github_mabd_repo
+    source_type: official_project_page_repository
+    official: true
+    url: "https://api.github.com/repos/MINSUGLLY/mabd"
+    evidence_locator: "GitHub REST repository, contents, and languages API stdout"
+    observation: >-
+      The public first-author repository MINSUGLLY/mabd exists and has GitHub
+      Pages enabled. The audited repository contents are index.html and static,
+      and the GitHub languages API reports HTML only, so this is recorded as
+      project-page source rather than released implementation code.
+    repository_url: "https://github.com/MINSUGLLY/mabd"
+    repository_language: "HTML"
+    root_contents:
+      - index.html
+      - static
+    has_pages: true
+    has_official_implementation_code_link: false
+    implementation_code_status: project_page_source_only
+    has_official_project_page_link: true
+    has_supplementary_video_url: false
+
+  - source_id: yin_yang_author_page
+    source_type: official_author_page
+    official: true
+    url: "https://yangzzzy.github.io/"
+    evidence_locator: "browser lines 34-37"
+    observation: >-
+      The author page lists the M-ABD title, authors, and SIGGRAPH 2026 venue.
+      No implementation-code URL is present near the audited M-ABD entry text.
+    has_official_implementation_code_link: false
+    has_official_project_page_link: false
+    has_supplementary_video_url: false
+
+  - source_id: paper_tex_source_tree
+    source_type: official_arxiv_source
+    official: true
+    url: "https://arxiv.org/e-print/2603.08079"
+    local_source_root: "/tmp/mabd-paper/source"
+    evidence_locator: "sections/experiment.tex:38; rg over arxiv.tex, sections/*.tex, sections_a/*.tex, ref.bib"
+    observation: >-
+      The paper TeX mentions that additional animation results are in the
+      supplementary video, but the audited TeX source tree does not contain an
+      implementation-code URL or supplementary-video URL. The public project
+      page separately provides the video.
+    mentions_supplementary_video: true
+    has_official_implementation_code_link: false
+    has_official_project_page_link: false
+    has_supplementary_video_url: false
+
+  - source_id: github_repository_exact_search
+    source_type: public_repository_index_search
+    official: false
+    url: "https://api.github.com/search/repositories?q=%22M-ABD%22%20%22Scalable%20Efficient%20Robust%20Multi-Affine-Body%20Dynamics%22"
+    evidence_locator: "GitHub REST repository search stdout"
+    observation: >-
+      Exact public GitHub repository search returned total_count 0 with
+      incomplete_results false. This narrow public-index search does not
+      supersede the separately audited first-author MINSUGLLY/mabd project-page
+      repository.
+    observed_total_count: 0
+    incomplete_results: false
+    has_official_implementation_code_link: false
+    has_official_project_page_link: false
+    has_supplementary_video_url: false
+
+search_queries:
+  - '"Scalable, Efficient, and Robust Multi-Affine-Body Dynamics" code'
+  - '"M-ABD" "Multi-Affine-Body Dynamics" GitHub'
+  - '"2603.08079" "code"'
+  - '"Scalable, Efficient, and Robust Multi-Affine-Body Dynamics" supplementary'
+  - 'site:github.com "M-ABD" "Scalable, Efficient, and Robust"'
+  - '"M-ABD" "supplementary video" "Multi-Affine-Body"'
+
+non_claims:
+  - This audit is not proof of private author-code absence.
+  - This audit is not proof of unpublished implementation-code absence.
+  - This audit does not pass any paper experiment claim.
+  - This audit does not modify or verify Newton solver behavior.

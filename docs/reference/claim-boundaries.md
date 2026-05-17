@@ -368,6 +368,22 @@
   M-ABD lane pass, spinning-box comparison pass, paper timing, paper trajectory
   agreement, generated report artifacts as committed evidence, or any passed
   `experiment.*` claim.
+- This repository contains Phase 31 official artifact availability audit
+  evidence, with
+  `official_project_and_video_found_implementation_code_coming_soon_as_of_2026-05-17`
+  as the scoped public-source status.
+- Phase 31 verifies a dated public-source audit of the arXiv page, SIGGRAPH
+  2026 schedule page, Minghao Guo author page, first-author homepage data,
+  first-author project page, first-author `MINSUGLLY/mabd` GitHub Pages
+  repository, Yin Yang author page, local arXiv TeX source tree, and GitHub
+  repository search. The official project page and supplementary video were
+  found, while implementation code is marked `Code (coming soon)` and no
+  released implementation-code URL is recorded in the audited public sources.
+- Phase 31 does not verify private author-code absence, unpublished
+  implementation-code absence, a paper experiment pass, any Newton solver
+  modification, M-ABD lane pass, spinning-box comparison pass, paper timing,
+  paper trajectory agreement, generated report artifacts as committed evidence,
+  or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -389,6 +405,9 @@
   fix.
 - Phase 30 source-audit absence findings are proof of private author-code
   behavior, a Newton solver modification, or a paper experiment pass.
+- Phase 31 project-page/video availability or `Code (coming soon)` status is
+  proof that private author code, unpublished implementation code, or
+  author-owned solver artifacts do not exist.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
