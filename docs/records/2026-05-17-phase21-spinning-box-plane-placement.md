@@ -34,7 +34,7 @@ report artifacts, or any passed `experiment.*` claim. The M-ABD report remains
 - base commit: `5d696860b2dc43c727dac405ed20a578d66ebde5`
 - plan commit: `d6c2265ea9f23b867cd88a0881f0275aa341c4da`
 - implementation commit: `29a210d28446d2f5dd0fa816a35dde894aa7b639`
-- docs/provenance commit: pending until the Phase 21 docs commit is created
+- docs/provenance commit: `630a60b18e85d6481944abadc743da28655dcc09`
 - independent review: pending
 
 ## Vendored Newton
