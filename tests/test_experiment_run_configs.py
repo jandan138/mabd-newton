@@ -69,6 +69,33 @@ class ExperimentRunConfigTests(unittest.TestCase):
         )
         self.assertIn("energy_drift", config.thresholds)
         self.assertIn("generalized_momentum_delta_norm", config.thresholds)
+        self.assertEqual(config.paper_horizon.duration_s, 10.0)
+        self.assertEqual(config.paper_horizon.time_step_grid_s, (0.01, 0.001))
+        self.assertEqual(config.paper_horizon.sample_count, 11)
+        self.assertEqual(
+            config.paper_horizon.output_report,
+            "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
+        )
+        self.assertEqual(
+            config.paper_horizon.figure_pdf_sha256,
+            "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
+        )
+        self.assertEqual(
+            config.paper_horizon.figure_text_source,
+            "pdftotext /tmp/mabd-paper/source/images/cube/roll_cube.pdf -",
+        )
+        for key in (
+            "max_linear_momentum_error",
+            "max_angular_momentum_error",
+            "max_relative_kinetic_energy_drift",
+            "max_relative_total_energy_drift",
+            "max_abs_det_minus_one",
+            "min_singular_value",
+            "max_singular_value",
+            "max_affine_orthogonality_error",
+            "max_residual_norm",
+        ):
+            self.assertIn(key, config.paper_horizon.thresholds)
         self.assertEqual(config.contact_surface["type"], "plane")
         self.assertEqual(config.contact_surface["plane_normal"], (0.0, 1.0, 0.0))
         self.assertEqual(config.contact_surface["plane_offset"], 0.0)
@@ -151,6 +178,15 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path = self._write_config(tmpdir, source)
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "thresholds"):
+                load_spinning_box_config(path)
+
+    def test_spinning_box_config_rejects_bad_paper_horizon_grid(self) -> None:
+        source = self._config_mapping()
+        source["paper_horizon"]["time_step_grid_s"] = [0.01, "0.001"]
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, source)
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "time_step_grid_s"):
                 load_spinning_box_config(path)
 
     def test_docs_validator_checks_phase13_config_contract(self) -> None:

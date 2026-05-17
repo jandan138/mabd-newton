@@ -20,6 +20,17 @@ class ExperimentRunConfigError(ValueError):
 
 
 @dataclass(frozen=True)
+class SpinningBoxPaperHorizonConfig:
+    duration_s: float
+    time_step_grid_s: tuple[float, ...]
+    sample_count: int
+    output_report: str
+    figure_pdf_sha256: str
+    figure_text_source: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class SpinningBoxRunConfig:
     schema_version: int
     claim_id: str
@@ -39,6 +50,22 @@ class SpinningBoxRunConfig:
     failure_reason: str
     output_report: str
     thresholds: dict[str, float]
+    paper_horizon: SpinningBoxPaperHorizonConfig
+
+
+PAPER_HORIZON_THRESHOLD_KEYS = frozenset(
+    {
+        "max_linear_momentum_error",
+        "max_angular_momentum_error",
+        "max_relative_kinetic_energy_drift",
+        "max_relative_total_energy_drift",
+        "max_abs_det_minus_one",
+        "min_singular_value",
+        "max_singular_value",
+        "max_affine_orthogonality_error",
+        "max_residual_norm",
+    }
+)
 
 
 def _read_mapping(path: Path) -> dict[str, Any]:
@@ -125,6 +152,24 @@ def _require_positive_int(data: dict[str, Any], key: str) -> int:
     return result
 
 
+def _require_positive_float_tuple(
+    data: dict[str, Any],
+    key: str,
+) -> tuple[float, ...]:
+    value = data.get(key)
+    if not isinstance(value, list) or not value:
+        raise ExperimentRunConfigError(f"{key} must be a non-empty list of finite positive numbers")
+    result: list[float] = []
+    for item in value:
+        if not isinstance(item, Real) or isinstance(item, bool):
+            raise ExperimentRunConfigError(f"{key} must contain finite positive numbers")
+        item_float = float(item)
+        if not isfinite(item_float) or item_float <= 0.0:
+            raise ExperimentRunConfigError(f"{key} must contain finite positive numbers")
+        result.append(item_float)
+    return tuple(result)
+
+
 def _require_finite_number(data: dict[str, Any], key: str) -> float:
     value = data.get(key)
     if not isinstance(value, Real) or isinstance(value, bool):
@@ -167,6 +212,25 @@ def _require_contact_surface(data: dict[str, Any]) -> dict[str, Any]:
         "stiffness": stiffness,
         "damping": damping,
     }
+
+
+def _require_paper_horizon(data: dict[str, Any]) -> SpinningBoxPaperHorizonConfig:
+    horizon = _require_mapping(data, "paper_horizon")
+    thresholds = _require_float_mapping(horizon, "thresholds")
+    missing = sorted(PAPER_HORIZON_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "paper_horizon.thresholds missing required keys: " + ", ".join(missing)
+        )
+    return SpinningBoxPaperHorizonConfig(
+        duration_s=_require_positive_float(horizon, "duration_s"),
+        time_step_grid_s=_require_positive_float_tuple(horizon, "time_step_grid_s"),
+        sample_count=_require_positive_int(horizon, "sample_count"),
+        output_report=_require_str(horizon, "output_report"),
+        figure_pdf_sha256=_require_str(horizon, "figure_pdf_sha256"),
+        figure_text_source=_require_str(horizon, "figure_text_source"),
+        thresholds=thresholds,
+    )
 
 
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
@@ -215,6 +279,7 @@ def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
         thresholds=_require_float_mapping(report, "thresholds"),
+        paper_horizon=_require_paper_horizon(data),
     )
 
 
@@ -252,6 +317,8 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
 
 __all__ = [
     "ExperimentRunConfigError",
+    "PAPER_HORIZON_THRESHOLD_KEYS",
+    "SpinningBoxPaperHorizonConfig",
     "SpinningBoxRunConfig",
     "load_spinning_box_config",
     "validate_spinning_box_config_against_matrix",
