@@ -56,6 +56,7 @@ def write_spinning_box_development_report(
         expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
         if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
             raise ValueError("single_body_spinning_box mass_diagonal must match paper cube ABD mass")
+    initial_q = q.copy()
     initial_momentum = qd.copy()
     initial_energy = _kinetic_energy(qd, mass_matrix)
     initial_diagnostics = mabd_momentum_diagnostics(config, q, qd) if config is not None else None
@@ -98,6 +99,8 @@ def write_spinning_box_development_report(
                 "final_angular_momentum_kg_m2_s": final_diagnostics.angular_momentum_kg_m2_s.tolist(),
                 "linear_momentum_error": final_diagnostics.linear_momentum_error,
                 "angular_momentum_error": final_diagnostics.angular_momentum_error,
+                "initial_position_m": initial_q[9:12].tolist(),
+                "final_position_m": q[9:12].tolist(),
             }
         )
     if contact_diagnostics is not None and config is not None:

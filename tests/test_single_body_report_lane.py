@@ -108,6 +108,12 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         self.assertAlmostEqual(loaded.observed["initial_energy_j"], 3005000.0)
         self.assertAlmostEqual(loaded.observed["final_energy_j"], 3005000.0)
         self.assertLessEqual(loaded.observed["relative_energy_drift"], 1.0e-15)
+        self.assertEqual(loaded.observed["initial_position_m"], [0.0, 0.05, 0.0])
+        np.testing.assert_allclose(
+            loaded.observed["final_position_m"],
+            [4.0, 0.05, 0.0],
+            atol=1.0e-12,
+        )
 
 
 if __name__ == "__main__":
