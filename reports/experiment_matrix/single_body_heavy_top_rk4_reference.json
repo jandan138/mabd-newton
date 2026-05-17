@@ -35,8 +35,8 @@
   },
   "failure_reason": "rbd_rk4_reference diagnostic only; exact_heavy_top_inertia_unknown, raw_heavy_top_reference_curve_data_missing, mabd_newton_report_missing, and heavy_top_comparison_report_missing remain incomplete",
   "observed": {
-    "angular_momentum_norm_drift": 0.03936703920985818,
-    "angular_momentum_norm_final": 0.5196835196049291,
+    "angular_momentum_norm_drift": 0.03936703921113005,
+    "angular_momentum_norm_final": 0.519683519605565,
     "angular_momentum_norm_initial": 0.5,
     "blocking_reasons": [
       "exact_heavy_top_inertia_unknown",
@@ -46,7 +46,7 @@
       "heavy_top_timing_evidence_missing"
     ],
     "duration_s": 10.0,
-    "energy_final": 4.943167497070132,
+    "energy_final": 4.943167497070176,
     "energy_initial": 4.9431674970700055,
     "full_experiment_claim_passed": false,
     "gravity_m_s2": [
@@ -58,9 +58,9 @@
     "initial_tilt_deg": 5.0,
     "lane_status": "diagnostic_generated",
     "mass_kg": 1.0,
-    "max_abs_precession_velocity_rad_s": 2.967093084668706,
-    "max_nutation_angle_deg": 113.19099466504511,
-    "min_nutation_angle_deg": 4.008545144471447,
+    "max_abs_precession_velocity_rad_s": 2.9670930846532526,
+    "max_nutation_angle_deg": 113.19099466374784,
+    "min_nutation_angle_deg": 4.008545144469445,
     "pivot_to_com_m": [
       0.0,
       0.0,
@@ -75,72 +75,72 @@
         "time_s": 0.0
       },
       {
-        "nutation_angle_deg": 72.23308961611637,
-        "precession_angle_rad": -1.034860927993838,
-        "precession_velocity_rad_s": -1.034860927993838,
+        "nutation_angle_deg": 72.23308961611636,
+        "precession_angle_rad": -1.0348609279938394,
+        "precession_velocity_rad_s": -1.0348609279938394,
         "sample_index": 1,
         "time_s": 1.0
       },
       {
-        "nutation_angle_deg": 22.17614640021107,
-        "precession_angle_rad": 1.667857863844631,
-        "precession_velocity_rad_s": 2.7027187918384694,
+        "nutation_angle_deg": 22.176146400211344,
+        "precession_angle_rad": 1.667857863844633,
+        "precession_velocity_rad_s": 2.7027187918384725,
         "sample_index": 2,
         "time_s": 2.0
       },
       {
-        "nutation_angle_deg": 19.69661122711993,
-        "precession_angle_rad": 0.8788485145491844,
-        "precession_velocity_rad_s": -0.7890093492954466,
+        "nutation_angle_deg": 19.69661122712997,
+        "precession_angle_rad": 0.8788485145492098,
+        "precession_velocity_rad_s": -0.7890093492954233,
         "sample_index": 3,
         "time_s": 3.0
       },
       {
-        "nutation_angle_deg": 78.41237318948714,
-        "precession_angle_rad": 3.6180259972750166,
-        "precession_velocity_rad_s": 2.7391774827258324,
+        "nutation_angle_deg": 78.41237318945109,
+        "precession_angle_rad": 3.618025997274915,
+        "precession_velocity_rad_s": 2.7391774827257054,
         "sample_index": 4,
         "time_s": 4.0
       },
       {
-        "nutation_angle_deg": 4.008545144471447,
-        "precession_angle_rad": 2.4987660917003405,
-        "precession_velocity_rad_s": -1.1192599055746761,
+        "nutation_angle_deg": 4.008545144469445,
+        "precession_angle_rad": 2.4987660916986436,
+        "precession_velocity_rad_s": -1.1192599055762713,
         "sample_index": 5,
         "time_s": 5.0
       },
       {
-        "nutation_angle_deg": 42.16864263815332,
-        "precession_angle_rad": 1.8511040301040815,
-        "precession_velocity_rad_s": -0.6476620615962589,
+        "nutation_angle_deg": 42.168642638017445,
+        "precession_angle_rad": 1.851104030100622,
+        "precession_velocity_rad_s": -0.6476620615980215,
         "sample_index": 6,
         "time_s": 6.0
       },
       {
-        "nutation_angle_deg": 38.5605573422583,
-        "precession_angle_rad": 4.483559560978345,
-        "precession_velocity_rad_s": 2.632455530874264,
+        "nutation_angle_deg": 38.56055734238032,
+        "precession_angle_rad": 4.4835595609748005,
+        "precession_velocity_rad_s": 2.6324555308741786,
         "sample_index": 7,
         "time_s": 7.0
       },
       {
-        "nutation_angle_deg": 5.781312034985031,
-        "precession_angle_rad": 3.7780389749763796,
-        "precession_velocity_rad_s": -0.7055205860019655,
+        "nutation_angle_deg": 5.781312034903821,
+        "precession_angle_rad": 3.7780389749750984,
+        "precession_velocity_rad_s": -0.705520585999702,
         "sample_index": 8,
         "time_s": 8.0
       },
       {
-        "nutation_angle_deg": 113.19099466504511,
-        "precession_angle_rad": 2.261587960097925,
-        "precession_velocity_rad_s": -1.5164510148784545,
+        "nutation_angle_deg": 113.19099466374784,
+        "precession_angle_rad": 2.2615879601168096,
+        "precession_velocity_rad_s": -1.5164510148582888,
         "sample_index": 9,
         "time_s": 9.0
       },
       {
-        "nutation_angle_deg": 11.584040554726002,
-        "precession_angle_rad": 5.228681044766631,
-        "precession_velocity_rad_s": 2.967093084668706,
+        "nutation_angle_deg": 11.584040554964536,
+        "precession_angle_rad": 5.228681044770062,
+        "precession_velocity_rad_s": 2.9670930846532526,
         "sample_index": 10,
         "time_s": 10.0
       }
@@ -153,7 +153,7 @@
     "reference_not_paper_geometry": true,
     "reference_not_paper_inertia": true,
     "reference_scope": "fixed_pivot_rbd_rk4_heavy_top_diagnostic",
-    "relative_energy_drift": 2.5514275142846053e-14,
+    "relative_energy_drift": 3.4498174841031286e-14,
     "required_missing_lanes": [
       "mabd_newton"
     ],
@@ -166,7 +166,7 @@
   "raw_outputs": {},
   "scene_id": "single_body_heavy_top",
   "solver_mode": "heavy_top_rk4_reference_diagnostic",
-  "source_commit": "e042307a9af2122cb5de42e7e9d9ef0602a5b0db",
+  "source_commit": "cbeff81dfbadfcac3b1c96840bc96eba0e28c8bd",
   "status": "incomplete",
   "threshold": {
     "max_relative_energy_drift": 1e-07,
