@@ -35,7 +35,11 @@ report artifacts, or any passed `experiment.*` claim. The M-ABD report remains
 - plan commit: `d6c2265ea9f23b867cd88a0881f0275aa341c4da`
 - implementation commit: `29a210d28446d2f5dd0fa816a35dde894aa7b639`
 - docs/provenance commit: `630a60b18e85d6481944abadc743da28655dcc09`
-- independent review: pending
+- review hardening commit: `9c099e5788fb3d29f541f90eab45a877b2d7650b`
+- independent review: physics/config/report review found no findings. Claim
+  boundary/provenance review found the Phase 21 record did not list the final
+  hardening commit and still said independent review was pending; this review
+  disposition records the review result and the hardening commit.
 
 ## Vendored Newton
 
