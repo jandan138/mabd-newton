@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from math import isfinite
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -75,23 +76,49 @@ class HeavyTopComparisonReportTests(unittest.TestCase):
                 mabd_path=mabd_path,
             )
             loaded = load_claim_report(output_path)
+            mabd_loaded = load_claim_report(mabd_path)
 
         self.assertEqual(report.claim_id, "experiment.single_body.heavy_top")
         self.assertEqual(loaded.baseline_lane, "heavy_top_comparison_protocol")
         self.assertEqual(loaded.solver_mode, "heavy_top_multilane_comparison_development")
         self.assertEqual(loaded.backend, "report_protocol")
         self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(mabd_loaded.status, EvidenceStatus.INCOMPLETE)
         self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertFalse(mabd_loaded.observed["full_experiment_claim_passed"])
         self.assertEqual(loaded.observed["missing_required_lanes"], [])
         self.assertEqual(
             loaded.observed["missing_paper_metrics"],
             [
-                "precession_velocity_error:mabd_precession_velocity_samples_missing",
                 "nutation_angle_error:paper_reference_curve_missing",
-                "energy_drift:mabd_energy_drift_missing",
             ],
         )
+        self.assertTrue(
+            all(
+                isfinite(sample["precession_velocity_rad_s"])
+                for sample in mabd_loaded.observed["precession_nutation_samples"]
+            )
+        )
+        self.assertTrue(isfinite(mabd_loaded.observed["energy_initial"]))
+        self.assertTrue(isfinite(mabd_loaded.observed["energy_final"]))
+        self.assertTrue(isfinite(mabd_loaded.observed["relative_energy_drift"]))
         self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "exact_heavy_top_inertia_unknown",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "exact_heavy_top_geometry_unknown",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "raw_heavy_top_reference_curve_data_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "heavy_top_timing_evidence_missing",
+            loaded.observed["blocking_reasons"],
+        )
         self.assertIn(
             "heavy_top_comparison_report_incomplete",
             loaded.observed["blocking_reasons"],
@@ -121,9 +148,42 @@ class HeavyTopComparisonReportTests(unittest.TestCase):
         self.assertGreater(loaded.observed["matched_sample_index_count"], 0)
         self.assertGreater(len(loaded.observed["sample_index_differences"]), 0)
         self.assertGreater(loaded.observed["max_sample_time_delta_s"], 0.0)
-        self.assertIsNone(loaded.observed["lane_metrics"]["mabd_newton"]["energy_drift"])
+        self.assertIsNotNone(loaded.observed["lane_metrics"]["mabd_newton"]["energy_drift"])
         self.assertIsNotNone(
             loaded.observed["lane_metrics"]["rbd_rk4_reference"]["energy_drift"]
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["precession_velocity_error"]["status"],
+            "diagnostic_available",
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["energy_drift"]["status"],
+            "diagnostic_available",
+        )
+
+    def test_heavy_top_comparison_requires_per_sample_mabd_precession_velocity(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            payload = json.loads(mabd_path.read_text(encoding="utf-8"))
+            del payload["observed"]["precession_nutation_samples"][0][
+                "precession_velocity_rad_s"
+            ]
+            mabd_path.write_text(json.dumps(payload), encoding="utf-8")
+            output_path = Path(tmpdir) / "comparison.json"
+            report = self._write_comparison(
+                output_path=output_path,
+                config=config,
+                rk4_path=rk4_path,
+                mabd_path=mabd_path,
+            )
+
+        self.assertIn(
+            "precession_velocity_error:mabd_precession_velocity_samples_missing",
+            report.observed["missing_paper_metrics"],
+        )
+        self.assertEqual(
+            report.observed["paper_metric_statuses"]["precession_velocity_error"]["status"],
+            "missing_mabd_precession_velocity_samples",
         )
 
     def test_heavy_top_comparison_rejects_wrong_lane_identity(self) -> None:

@@ -62,6 +62,9 @@ def _mabd_sample_rows(rollout: HeavyTopMABDRollout) -> list[dict[str, float | in
             "time_s": _clean_report_float(sample.time_s),
             "nutation_angle_deg": _clean_report_float(sample.nutation_angle_deg),
             "precession_angle_rad": _clean_report_float(sample.precession_angle_rad),
+            "precession_velocity_rad_s": _clean_report_float(
+                sample.precession_velocity_rad_s
+            ),
             "pivot_residual_m": _clean_report_float(sample.pivot_residual_m),
             "constraint_residual_norm": _clean_report_float(sample.constraint_residual_norm),
             "affine_shape_spread_m": _clean_report_float(sample.affine_shape_spread_m),
@@ -214,6 +217,9 @@ def write_heavy_top_mabd_newton_report(
         "pivot_world_point_m": config.mabd_newton.pivot_world_point_m.tolist(),
         "angle_probe_rest_point_m": config.mabd_newton.angle_probe_rest_point_m.tolist(),
         "gravity_m_s2": config.mabd_newton.gravity_m_s2.tolist(),
+        "energy_initial": rollout.energy_initial,
+        "energy_final": rollout.energy_final,
+        "relative_energy_drift": rollout.relative_energy_drift,
         "min_nutation_angle_deg": rollout.min_nutation_angle_deg,
         "max_nutation_angle_deg": rollout.max_nutation_angle_deg,
         "max_abs_precession_velocity_rad_s": rollout.max_abs_precession_velocity_rad_s,

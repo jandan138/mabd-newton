@@ -205,7 +205,7 @@ def _heavy_top_nutation_range_deg(report: ClaimReport) -> float | None:
 def _heavy_top_metric_snapshot(report: ClaimReport, *, lane: str) -> dict[str, float | None]:
     energy_drift = (
         _finite_scalar(report.observed.get("relative_energy_drift"))
-        if lane == "rbd_rk4_reference"
+        if lane in {"rbd_rk4_reference", "mabd_newton"}
         else _finite_scalar(report.observed.get("energy_drift"))
     )
     return {
@@ -232,6 +232,18 @@ def _heavy_top_sample_rows(report: ClaimReport) -> list[dict[str, Any]]:
     if not isinstance(rows, list):
         return []
     return [dict(row) for row in rows if isinstance(row, dict)]
+
+
+def _heavy_top_mabd_precession_velocity_available(report: ClaimReport) -> bool:
+    if _finite_scalar(report.observed.get("max_abs_precession_velocity_rad_s")) is None:
+        return False
+    rows = _heavy_top_sample_rows(report)
+    if not rows:
+        return False
+    return all(
+        _finite_scalar(row.get("precession_velocity_rad_s")) is not None
+        for row in rows
+    )
 
 
 def _heavy_top_sample_key(row: dict[str, Any]) -> int | None:
@@ -937,11 +949,18 @@ def write_heavy_top_comparison_report(
         mabd_report,
         max_sample_time_delta_s=config.comparison.thresholds["max_sample_time_delta_s"],
     )
-    missing_paper_metrics = [
-        "precession_velocity_error:mabd_precession_velocity_samples_missing",
-        "nutation_angle_error:paper_reference_curve_missing",
-        "energy_drift:mabd_energy_drift_missing",
-    ]
+    mabd_precession_available = _heavy_top_mabd_precession_velocity_available(mabd_report)
+    mabd_energy_available = _finite_scalar(
+        mabd_report.observed.get("relative_energy_drift")
+    ) is not None
+    missing_paper_metrics = []
+    if not mabd_precession_available:
+        missing_paper_metrics.append(
+            "precession_velocity_error:mabd_precession_velocity_samples_missing"
+        )
+    missing_paper_metrics.append("nutation_angle_error:paper_reference_curve_missing")
+    if not mabd_energy_available:
+        missing_paper_metrics.append("energy_drift:mabd_energy_drift_missing")
     blocking_reasons = [
         "exact_heavy_top_inertia_unknown",
         "exact_heavy_top_geometry_unknown",
@@ -994,9 +1013,17 @@ def write_heavy_top_comparison_report(
         },
         "paper_metric_statuses": {
             "precession_velocity_error": {
-                "status": "missing_mabd_precession_velocity_samples",
+                "status": (
+                    "diagnostic_available"
+                    if mabd_precession_available
+                    else "missing_mabd_precession_velocity_samples"
+                ),
                 "rk4_field": "max_abs_precession_velocity_rad_s",
-                "mabd_field": None,
+                "mabd_field": (
+                    "precession_nutation_samples.precession_velocity_rad_s"
+                    if mabd_precession_available
+                    else None
+                ),
             },
             "nutation_angle_error": {
                 "status": "paper_reference_curve_missing",
@@ -1004,9 +1031,13 @@ def write_heavy_top_comparison_report(
                 "mabd_field": "precession_nutation_samples.nutation_angle_deg",
             },
             "energy_drift": {
-                "status": "mabd_energy_drift_missing",
+                "status": (
+                    "diagnostic_available"
+                    if mabd_energy_available
+                    else "mabd_energy_drift_missing"
+                ),
                 "rk4_field": "relative_energy_drift",
-                "mabd_field": None,
+                "mabd_field": "relative_energy_drift" if mabd_energy_available else None,
             },
         },
         "missing_required_lanes": [],

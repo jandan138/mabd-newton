@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from contextlib import redirect_stdout
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import acos, atan2, cos, degrees, radians, sin
 from typing import Callable
 
@@ -29,6 +29,7 @@ class HeavyTopMABDSample:
     time_s: float
     nutation_angle_deg: float
     precession_angle_rad: float
+    precession_velocity_rad_s: float
     pivot_residual_m: float
     constraint_residual_norm: float
     affine_shape_spread_m: float
@@ -43,6 +44,9 @@ class HeavyTopMABDRollout:
     sample_count: int
     time_step_s: float
     rotation_mode: str
+    energy_initial: float
+    energy_final: float
+    relative_energy_drift: float
     min_nutation_angle_deg: float
     max_nutation_angle_deg: float
     max_abs_precession_velocity_rad_s: float
@@ -180,8 +184,48 @@ def _affine_shape_spread(q: np.ndarray, rest_points_m: np.ndarray) -> float:
     return max_spread
 
 
+def _point_mass_energy(
+    q: np.ndarray,
+    qd: np.ndarray,
+    *,
+    rest_points_m: np.ndarray,
+    point_masses_kg: np.ndarray,
+    gravity_m_s2: np.ndarray,
+) -> float:
+    points = mabd.affine_points(q, rest_points_m)
+    velocities = mabd.affine_points(qd, rest_points_m)
+    kinetic = 0.5 * float(np.sum(point_masses_kg * np.sum(velocities * velocities, axis=1)))
+    potential = -float(np.sum(point_masses_kg * (points @ gravity_m_s2)))
+    return kinetic + potential
+
+
 def _sample_steps(step_count: int, sample_count: int) -> tuple[int, ...]:
     return tuple(int(round(value)) for value in np.linspace(0, step_count, sample_count))
+
+
+def _sampled_precession_velocities_rad_s(
+    precessions_rad: np.ndarray,
+    sample_times_s: np.ndarray,
+) -> np.ndarray:
+    if len(precessions_rad) == 0:
+        return np.asarray([], dtype=float)
+    if len(precessions_rad) == 1:
+        return np.zeros(1, dtype=float)
+    velocities = np.full(len(precessions_rad), np.nan, dtype=float)
+    for index in range(len(precessions_rad)):
+        if index == 0:
+            previous_index = 0
+            next_index = 1
+        elif index == len(precessions_rad) - 1:
+            previous_index = len(precessions_rad) - 2
+            next_index = len(precessions_rad) - 1
+        else:
+            previous_index = index - 1
+            next_index = index + 1
+        time_delta = sample_times_s[next_index] - sample_times_s[previous_index]
+        if time_delta != 0.0 and np.isfinite(time_delta):
+            velocities[index] = (precessions_rad[next_index] - precessions_rad[previous_index]) / time_delta
+    return velocities
 
 
 def _heavy_top_solver_model(config: HeavyTopRunConfig) -> object:
@@ -266,9 +310,24 @@ def roll_out_heavy_top_mabd_model_derived(config: HeavyTopRunConfig) -> HeavyTop
     max_world_anchor_reaction = 0.0
     latest_world_anchor_reaction = np.zeros(3, dtype=float)
     finite = True
+    energy_initial = _point_mass_energy(
+        q,
+        qd,
+        rest_points_m=lane.rest_points_m,
+        point_masses_kg=lane.point_masses_kg,
+        gravity_m_s2=lane.gravity_m_s2,
+    )
+    energy_final = energy_initial
 
     for step in range(lane.step_count + 1):
         finite = finite and bool(np.all(np.isfinite(q))) and bool(np.all(np.isfinite(qd)))
+        energy_final = _point_mass_energy(
+            q,
+            qd,
+            rest_points_m=lane.rest_points_m,
+            point_masses_kg=lane.point_masses_kg,
+            gravity_m_s2=lane.gravity_m_s2,
+        )
         pivot_residual = _pivot_residual(
             q,
             pivot_rest_point_m=lane.pivot_rest_point_m,
@@ -295,6 +354,7 @@ def roll_out_heavy_top_mabd_model_derived(config: HeavyTopRunConfig) -> HeavyTop
                     time_s=step * lane.time_step_s,
                     nutation_angle_deg=nutation,
                     precession_angle_rad=precession,
+                    precession_velocity_rad_s=0.0,
                     pivot_residual_m=pivot_residual,
                     constraint_residual_norm=max_constraint_residual,
                     affine_shape_spread_m=shape_spread,
@@ -316,19 +376,42 @@ def roll_out_heavy_top_mabd_model_derived(config: HeavyTopRunConfig) -> HeavyTop
         max_constraint_residual = max(max_constraint_residual, result.constraint_residual_norm)
 
     nutations = np.asarray([sample.nutation_angle_deg for sample in samples], dtype=float)
-    precessions = np.unwrap(np.asarray([sample.precession_angle_rad for sample in samples], dtype=float))
+    precessions = np.unwrap(
+        np.asarray([sample.precession_angle_rad for sample in samples], dtype=float)
+    )
     sample_times = np.asarray([sample.time_s for sample in samples], dtype=float)
-    if len(samples) >= 2:
-        precession_velocities = np.diff(precessions) / np.diff(sample_times)
-        max_abs_precession_velocity = float(np.max(np.abs(precession_velocities)))
-    else:
-        max_abs_precession_velocity = 0.0
+    precession_velocities = _sampled_precession_velocities_rad_s(precessions, sample_times)
+    samples_with_velocity = tuple(
+        replace(
+            sample,
+            precession_velocity_rad_s=float(precession_velocities[index]),
+        )
+        for index, sample in enumerate(samples)
+    )
+    max_abs_precession_velocity = (
+        float(np.max(np.abs(precession_velocities))) if len(precession_velocities) else 0.0
+    )
+    relative_energy_drift = (
+        (energy_final - energy_initial) / energy_initial
+        if energy_initial != 0.0 and np.isfinite(energy_initial)
+        else np.nan
+    )
+    finite = (
+        finite
+        and bool(np.isfinite(energy_initial))
+        and bool(np.isfinite(energy_final))
+        and bool(np.isfinite(relative_energy_drift))
+        and bool(np.all(np.isfinite(precession_velocities)))
+    )
     return HeavyTopMABDRollout(
-        samples=tuple(samples),
+        samples=samples_with_velocity,
         step_count=lane.step_count,
         sample_count=len(samples),
         time_step_s=lane.time_step_s,
         rotation_mode=lane.rotation_mode,
+        energy_initial=float(energy_initial),
+        energy_final=float(energy_final),
+        relative_energy_drift=float(relative_energy_drift),
         min_nutation_angle_deg=float(np.min(nutations)),
         max_nutation_angle_deg=float(np.max(nutations)),
         max_abs_precession_velocity_rad_s=max_abs_precession_velocity,
