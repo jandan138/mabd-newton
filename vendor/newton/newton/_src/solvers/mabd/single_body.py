@@ -64,6 +64,12 @@ class SingleBodyABDPrecompute:
         poisson_ratio: float,
         volume: float,
     ) -> SingleBodyABDPrecompute:
+        if float(young_modulus) == 0.0:
+            return cls.from_points(
+                rest_points,
+                masses,
+                stiffness_matrix=np.zeros((12, 12), dtype=float),
+            )
         return cls.from_points(
             rest_points,
             masses,

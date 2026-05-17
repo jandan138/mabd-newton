@@ -909,6 +909,26 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
         self.assertEqual(solver.last_step_result.topology, "unconstrained")
 
+    def test_solver_step_model_body_allows_zero_young_modulus_diagnostic(self) -> None:
+        model = _mabd_model(young_modulus=0.0)
+        solver = SolverMABD(model)
+        q = _identity_q((0.2, -0.1, 0.3)) + np.linspace(-0.02, 0.03, 12)
+        qd = np.linspace(-0.2, 0.25, 12)
+        dt = 0.02
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+
+        solver.step(state, state, None, None, dt)
+
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], q + dt * qd, atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], qd, atol=1.0e-7)
+        np.testing.assert_allclose(
+            solver.model_cpu_oracle_config.bodies[0].precompute.stiffness_matrix,
+            np.zeros((12, 12)),
+            atol=0.0,
+        )
+
     def test_solver_step_model_path_consumes_enabled_control_rows(self) -> None:
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)

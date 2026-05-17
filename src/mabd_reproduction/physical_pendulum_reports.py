@@ -15,8 +15,11 @@ from .physical_pendulum_reference import (
     physical_pendulum_period_s,
 )
 from .physical_pendulum_mabd import (
+    NEWTON_MODEL_DERIVED_CONFIG_SOURCE,
+    NEWTON_MODEL_DERIVED_CUSTOM_FREQUENCIES,
     PhysicalPendulumMABDRollout,
     roll_out_physical_pendulum_mabd_development,
+    roll_out_physical_pendulum_mabd_model_derived,
 )
 from .physical_pendulum_rbd import (
     PhysicalPendulumRBDRollout,
@@ -379,7 +382,7 @@ def write_physical_pendulum_mabd_newton_report(
     vendored_newton_commit: str,
     paper_source_version: str = "2603.08079v2",
 ) -> ClaimReport:
-    rollout = roll_out_physical_pendulum_mabd_development(
+    rollout = roll_out_physical_pendulum_mabd_model_derived(
         config,
         rotation_mode=config.mabd_newton.rotation_mode,
     )
@@ -415,6 +418,8 @@ def write_physical_pendulum_mabd_newton_report(
         "sample_count": rollout.sample_count,
         "time_step_s": rollout.time_step_s,
         "mabd_rotation_mode": rollout.rotation_mode,
+        "solver_model_config_source": rollout.solver_model_config_source,
+        "newton_model_derived_custom_frequencies": list(NEWTON_MODEL_DERIVED_CUSTOM_FREQUENCIES),
         "max_pivot_residual_m": rollout.max_pivot_residual_m,
         "max_constraint_residual_norm": rollout.max_constraint_residual_norm,
         "max_abs_angle_error_rad": rollout.max_abs_angle_error_rad,
@@ -440,6 +445,8 @@ def write_physical_pendulum_mabd_newton_report(
             "paper_values": config.paper_values,
             "paper_timing_source_audit": physical_pendulum_timing_source_audit(),
             "mabd_rotation_mode": config.mabd_newton.rotation_mode,
+            "solver_model_config_source": NEWTON_MODEL_DERIVED_CONFIG_SOURCE,
+            "newton_model_derived_custom_frequencies": list(NEWTON_MODEL_DERIVED_CUSTOM_FREQUENCIES),
             "world_anchor_constraint": {
                 "pivot_rest_point_m": config.mabd_development.pivot_rest_point_m.tolist(),
                 "pivot_world_point_m": config.mabd_development.pivot_world_point_m.tolist(),
