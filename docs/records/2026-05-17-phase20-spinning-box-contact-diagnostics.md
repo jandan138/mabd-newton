@@ -38,7 +38,11 @@ report artifacts, or any passed `experiment.*` claim. The M-ABD report remains
 - implementation commit: `6bc889a6f7f9d2c19d9a487e37b9f9286ff4cf03`
 - report commit: `f4b5212cdf5543021dcf7d7a3b29731f237773c2`
 - docs/provenance commit: `b24eb15a15f47fd6a0a024eebd1b815fd474c505`
-- independent review: pending after record validation
+- review hardening commit: `f5fe643200a510368a240459d598289ff6e499ba`
+- independent review: code/physics/report review found no findings. Claim
+  boundary/provenance review found committed Phase 20 plan/spec EOF whitespace
+  failures under `git diff --check 06d28e8e..HEAD` and weak document-wide
+  Phase 20 non-claim substring checks; the review hardening commit fixes both.
 
 ## Vendored Newton
 
