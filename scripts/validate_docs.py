@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23 docs."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24 docs."""
 
 from __future__ import annotations
 
@@ -61,6 +61,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase21-spinning-box-plane-placement.md",
     "docs/records/2026-05-17-phase22-rbd-plane-placement.md",
     "docs/records/2026-05-17-phase23-spinning-box-position-comparison.md",
+    "docs/records/2026-05-17-phase24-spinning-box-trajectory-shape-diagnostics.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -521,6 +522,42 @@ def validate_claim_boundaries() -> None:
     for snippet in phase23_non_claims:
         if snippet not in phase23_non_claim:
             fail(f"claim-boundaries.md must bound Phase 23 position evidence: {snippet}")
+    phase24_current = claim_boundary_bullet(text, "This repository contains Phase 24")
+    phase24_verified = claim_boundary_bullet(text, "Phase 24 verifies")
+    phase24_non_claim = claim_boundary_bullet(text, "Phase 24 does not verify")
+    if "trajectory samples" not in phase24_current or "affine shape diagnostics" not in phase24_current:
+        fail("claim-boundaries.md must state Phase 24 trajectory/shape evidence")
+    phase24_required = (
+        "trajectory_samples",
+        "M-ABD and RBD",
+        "affine matrix",
+        "determinant",
+        "singular values",
+        "affine_orthogonality_error",
+        "affine_shape_diagnostic_status = development_gap_observed",
+        "RBD `rotation_xyzw`",
+    )
+    for snippet in phase24_required:
+        if snippet not in phase24_verified:
+            fail(f"claim-boundaries.md must describe Phase 24 trajectory evidence: {snippet}")
+    phase24_non_claims = (
+        "the paper spinning-box experiment",
+        "paper-faithful implicit RBD baseline",
+        "paper-faithful affine collision",
+        "collision detection",
+        "continuous collision detection",
+        "friction",
+        "implicit contact solve",
+        "gravity",
+        "rendered output",
+        "paper timing",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase24_non_claims:
+        if snippet not in phase24_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 24 trajectory evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -1351,6 +1388,80 @@ def validate_phase23_record() -> None:
             fail(f"Phase 23 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase24_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase24-spinning-box-trajectory-shape-diagnostics.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit: `f80cdc711719306f2b8babdc4e9c24af49175f83`",
+        "M-ABD trajectory implementation commit: `5c42c19526de15bd662aaed65cbd0aa8ce7e50e2`",
+        "RBD trajectory implementation commit: `4a18387cf9211a61d91fd8d87c1dfdf551f692b4`",
+        "docs/provenance commit: `TO_BE_BACKFILLED_PHASE24_DOCS_COMMIT`",
+        "independent review:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "readiness JSON output: branch-gate stdout, not committed",
+        "clone drift command:",
+        "clone drift check:",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Metrics And Thresholds",
+        "trajectory_samples",
+        "final_affine_orthogonality_error",
+        "final_affine_determinant",
+        "final_affine_singular_values",
+        "affine_shape_diagnostic_status = development_gap_observed",
+        "rotation_xyzw",
+        "report status: `incomplete`",
+        "## Artifacts",
+        "`src/mabd_reproduction/spinning_box_physics.py`",
+        "`src/mabd_reproduction/single_body_reports.py`",
+        "`src/mabd_reproduction/rigid_baselines.py`",
+        "`SpinningBoxAffineShapeDiagnostics`",
+        "`spinning_box_affine_shape_diagnostics`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+        "M-ABD report tests: Ran 2 tests, OK",
+        "RBD tests: Ran 5 tests, OK",
+        "phase bootstrap docs tests: Ran 43 tests, OK",
+        (
+            "docs validator: Phase "
+            "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24 "
+            "docs/provenance validation passed"
+        ),
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 24 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 24 verifies the paper spinning-box experiment",
+        "Phase 24 passes experiment.single_body.spinning_box",
+        "Phase 24 verifies paper-faithful implicit RBD baseline",
+        "Phase 24 verifies paper-faithful affine collision",
+        "Phase 24 verifies collision detection",
+        "Phase 24 verifies implicit contact solve",
+        "Phase 24 verifies paper timing",
+        "Phase 24 verifies paper trajectory agreement",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 24 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -1574,13 +1685,14 @@ def main() -> int:
     validate_phase21_record()
     validate_phase22_record()
     validate_phase23_record()
+    validate_phase24_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24 "
         "docs/provenance validation passed"
     )
     return 0

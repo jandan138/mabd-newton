@@ -930,6 +930,84 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase24_spinning_box_trajectory_shape_diagnostics_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 24")
+        verified = claim_boundary_bullet(text, "Phase 24 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 24 does not verify")
+
+        self.assertIn("trajectory samples", current)
+        self.assertIn("affine shape diagnostics", current)
+        self.assertIn("trajectory_samples", verified)
+        self.assertIn("affine_orthogonality_error", verified)
+        self.assertIn("affine_shape_diagnostic_status", verified)
+        self.assertIn("development_gap_observed", verified)
+        self.assertIn("RBD `rotation_xyzw`", verified)
+        self.assertIn("the paper spinning-box experiment", non_claim)
+        self.assertIn("paper-faithful implicit RBD baseline", non_claim)
+        self.assertIn("paper-faithful affine collision", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("paper trajectory agreement", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase24_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT
+            / "docs/records/2026-05-17-phase24-spinning-box-trajectory-shape-diagnostics.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit: `f80cdc711719306f2b8babdc4e9c24af49175f83`",
+            "M-ABD trajectory implementation commit: `5c42c19526de15bd662aaed65cbd0aa8ce7e50e2`",
+            "RBD trajectory implementation commit: `4a18387cf9211a61d91fd8d87c1dfdf551f692b4`",
+            "docs/provenance commit: `TO_BE_BACKFILLED_PHASE24_DOCS_COMMIT`",
+            "independent review:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "clone drift command:",
+            "clone drift check:",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "## Metrics And Thresholds",
+            "trajectory_samples",
+            "final_affine_orthogonality_error",
+            "final_affine_determinant",
+            "final_affine_singular_values",
+            "affine_shape_diagnostic_status = development_gap_observed",
+            "rotation_xyzw",
+            "report status: `incomplete`",
+            "## Artifacts",
+            "`src/mabd_reproduction/spinning_box_physics.py`",
+            "`src/mabd_reproduction/single_body_reports.py`",
+            "`src/mabd_reproduction/rigid_baselines.py`",
+            "`SpinningBoxAffineShapeDiagnostics`",
+            "`spinning_box_affine_shape_diagnostics`",
+            "generated reports: not committed",
+            "No `experiment.*` claim is passed in this phase.",
+            "M-ABD report tests: Ran 2 tests, OK",
+            "RBD tests: Ran 5 tests, OK",
+            "phase bootstrap docs tests: Ran 43 tests, OK",
+            (
+                "docs validator: Phase "
+                "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24 "
+                "docs/provenance validation passed"
+            ),
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -961,7 +1039,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

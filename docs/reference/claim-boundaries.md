@@ -63,6 +63,9 @@
 - This repository contains Phase 23 spinning-box position comparison metrics
   and finite vector validation for the existing development lanes after the
   Phase 23 record is created.
+- This repository contains Phase 24 report-level trajectory samples for the
+  M-ABD and RBD spinning-box development lanes plus affine shape diagnostics
+  for the M-ABD lane after the Phase 24 record is created.
 
 ## Intended
 
@@ -263,6 +266,17 @@
   contact solve, gravity, rendered output, paper timing, paper trajectory
   agreement, generated report artifacts as committed evidence, or any passed
   `experiment.*` claim.
+- Phase 24 verifies report-level `trajectory_samples` for the M-ABD and RBD
+  spinning-box development lanes. M-ABD samples include affine matrix,
+  determinant, singular values, and `affine_orthogonality_error`; the M-ABD
+  report also exposes `affine_shape_diagnostic_status =
+  development_gap_observed`. RBD `rotation_xyzw` samples are recorded.
+- Phase 24 does not verify the paper spinning-box experiment,
+  paper-faithful implicit RBD baseline, paper-faithful affine collision,
+  collision detection, continuous collision detection, friction, implicit
+  contact solve, gravity, rendered output, paper timing, paper trajectory
+  agreement, generated report artifacts as committed evidence, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -278,6 +292,8 @@
 - An RBD baseline that consumes the configured initial translation is a
   paper-faithful implicit RBD baseline.
 - Matching development-lane position vectors are paper trajectory agreement.
+- Development-lane trajectory samples or affine shape diagnostics are paper
+  trajectory agreement.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
