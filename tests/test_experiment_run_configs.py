@@ -169,6 +169,23 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("max_length_constraint_error_m", config.rbd_baseline.thresholds)
         self.assertIn("max_phase_drift_rad", config.rbd_baseline.thresholds)
         self.assertEqual(
+            config.comparison.output_report,
+            "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
+        )
+        self.assertEqual(
+            config.comparison.required_lanes,
+            ("mabd_newton", "analytic_reference", "rbd_implicit_baseline"),
+        )
+        self.assertEqual(
+            config.comparison.diagnostic_lanes,
+            ("physical_pendulum_mabd_development_diagnostic",),
+        )
+        self.assertEqual(
+            config.comparison.required_metrics,
+            ("pendulum_angle_error", "joint_force_error", "phase_drift"),
+        )
+        self.assertIn("max_mabd_rbd_abs_angle_delta_rad", config.comparison.thresholds)
+        self.assertEqual(
             config.output_report,
             "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
         )
@@ -245,6 +262,58 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(source), encoding="utf-8")
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "gravity_m_s2"):
+                load_physical_pendulum_config(path)
+
+    def test_physical_pendulum_config_rejects_comparison_output_reuse(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["comparison"]["output_report"] = source["rbd_baseline"]["output_report"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+            config = load_physical_pendulum_config(path)
+            matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.output_report"):
+                validate_physical_pendulum_config_against_matrix(config, matrix)
+
+    def test_physical_pendulum_config_rejects_comparison_missing_mabd_lane(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["comparison"]["required_lanes"] = ["analytic_reference", "rbd_implicit_baseline"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.required_lanes"):
+                load_physical_pendulum_config(path)
+
+    def test_physical_pendulum_config_rejects_comparison_bad_diagnostic_lane(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["comparison"]["diagnostic_lanes"] = ["mabd_newton"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.diagnostic_lanes"):
+                load_physical_pendulum_config(path)
+
+    def test_physical_pendulum_config_rejects_comparison_missing_metric(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["comparison"]["required_metrics"] = ["pendulum_angle_error", "phase_drift"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.required_metrics"):
+                load_physical_pendulum_config(path)
+
+    def test_physical_pendulum_config_rejects_comparison_missing_threshold(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["comparison"]["thresholds"] = {}
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.thresholds"):
                 load_physical_pendulum_config(path)
 
     def test_physical_pendulum_config_rejects_passed_experiment_status(self) -> None:

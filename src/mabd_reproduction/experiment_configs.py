@@ -97,6 +97,15 @@ class PhysicalPendulumRBDBaselineConfig:
 
 
 @dataclass(frozen=True)
+class PhysicalPendulumComparisonConfig:
+    output_report: str
+    required_lanes: tuple[str, ...]
+    diagnostic_lanes: tuple[str, ...]
+    required_metrics: tuple[str, ...]
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class PhysicalPendulumRunConfig:
     schema_version: int
     claim_id: str
@@ -109,6 +118,7 @@ class PhysicalPendulumRunConfig:
     reference: PhysicalPendulumReferenceConfig
     mabd_development: PhysicalPendulumMABDDevelopmentConfig
     rbd_baseline: PhysicalPendulumRBDBaselineConfig
+    comparison: PhysicalPendulumComparisonConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -149,7 +159,25 @@ PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS = frozenset(
         "max_phase_drift_rad",
     }
 )
+PHYSICAL_PENDULUM_COMPARISON_THRESHOLD_KEYS = frozenset(
+    {
+        "max_mabd_rbd_abs_angle_delta_rad",
+    }
+)
 PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES = ("mabd_newton",)
+PHYSICAL_PENDULUM_COMPARISON_REQUIRED_LANES = (
+    "mabd_newton",
+    "analytic_reference",
+    "rbd_implicit_baseline",
+)
+PHYSICAL_PENDULUM_COMPARISON_DIAGNOSTIC_LANES = (
+    "physical_pendulum_mabd_development_diagnostic",
+)
+PHYSICAL_PENDULUM_COMPARISON_REQUIRED_METRICS = (
+    "pendulum_angle_error",
+    "joint_force_error",
+    "phase_drift",
+)
 
 
 def _read_mapping(path: Path) -> dict[str, Any]:
@@ -487,6 +515,40 @@ def _require_physical_pendulum_rbd_baseline(
     )
 
 
+def _require_physical_pendulum_comparison(
+    data: dict[str, Any],
+) -> PhysicalPendulumComparisonConfig:
+    comparison = _require_mapping(data, "comparison")
+    required_lanes = _require_str_tuple(comparison, "required_lanes")
+    if required_lanes != PHYSICAL_PENDULUM_COMPARISON_REQUIRED_LANES:
+        raise ExperimentRunConfigError("comparison.required_lanes must match physical-pendulum paper lanes")
+    diagnostic_lanes = _require_str_tuple(comparison, "diagnostic_lanes")
+    if diagnostic_lanes != PHYSICAL_PENDULUM_COMPARISON_DIAGNOSTIC_LANES:
+        raise ExperimentRunConfigError(
+            "comparison.diagnostic_lanes must match current physical-pendulum diagnostics"
+        )
+    required_metrics = _require_str_tuple(comparison, "required_metrics")
+    if required_metrics != PHYSICAL_PENDULUM_COMPARISON_REQUIRED_METRICS:
+        raise ExperimentRunConfigError(
+            "comparison.required_metrics must match physical-pendulum matrix metrics"
+        )
+    if not isinstance(comparison.get("thresholds"), dict) or not comparison["thresholds"]:
+        raise ExperimentRunConfigError("comparison.thresholds must be a non-empty mapping")
+    thresholds = _require_float_mapping(comparison, "thresholds")
+    missing = sorted(PHYSICAL_PENDULUM_COMPARISON_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "comparison.thresholds missing required keys: " + ", ".join(missing)
+        )
+    return PhysicalPendulumComparisonConfig(
+        output_report=_require_str(comparison, "output_report"),
+        required_lanes=required_lanes,
+        diagnostic_lanes=diagnostic_lanes,
+        required_metrics=required_metrics,
+        thresholds=thresholds,
+    )
+
+
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     config_path = Path(path)
     data = _read_mapping(config_path)
@@ -613,6 +675,7 @@ def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig
         reference=_require_physical_pendulum_reference(data),
         mabd_development=_require_physical_pendulum_mabd_development(data),
         rbd_baseline=_require_physical_pendulum_rbd_baseline(data),
+        comparison=_require_physical_pendulum_comparison(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -652,6 +715,10 @@ def validate_physical_pendulum_config_against_matrix(
     for metric in ("pendulum_angle_error", "joint_force_error", "phase_drift"):
         if metric not in entry.metrics:
             raise ExperimentRunConfigError("physical pendulum metrics must match the paper matrix")
+    if set(config.comparison.required_lanes) != set(entry.required_lanes):
+        raise ExperimentRunConfigError("comparison.required_lanes must match experiment matrix")
+    if config.comparison.required_metrics != entry.metrics:
+        raise ExperimentRunConfigError("comparison.required_metrics must match experiment matrix")
     reference_initial = pi / 2.0 - 2.0 * asin(config.reference.kappa)
     if not np.isclose(config.reference.release_angle_rad, pi / 2.0, rtol=0.0, atol=1.0e-15):
         raise ExperimentRunConfigError("reference release_angle_rad must match horizontal release")
@@ -683,15 +750,33 @@ def validate_physical_pendulum_config_against_matrix(
         config.mabd_development.output_report,
     ):
         raise ExperimentRunConfigError("rbd_baseline.output_report must be separate from other lane reports")
+    if (
+        not config.comparison.output_report.startswith(expected_prefix)
+        or not config.comparison.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "comparison.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.comparison.output_report in (
+        config.output_report,
+        config.mabd_development.output_report,
+        config.rbd_baseline.output_report,
+    ):
+        raise ExperimentRunConfigError("comparison.output_report must be separate from other lane reports")
 
 
 __all__ = [
     "ExperimentRunConfigError",
     "PAPER_HORIZON_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES",
+    "PHYSICAL_PENDULUM_COMPARISON_DIAGNOSTIC_LANES",
+    "PHYSICAL_PENDULUM_COMPARISON_REQUIRED_LANES",
+    "PHYSICAL_PENDULUM_COMPARISON_REQUIRED_METRICS",
+    "PHYSICAL_PENDULUM_COMPARISON_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_MABD_DEVELOPMENT_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_RBD_BASELINE_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_THRESHOLD_KEYS",
+    "PhysicalPendulumComparisonConfig",
     "PhysicalPendulumMABDDevelopmentConfig",
     "PhysicalPendulumRBDBaselineConfig",
     "PhysicalPendulumReferenceConfig",
