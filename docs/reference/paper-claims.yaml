@@ -54,6 +54,13 @@ claims:
     unit: "oracle"
     conflict_note: "CPU oracle force mapping only; not collision detection, friction, broadphase, or a full contact solver"
     reproduction_status: passed
+  - claim_id: method.force_mapping.gravity_generalized_force
+    source_path: "/tmp/mabd-paper/source/sections/singleabd.tex and /tmp/mabd-paper/source/sections/solver.tex"
+    source_line: "singleabd.tex:23-26,42,55-58; solver.tex:238-242"
+    expected_value: "uniform gravity point-mass forces mapped to affine generalized force by ABD coordinate-Jacobian virtual work, sum_i J_i^T m_i g"
+    unit: "oracle"
+    conflict_note: "CPU oracle force mapping and configured step input only; not heavy-top, pendulum, contact, timing, or experiment evidence"
+    reproduction_status: passed
   - claim_id: method.actuation.affine_control_forces
     source_path: "/tmp/mabd-paper/source/sections/singleabd.tex and /tmp/mabd-paper/source/sections/experiment.tex"
     source_line: "singleabd.tex:23-26 and experiment.tex:51,184,224"

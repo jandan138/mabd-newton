@@ -68,10 +68,18 @@ class Phase0BootstrapTests(unittest.TestCase):
         universal = next(c for c in data["claims"] if c["claim_id"] == "method.joints.universal")
         kkt = next(c for c in data["claims"] if c["claim_id"] == "method.kkt.residual_corrected_rhs")
         control = next(c for c in data["claims"] if c["claim_id"] == "method.actuation.affine_control_forces")
+        gravity = next(c for c in data["claims"] if c["claim_id"] == "method.force_mapping.gravity_generalized_force")
         self.assertEqual(ball["reproduction_status"], "passed")
         self.assertEqual(universal["reproduction_status"], "passed")
         self.assertEqual(kkt["reproduction_status"], "passed")
         self.assertEqual(control["reproduction_status"], "passed")
+        self.assertEqual(gravity["reproduction_status"], "passed")
+        self.assertIn("J_i^T m_i g", gravity["expected_value"])
+        self.assertIn("singleabd.tex:23-26,42,55-58", gravity["source_line"])
+        self.assertIn("solver.tex:238-242", gravity["source_line"])
+        self.assertNotIn("experiment.tex:67-75", gravity["source_line"])
+        self.assertNotIn("experiment.tex:80-91", gravity["source_line"])
+        self.assertIn("not heavy-top", gravity["conflict_note"])
 
     def test_claim_boundaries_refuse_method_claims_at_phase0(self) -> None:
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
@@ -1650,6 +1658,91 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("official_project_page_url_missing", text)
         self.assertNotIn("official_supplementary_video_url_missing", text)
 
+    def test_phase32_gravity_force_mapping_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        claims = {claim["claim_id"]: claim for claim in data["claims"]}
+        self.assertEqual(
+            claims["method.force_mapping.gravity_generalized_force"]["reproduction_status"],
+            "passed",
+        )
+        experiment_statuses = {
+            claim["claim_id"]: claim["reproduction_status"]
+            for claim in data["claims"]
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        self.assertNotIn("passed", set(experiment_statuses.values()))
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 32")
+        verified = claim_boundary_bullet(text, "Phase 32 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 32 does not verify")
+
+        self.assertIn("uniform gravity generalized-force CPU oracle support", current)
+        self.assertIn("gravity_generalized_force", verified)
+        self.assertIn("J_i^T m_i g", verified)
+        self.assertIn("MABDCPUOracleConfig", verified)
+        self.assertIn("gravity input", verified)
+        self.assertIn("malformed gravity-vector rejection", verified)
+        self.assertIn("heavy-top scene reproduction", non_claim)
+        self.assertIn("physical-pendulum scene reproduction", non_claim)
+        self.assertIn("analytic or RK4 reference agreement", non_claim)
+        self.assertIn("contact", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase32_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase32-gravity-force-mapping.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "No experiment config is changed in Phase 32.",
+            "## Repository",
+            "base commit: `f8d36da`",
+            "## Vendored Newton",
+            "local patch status: Phase 32 modifies vendored Newton M-ABD CPU oracle code",
+            "vendor/newton/newton/_src/solvers/mabd/affine_math.py",
+            "vendor/newton/newton/_src/solvers/mabd/__init__.py",
+            "vendor/newton/newton/_src/solvers/mabd/step_oracle.py",
+            "vendor/newton/newton/tests/test_mabd_single_body.py",
+            "vendor/newton/newton/tests/test_mabd_phase4_solver_step.py",
+            "## Paper Source",
+            "/tmp/mabd-paper/source/sections/singleabd.tex:23-26",
+            "/tmp/mabd-paper/source/sections/singleabd.tex:42",
+            "/tmp/mabd-paper/source/sections/singleabd.tex:55-58",
+            "/tmp/mabd-paper/source/sections/solver.tex:238-242",
+            "non-claim experiment motivation, not passed evidence",
+            "/tmp/mabd-paper/source/sections/experiment.tex:67-75",
+            "/tmp/mabd-paper/source/sections/experiment.tex:80-91",
+            "## Environment",
+            "mabd-newton-py310",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "## Method Evidence",
+            "mabd.gravity_generalized_force(rest_points, masses, gravity)",
+            "MABDCPUOracleConfig.gravity",
+            "sum_i point_jacobian(rest_point_i).T @ (mass_i * gravity)",
+            "method.force_mapping.gravity_generalized_force",
+            "reproduction status: `passed`",
+            "## TDD Evidence",
+            "AttributeError: gravity_generalized_force missing",
+            "unexpected keyword argument 'gravity'",
+            "Ran 42 tests, OK",
+            "Ran 22 tests, OK",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "Heavy-top and physical-pendulum experiments remain intended",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_single_body tests.test_mabd_phase4_solver_step tests.test_phase0_bootstrap",
+            "PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest newton.tests.test_mabd_single_body newton.tests.test_mabd_phase4_solver_step",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE32", text)
+        self.assertNotIn("pending branch-local", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1681,7 +1774,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

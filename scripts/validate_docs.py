@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-31 docs and provenance contracts."""
+"""Validate Phase 0-32 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -73,8 +73,11 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase29-spinning-box-kinematic-feasibility.md",
     "docs/records/2026-05-17-phase30-velocity-semantics-source-audit.md",
     "docs/records/2026-05-17-phase31-official-artifact-availability.md",
+    "docs/records/2026-05-17-phase32-gravity-force-mapping.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
+    "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase32-gravity-force-mapping.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -165,6 +168,8 @@ def validate_claim_boundaries() -> None:
     for placeholder in ("TO_BE_BACKFILLED_PHASE31", "pending branch-local"):
         if placeholder in text:
             fail("claim-boundaries.md contains stale Phase 31 placeholder")
+    if "TO_BE_BACKFILLED_PHASE32" in text:
+        fail("claim-boundaries.md contains stale Phase 32 placeholder")
     for heading in ("## Current", "## Intended", "## Verified", "## Forbidden Claims"):
         if heading not in text:
             fail(f"claim-boundaries.md missing {heading}")
@@ -867,6 +872,55 @@ def validate_claim_boundaries() -> None:
     ):
         if snippet not in phase31_forbidden:
             fail(f"claim-boundaries.md must forbid Phase 31 overclaim: {snippet}")
+    phase32_current = claim_boundary_bullet(text, "This repository contains Phase 32")
+    phase32_verified = claim_boundary_bullet(text, "Phase 32 verifies")
+    phase32_non_claim = claim_boundary_bullet(text, "Phase 32 does not verify")
+    phase32_current_required = (
+        "uniform gravity generalized-force CPU oracle support",
+        "Phase 32 record",
+    )
+    for snippet in phase32_current_required:
+        if snippet not in phase32_current:
+            fail(f"claim-boundaries.md must state Phase 32 gravity evidence: {snippet}")
+    phase32_verified_required = (
+        "gravity_generalized_force",
+        "J_i^T m_i g",
+        "MABDCPUOracleConfig",
+        "gravity input",
+        "configured unconstrained CPU oracle step",
+        "malformed gravity-vector rejection",
+        "repo and vendored Newton unit tests",
+    )
+    for snippet in phase32_verified_required:
+        if snippet not in phase32_verified:
+            fail(f"claim-boundaries.md must describe Phase 32 gravity evidence: {snippet}")
+    phase32_non_claims = (
+        "heavy-top scene reproduction",
+        "physical-pendulum scene reproduction",
+        "analytic or RK4 reference agreement",
+        "joints under gravity",
+        "contact",
+        "collision",
+        "friction",
+        "implicit contact solve",
+        "Warp/CUDA/GPU paths",
+        "paper timing",
+        "rendered output",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase32_non_claims:
+        if snippet not in phase32_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 32 gravity evidence: {snippet}")
+    phase32_forbidden = claim_boundary_bullet(
+        text, "Phase 32 gravity generalized-force mapping"
+    )
+    for snippet in (
+        "passed heavy-top",
+        "physical-pendulum",
+        "paper experiment reproduction",
+    ):
+        if snippet not in phase32_forbidden:
+            fail(f"claim-boundaries.md must forbid Phase 32 overclaim: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -2696,6 +2750,113 @@ def validate_phase31_record() -> None:
         fail("Phase 31 spinning-box matrix must retain incomplete comparison report blocker")
 
 
+def validate_phase32_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-17-phase32-gravity-force-mapping.md"
+    text = record_path.read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "No experiment config is changed in Phase 32.",
+        "## Repository",
+        "base commit: `f8d36da`",
+        "phase32-gravity-force-mapping",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 32 modifies vendored Newton M-ABD CPU oracle code",
+        "vendor/newton/newton/_src/solvers/mabd/affine_math.py",
+        "vendor/newton/newton/_src/solvers/mabd/__init__.py",
+        "vendor/newton/newton/_src/solvers/mabd/step_oracle.py",
+        "vendor/newton/newton/tests/test_mabd_single_body.py",
+        "vendor/newton/newton/tests/test_mabd_phase4_solver_step.py",
+        "## Paper Source",
+        "PDF SHA256: `a594e79093673c60fc59ad14f9b71f29a8f7f8e7b1c3d9c73efe6f5814cc6ec0`",
+        "TeX source SHA256:",
+        "/tmp/mabd-paper/source/sections/singleabd.tex:23-26",
+        "/tmp/mabd-paper/source/sections/singleabd.tex:42",
+        "/tmp/mabd-paper/source/sections/singleabd.tex:55-58",
+        "/tmp/mabd-paper/source/sections/solver.tex:238-242",
+        "non-claim experiment motivation, not passed evidence",
+        "/tmp/mabd-paper/source/sections/experiment.tex:67-75",
+        "/tmp/mabd-paper/source/sections/experiment.tex:80-91",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Method Evidence",
+        "mabd.gravity_generalized_force(rest_points, masses, gravity)",
+        "MABDCPUOracleConfig.gravity",
+        "sum_i point_jacobian(rest_point_i).T @ (mass_i * gravity)",
+        "method.force_mapping.gravity_generalized_force",
+        "reproduction status: `passed`",
+        "## TDD Evidence",
+        "AttributeError: gravity_generalized_force missing",
+        "unexpected keyword argument 'gravity'",
+        "Ran 42 tests, OK",
+        "Ran 22 tests, OK",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "Heavy-top and physical-pendulum experiments remain intended",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_mabd_single_body tests.test_mabd_phase4_solver_step tests.test_phase0_bootstrap",
+        "PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest newton.tests.test_mabd_single_body newton.tests.test_mabd_phase4_solver_step",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+        'PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"',
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 32 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE32", "pending branch-local"):
+        if placeholder in text:
+            fail("Phase 32 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "phase 32 passes experiment",
+        "heavy-top experiment passed",
+        "physical-pendulum experiment passed",
+        "full reproduction complete",
+        "paper timing verified",
+        "contact solve implemented",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 32 record overclaims unsupported evidence: {snippet}")
+
+    data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    claim_map = {claim.get("claim_id"): claim for claim in claims if isinstance(claim, dict)}
+    gravity_claim = claim_map.get("method.force_mapping.gravity_generalized_force")
+    if not isinstance(gravity_claim, dict):
+        fail("paper-claims.yaml missing gravity generalized force claim")
+    if gravity_claim.get("reproduction_status") != "passed":
+        fail("gravity generalized force claim must be passed after Phase 32")
+    for snippet in (
+        "J_i^T m_i g",
+        "singleabd.tex:23-26,42,55-58",
+        "solver.tex:238-242",
+        "CPU oracle force mapping",
+        "not heavy-top",
+        "pendulum",
+    ):
+        gravity_claim_text = " ".join(str(value) for value in gravity_claim.values())
+        if snippet not in gravity_claim_text:
+            fail(f"gravity generalized force claim must stay bounded: {snippet}")
+    if "experiment.tex:67-75" in gravity_claim_text or "experiment.tex:80-91" in gravity_claim_text:
+        fail("gravity generalized force claim must not cite experiment result lines as passed evidence")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 32 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -2739,6 +2900,7 @@ def validate_paper_claims() -> None:
         "method.joints.universal",
         "method.actuation.affine_control_forces",
         "method.force_mapping.point_load_penalty_contact",
+        "method.force_mapping.gravity_generalized_force",
         "method.kkt.residual_corrected_rhs",
         "method.topology.chain_block_tridiagonal",
         "method.topology.tree_traversal_dense_dual_oracle",
@@ -2782,6 +2944,8 @@ def validate_paper_claims() -> None:
         + (ROOT / "docs/records/2026-05-17-phase12-single-body-report-lane.md").read_text(encoding="utf-8")
         + "\n"
         + (ROOT / "docs/records/2026-05-17-phase13-configured-spinning-box.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/records/2026-05-17-phase32-gravity-force-mapping.md").read_text(encoding="utf-8")
     )
     for claim in claims:
         if claim["reproduction_status"] == "passed" and str(claim["claim_id"]) not in record_text:
@@ -2940,13 +3104,14 @@ def main() -> int:
     validate_phase29_record()
     validate_phase30_record()
     validate_phase31_record()
+    validate_phase32_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32 "
         "docs/provenance validation passed"
     )
     return 0

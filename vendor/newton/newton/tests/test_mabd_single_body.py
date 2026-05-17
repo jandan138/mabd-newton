@@ -20,6 +20,7 @@ from newton._src.solvers.mabd import (
     co_rotated_linear_elastic_energy,
     evaluate_point_plane_penalty_contact,
     generalized_mass_matrix,
+    gravity_generalized_force,
     lame_parameters,
     linear_elastic_energy,
     linear_elastic_gradient,
@@ -82,6 +83,25 @@ class TestMABDSingleBodyInternal(unittest.TestCase):
         generalized = affine_force_from_point_force(rest_points[2], point_force)
         self.assertTrue(np.allclose(generalized, point_jacobian(rest_points[2]).T @ point_force))
         self.assertAlmostEqual(float(generalized @ dq), float(point_force @ (point_jacobian(rest_points[2]) @ dq)))
+
+        gravity = np.array([0.0, -9.81, 1.25], dtype=float)
+        mass_arr = np.array([0.2, 0.3, 0.4, 0.5], dtype=float)
+        gravity_expected = sum(
+            point_jacobian(point).T @ (mass * gravity)
+            for point, mass in zip(rest_points, mass_arr, strict=True)
+        )
+        self.assertTrue(
+            np.allclose(
+                gravity_generalized_force(rest_points, mass_arr, gravity),
+                gravity_expected,
+            )
+        )
+        self.assertTrue(
+            np.allclose(
+                gravity_generalized_force(rest_points, mass_arr, gravity)[9:12],
+                mass_arr.sum() * gravity,
+            )
+        )
 
         bar_j = volume_weighted_jacobian(rest_points[None, :, :], np.array([1.0 / 6.0]))
         aggregated_force = np.arange(12, dtype=float) + 1.0

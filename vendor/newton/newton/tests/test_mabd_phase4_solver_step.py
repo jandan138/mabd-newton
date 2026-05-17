@@ -136,6 +136,103 @@ class MABDPhase4InternalTests(unittest.TestCase):
         self.assertTrue(np.allclose(result.q[0], q + expected_dq, atol=1.0e-12))
         self.assertTrue(np.allclose(result.qd[0], expected_dq / dt, atol=1.0e-12))
 
+    def test_unconstrained_cpu_step_adds_uniform_gravity_generalized_force(self) -> None:
+        rest_points = np.array(
+            [
+                [-0.5, -0.5, -0.5],
+                [0.5, -0.5, 0.5],
+                [-0.5, 0.5, 0.5],
+                [0.5, 0.5, -0.5],
+            ],
+            dtype=float,
+        )
+        masses = np.array([0.2, 0.3, 0.4, 0.5], dtype=float)
+        stiffness = 0.25 * np.eye(12)
+        body = mabd.MABDCPUOracleBody(
+            precompute=mabd.SingleBodyABDPrecompute.from_points(
+                rest_points,
+                masses,
+                stiffness_matrix=stiffness,
+            ),
+            rest_q=_identity_q(),
+        )
+        q = _identity_q((0.1, 0.2, -0.3)) + np.linspace(-0.02, 0.03, 12)
+        qd = np.linspace(0.05, -0.04, 12)
+        gravity = np.array([0.0, -9.81, 1.25], dtype=float)
+        dt = 0.02
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[body],
+                gravity=gravity,
+            ),
+        )
+
+        H = body.precompute.hessian(dt)
+        gravity_force = mabd.gravity_generalized_force(rest_points, masses, gravity)
+        rhs = (body.precompute.mass_matrix @ qd) / dt
+        rhs += gravity_force - stiffness @ (q - _identity_q())
+        expected_dq = np.linalg.solve(H, rhs)
+        self.assertTrue(np.allclose(result.dq, expected_dq, atol=1.0e-12))
+        self.assertTrue(np.allclose(result.q[0], q + expected_dq, atol=1.0e-12))
+        self.assertTrue(np.allclose(result.qd[0], expected_dq / dt, atol=1.0e-12))
+
+    def test_cpu_oracle_rejects_bad_gravity_vector_shape(self) -> None:
+        with self.assertRaisesRegex(ValueError, "gravity"):
+            mabd.solve_cpu_oracle_step(
+                q=[_identity_q()],
+                qd=[np.zeros(12)],
+                dt=0.01,
+                config=mabd.MABDCPUOracleConfig(
+                    bodies=[_body()],
+                    gravity=np.array([0.0, -9.81]),
+                ),
+            )
+
+    def test_cpu_step_combines_external_gravity_and_actuation_forces(self) -> None:
+        q = _identity_q((0.2, -0.1, 0.3))
+        qd = np.zeros(12)
+        dt = 0.1
+        body = _body()
+        external_force = np.full(12, 0.25)
+        gravity = np.array([0.1, -0.2, 0.3], dtype=float)
+        target_q = q.copy()
+        target_q[9:12] += np.array([0.5, 0.0, -0.25])
+        feedforward = np.zeros(12)
+        feedforward[11] = -0.1
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[body],
+                external_forces=[external_force],
+                gravity=gravity,
+                actuations=[
+                    mabd.MABDActuationSpec(
+                        body_id=0,
+                        target_q=target_q,
+                        stiffness=2.0,
+                        feedforward_force=feedforward,
+                    )
+                ],
+            ),
+        )
+
+        expected_force = external_force.copy()
+        expected_force += mabd.gravity_generalized_force(
+            body.precompute.rest_points,
+            body.precompute.masses,
+            gravity,
+        )
+        expected_force[9] += 1.0
+        expected_force[11] += -0.5 - 0.1
+        self.assertTrue(np.allclose(result.q[0], q + dt * dt * expected_force, atol=1.0e-12))
+
     def test_unconstrained_cpu_step_applies_no_polar_body_rotation(self) -> None:
         A = np.array([[1.1, 0.2, 0.0], [0.0, 0.9, -0.1], [0.05, 0.0, 1.2]])
         q = mabd.pack_q(A, np.array([0.2, -0.1, 0.3]))

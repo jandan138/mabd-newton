@@ -43,6 +43,36 @@ class MABDSingleBodyPublicTests(unittest.TestCase):
         self.assertTrue(np.allclose(generalized, mabd.point_jacobian(rest_point).T @ force))
         self.assertAlmostEqual(float(generalized @ dq), float(force @ (mabd.point_jacobian(rest_point) @ dq)))
 
+    def test_gravity_generalized_force_sums_point_mass_virtual_work(self) -> None:
+        rest_points = np.array(
+            [
+                [-0.5, -0.5, -0.5],
+                [0.5, -0.5, 0.5],
+                [-0.5, 0.5, 0.5],
+                [0.5, 0.5, -0.5],
+            ],
+            dtype=float,
+        )
+        masses = np.array([0.2, 0.3, 0.4, 0.5], dtype=float)
+        gravity = np.array([0.0, -9.81, 1.25], dtype=float)
+        dq = np.linspace(-0.1, 0.2, 12)
+
+        generalized = mabd.gravity_generalized_force(rest_points, masses, gravity)
+        expected = sum(
+            mabd.point_jacobian(point).T @ (mass * gravity)
+            for point, mass in zip(rest_points, masses, strict=True)
+        )
+
+        self.assertTrue(np.allclose(generalized, expected))
+        self.assertTrue(np.allclose(generalized[9:12], masses.sum() * gravity))
+        self.assertAlmostEqual(
+            float(generalized @ dq),
+            sum(
+                float((mass * gravity) @ (mabd.point_jacobian(point) @ dq))
+                for point, mass in zip(rest_points, masses, strict=True)
+            ),
+        )
+
     def test_point_plane_penalty_contact_maps_normal_force_to_affine_force(self) -> None:
         q = mabd.pack_q(np.eye(3), np.array([0.0, -0.08, 0.0]))
         qd = np.zeros(12)

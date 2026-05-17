@@ -13,6 +13,7 @@ from .affine_math import (
     apply_no_polar_rhs_rotation,
     apply_polar_increment_rotation,
     apply_polar_rhs_rotation,
+    gravity_generalized_force,
     pack_q,
     unpack_q,
 )
@@ -50,6 +51,7 @@ class MABDCPUOracleConfig:
     bodies: tuple[MABDCPUOracleBody, ...] | list[MABDCPUOracleBody]
     constraints: tuple[MABDCPUOracleConstraint, ...] | list[MABDCPUOracleConstraint] = field(default_factory=tuple)
     external_forces: tuple[np.ndarray, ...] | list[np.ndarray] | None = None
+    gravity: np.ndarray | None = None
     actuations: tuple[MABDActuationSpec, ...] | list[MABDActuationSpec] = field(default_factory=tuple)
     topology: str = "dense"
     graph_schedule: tuple[tuple[int, ...], ...] | None = None
@@ -94,6 +96,21 @@ def _as_external_forces(config: MABDCPUOracleConfig, count: int) -> tuple[np.nda
         if force.shape != (12,):
             raise ValueError(f"external_forces[{body_id}] must have shape (12,), got {force.shape}")
     return forces
+
+
+def _as_gravity_forces(
+    config: MABDCPUOracleConfig,
+    bodies: tuple[MABDCPUOracleBody, ...],
+) -> tuple[np.ndarray, ...]:
+    if config.gravity is None:
+        return tuple(np.zeros(12, dtype=float) for _body in bodies)
+    gravity = np.asarray(config.gravity, dtype=float)
+    if gravity.shape != (3,):
+        raise ValueError(f"gravity must have shape (3,), got {gravity.shape}")
+    return tuple(
+        gravity_generalized_force(body.precompute.rest_points, body.precompute.masses, gravity)
+        for body in bodies
+    )
 
 
 def _validate_config(config: MABDCPUOracleConfig, body_count: int) -> tuple[MABDCPUOracleBody, ...]:
@@ -310,11 +327,19 @@ def solve_cpu_oracle_step(
         raise ValueError(f"q and qd must contain the same number of bodies, got {len(q_blocks)} and {len(qd_blocks)}")
     bodies = _validate_config(config, len(q_blocks))
     base_external_forces = _as_external_forces(config, len(q_blocks))
+    gravity_forces = _as_gravity_forces(config, bodies)
     external_forces = assemble_control_generalized_forces(
         q_blocks,
         qd_blocks,
         actuations=config.actuations,
-        base_external_forces=base_external_forces,
+        base_external_forces=tuple(
+            base_force + gravity_force
+            for base_force, gravity_force in zip(
+                base_external_forces,
+                gravity_forces,
+                strict=True,
+            )
+        ),
     )
     hessians, rhs = _step_body_systems(q_blocks, qd_blocks, dt_float, bodies, external_forces)
     if not tuple(config.constraints):

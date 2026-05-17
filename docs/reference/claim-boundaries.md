@@ -384,6 +384,17 @@
   modification, M-ABD lane pass, spinning-box comparison pass, paper timing,
   paper trajectory agreement, generated report artifacts as committed evidence,
   or any passed `experiment.*` claim.
+- This repository contains Phase 32 uniform gravity generalized-force CPU
+  oracle support after the Phase 32 record is created.
+- Phase 32 verifies `gravity_generalized_force(rest_points, masses, gravity)`
+  as point-mass `J_i^T m_i g` virtual-work assembly, `MABDCPUOracleConfig`
+  gravity input, configured unconstrained CPU oracle step use, and malformed
+  gravity-vector rejection through repo and vendored Newton unit tests.
+- Phase 32 does not verify heavy-top scene reproduction, physical-pendulum
+  scene reproduction, analytic or RK4 reference agreement, joints under
+  gravity, contact, collision, friction, implicit contact solve, Warp/CUDA/GPU
+  paths, paper timing, rendered output, generated report artifacts as committed
+  evidence, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -408,6 +419,8 @@
 - Phase 31 project-page/video availability or `Code (coming soon)` status is
   proof that private author code, unpublished implementation code, or
   author-owned solver artifacts do not exist.
+- Phase 32 gravity generalized-force mapping is a passed heavy-top,
+  physical-pendulum, contact, or paper experiment reproduction.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

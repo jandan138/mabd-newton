@@ -183,6 +183,20 @@ def affine_force_from_point_force(rest_point: Any, force: Any) -> np.ndarray:
     return point_jacobian(rest_point).T @ _as_vec3(force, "force")
 
 
+def gravity_generalized_force(rest_points: Any, masses: Any, gravity: Any) -> np.ndarray:
+    """Map uniform gravity on point masses to an affine generalized force."""
+
+    points = _as_points(rest_points, "rest_points")
+    mass_arr = np.asarray(masses, dtype=float)
+    if mass_arr.shape != (points.shape[0],):
+        raise ValueError(f"masses must have shape ({points.shape[0]},), got {mass_arr.shape}")
+    gravity_arr = _as_vec3(gravity, "gravity")
+    out = np.zeros(12, dtype=float)
+    for point, mass in zip(points, mass_arr, strict=True):
+        out += point_jacobian(point).T @ (float(mass) * gravity_arr)
+    return out
+
+
 def evaluate_point_plane_penalty_contact(
     q: Any,
     qd: Any,
@@ -452,6 +466,7 @@ __all__ = [
     "element_jacobian",
     "evaluate_point_plane_penalty_contact",
     "generalized_mass_matrix",
+    "gravity_generalized_force",
     "lame_parameters",
     "linear_elastic_energy",
     "linear_elastic_gradient",
