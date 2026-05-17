@@ -391,6 +391,38 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.source_commit, "test-source")
         self.assertEqual(loaded.vendored_newton_commit, "test-newton")
 
+    def test_run_physical_pendulum_mabd_newton_writes_required_lane_report(self) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_physical_pendulum_mabd_newton,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "physical_pendulum_mabd_newton.json"
+            result = run_physical_pendulum_mabd_newton(
+                config_path=PHYSICAL_PENDULUM_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.physical_pendulum")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_physical_pendulum_newton_lane")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_only")
+        self.assertEqual(loaded.observed["lane_status"], "incomplete_diagnostic_generated")
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertIn("max_phase_drift_rad", loaded.observed)
+        self.assertIn("max_world_anchor_reaction_magnitude_n", loaded.observed)
+        self.assertIn("world_anchor_reaction_vector_n", loaded.observed["angle_samples_rad"][-1])
+        self.assertIn("pendulum_geometry_unknown", loaded.failure_reason)
+        self.assertEqual(loaded.source_commit, "test-source")
+        self.assertEqual(loaded.vendored_newton_commit, "test-newton")
+
     def test_run_physical_pendulum_rbd_baseline_writes_report(self) -> None:
         from mabd_reproduction.experiment_runner import (
             run_physical_pendulum_rbd_baseline,
@@ -705,6 +737,50 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_physical_pendulum_development")
         self.assertEqual(loaded.observed["lane_status"], "development_diagnostic_generated")
         self.assertEqual(loaded.observed["required_missing_lanes"], ["mabd_newton"])
+
+    def test_run_experiment_cli_writes_physical_pendulum_mabd_newton_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "physical_pendulum_mabd_newton_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "physical_pendulum_mabd_newton",
+                    "--config",
+                    str(PHYSICAL_PENDULUM_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.physical_pendulum")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "mabd_newton")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_physical_pendulum_newton_lane")
+        self.assertIn("max_phase_drift_rad", loaded.observed)
+        self.assertIn("max_world_anchor_reaction_magnitude_n", loaded.observed)
 
     def test_run_experiment_cli_writes_physical_pendulum_rbd_baseline_report(self) -> None:
         import json

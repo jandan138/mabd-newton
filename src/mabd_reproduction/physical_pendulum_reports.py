@@ -85,6 +85,32 @@ def _development_sample_rows(rollout: PhysicalPendulumMABDRollout) -> list[dict[
     ]
 
 
+def _mabd_newton_sample_rows(
+    rollout: PhysicalPendulumMABDRollout,
+) -> list[dict[str, float | int | list[float]]]:
+    return [
+        {
+            "sample_index": sample.sample_index,
+            "step": sample.step,
+            "time_s": _clean_report_float(sample.time_s),
+            "angle_rad": _clean_report_float(sample.angle_rad),
+            "reference_angle_rad": _clean_report_float(sample.reference_angle_rad),
+            "abs_angle_error_rad": _clean_report_float(sample.abs_angle_error_rad),
+            "phase_drift_rad": _clean_report_float(sample.phase_drift_rad),
+            "pivot_residual_m": _clean_report_float(sample.pivot_residual_m),
+            "constraint_residual_norm": _clean_report_float(sample.constraint_residual_norm),
+            "world_anchor_reaction_vector_n": [
+                _clean_report_float(component)
+                for component in sample.world_anchor_reaction_vector_n.tolist()
+            ],
+            "world_anchor_reaction_magnitude_n": _clean_report_float(
+                sample.world_anchor_reaction_magnitude_n
+            ),
+        }
+        for sample in rollout.samples
+    ]
+
+
 def _rbd_sample_rows(rollout: PhysicalPendulumRBDRollout) -> list[dict[str, float | int]]:
     return [
         {
@@ -259,6 +285,100 @@ def write_physical_pendulum_mabd_development_report(
     return report
 
 
+def write_physical_pendulum_mabd_newton_report(
+    path: str | Path,
+    *,
+    config: PhysicalPendulumRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    rollout = roll_out_physical_pendulum_mabd_development(config)
+    thresholds = config.mabd_newton.thresholds
+    threshold_violations: list[str] = []
+    if rollout.max_pivot_residual_m > thresholds["max_pivot_residual_m"]:
+        threshold_violations.append("max_pivot_residual_m")
+    if rollout.max_constraint_residual_norm > thresholds["max_constraint_residual_norm"]:
+        threshold_violations.append("max_constraint_residual_norm")
+    if rollout.max_abs_angle_error_rad > thresholds["max_abs_angle_error_rad"]:
+        threshold_violations.append("max_abs_angle_error_rad")
+    if rollout.max_phase_drift_rad > thresholds["max_phase_drift_rad"]:
+        threshold_violations.append("max_phase_drift_rad")
+    if (
+        rollout.max_world_anchor_reaction_magnitude_n
+        > thresholds["max_world_anchor_reaction_magnitude_n"]
+    ):
+        threshold_violations.append("max_world_anchor_reaction_magnitude_n")
+    if not rollout.finite:
+        threshold_violations.append("finite_rollout")
+
+    lane_status = (
+        "incomplete_diagnostic_generated"
+        if not threshold_violations
+        else "incomplete_diagnostic_failed"
+    )
+    observed = {
+        "lane_status": lane_status,
+        "full_experiment_claim_passed": False,
+        "step_count": rollout.step_count,
+        "sample_count": rollout.sample_count,
+        "time_step_s": rollout.time_step_s,
+        "max_pivot_residual_m": rollout.max_pivot_residual_m,
+        "max_constraint_residual_norm": rollout.max_constraint_residual_norm,
+        "max_abs_angle_error_rad": rollout.max_abs_angle_error_rad,
+        "max_phase_drift_rad": rollout.max_phase_drift_rad,
+        "max_world_anchor_reaction_magnitude_n": rollout.max_world_anchor_reaction_magnitude_n,
+        "threshold_violations": threshold_violations,
+        "required_missing_lanes": [],
+        "blocking_reasons": [
+            "pendulum_geometry_unknown",
+            "joint_force_waveform_agreement_missing",
+            "paper_timing_missing",
+        ],
+        "angle_samples_rad": _mabd_newton_sample_rows(rollout),
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={"physical_pendulum_procedural": "not_applicable_procedural"},
+        solver_mode="mabd_cpu_oracle_physical_pendulum_newton_lane",
+        backend="cpu_numpy_newton_only",
+        baseline_lane="mabd_newton",
+        expected={
+            "paper_claim_status": "formal M-ABD lane generated; full experiment incomplete",
+            "source_lines": list(config.source_lines),
+            "paper_values": config.paper_values,
+            "world_anchor_constraint": {
+                "pivot_rest_point_m": config.mabd_development.pivot_rest_point_m.tolist(),
+                "pivot_world_point_m": config.mabd_development.pivot_world_point_m.tolist(),
+            },
+            "diagnostic_dual_reaction": "world-anchor dlambda[:3] magnitude, not paper waveform",
+            "nonclaim_limitations": [
+                "procedural point set is not the paper's undisclosed physical-pendulum geometry",
+                "world-anchor reaction is a solver dual diagnostic, not paper joint-force waveform agreement",
+                "no rendered figure or timing distribution is generated",
+            ],
+            "full_experiment_claim_passed": False,
+        },
+        observed=observed,
+        threshold=thresholds,
+        unit="angle_rad",
+        status=config.report_status,
+        failure_reason=(
+            "physical_pendulum mabd_newton lane remains incomplete because "
+            "pendulum_geometry_unknown, joint-force waveform agreement, and paper timing are unresolved"
+        ),
+        timing_distribution={"scope": "not_timed", "lane": "mabd_newton"},
+        raw_outputs={"time_series": "compact_samples_only"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 def write_physical_pendulum_rbd_baseline_report(
     path: str | Path,
     *,
@@ -359,5 +479,6 @@ def write_physical_pendulum_rbd_baseline_report(
 __all__ = [
     "write_physical_pendulum_analytic_reference_report",
     "write_physical_pendulum_mabd_development_report",
+    "write_physical_pendulum_mabd_newton_report",
     "write_physical_pendulum_rbd_baseline_report",
 ]

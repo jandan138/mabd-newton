@@ -14,6 +14,7 @@ from mabd_reproduction.experiment_runner import (
     run_physical_pendulum_analytic_reference,
     run_physical_pendulum_comparison,
     run_physical_pendulum_mabd_development,
+    run_physical_pendulum_mabd_newton,
     run_physical_pendulum_rbd_baseline,
     run_spinning_box_comparison,
     run_spinning_box_experiment,
@@ -39,6 +40,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "mabd_paper_horizon",
             "physical_pendulum_comparison",
             "physical_pendulum_mabd_development",
+            "physical_pendulum_mabd_newton",
             "rbd_implicit_baseline",
             "spinning_box_comparison",
         ),
@@ -106,6 +108,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "physical_pendulum_mabd_development":
             result = run_physical_pendulum_mabd_development(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "physical_pendulum_mabd_newton":
+            result = run_physical_pendulum_mabd_newton(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,
