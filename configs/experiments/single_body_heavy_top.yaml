@@ -1,0 +1,42 @@
+schema_version: 1
+claim_id: experiment.single_body.heavy_top
+scene_id: single_body_heavy_top
+source_lines:
+  - /tmp/mabd-paper/source/sections/experiment.tex:65-75
+asset_ids:
+  - heavy_top_procedural
+baseline_lane: rbd_rk4_reference
+required_missing_lanes:
+  - mabd_newton
+paper_values:
+  tilt_deg: 5
+  angular_speed_rad_s: 10
+  reference_h_s: 0.0001
+reference:
+  time_step_s: 0.0001
+  duration_s: 10.0
+  sample_count: 11
+  principal_inertia_kg_m2: [0.18, 0.205, 0.05]
+  mass_kg: 1.0
+  pivot_to_com_m: [0.0, 0.0, 0.25]
+  gravity_m_s2: [0.0, -9.81, 0.0]
+  initial_tilt_deg: 5.0
+  initial_spin_rad_s: 10.0
+  figure_pdf_sha256: c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d
+  figure_text_source: pdftotext /tmp/mabd-paper/source/images/spinning_top/spinning_top.pdf -
+  output_report: reports/experiment_matrix/single_body_heavy_top_rk4_reference.json
+  thresholds:
+    max_relative_energy_drift: 1.0e-7
+    min_nutation_angle_range_deg: 0.01
+    min_abs_precession_velocity_rad_s: 0.01
+report:
+  status: incomplete
+  failure_reason: >-
+    rbd_rk4_reference diagnostic only; exact_heavy_top_inertia_unknown,
+    raw_heavy_top_reference_curve_data_missing, mabd_newton_report_missing,
+    and heavy_top_comparison_report_missing remain incomplete
+  output_report: reports/experiment_matrix/single_body_heavy_top_rk4_reference.json
+  thresholds:
+    max_relative_energy_drift: 1.0e-7
+    min_nutation_angle_range_deg: 0.01
+    min_abs_precession_velocity_rad_s: 0.01

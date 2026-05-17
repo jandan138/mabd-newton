@@ -165,6 +165,40 @@ class THandleRunConfig:
     thresholds: dict[str, float]
 
 
+@dataclass(frozen=True)
+class HeavyTopReferenceConfig:
+    time_step_s: float
+    duration_s: float
+    sample_count: int
+    principal_inertia_kg_m2: np.ndarray
+    mass_kg: float
+    pivot_to_com_m: np.ndarray
+    gravity_m_s2: np.ndarray
+    initial_tilt_deg: float
+    initial_spin_rad_s: float
+    figure_pdf_sha256: str
+    figure_text_source: str
+    output_report: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
+class HeavyTopRunConfig:
+    schema_version: int
+    claim_id: str
+    scene_id: str
+    source_lines: tuple[str, ...]
+    asset_ids: tuple[str, ...]
+    baseline_lane: str
+    required_missing_lanes: tuple[str, ...]
+    paper_values: dict[str, Any]
+    reference: HeavyTopReferenceConfig
+    report_status: EvidenceStatus
+    failure_reason: str
+    output_report: str
+    thresholds: dict[str, float]
+
+
 PAPER_HORIZON_THRESHOLD_KEYS = frozenset(
     {
         "max_linear_momentum_error",
@@ -248,6 +282,28 @@ T_HANDLE_REQUIRED_BLOCKERS = frozenset(
         "raw_t_handle_reference_curve_data_missing",
         "mabd_newton_report_missing",
         "t_handle_comparison_report_missing",
+    }
+)
+HEAVY_TOP_THRESHOLD_KEYS = frozenset(
+    {
+        "max_relative_energy_drift",
+        "min_nutation_angle_range_deg",
+        "min_abs_precession_velocity_rad_s",
+    }
+)
+HEAVY_TOP_REQUIRED_MISSING_LANES = ("mabd_newton",)
+HEAVY_TOP_EXPECTED_FIGURE_PDF_SHA256 = (
+    "c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d"
+)
+HEAVY_TOP_EXPECTED_FIGURE_TEXT_SOURCE = (
+    "pdftotext /tmp/mabd-paper/source/images/spinning_top/spinning_top.pdf -"
+)
+HEAVY_TOP_REQUIRED_BLOCKERS = frozenset(
+    {
+        "exact_heavy_top_inertia_unknown",
+        "raw_heavy_top_reference_curve_data_missing",
+        "mabd_newton_report_missing",
+        "heavy_top_comparison_report_missing",
     }
 )
 
@@ -705,6 +761,48 @@ def _require_t_handle_reference(data: dict[str, Any]) -> THandleReferenceConfig:
     )
 
 
+def _require_heavy_top_reference(data: dict[str, Any]) -> HeavyTopReferenceConfig:
+    reference = _require_mapping(data, "reference")
+    thresholds = _require_float_mapping(reference, "thresholds")
+    missing = sorted(HEAVY_TOP_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "reference.thresholds missing required keys: " + ", ".join(missing)
+        )
+    sample_count = _require_positive_int(reference, "sample_count")
+    if sample_count < 2:
+        raise ExperimentRunConfigError("reference.sample_count must be at least 2")
+    time_step_s = _require_positive_float(reference, "time_step_s")
+    duration_s = _require_positive_float(reference, "duration_s")
+    step_count_float = duration_s / time_step_s
+    step_count = round(step_count_float)
+    if not np.isclose(step_count_float, float(step_count), rtol=0.0, atol=1.0e-10):
+        raise ExperimentRunConfigError("reference duration_s must be an integer multiple of time_step_s")
+    if sample_count > step_count + 1:
+        raise ExperimentRunConfigError("reference.sample_count must be at most step_count + 1")
+    pivot_to_com = _require_vec3_array(reference, "pivot_to_com_m")
+    if np.linalg.norm(pivot_to_com) <= 0.0:
+        raise ExperimentRunConfigError("reference.pivot_to_com_m must be nonzero")
+    return HeavyTopReferenceConfig(
+        time_step_s=time_step_s,
+        duration_s=duration_s,
+        sample_count=sample_count,
+        principal_inertia_kg_m2=_require_positive_vec3_array(
+            reference,
+            "principal_inertia_kg_m2",
+        ),
+        mass_kg=_require_positive_float(reference, "mass_kg"),
+        pivot_to_com_m=pivot_to_com,
+        gravity_m_s2=_require_negative_y_gravity_array(reference, "gravity_m_s2"),
+        initial_tilt_deg=_require_positive_float(reference, "initial_tilt_deg"),
+        initial_spin_rad_s=_require_positive_float(reference, "initial_spin_rad_s"),
+        figure_pdf_sha256=_require_str(reference, "figure_pdf_sha256"),
+        figure_text_source=_require_str(reference, "figure_text_source"),
+        output_report=_require_str(reference, "output_report"),
+        thresholds=thresholds,
+    )
+
+
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     config_path = Path(path)
     data = _read_mapping(config_path)
@@ -1046,8 +1144,120 @@ def validate_t_handle_config_against_matrix(
             raise ExperimentRunConfigError(f"report.failure_reason missing {blocker}")
 
 
+def load_heavy_top_config(path: str | Path) -> HeavyTopRunConfig:
+    config_path = Path(path)
+    data = _read_mapping(config_path)
+    if not isinstance(data.get("schema_version"), int) or isinstance(data.get("schema_version"), bool):
+        raise ExperimentRunConfigError("schema_version must be 1")
+    if data.get("schema_version") != 1:
+        raise ExperimentRunConfigError("schema_version must be 1")
+    claim_id = _require_str(data, "claim_id")
+    if claim_id != "experiment.single_body.heavy_top":
+        raise ExperimentRunConfigError("heavy-top config must target experiment.single_body.heavy_top")
+
+    report = _require_mapping(data, "report")
+    try:
+        status = EvidenceStatus(_require_str(report, "status"))
+    except ValueError as exc:
+        raise ExperimentRunConfigError("report.status is not a known EvidenceStatus") from exc
+    if status == EvidenceStatus.PASSED:
+        raise ExperimentRunConfigError("passed experiment configs require a dedicated evidence gate")
+
+    thresholds = _require_float_mapping(report, "thresholds")
+    missing = sorted(HEAVY_TOP_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "report.thresholds missing required keys: " + ", ".join(missing)
+        )
+
+    return HeavyTopRunConfig(
+        schema_version=1,
+        claim_id=claim_id,
+        scene_id=_require_str(data, "scene_id"),
+        source_lines=_require_str_tuple(data, "source_lines"),
+        asset_ids=_require_str_tuple(data, "asset_ids"),
+        baseline_lane=_require_str(data, "baseline_lane"),
+        required_missing_lanes=_require_str_tuple(
+            data,
+            "required_missing_lanes",
+            allow_empty=True,
+        ),
+        paper_values=_require_mapping(data, "paper_values"),
+        reference=_require_heavy_top_reference(data),
+        report_status=status,
+        failure_reason=_require_str(report, "failure_reason"),
+        output_report=_require_str(report, "output_report"),
+        thresholds=thresholds,
+    )
+
+
+def validate_heavy_top_config_against_matrix(
+    config: HeavyTopRunConfig,
+    matrix: ExperimentMatrix,
+) -> None:
+    matches = [entry for entry in matrix.experiments if entry.claim_id == config.claim_id]
+    if len(matches) != 1:
+        raise ExperimentRunConfigError(f"{config.claim_id} must have exactly one matrix entry")
+    entry = matches[0]
+    if config.scene_id != entry.scene_id:
+        raise ExperimentRunConfigError("scene_id must match experiment matrix")
+    if config.source_lines != entry.source_lines:
+        raise ExperimentRunConfigError("source_lines must match experiment matrix")
+    if config.asset_ids != entry.asset_ids:
+        raise ExperimentRunConfigError("asset_ids must match experiment matrix")
+    if config.paper_values != entry.paper_values:
+        raise ExperimentRunConfigError("paper_values must match experiment matrix")
+    if config.baseline_lane != "rbd_rk4_reference":
+        raise ExperimentRunConfigError("baseline_lane must be rbd_rk4_reference")
+    if config.baseline_lane not in entry.required_lanes:
+        raise ExperimentRunConfigError("baseline_lane must be listed in required_lanes")
+    if config.required_missing_lanes != HEAVY_TOP_REQUIRED_MISSING_LANES:
+        raise ExperimentRunConfigError("required_missing_lanes must be mabd_newton only")
+    missing_lanes = set(config.required_missing_lanes) - set(entry.required_lanes)
+    if missing_lanes:
+        raise ExperimentRunConfigError("required_missing_lanes must be listed in required_lanes")
+    if config.baseline_lane in config.required_missing_lanes:
+        raise ExperimentRunConfigError("baseline_lane cannot be listed as missing")
+    blockers = set(entry.blocking_reasons)
+    if "exact_heavy_top_inertia_unknown" not in blockers:
+        raise ExperimentRunConfigError("heavy-top matrix blockers missing exact_heavy_top_inertia_unknown")
+    if entry.reproduction_status != "planned":
+        raise ExperimentRunConfigError("matrix reproduction_status must remain planned")
+    for metric in ("precession_velocity_error", "nutation_angle_error", "energy_drift"):
+        if metric not in entry.metrics:
+            raise ExperimentRunConfigError("heavy-top metrics must match the paper matrix")
+    if config.reference.figure_pdf_sha256 != HEAVY_TOP_EXPECTED_FIGURE_PDF_SHA256:
+        raise ExperimentRunConfigError("reference.figure_pdf_sha256 changed")
+    if config.reference.figure_text_source != HEAVY_TOP_EXPECTED_FIGURE_TEXT_SOURCE:
+        raise ExperimentRunConfigError("reference.figure_text_source changed")
+    if not (
+        np.isclose(config.reference.gravity_m_s2[0], 0.0, rtol=0.0, atol=1.0e-15)
+        and config.reference.gravity_m_s2[1] < 0.0
+        and np.isclose(config.reference.gravity_m_s2[2], 0.0, rtol=0.0, atol=1.0e-15)
+    ):
+        raise ExperimentRunConfigError("reference.gravity_m_s2 must point along negative y")
+    expected_prefix = Path(entry.output_report).with_suffix("").as_posix() + "_"
+    if (
+        not config.reference.output_report.startswith(expected_prefix)
+        or not config.reference.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "reference.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.output_report != config.reference.output_report:
+        raise ExperimentRunConfigError("output_report must match reference.output_report")
+    for blocker in HEAVY_TOP_REQUIRED_BLOCKERS:
+        if blocker not in config.failure_reason:
+            raise ExperimentRunConfigError(f"report.failure_reason missing {blocker}")
+
+
 __all__ = [
     "ExperimentRunConfigError",
+    "HEAVY_TOP_EXPECTED_FIGURE_PDF_SHA256",
+    "HEAVY_TOP_EXPECTED_FIGURE_TEXT_SOURCE",
+    "HEAVY_TOP_REQUIRED_BLOCKERS",
+    "HEAVY_TOP_REQUIRED_MISSING_LANES",
+    "HEAVY_TOP_THRESHOLD_KEYS",
     "PAPER_HORIZON_THRESHOLD_KEYS",
     "PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES",
     "PHYSICAL_PENDULUM_COMPARISON_DIAGNOSTIC_LANES",
@@ -1063,6 +1273,8 @@ __all__ = [
     "T_HANDLE_REQUIRED_BLOCKERS",
     "T_HANDLE_REQUIRED_MISSING_LANES",
     "T_HANDLE_THRESHOLD_KEYS",
+    "HeavyTopReferenceConfig",
+    "HeavyTopRunConfig",
     "PhysicalPendulumComparisonConfig",
     "PhysicalPendulumMABDDevelopmentConfig",
     "PhysicalPendulumMABDNewtonConfig",
@@ -1076,6 +1288,8 @@ __all__ = [
     "load_physical_pendulum_config",
     "load_spinning_box_config",
     "load_t_handle_config",
+    "load_heavy_top_config",
+    "validate_heavy_top_config_against_matrix",
     "validate_physical_pendulum_config_against_matrix",
     "validate_spinning_box_config_against_matrix",
     "validate_t_handle_config_against_matrix",

@@ -630,6 +630,21 @@
   `Control`, GPU/Warp kernels, rendered output, generated videos, paper timing,
   comparative pass gates, raw simulation logs, a full paper reproduction, or
   any passed `experiment.*` claim.
+- This repository contains Phase 49 heavy-top RK4 reference diagnostic lane
+  evidence after the Phase 49 record is created.
+- Phase 49 verifies a source-backed `rbd_rk4_reference` diagnostic lane for
+  `experiment.single_body.heavy_top`, the public spinning-top figure hash,
+  gravity along negative y, initial tilt `5 deg`, initial angular speed
+  `10 rad/s`, RK4 step size `h = 10^-4 s`, deterministic precession and
+  nutation samples for the configured diagnostic inertia, small relative
+  energy drift, retained `exact_heavy_top_inertia_unknown`,
+  `raw_heavy_top_reference_curve_data_missing`, `mabd_newton_report_missing`,
+  and `heavy_top_comparison_report_missing` blockers, and top-level report
+  status: `incomplete`.
+- Phase 49 does not verify a passed heavy-top experiment, paper-faithful
+  heavy-top inertia or geometry, raw figure curve agreement, M-ABD heavy-top
+  dynamics, ABD-vs-RBD comparison, rendered output, runtime performance,
+  generated videos or raw simulation logs, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -724,6 +739,11 @@
   GPU/Warp solver, not rendered-output evidence, not paper timing reproduction,
   not a comparative pass gate, not a full paper reproduction, and not any
   passed `experiment.*` claim.
+- Phase 49 heavy-top RK4 reference is not a passed heavy-top experiment, not
+  paper-faithful heavy-top inertia or geometry reconstruction, not raw curve
+  agreement, not M-ABD heavy-top dynamics, not an M-ABD lane pass, not a
+  comparison pass gate, not rendered-output evidence, not runtime performance
+  reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
