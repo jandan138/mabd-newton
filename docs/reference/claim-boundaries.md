@@ -638,9 +638,10 @@
   `10 rad/s`, RK4 step size `h = 10^-4 s`, deterministic precession and
   nutation samples for the configured diagnostic inertia, small relative
   energy drift, retained `exact_heavy_top_inertia_unknown`,
+  `exact_heavy_top_geometry_unknown`,
   `raw_heavy_top_reference_curve_data_missing`, `mabd_newton_report_missing`,
-  and `heavy_top_comparison_report_missing` blockers, and top-level report
-  status: `incomplete`.
+  `heavy_top_comparison_report_missing`, and `heavy_top_timing_evidence_missing`
+  blockers, and top-level report status: `incomplete`.
 - Phase 49 does not verify a passed heavy-top experiment, paper-faithful
   heavy-top inertia or geometry, raw figure curve agreement, M-ABD heavy-top
   dynamics, ABD-vs-RBD comparison, rendered output, runtime performance,

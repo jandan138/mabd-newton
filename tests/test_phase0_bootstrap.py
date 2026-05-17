@@ -3170,6 +3170,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         self.assertEqual(heavy_top_claim["reproduction_status"], "intended")
         self.assertIn("exact_heavy_top_inertia_unknown", heavy_top_claim["conflict_note"])
+        self.assertIn("exact_heavy_top_geometry_unknown", heavy_top_claim["conflict_note"])
 
         matrix = yaml.safe_load((ROOT / "configs/experiments/paper_experiment_matrix.yaml").read_text())
         matrix_entry = next(
@@ -3177,6 +3178,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         self.assertEqual(matrix_entry["reproduction_status"], "planned")
         self.assertIn("exact_heavy_top_inertia_unknown", matrix_entry["blocking_reasons"])
+        self.assertIn("exact_heavy_top_geometry_unknown", matrix_entry["blocking_reasons"])
 
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
         current = claim_boundary_bullet(text, "This repository contains Phase 49")
@@ -3188,6 +3190,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("rbd_rk4_reference", verified)
         self.assertIn("source-backed", verified)
         self.assertIn("raw_heavy_top_reference_curve_data_missing", verified)
+        self.assertIn("heavy_top_timing_evidence_missing", verified)
         self.assertIn("passed heavy-top experiment", non_claim)
         self.assertIn("paper-faithful heavy-top inertia", non_claim)
         self.assertIn("M-ABD heavy-top dynamics", non_claim)
@@ -3211,9 +3214,11 @@ class Phase0BootstrapTests(unittest.TestCase):
             "rbd_rk4_reference",
             "diagnostic_generated",
             "exact_heavy_top_inertia_unknown",
+            "exact_heavy_top_geometry_unknown",
             "raw_heavy_top_reference_curve_data_missing",
             "mabd_newton_report_missing",
             "heavy_top_comparison_report_missing",
+            "heavy_top_timing_evidence_missing",
             "## Claim Impact",
             "No `experiment.*` claim is passed.",
             "`experiment.single_body.heavy_top` remains intended",

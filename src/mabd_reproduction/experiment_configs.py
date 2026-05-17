@@ -301,6 +301,7 @@ HEAVY_TOP_EXPECTED_FIGURE_TEXT_SOURCE = (
 HEAVY_TOP_REQUIRED_BLOCKERS = frozenset(
     {
         "exact_heavy_top_inertia_unknown",
+        "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
         "mabd_newton_report_missing",
         "heavy_top_comparison_report_missing",
@@ -1207,6 +1208,20 @@ def validate_heavy_top_config_against_matrix(
         raise ExperimentRunConfigError("asset_ids must match experiment matrix")
     if config.paper_values != entry.paper_values:
         raise ExperimentRunConfigError("paper_values must match experiment matrix")
+    paper_reference_pairs = (
+        ("tilt_deg", config.reference.initial_tilt_deg),
+        ("angular_speed_rad_s", config.reference.initial_spin_rad_s),
+        ("reference_h_s", config.reference.time_step_s),
+    )
+    for key, expected in paper_reference_pairs:
+        value = config.paper_values.get(key)
+        if not isinstance(value, Real) or isinstance(value, bool):
+            raise ExperimentRunConfigError(f"paper_values.{key} must be numeric")
+        numeric = float(value)
+        if not isfinite(numeric) or not np.isclose(numeric, expected, rtol=0.0, atol=1.0e-15):
+            raise ExperimentRunConfigError(
+                f"paper_values.{key} must match the configured heavy-top reference"
+            )
     if config.baseline_lane != "rbd_rk4_reference":
         raise ExperimentRunConfigError("baseline_lane must be rbd_rk4_reference")
     if config.baseline_lane not in entry.required_lanes:

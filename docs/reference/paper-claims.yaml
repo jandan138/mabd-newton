@@ -178,7 +178,7 @@ claims:
     source_line: "heavy top"
     expected_value: "precession and nutation curve"
     unit: "scene"
-    conflict_note: "exact_heavy_top_inertia_unknown; raw_heavy_top_reference_curve_data_missing; mabd_newton_report_missing; heavy_top_comparison_report_missing"
+    conflict_note: "exact_heavy_top_inertia_unknown; exact_heavy_top_geometry_unknown; raw_heavy_top_reference_curve_data_missing; mabd_newton_report_missing; heavy_top_comparison_report_missing"
     reproduction_status: intended
   - claim_id: experiment.single_body.physical_pendulum
     source_path: "/tmp/mabd-paper/source/sections/experiment.tex"

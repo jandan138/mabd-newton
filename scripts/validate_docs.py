@@ -6850,9 +6850,11 @@ def validate_phase49_record() -> None:
         "rbd_rk4_reference",
         "diagnostic_generated",
         "exact_heavy_top_inertia_unknown",
+        "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
         "mabd_newton_report_missing",
         "heavy_top_comparison_report_missing",
+        "heavy_top_timing_evidence_missing",
         "## Claim Impact",
         "No `experiment.*` claim is passed.",
         "`experiment.single_body.heavy_top` remains intended",
@@ -6891,9 +6893,11 @@ def validate_phase49_record() -> None:
     for snippet in (
         "This repository contains Phase 49 heavy-top RK4 reference diagnostic lane",
         "Phase 49 verifies a source-backed `rbd_rk4_reference` diagnostic lane",
+        "`exact_heavy_top_geometry_unknown`",
         "`raw_heavy_top_reference_curve_data_missing`",
         "`mabd_newton_report_missing`",
         "`heavy_top_comparison_report_missing`",
+        "`heavy_top_timing_evidence_missing`",
         "Phase 49 does not verify a passed heavy-top experiment",
         "paper-faithful heavy-top inertia",
         "M-ABD heavy-top dynamics",
@@ -6953,6 +6957,7 @@ def validate_phase49_record() -> None:
         fail("Phase 49 heavy-top blockers must be a list")
     for blocker in (
         "exact_heavy_top_inertia_unknown",
+        "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
         "mabd_newton_report_missing",
         "heavy_top_comparison_report_missing",
@@ -7070,6 +7075,7 @@ def validate_phase49_record() -> None:
             conflict_note = str(claim.get("conflict_note", ""))
             for blocker in (
                 "exact_heavy_top_inertia_unknown",
+                "exact_heavy_top_geometry_unknown",
                 "raw_heavy_top_reference_curve_data_missing",
                 "mabd_newton_report_missing",
                 "heavy_top_comparison_report_missing",
@@ -7103,6 +7109,7 @@ def validate_phase49_record() -> None:
         fail("Phase 49 matrix heavy-top blockers must be a list")
     for blocker in (
         "exact_heavy_top_inertia_unknown",
+        "exact_heavy_top_geometry_unknown",
         "raw_heavy_top_reference_curve_data_missing",
         "mabd_newton_report_missing",
         "heavy_top_comparison_report_missing",

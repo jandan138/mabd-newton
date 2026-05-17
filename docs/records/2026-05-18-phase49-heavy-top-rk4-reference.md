@@ -38,9 +38,11 @@ No raw simulation directories, videos, or large logs are committed.
   - status: `incomplete`
   - lane_status: `diagnostic_generated`
   - retained blocker: `exact_heavy_top_inertia_unknown`
+  - retained blocker: `exact_heavy_top_geometry_unknown`
   - retained blocker: `raw_heavy_top_reference_curve_data_missing`
   - retained blocker: `mabd_newton_report_missing`
   - retained blocker: `heavy_top_comparison_report_missing`
+  - retained blocker: `heavy_top_timing_evidence_missing`
 
 ## Claim Impact
 

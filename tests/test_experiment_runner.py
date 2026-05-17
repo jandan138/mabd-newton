@@ -708,6 +708,7 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         self.assertIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
         self.assertIn("heavy_top_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("exact_heavy_top_geometry_unknown", loaded.observed["blocking_reasons"])
         self.assertNotIn("lane_gate_status", loaded.observed)
 
     def test_run_heavy_top_rk4_reference_requires_incomplete_status(self) -> None:

@@ -325,6 +325,7 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("min_nutation_angle_range_deg", config.reference.thresholds)
         self.assertIn("min_abs_precession_velocity_rad_s", config.reference.thresholds)
         self.assertIn("exact_heavy_top_inertia_unknown", config.failure_reason)
+        self.assertIn("exact_heavy_top_geometry_unknown", config.failure_reason)
         self.assertIn("raw_heavy_top_reference_curve_data_missing", config.failure_reason)
         self.assertIn("mabd_newton_report_missing", config.failure_reason)
 
@@ -364,6 +365,32 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ExperimentRunConfigError, "figure_pdf_sha256"):
             validate_heavy_top_config_against_matrix(drifted, matrix)
+
+    def test_heavy_top_config_rejects_paper_value_reference_drift(self) -> None:
+        config = load_heavy_top_config(HEAVY_TOP_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        cases = (
+            (
+                "initial_tilt_deg",
+                replace(config.reference, initial_tilt_deg=45.0),
+                "paper_values.tilt_deg",
+            ),
+            (
+                "initial_spin_rad_s",
+                replace(config.reference, initial_spin_rad_s=1.0),
+                "paper_values.angular_speed_rad_s",
+            ),
+            (
+                "time_step_s",
+                replace(config.reference, time_step_s=0.001),
+                "paper_values.reference_h_s",
+            ),
+        )
+        for _name, reference, expected_error in cases:
+            with self.subTest(expected_error=expected_error):
+                drifted = replace(config, reference=reference)
+                with self.assertRaisesRegex(ExperimentRunConfigError, expected_error):
+                    validate_heavy_top_config_against_matrix(drifted, matrix)
 
     def test_physical_pendulum_config_rejects_missing_required_incomplete_lanes(self) -> None:
         config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)
