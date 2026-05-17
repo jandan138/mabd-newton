@@ -67,6 +67,11 @@ class ExperimentRunConfigTests(unittest.TestCase):
         )
         self.assertIn("energy_drift", config.thresholds)
         self.assertIn("generalized_momentum_delta_norm", config.thresholds)
+        self.assertEqual(config.contact_surface["type"], "plane")
+        self.assertEqual(config.contact_surface["plane_normal"], (0.0, 1.0, 0.0))
+        self.assertEqual(config.contact_surface["plane_offset"], 0.0)
+        self.assertGreater(config.contact_surface["stiffness"], 0.0)
+        self.assertGreaterEqual(config.contact_surface["damping"], 0.0)
         np.testing.assert_allclose(
             config.initial_qd,
             abd_generalized_velocity_from_paper_momenta(config),

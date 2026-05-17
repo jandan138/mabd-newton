@@ -15,6 +15,12 @@ paper_values:
   poisson_ratio: 0.3
   p0: [100, 0, 0]
   L0: [0, 100, 0]
+contact_surface:
+  type: plane
+  plane_normal: [0.0, 1.0, 0.0]
+  plane_offset: 0.0
+  stiffness: 1000000.0
+  damping: 100.0
 simulation:
   time_step_s: 0.01
   step_count: 4

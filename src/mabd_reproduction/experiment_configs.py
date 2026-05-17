@@ -34,6 +34,7 @@ class SpinningBoxRunConfig:
     initial_q: np.ndarray
     initial_qd: np.ndarray
     mass_diagonal: np.ndarray
+    contact_surface: dict[str, Any]
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -118,6 +119,50 @@ def _require_positive_int(data: dict[str, Any], key: str) -> int:
     return result
 
 
+def _require_finite_number(data: dict[str, Any], key: str) -> float:
+    value = data.get(key)
+    if not isinstance(value, Real) or isinstance(value, bool):
+        raise ExperimentRunConfigError(f"{key} must be a finite number")
+    result = float(value)
+    if not isfinite(result):
+        raise ExperimentRunConfigError(f"{key} must be a finite number")
+    return result
+
+
+def _require_vec3_tuple(data: dict[str, Any], key: str) -> tuple[float, float, float]:
+    value = data.get(key)
+    if not isinstance(value, list) or len(value) != 3:
+        raise ExperimentRunConfigError(f"{key} must contain 3 numeric values")
+    result: list[float] = []
+    for item in value:
+        if not isinstance(item, Real) or isinstance(item, bool):
+            raise ExperimentRunConfigError(f"{key} must contain 3 numeric values")
+        item_float = float(item)
+        if not isfinite(item_float):
+            raise ExperimentRunConfigError(f"{key} must contain 3 finite numeric values")
+        result.append(item_float)
+    if np.linalg.norm(result) == 0.0:
+        raise ExperimentRunConfigError(f"{key} must be nonzero")
+    return (result[0], result[1], result[2])
+
+
+def _require_contact_surface(data: dict[str, Any]) -> dict[str, Any]:
+    surface = _require_mapping(data, "contact_surface")
+    if _require_str(surface, "type") != "plane":
+        raise ExperimentRunConfigError("contact_surface.type must be plane")
+    stiffness = _require_positive_float(surface, "stiffness")
+    damping = _require_finite_number(surface, "damping")
+    if damping < 0.0:
+        raise ExperimentRunConfigError("damping must be nonnegative")
+    return {
+        "type": "plane",
+        "plane_normal": _require_vec3_tuple(surface, "plane_normal"),
+        "plane_offset": _require_finite_number(surface, "plane_offset"),
+        "stiffness": stiffness,
+        "damping": damping,
+    }
+
+
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     config_path = Path(path)
     data = _read_mapping(config_path)
@@ -155,6 +200,7 @@ def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
         initial_q=_require_vector(simulation, "initial_q"),
         initial_qd=_require_vector(simulation, "initial_qd"),
         mass_diagonal=_require_vector(simulation, "mass_diagonal"),
+        contact_surface=_require_contact_surface(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
