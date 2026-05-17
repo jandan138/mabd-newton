@@ -40,8 +40,9 @@ committed generated report artifacts, or any passed `experiment.*` claim.
 - polar CPU oracle implementation commit: `d2ddb2a2e1e6b74d4deb1c6d8720ca7ee09f7ddb`
 - spinning-box polar report lane implementation commit: `a5755baaed1d577fa23a6bd47e3ef4751a5e191a`
 - docs/record creation commit: `982ebaa60907e1666e3acc6f3cf8ffdabc1d207a`
-- review disposition record commit: `d500f97cee6f66a2a5a4aae23275d09ac4dd0df3`
+- review disposition record commit: `aa18dda3111de820e617d1b6515d1d547445efa5`
 - provenance hardening commit: `d500f97cee6f66a2a5a4aae23275d09ac4dd0df3`
+- verification-command hardening commit: `aa18dda3111de820e617d1b6515d1d547445efa5`
 - independent review: Newton/numerics review found that the initial Phase 26
   spec used an affine-only local transform that was not paper-equivalent unless
   the 12x12 system was translation-decoupled. Claim/provenance review found
