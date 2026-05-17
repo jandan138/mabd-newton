@@ -41,6 +41,7 @@ class SolverMABD(SolverBase):
     MABD_BODY_FREQUENCY = "mabd:body"
     MABD_CONSTRAINT_FREQUENCY = "mabd:constraint"
     MABD_WORLD_CONSTRAINT_FREQUENCY = "mabd:world_constraint"
+    MABD_GRAVITY_FREQUENCY = "mabd:gravity"
     MABD_CONTROL_FREQUENCY = "mabd:control"
 
     def __init__(self, model: Model):
@@ -199,6 +200,20 @@ class SolverMABD(SolverBase):
             world_point=np.asarray(namespace.world_point.numpy()[row], dtype=float),
         )
 
+    def _gravity_from_model(self) -> np.ndarray | None:
+        count = self._custom_frequency_count(self.MABD_GRAVITY_FREQUENCY)
+        namespace = self.model.mabd
+        enabled_rows = [
+            row
+            for row in range(count)
+            if int(namespace.gravity_enabled.numpy()[row]) != 0
+        ]
+        if not enabled_rows:
+            return None
+        if len(enabled_rows) > 1:
+            raise ValueError("mabd:gravity supports at most one enabled row")
+        return np.asarray(namespace.gravity_vector.numpy()[enabled_rows[0]], dtype=float)
+
     def _custom_frequency_count(self, frequency: str) -> int:
         try:
             return int(self.model.get_custom_frequency_count(frequency))
@@ -227,6 +242,7 @@ class SolverMABD(SolverBase):
                 self._world_constraint_from_model_row(row, body_count)
                 for row in range(world_constraint_count)
             ),
+            gravity=self._gravity_from_model(),
             actuations=actuation_specs_from_model(self.model),
         )
         self.model_cpu_oracle_config = config
@@ -301,6 +317,7 @@ class SolverMABD(SolverBase):
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="body", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="constraint", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="world_constraint", namespace="mabd"))
+        builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="gravity", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="control", namespace="mabd"))
 
         model_attrs = (
@@ -583,6 +600,25 @@ class SolverMABD(SolverBase):
             ),
         )
 
+        gravity_attrs = (
+            ModelBuilder.CustomAttribute(
+                name="gravity_enabled",
+                frequency=cls.MABD_GRAVITY_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="gravity_vector",
+                frequency=cls.MABD_GRAVITY_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+        )
+
         control_attrs = (
             ModelBuilder.CustomAttribute(
                 name="control_body",
@@ -715,7 +751,7 @@ class SolverMABD(SolverBase):
             ),
         )
 
-        for attr in (*model_attrs, *state_attrs, *constraint_attrs, *world_constraint_attrs, *control_attrs):
+        for attr in (*model_attrs, *state_attrs, *constraint_attrs, *world_constraint_attrs, *gravity_attrs, *control_attrs):
             builder.add_custom_attribute(attr)
 
 
