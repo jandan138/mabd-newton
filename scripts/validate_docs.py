@@ -1679,8 +1679,8 @@ def validate_phase26_record() -> None:
         "`d2ddb2a2e1e6b74d4deb1c6d8720ca7ee09f7ddb`",
         "spinning-box polar report lane implementation commit:",
         "`a5755baaed1d577fa23a6bd47e3ef4751a5e191a`",
-        "docs/record creation commit:",
-        "review disposition record commit:",
+        "docs/record creation commit: `982ebaa60907e1666e3acc6f3cf8ffdabc1d207a`",
+        "review disposition record commit: `982ebaa60907e1666e3acc6f3cf8ffdabc1d207a`",
         "independent review:",
         "affine-only local transform",
         "not paper-equivalent",
@@ -1738,6 +1738,8 @@ def validate_phase26_record() -> None:
         fail("Phase 26 record contains stale docs commit placeholder")
     if "TO_BE_BACKFILLED_PHASE26_REVIEW_DISPOSITION_COMMIT" in text:
         fail("Phase 26 record contains stale review disposition commit placeholder")
+    if "pending branch-local" in text:
+        fail("Phase 26 record contains pending branch-local provenance placeholder")
     forbidden_snippets = (
         "Phase 26 verifies the paper spinning-box experiment",
         "Phase 26 passes experiment.single_body.spinning_box",

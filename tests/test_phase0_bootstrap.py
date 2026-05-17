@@ -1154,8 +1154,8 @@ class Phase0BootstrapTests(unittest.TestCase):
             "plan commit: `96509da",
             "polar CPU oracle implementation commit: `d2ddb2a",
             "spinning-box polar report lane implementation commit: `a5755ba",
-            "docs/record creation commit:",
-            "review disposition record commit:",
+            "docs/record creation commit: `982ebaa60907e1666e3acc6f3cf8ffdabc1d207a`",
+            "review disposition record commit: `982ebaa60907e1666e3acc6f3cf8ffdabc1d207a`",
             "## Vendored Newton",
             "96713fa965463b69c229a4d30582c733ff3526bb",
             "local patch status: Phase 26 modifies vendored Newton",
@@ -1199,6 +1199,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE26_DOCS_COMMIT", text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE26_REVIEW_DISPOSITION_COMMIT", text)
+        self.assertNotIn("pending branch-local", text)
 
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
