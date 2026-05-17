@@ -33,6 +33,17 @@ class SpinningBoxMABDMomentumDiagnostics:
     angular_momentum_error: float
 
 
+@dataclass(frozen=True)
+class SpinningBoxContactDiagnostics:
+    corner_count: int
+    active_contact_count: int
+    corner_signed_distances: np.ndarray
+    min_signed_distance: float
+    max_penetration_depth: float
+    total_normal_force: np.ndarray
+    total_generalized_force: np.ndarray
+
+
 def _paper_float(value: Any, name: str, *, positive: bool = False) -> float:
     if isinstance(value, bool):
         raise ValueError(f"{name} must be numeric")
@@ -96,6 +107,57 @@ def spinning_box_mabd_mass_diagonal(config: SpinningBoxRunConfig) -> np.ndarray:
     )
 
 
+def spinning_box_cube_corners(config: SpinningBoxRunConfig) -> np.ndarray:
+    half_size = 0.5 * spinning_box_physical_properties(config).cube_size_m
+    return np.array(
+        [
+            [x, y, z]
+            for x in (-half_size, half_size)
+            for y in (-half_size, half_size)
+            for z in (-half_size, half_size)
+        ],
+        dtype=float,
+    )
+
+
+def spinning_box_contact_diagnostics(
+    config: SpinningBoxRunConfig,
+    q: np.ndarray,
+    qd: np.ndarray,
+) -> SpinningBoxContactDiagnostics:
+    surface = config.contact_surface
+    if surface.get("type") != "plane":
+        raise ValueError("spinning-box contact diagnostics require a plane contact_surface")
+    corners = spinning_box_cube_corners(config)
+    contacts = [
+        mabd.evaluate_point_plane_penalty_contact(
+            q,
+            qd,
+            corner,
+            plane_normal=surface["plane_normal"],
+            plane_offset=float(surface["plane_offset"]),
+            stiffness=float(surface["stiffness"]),
+            damping=float(surface["damping"]),
+        )
+        for corner in corners
+    ]
+    signed_distances = np.asarray([contact.signed_distance for contact in contacts], dtype=float)
+    penetration_depths = np.asarray([contact.penetration_depth for contact in contacts], dtype=float)
+    active_count = sum(1 for contact in contacts if contact.active)
+    return SpinningBoxContactDiagnostics(
+        corner_count=int(corners.shape[0]),
+        active_contact_count=active_count,
+        corner_signed_distances=signed_distances,
+        min_signed_distance=float(signed_distances.min()),
+        max_penetration_depth=float(penetration_depths.max()),
+        total_normal_force=sum((contact.force for contact in contacts), np.zeros(3, dtype=float)),
+        total_generalized_force=sum(
+            (contact.generalized_force for contact in contacts),
+            np.zeros(12, dtype=float),
+        ),
+    )
+
+
 def abd_generalized_velocity_from_paper_momenta(
     config: SpinningBoxRunConfig,
     A: np.ndarray | None = None,
@@ -124,11 +186,14 @@ def mabd_momentum_diagnostics(
 
 
 __all__ = [
+    "SpinningBoxContactDiagnostics",
     "SpinningBoxMABDMomentumDiagnostics",
     "SpinningBoxPhysicalProperties",
     "abd_generalized_velocity_from_paper_momenta",
     "mabd_momentum_diagnostics",
     "paper_spatial_twist_from_momenta",
+    "spinning_box_contact_diagnostics",
+    "spinning_box_cube_corners",
     "spinning_box_mabd_mass_diagonal",
     "spinning_box_physical_properties",
 ]

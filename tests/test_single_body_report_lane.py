@@ -32,9 +32,15 @@ class SingleBodyReportLaneTests(unittest.TestCase):
 
     def test_spinning_box_report_uses_run_config(self) -> None:
         from mabd_reproduction.experiment_configs import load_spinning_box_config
+        from mabd_reproduction.spinning_box_physics import (
+            spinning_box_contact_diagnostics,
+            spinning_box_cube_corners,
+        )
 
         root = Path(__file__).resolve().parents[1]
         config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        corners = spinning_box_cube_corners(config)
+        diagnostics = spinning_box_contact_diagnostics(config, config.initial_q, config.initial_qd)
         with TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "single_body_spinning_box.json"
             report = write_spinning_box_development_report(
@@ -70,6 +76,13 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             "paper_uniform_centered_cube_continuous",
         )
         self.assertEqual(len(loaded.observed["mabd_mass_diagonal"]), 12)
+        self.assertEqual(corners.shape, (8, 3))
+        self.assertAlmostEqual(float(corners[:, 0].max()), 0.05)
+        self.assertAlmostEqual(float(corners[:, 0].min()), -0.05)
+        self.assertEqual(diagnostics.corner_count, 8)
+        self.assertGreaterEqual(diagnostics.active_contact_count, 0)
+        self.assertEqual(len(diagnostics.corner_signed_distances), 8)
+        self.assertEqual(diagnostics.total_generalized_force.shape, (12,))
         self.assertAlmostEqual(loaded.observed["mass_kg"], 1.0)
         self.assertAlmostEqual(loaded.observed["initial_energy_j"], 3005000.0)
         self.assertAlmostEqual(loaded.observed["final_energy_j"], 3005000.0)
