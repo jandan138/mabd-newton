@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import isfinite
+from math import asin, isfinite, pi
 from numbers import Integral, Real
 from pathlib import Path
 from typing import Any
@@ -53,6 +53,33 @@ class SpinningBoxRunConfig:
     paper_horizon: SpinningBoxPaperHorizonConfig
 
 
+@dataclass(frozen=True)
+class PhysicalPendulumReferenceConfig:
+    release_angle_rad: float
+    initial_angle_rad: float
+    kappa: float
+    omega_lin_rad_s: float
+    period_count: int
+    sample_count: int
+
+
+@dataclass(frozen=True)
+class PhysicalPendulumRunConfig:
+    schema_version: int
+    claim_id: str
+    scene_id: str
+    source_lines: tuple[str, ...]
+    asset_ids: tuple[str, ...]
+    baseline_lane: str
+    required_missing_lanes: tuple[str, ...]
+    paper_values: dict[str, Any]
+    reference: PhysicalPendulumReferenceConfig
+    report_status: EvidenceStatus
+    failure_reason: str
+    output_report: str
+    thresholds: dict[str, float]
+
+
 PAPER_HORIZON_THRESHOLD_KEYS = frozenset(
     {
         "max_linear_momentum_error",
@@ -66,6 +93,13 @@ PAPER_HORIZON_THRESHOLD_KEYS = frozenset(
         "max_residual_norm",
     }
 )
+
+PHYSICAL_PENDULUM_THRESHOLD_KEYS = frozenset(
+    {
+        "max_abs_reference_identity_error",
+    }
+)
+PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES = ("mabd_newton", "rbd_implicit_baseline")
 
 
 def _read_mapping(path: Path) -> dict[str, Any]:
@@ -180,6 +214,13 @@ def _require_finite_number(data: dict[str, Any], key: str) -> float:
     return result
 
 
+def _require_unit_interval_float(data: dict[str, Any], key: str) -> float:
+    result = _require_finite_number(data, key)
+    if result <= 0.0 or result >= 1.0:
+        raise ExperimentRunConfigError(f"{key} must be in the open interval (0, 1)")
+    return result
+
+
 def _require_vec3_tuple(data: dict[str, Any], key: str) -> tuple[float, float, float]:
     value = data.get(key)
     if not isinstance(value, list) or len(value) != 3:
@@ -230,6 +271,23 @@ def _require_paper_horizon(data: dict[str, Any]) -> SpinningBoxPaperHorizonConfi
         figure_pdf_sha256=_require_str(horizon, "figure_pdf_sha256"),
         figure_text_source=_require_str(horizon, "figure_text_source"),
         thresholds=thresholds,
+    )
+
+
+def _require_physical_pendulum_reference(
+    data: dict[str, Any],
+) -> PhysicalPendulumReferenceConfig:
+    reference = _require_mapping(data, "reference")
+    sample_count = _require_positive_int(reference, "sample_count")
+    if sample_count < 3:
+        raise ExperimentRunConfigError("reference.sample_count must be at least 3")
+    return PhysicalPendulumReferenceConfig(
+        release_angle_rad=_require_positive_float(reference, "release_angle_rad"),
+        initial_angle_rad=_require_finite_number(reference, "initial_angle_rad"),
+        kappa=_require_unit_interval_float(reference, "kappa"),
+        omega_lin_rad_s=_require_positive_float(reference, "omega_lin_rad_s"),
+        period_count=_require_positive_int(reference, "period_count"),
+        sample_count=sample_count,
     )
 
 
@@ -315,11 +373,112 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
         raise ExperimentRunConfigError("energy_drift metric must be present in matrix and thresholds")
 
 
+def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig:
+    config_path = Path(path)
+    data = _read_mapping(config_path)
+    if not isinstance(data.get("schema_version"), int) or isinstance(data.get("schema_version"), bool):
+        raise ExperimentRunConfigError("schema_version must be 1")
+    if data.get("schema_version") != 1:
+        raise ExperimentRunConfigError("schema_version must be 1")
+    claim_id = _require_str(data, "claim_id")
+    if claim_id != "experiment.single_body.physical_pendulum":
+        raise ExperimentRunConfigError(
+            "physical-pendulum config must target experiment.single_body.physical_pendulum"
+        )
+
+    report = _require_mapping(data, "report")
+    try:
+        status = EvidenceStatus(_require_str(report, "status"))
+    except ValueError as exc:
+        raise ExperimentRunConfigError("report.status is not a known EvidenceStatus") from exc
+    if status == EvidenceStatus.PASSED:
+        raise ExperimentRunConfigError("passed experiment configs require a dedicated evidence gate")
+
+    thresholds = _require_float_mapping(report, "thresholds")
+    missing = sorted(PHYSICAL_PENDULUM_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "report.thresholds missing required keys: " + ", ".join(missing)
+        )
+
+    return PhysicalPendulumRunConfig(
+        schema_version=1,
+        claim_id=claim_id,
+        scene_id=_require_str(data, "scene_id"),
+        source_lines=_require_str_tuple(data, "source_lines"),
+        asset_ids=_require_str_tuple(data, "asset_ids"),
+        baseline_lane=_require_str(data, "baseline_lane"),
+        required_missing_lanes=_require_str_tuple(
+            data,
+            "required_missing_lanes",
+            allow_empty=True,
+        ),
+        paper_values=_require_mapping(data, "paper_values"),
+        reference=_require_physical_pendulum_reference(data),
+        report_status=status,
+        failure_reason=_require_str(report, "failure_reason"),
+        output_report=_require_str(report, "output_report"),
+        thresholds=thresholds,
+    )
+
+
+def validate_physical_pendulum_config_against_matrix(
+    config: PhysicalPendulumRunConfig,
+    matrix: ExperimentMatrix,
+) -> None:
+    matches = [entry for entry in matrix.experiments if entry.claim_id == config.claim_id]
+    if len(matches) != 1:
+        raise ExperimentRunConfigError(f"{config.claim_id} must have exactly one matrix entry")
+    entry = matches[0]
+    if config.scene_id != entry.scene_id:
+        raise ExperimentRunConfigError("scene_id must match experiment matrix")
+    if config.source_lines != entry.source_lines:
+        raise ExperimentRunConfigError("source_lines must match experiment matrix")
+    if config.asset_ids != entry.asset_ids:
+        raise ExperimentRunConfigError("asset_ids must match experiment matrix")
+    if config.paper_values != entry.paper_values:
+        raise ExperimentRunConfigError("paper_values must match experiment matrix")
+    if config.baseline_lane not in entry.required_lanes:
+        raise ExperimentRunConfigError("baseline_lane must be listed in required_lanes")
+    missing = set(config.required_missing_lanes) - set(entry.required_lanes)
+    if missing:
+        raise ExperimentRunConfigError("required_missing_lanes must be listed in required_lanes")
+    if config.baseline_lane in config.required_missing_lanes:
+        raise ExperimentRunConfigError("baseline_lane cannot be listed as missing")
+    if config.required_missing_lanes != PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES:
+        raise ExperimentRunConfigError(
+            "required_missing_lanes must be mabd_newton and rbd_implicit_baseline"
+        )
+    if "pendulum_geometry_unknown" not in entry.blocking_reasons:
+        raise ExperimentRunConfigError("matrix must retain pendulum_geometry_unknown blocker")
+    if entry.reproduction_status != "planned":
+        raise ExperimentRunConfigError("matrix reproduction_status must remain planned")
+    for metric in ("pendulum_angle_error", "joint_force_error", "phase_drift"):
+        if metric not in entry.metrics:
+            raise ExperimentRunConfigError("physical pendulum metrics must match the paper matrix")
+    reference_initial = pi / 2.0 - 2.0 * asin(config.reference.kappa)
+    if not np.isclose(config.reference.release_angle_rad, pi / 2.0, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError("reference release_angle_rad must match horizontal release")
+    if not np.isclose(config.reference.initial_angle_rad, 0.0, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError("reference initial_angle_rad must match paper zero angle")
+    if not np.isclose(reference_initial, config.reference.initial_angle_rad, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError("reference kappa must match the configured initial angle")
+    expected_prefix = Path(entry.output_report).with_suffix("").as_posix() + "_"
+    if not config.output_report.startswith(expected_prefix) or not config.output_report.endswith(".json"):
+        raise ExperimentRunConfigError("output_report must be a lane-specific report under the matrix stem")
+
+
 __all__ = [
     "ExperimentRunConfigError",
     "PAPER_HORIZON_THRESHOLD_KEYS",
+    "PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES",
+    "PHYSICAL_PENDULUM_THRESHOLD_KEYS",
+    "PhysicalPendulumReferenceConfig",
+    "PhysicalPendulumRunConfig",
     "SpinningBoxPaperHorizonConfig",
     "SpinningBoxRunConfig",
+    "load_physical_pendulum_config",
     "load_spinning_box_config",
+    "validate_physical_pendulum_config_against_matrix",
     "validate_spinning_box_config_against_matrix",
 ]

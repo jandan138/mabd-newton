@@ -11,6 +11,7 @@ from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "configs/experiments/single_body_spinning_box.yaml"
+PHYSICAL_PENDULUM_CONFIG_PATH = ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
 MATRIX_PATH = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
 
 
@@ -237,6 +238,87 @@ class ExperimentRunnerTests(unittest.TestCase):
                     vendored_newton_commit="test-newton",
                 )
 
+    def test_run_physical_pendulum_analytic_reference_writes_report(self) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_physical_pendulum_analytic_reference,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "physical_pendulum_reference.json"
+            result = run_physical_pendulum_analytic_reference(
+                config_path=PHYSICAL_PENDULUM_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.physical_pendulum")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "analytic_reference")
+        self.assertEqual(loaded.solver_mode, "analytic_elliptic_reference")
+        self.assertEqual(loaded.backend, "cpu_scipy_reference")
+        self.assertEqual(loaded.observed["lane_status"], "passed")
+        self.assertEqual(loaded.observed["sample_count"], 9)
+        self.assertEqual(loaded.observed["angle_samples_rad"][0]["angle_rad"], 0.0)
+        self.assertIn("pendulum_geometry_unknown", loaded.failure_reason)
+        self.assertEqual(loaded.source_commit, "test-source")
+        self.assertEqual(loaded.vendored_newton_commit, "test-newton")
+
+    def test_run_physical_pendulum_analytic_reference_requires_incomplete_status(self) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_physical_pendulum_analytic_reference,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+            source["report"]["status"] = "failed"
+            config_path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            config_path.write_text(yaml.safe_dump(source), encoding="utf-8")
+            output_path = Path(tmpdir) / "physical_pendulum_reference.json"
+
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                run_physical_pendulum_analytic_reference(
+                    config_path=config_path,
+                    matrix_path=MATRIX_PATH,
+                    output_path=output_path,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+            self.assertFalse(output_path.exists())
+
+    def test_run_physical_pendulum_analytic_reference_reports_failed_lane_on_threshold_violation(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_physical_pendulum_analytic_reference,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+            source["report"]["thresholds"]["max_abs_reference_identity_error"] = 1.0e-18
+            config_path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            config_path.write_text(yaml.safe_dump(source), encoding="utf-8")
+            output_path = Path(tmpdir) / "physical_pendulum_reference.json"
+
+            result = run_physical_pendulum_analytic_reference(
+                config_path=config_path,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.observed["lane_status"], "failed")
+        self.assertEqual(
+            loaded.observed["threshold_violations"],
+            ["max_abs_reference_identity_error"],
+        )
+
     def test_run_spinning_box_comparison_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_comparison
 
@@ -398,6 +480,48 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_paper_horizon_diagnostic")
         self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_experiment_cli_writes_physical_pendulum_analytic_reference_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "physical_pendulum_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "analytic_reference",
+                    "--config",
+                    str(PHYSICAL_PENDULUM_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.physical_pendulum")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "analytic_reference")
+        self.assertEqual(loaded.solver_mode, "analytic_elliptic_reference")
+        self.assertEqual(loaded.observed["lane_status"], "passed")
 
     def test_run_experiment_cli_rbd_baseline_requires_explicit_output(self) -> None:
         import os

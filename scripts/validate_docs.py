@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-32 docs and provenance contracts."""
+"""Validate Phase 0-33 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -19,7 +19,9 @@ from mabd_reproduction.experiment_contracts import (
 )
 from mabd_reproduction.experiment_configs import (
     ExperimentRunConfigError,
+    load_physical_pendulum_config,
     load_spinning_box_config,
+    validate_physical_pendulum_config_against_matrix,
     validate_spinning_box_config_against_matrix,
 )
 from mabd_reproduction.paper_source_audit import velocity_semantics_source_audit
@@ -74,15 +76,19 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase30-velocity-semantics-source-audit.md",
     "docs/records/2026-05-17-phase31-official-artifact-availability.md",
     "docs/records/2026-05-17-phase32-gravity-force-mapping.md",
+    "docs/records/2026-05-17-phase33-physical-pendulum-analytic-reference.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase32-gravity-force-mapping.md",
+    "docs/superpowers/specs/2026-05-17-phase33-physical-pendulum-analytic-reference-design.md",
+    "docs/superpowers/plans/2026-05-17-mabd-phase33-physical-pendulum-analytic-reference.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
     "configs/experiments/README.md",
     "configs/experiments/paper_experiment_matrix.yaml",
+    "configs/experiments/single_body_physical_pendulum.yaml",
     "configs/experiments/single_body_spinning_box.yaml",
     "scripts/run_experiment.py",
     "scripts/env/readiness_check.py",
@@ -170,6 +176,8 @@ def validate_claim_boundaries() -> None:
             fail("claim-boundaries.md contains stale Phase 31 placeholder")
     if "TO_BE_BACKFILLED_PHASE32" in text:
         fail("claim-boundaries.md contains stale Phase 32 placeholder")
+    if "TO_BE_BACKFILLED_PHASE33" in text:
+        fail("claim-boundaries.md contains stale Phase 33 placeholder")
     for heading in ("## Current", "## Intended", "## Verified", "## Forbidden Claims"):
         if heading not in text:
             fail(f"claim-boundaries.md missing {heading}")
@@ -921,6 +929,55 @@ def validate_claim_boundaries() -> None:
     ):
         if snippet not in phase32_forbidden:
             fail(f"claim-boundaries.md must forbid Phase 32 overclaim: {snippet}")
+    phase33_current = claim_boundary_bullet(text, "This repository contains Phase 33")
+    phase33_verified = claim_boundary_bullet(text, "Phase 33 verifies")
+    phase33_non_claim = claim_boundary_bullet(text, "Phase 33 does not verify")
+    phase33_current_required = (
+        "physical-pendulum analytic-reference lane",
+        "Phase 33 record",
+    )
+    for snippet in phase33_current_required:
+        if snippet not in phase33_current:
+            fail(f"claim-boundaries.md must state Phase 33 analytic-reference evidence: {snippet}")
+    phase33_verified_required = (
+        "elliptic-reference formula",
+        "SciPy CPU analytic lane",
+        "physical_pendulum_angle_reference",
+        "experiment-matrix validation",
+        "`analytic_reference` CLI dispatch",
+        "compact angle samples",
+        "`lane_status = passed`",
+        "top-level report status: `incomplete`",
+    )
+    for snippet in phase33_verified_required:
+        if snippet not in phase33_verified:
+            fail(f"claim-boundaries.md must describe Phase 33 analytic-reference evidence: {snippet}")
+    phase33_non_claims = (
+        "M-ABD physical-pendulum dynamics",
+        "RBD implicit baseline dynamics",
+        "joint-force waveform agreement",
+        "pendulum geometry",
+        "contact",
+        "collision",
+        "rendered output",
+        "paper timing",
+        "full physical-pendulum experiment",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase33_non_claims:
+        if snippet not in phase33_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 33 analytic-reference evidence: {snippet}")
+    phase33_forbidden = claim_boundary_bullet(
+        text, "Phase 33 analytic-reference lane status"
+    )
+    for snippet in (
+        "passed physical-pendulum experiment",
+        "M-ABD dynamics result",
+        "RBD baseline result",
+        "joint-force agreement result",
+    ):
+        if snippet not in phase33_forbidden:
+            fail(f"claim-boundaries.md must forbid Phase 33 overclaim: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -2857,6 +2914,138 @@ def validate_phase32_record() -> None:
                 fail("Phase 32 must not pass experiment.* claims")
 
 
+def validate_phase33_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-17-phase33-physical-pendulum-analytic-reference.md"
+    text = record_path.read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_physical_pendulum.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "## Repository",
+        "base commit: `52fa600`",
+        "phase33-physical-pendulum-reference",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 33 does not modify vendored Newton",
+        "## Paper Source",
+        "arXiv ID: `2603.08079`",
+        "arXiv version: `v2`",
+        "PDF SHA256: `a594e79093673c60fc59ad14f9b71f29a8f7f8e7b1c3d9c73efe6f5814cc6ec0`",
+        "`sections/experiment.tex` SHA256:",
+        "`c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f`",
+        "/tmp/mabd-paper/source/sections/experiment.tex:77-91",
+        "theta(t)=pi/2 - 2 asin(kappa * sn(K(kappa) - omega_lin * t, kappa))",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "SciPy: `1.15.3`",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Analytic Reference Evidence",
+        "src/mabd_reproduction/physical_pendulum_reference.py",
+        "src/mabd_reproduction/physical_pendulum_reports.py",
+        "load_physical_pendulum_config",
+        "validate_physical_pendulum_config_against_matrix",
+        "run_physical_pendulum_analytic_reference",
+        "--lane analytic_reference",
+        "physical_pendulum_angle_reference",
+        "m = kappa**2",
+        "theta(0)=0",
+        "theta(K/omega_lin)=pi/2",
+        "theta(2K/omega_lin)=pi",
+        "lane_status = passed",
+        "top-level report status: `incomplete`",
+        "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+        "review hardening:",
+        "`lane_status` is derived from threshold violations",
+        "required missing lanes",
+        "reference parameters are cross-validated",
+        "## Metrics And Thresholds",
+        "random seed: not applicable deterministic analytic formula",
+        "metric: `max_abs_reference_identity_error = 2.220446049250313e-16`",
+        "max_abs_reference_identity_error <= 1.0e-12",
+        "threshold status: `passed`",
+        "K(kappa) = 1.8540746773013719",
+        "period_s: `2.3678419475762373`",
+        "checkpoint time_s: `[0.0, 0.5919604868940593, 1.1839209737881187]`",
+        "checkpoint observed angle_rad:",
+        "[-2.220446049250313e-16, 1.5707963267948966, 3.141592653589793]",
+        "checkpoint expected angle_rad:",
+        "[0.0, 1.5707963267948966, 3.141592653589793]",
+        "compact sample count: `9`",
+        "## TDD Evidence",
+        "FAILED (failures=1, errors=5)",
+        "physical_pendulum_reference",
+        "run_physical_pendulum_analytic_reference",
+        "--lane analytic_reference",
+        "Ran 37 tests",
+        "OK",
+        "## Claim Impact",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.physical_pendulum` remains not passed.",
+        "M-ABD simulation lane remains missing",
+        "RBD implicit baseline remains missing",
+        "Joint-force waveform agreement remains missing",
+        "`pendulum_geometry_unknown` remains a blocker",
+        "analytic-reference lane evidence only",
+        "## Verification Commands",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_physical_pendulum_reference tests.test_experiment_run_configs tests.test_experiment_runner",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_phase0_bootstrap",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+        'PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"',
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 33 record missing required evidence field: {snippet}")
+    for placeholder in ("TO_BE_BACKFILLED_PHASE33", "pending branch-local"):
+        if placeholder in text:
+            fail("Phase 33 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "physical-pendulum experiment passed",
+        "physical pendulum experiment passed",
+        "full reproduction complete",
+        "paper timing verified",
+        "joint-force agreement passed",
+        "m-abd physical-pendulum dynamics passed",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 33 record overclaims unsupported evidence: {snippet}")
+
+    try:
+        config = load_physical_pendulum_config(
+            ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 33 physical-pendulum config validation failed: {exc}")
+    if config.baseline_lane != "analytic_reference":
+        fail("Phase 33 config must target analytic_reference baseline lane")
+    if config.report_status.value != "incomplete":
+        fail("Phase 33 physical-pendulum report status must remain incomplete")
+    if config.required_missing_lanes != ("mabd_newton", "rbd_implicit_baseline"):
+        fail("Phase 33 physical-pendulum missing lanes changed")
+    if "pendulum_geometry_unknown" not in config.failure_reason:
+        fail("Phase 33 physical-pendulum failure reason must retain geometry blocker")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 33 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -3105,13 +3294,14 @@ def main() -> int:
     validate_phase30_record()
     validate_phase31_record()
     validate_phase32_record()
+    validate_phase33_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33 "
         "docs/provenance validation passed"
     )
     return 0

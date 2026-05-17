@@ -395,6 +395,18 @@
   gravity, contact, collision, friction, implicit contact solve, Warp/CUDA/GPU
   paths, paper timing, rendered output, generated report artifacts as committed
   evidence, or any passed `experiment.*` claim.
+- This repository contains Phase 33 physical-pendulum analytic-reference lane
+  evidence after the Phase 33 record is created.
+- Phase 33 verifies only the paper physical-pendulum elliptic-reference formula
+  as a SciPy CPU analytic lane: `physical_pendulum_angle_reference`, config
+  and experiment-matrix validation, `analytic_reference` CLI dispatch, compact
+  angle samples, `lane_status = passed`, and top-level report status:
+  `incomplete`.
+- Phase 33 does not verify M-ABD physical-pendulum dynamics, RBD implicit
+  baseline dynamics, joint-force waveform agreement, pendulum geometry,
+  contact, collision, rendered output, paper timing, generated report artifacts
+  as committed evidence, the full physical-pendulum experiment, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -421,6 +433,9 @@
   author-owned solver artifacts do not exist.
 - Phase 32 gravity generalized-force mapping is a passed heavy-top,
   physical-pendulum, contact, or paper experiment reproduction.
+- Phase 33 analytic-reference lane status is a passed physical-pendulum
+  experiment, M-ABD dynamics result, RBD baseline result, or joint-force
+  agreement result.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

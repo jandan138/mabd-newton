@@ -11,7 +11,9 @@ import yaml
 
 from mabd_reproduction.experiment_configs import (
     ExperimentRunConfigError,
+    load_physical_pendulum_config,
     load_spinning_box_config,
+    validate_physical_pendulum_config_against_matrix,
     validate_spinning_box_config_against_matrix,
 )
 from mabd_reproduction.experiment_contracts import load_experiment_matrix
@@ -19,6 +21,7 @@ from mabd_reproduction.reporting import EvidenceStatus
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PHYSICAL_PENDULUM_CONFIG_PATH = ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
 
 
 class ExperimentRunConfigTests(unittest.TestCase):
@@ -116,6 +119,61 @@ class ExperimentRunConfigTests(unittest.TestCase):
         np.testing.assert_allclose(properties.angular_momentum_kg_m2_s, [0.0, 100.0, 0.0])
         self.assertIn("linear_momentum_error", config.thresholds)
         self.assertIn("angular_momentum_error", config.thresholds)
+
+    def test_physical_pendulum_config_is_machine_checkable(self) -> None:
+        config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)
+
+        self.assertEqual(config.schema_version, 1)
+        self.assertEqual(config.claim_id, "experiment.single_body.physical_pendulum")
+        self.assertEqual(config.scene_id, "single_body_physical_pendulum")
+        self.assertEqual(config.asset_ids, ("physical_pendulum_procedural",))
+        self.assertEqual(config.baseline_lane, "analytic_reference")
+        self.assertEqual(config.report_status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(config.reference.sample_count, 9)
+        self.assertEqual(config.reference.initial_angle_rad, 0.0)
+        self.assertAlmostEqual(config.reference.release_angle_rad, np.pi / 2.0)
+        self.assertAlmostEqual(config.reference.kappa, np.sqrt(0.5))
+        self.assertAlmostEqual(config.reference.omega_lin_rad_s, np.sqrt(9.81))
+        self.assertEqual(
+            config.output_report,
+            "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+        )
+        self.assertIn("pendulum_geometry_unknown", config.failure_reason)
+        self.assertIn("mabd_newton", config.failure_reason)
+        self.assertIn("rbd_implicit_baseline", config.failure_reason)
+
+    def test_physical_pendulum_config_matches_experiment_matrix(self) -> None:
+        config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        validate_physical_pendulum_config_against_matrix(config, matrix)
+
+    def test_physical_pendulum_config_rejects_missing_required_incomplete_lanes(self) -> None:
+        config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        drifted = replace(config, required_missing_lanes=())
+
+        with self.assertRaisesRegex(ExperimentRunConfigError, "required_missing_lanes"):
+            validate_physical_pendulum_config_against_matrix(drifted, matrix)
+
+    def test_physical_pendulum_config_rejects_reference_drift(self) -> None:
+        config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        drifted_reference = replace(config.reference, kappa=0.5)
+        drifted = replace(config, reference=drifted_reference)
+
+        with self.assertRaisesRegex(ExperimentRunConfigError, "reference"):
+            validate_physical_pendulum_config_against_matrix(drifted, matrix)
+
+    def test_physical_pendulum_config_rejects_passed_experiment_status(self) -> None:
+        source = yaml.safe_load(PHYSICAL_PENDULUM_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["report"]["status"] = "passed"
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_physical_pendulum.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "passed experiment"):
+                load_physical_pendulum_config(path)
 
     def test_spinning_box_config_matches_experiment_matrix(self) -> None:
         config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")

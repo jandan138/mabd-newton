@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from mabd_reproduction.experiment_runner import (
+    run_physical_pendulum_analytic_reference,
     run_spinning_box_comparison,
     run_spinning_box_experiment,
     run_spinning_box_paper_horizon,
@@ -21,6 +22,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--lane",
         choices=(
+            "analytic_reference",
             "mabd_newton",
             "mabd_paper_horizon",
             "rbd_implicit_baseline",
@@ -58,6 +60,16 @@ def main(argv: list[str] | None = None) -> int:
                 matrix_path=Path(args.matrix),
                 mabd_report_path=Path(args.mabd_report) if args.mabd_report else None,
                 rbd_report_path=Path(args.rbd_report) if args.rbd_report else None,
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "analytic_reference":
+            result = run_physical_pendulum_analytic_reference(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,
                 output_root=Path(args.output_root) if args.output_root else None,
                 source_commit=args.source_commit,

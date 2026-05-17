@@ -1743,6 +1743,94 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE32", text)
         self.assertNotIn("pending branch-local", text)
 
+    def test_phase33_physical_pendulum_analytic_reference_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        experiment_statuses = {
+            claim["claim_id"]: claim["reproduction_status"]
+            for claim in data["claims"]
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        self.assertNotIn("passed", set(experiment_statuses.values()))
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 33")
+        verified = claim_boundary_bullet(text, "Phase 33 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 33 does not verify")
+
+        self.assertIn("physical-pendulum analytic-reference lane", current)
+        self.assertIn("elliptic-reference formula", verified)
+        self.assertIn("physical_pendulum_angle_reference", verified)
+        self.assertIn("experiment-matrix validation", verified)
+        self.assertIn("`analytic_reference` CLI dispatch", verified)
+        self.assertIn("`lane_status = passed`", verified)
+        self.assertIn("top-level report status: `incomplete`", verified)
+        self.assertIn("M-ABD physical-pendulum dynamics", non_claim)
+        self.assertIn("RBD implicit baseline dynamics", non_claim)
+        self.assertIn("joint-force waveform agreement", non_claim)
+        self.assertIn("full physical-pendulum experiment", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase33_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-17-phase33-physical-pendulum-analytic-reference.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_physical_pendulum.yaml",
+            "## Repository",
+            "base commit: `52fa600`",
+            "phase33-physical-pendulum-reference",
+            "## Vendored Newton",
+            "local patch status: Phase 33 does not modify vendored Newton",
+            "## Paper Source",
+            "/tmp/mabd-paper/source/sections/experiment.tex:77-91",
+            "theta(t)=pi/2 - 2 asin(kappa * sn(K(kappa) - omega_lin * t, kappa))",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "## Analytic Reference Evidence",
+            "physical_pendulum_angle_reference",
+            "m = kappa**2",
+            "theta(K/omega_lin)=pi/2",
+            "lane_status = passed",
+            "top-level report status: `incomplete`",
+            "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
+            "review hardening:",
+            "`lane_status` is derived from threshold violations",
+            "reference parameters are cross-validated",
+            "## Metrics And Thresholds",
+            "random seed: not applicable deterministic analytic formula",
+            "metric: `max_abs_reference_identity_error = 2.220446049250313e-16`",
+            "max_abs_reference_identity_error <= 1.0e-12",
+            "threshold status: `passed`",
+            "K(kappa) = 1.8540746773013719",
+            "period_s: `2.3678419475762373`",
+            "checkpoint time_s: `[0.0, 0.5919604868940593, 1.1839209737881187]`",
+            "checkpoint observed angle_rad:",
+            "[-2.220446049250313e-16, 1.5707963267948966, 3.141592653589793]",
+            "## TDD Evidence",
+            "FAILED (failures=1, errors=5)",
+            "Ran 37 tests",
+            "## Claim Impact",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.physical_pendulum` remains not passed.",
+            "M-ABD simulation lane remains missing",
+            "RBD implicit baseline remains missing",
+            "Joint-force waveform agreement remains missing",
+            "`pendulum_geometry_unknown` remains a blocker",
+            "## Verification Commands",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_physical_pendulum_reference tests.test_experiment_run_configs tests.test_experiment_runner",
+            "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE33", text)
+        self.assertNotIn("pending branch-local", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1774,7 +1862,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
