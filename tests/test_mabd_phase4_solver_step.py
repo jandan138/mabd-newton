@@ -270,7 +270,7 @@ def _mabd_model_with_one_constraint() -> object:
     builder = newton.ModelBuilder()
     SolverMABD.register_custom_attributes(builder)
     for _ in range(2):
-        _add_model_body_row(builder, young_modulus=0.0)
+        _add_model_body_row(builder, young_modulus=1.0)
     _add_model_constraint_row(builder, constraint_type=2, body_a=0, body_b=1, rank=3, cp_index=1)
     return builder.finalize()
 
@@ -938,7 +938,7 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)
         for _ in range(3):
-            _add_model_body_row(builder, young_modulus=0.0)
+            _add_model_body_row(builder, young_modulus=1.0)
         _add_model_constraint_row(builder, body_a=0, body_b=1, rank=5, constraint_type=3)
         _add_model_constraint_row(builder, body_a=1, body_b=2, rank=4, constraint_type=4)
         model = builder.finalize()
@@ -960,7 +960,7 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
             qd=qd,
             dt=dt,
             config=mabd.MABDCPUOracleConfig(
-                bodies=[_model_path_body(young_modulus=0.0) for _ in range(3)],
+                bodies=[_model_path_body(young_modulus=1.0) for _ in range(3)],
                 constraints=[
                     mabd.MABDCPUOracleConstraint(
                         body_a=0,
@@ -1001,7 +1001,7 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)
         for _ in range(2):
-            _add_model_body_row(builder, young_modulus=0.0)
+            _add_model_body_row(builder, young_modulus=1.0)
         _add_model_constraint_row(builder, body_a=0, body_b=1, rank=3, constraint_type=99)
         model = builder.finalize()
         solver = SolverMABD(model)
@@ -1013,7 +1013,7 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)
         for _ in range(2):
-            _add_model_body_row(builder, young_modulus=0.0)
+            _add_model_body_row(builder, young_modulus=1.0)
         _add_model_constraint_row(builder, body_a=0, body_b=1, rank=5, constraint_type=2)
         model = builder.finalize()
         solver = SolverMABD(model)
@@ -1025,7 +1025,7 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)
         for _ in range(2):
-            _add_model_body_row(builder, young_modulus=0.0)
+            _add_model_body_row(builder, young_modulus=1.0)
         _add_model_constraint_row(builder, body_a=0, body_b=2, rank=3, constraint_type=2)
         model = builder.finalize()
         solver = SolverMABD(model)

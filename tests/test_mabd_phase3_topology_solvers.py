@@ -119,6 +119,7 @@ def _loop_model_with_mabd_constraints() -> object:
                 "mabd:gradient_mode": 1,
                 "mabd:axis0": wp.vec3(0.0, 1.0, 0.0),
                 "mabd:axis1": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:cp_index": 0,
             }
         )
     return builder.finalize()

@@ -11,8 +11,22 @@ from ...sim import Contacts, Control, Model, ModelBuilder, State
 from ..solver import SolverBase
 from .affine_math import pack_q, tetra_volume
 from .control_forces import actuation_specs_from_model
+from .joint_constraints import (
+    JointGradientMode,
+    ball_joint,
+    evaluate_joint,
+    hinge_joint,
+    prismatic_joint,
+    universal_joint,
+)
 from .single_body import SingleBodyABDPrecompute
-from .step_oracle import MABDCPUOracleBody, MABDCPUOracleConfig, MABDCPUOracleStepResult, solve_cpu_oracle_step
+from .step_oracle import (
+    MABDCPUOracleBody,
+    MABDCPUOracleConfig,
+    MABDCPUOracleConstraint,
+    MABDCPUOracleStepResult,
+    solve_cpu_oracle_step,
+)
 
 
 class SolverMABD(SolverBase):
@@ -48,9 +62,9 @@ class SolverMABD(SolverBase):
             raise ValueError("mabd:polar_mode must be 0 (none), 1 (polar), or 2 (no_polar)")
         return mode
 
-    def _body_precompute_from_model_row(self, row: int) -> MABDCPUOracleBody:
+    def _rest_points_from_model_body_row(self, row: int) -> np.ndarray:
         namespace = self.model.mabd
-        rest_points = np.asarray(
+        return np.asarray(
             [
                 namespace.rest_point0.numpy()[row],
                 namespace.rest_point1.numpy()[row],
@@ -59,6 +73,10 @@ class SolverMABD(SolverBase):
             ],
             dtype=float,
         )
+
+    def _body_precompute_from_model_row(self, row: int) -> MABDCPUOracleBody:
+        namespace = self.model.mabd
+        rest_points = self._rest_points_from_model_body_row(row)
         volume_value = float(namespace.volume.numpy()[row])
         volume = tetra_volume(rest_points) if volume_value < 0.0 else volume_value
         if volume <= 0.0:
@@ -101,6 +119,73 @@ class SolverMABD(SolverBase):
             rotation_mode=self._rotation_mode_from_model(int(namespace.polar_mode.numpy()[row])),
         )
 
+    @staticmethod
+    def _joint_gradient_mode_from_model(value: int) -> JointGradientMode:
+        modes = {
+            0: JointGradientMode.FINITE_DIFFERENCE_ORACLE,
+            1: JointGradientMode.PAPER_FAITHFUL,
+        }
+        mode = modes.get(int(value))
+        if mode is None:
+            raise ValueError("mabd:gradient_mode must be 0 (finite_difference_oracle) or 1 (paper_faithful)")
+        return mode
+
+    @staticmethod
+    def _joint_spec_rank(spec: object) -> int:
+        evaluation = evaluate_joint(
+            spec,
+            np.zeros(12, dtype=float),
+            np.zeros(12, dtype=float),
+            gradient_mode=JointGradientMode.FINITE_DIFFERENCE_ORACLE,
+        )
+        return int(evaluation.rank)
+
+    def _constraint_from_model_row(self, row: int, body_count: int) -> MABDCPUOracleConstraint:
+        namespace = self.model.mabd
+        body_a = int(namespace.body_a.numpy()[row])
+        body_b = int(namespace.body_b.numpy()[row])
+        if not 0 <= body_a < body_count or not 0 <= body_b < body_count:
+            raise ValueError("mabd:constraint body indices must reference mabd:body rows")
+
+        rank = int(namespace.rank.numpy()[row])
+        constraint_type = int(namespace.constraint_type.numpy()[row])
+        ct_a = self._rest_points_from_model_body_row(body_a)
+        ct_b = self._rest_points_from_model_body_row(body_b)
+        axis0 = namespace.axis0.numpy()[row]
+        axis1 = namespace.axis1.numpy()[row]
+        cp_index = int(namespace.cp_index.numpy()[row])
+
+        if constraint_type in (0, 1):
+            if rank == 3:
+                spec = ball_joint(ct_a, ct_b, cp_index=cp_index)
+            elif rank == 4:
+                spec = universal_joint(ct_a, ct_b, axis0=axis0, axis1=axis1)
+            elif rank == 5:
+                spec = hinge_joint(ct_a, ct_b, axis=axis0)
+            else:
+                raise ValueError("mabd:rank must be 3, 4, or 5 for inferred mabd:constraint rows")
+        elif constraint_type == 2:
+            spec = ball_joint(ct_a, ct_b, cp_index=cp_index)
+        elif constraint_type == 3:
+            spec = hinge_joint(ct_a, ct_b, axis=axis0)
+        elif constraint_type == 4:
+            spec = universal_joint(ct_a, ct_b, axis0=axis0, axis1=axis1)
+        elif constraint_type == 5:
+            spec = prismatic_joint(ct_a, ct_b, axis=axis0)
+        else:
+            raise ValueError("mabd:constraint_type must be 0..5")
+
+        spec_rank = self._joint_spec_rank(spec)
+        if rank != 0 and rank != spec_rank:
+            raise ValueError(f"mabd:rank must be 0 or {spec_rank} for constraint_type={constraint_type}")
+
+        return MABDCPUOracleConstraint(
+            body_a=body_a,
+            body_b=body_b,
+            spec=spec,
+            gradient_mode=self._joint_gradient_mode_from_model(int(namespace.gradient_mode.numpy()[row])),
+        )
+
     def _custom_frequency_count(self, frequency: str) -> int:
         try:
             return int(self.model.get_custom_frequency_count(frequency))
@@ -121,13 +206,9 @@ class SolverMABD(SolverBase):
         if body_count <= 0:
             raise ValueError("model-derived SolverMABD.step() requires at least one mabd:body row")
         constraint_count = self._custom_frequency_count(self.MABD_CONSTRAINT_FREQUENCY)
-        if constraint_count:
-            raise NotImplementedError(
-                "model-derived SolverMABD.step() does not support mabd:constraint rows yet; "
-                "provide configure_cpu_oracle(...) with explicit MABDCPUOracleConstraint specs"
-            )
         config = MABDCPUOracleConfig(
             bodies=tuple(self._body_precompute_from_model_row(row) for row in range(body_count)),
+            constraints=tuple(self._constraint_from_model_row(row, body_count) for row in range(constraint_count)),
             actuations=actuation_specs_from_model(self.model),
         )
         self.model_cpu_oracle_config = config
@@ -423,6 +504,14 @@ class SolverMABD(SolverBase):
             ),
             ModelBuilder.CustomAttribute(
                 name="gradient_mode",
+                frequency=cls.MABD_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="cp_index",
                 frequency=cls.MABD_CONSTRAINT_FREQUENCY,
                 assignment=Model.AttributeAssignment.MODEL,
                 dtype=wp.int32,
