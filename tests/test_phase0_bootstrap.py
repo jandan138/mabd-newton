@@ -855,6 +855,68 @@ class Phase0BootstrapTests(unittest.TestCase):
         ):
             self.assertIn(snippet, text)
 
+    def test_phase23_spinning_box_position_comparison_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 23")
+        verified = claim_boundary_bullet(text, "Phase 23 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 23 does not verify")
+
+        self.assertIn("spinning-box position comparison metrics", current)
+        self.assertIn("initial_position_m", verified)
+        self.assertIn("final_position_m", verified)
+        self.assertIn("lane_vector_metrics", verified)
+        self.assertIn("lane_vector_metric_differences", verified)
+        self.assertIn("finite length-three vector validation", verified)
+        self.assertIn("the paper spinning-box experiment", non_claim)
+        self.assertIn("paper-faithful implicit RBD baseline", non_claim)
+        self.assertIn("paper-faithful affine collision", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("paper trajectory agreement", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase23_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT
+            / "docs/records/2026-05-17-phase23-spinning-box-position-comparison.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit: `080f4908c9a16f5e707a1175ceb33c4e7bda8c2d`",
+            "implementation commit: `434bdeab71a024277311bfc0925eb9b09630bf41`",
+            "implementation commit: `57c8365262f12fd4f026da14163f493c60a86974`",
+            "docs/provenance commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "## Metrics And Thresholds",
+            "initial_position_m = [0.0, 0.05, 0.0]",
+            "final_position_m = [4.0, 0.05, 0.0]",
+            "lane_vector_metrics",
+            "lane_vector_metric_differences",
+            "invalid_required_vector_metrics",
+            "mabd_newton:final_position_m_invalid",
+            "spinning_box_comparison_report_incomplete",
+            "## Artifacts",
+            "`src/mabd_reproduction/single_body_reports.py`",
+            "`src/mabd_reproduction/comparison_reports.py`",
+            "generated reports: not committed",
+            "No `experiment.*` claim is passed in this phase.",
+            "M-ABD report tests: Ran 2 tests, OK",
+            "comparison tests: Ran 4 tests, OK",
+        ):
+            self.assertIn(snippet, text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -886,7 +948,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

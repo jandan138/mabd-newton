@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22 docs."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23 docs."""
 
 from __future__ import annotations
 
@@ -60,6 +60,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase20-spinning-box-contact-diagnostics.md",
     "docs/records/2026-05-17-phase21-spinning-box-plane-placement.md",
     "docs/records/2026-05-17-phase22-rbd-plane-placement.md",
+    "docs/records/2026-05-17-phase23-spinning-box-position-comparison.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -485,6 +486,41 @@ def validate_claim_boundaries() -> None:
     for snippet in phase22_non_claims:
         if snippet not in phase22_non_claim:
             fail(f"claim-boundaries.md must bound Phase 22 RBD placement evidence: {snippet}")
+    phase23_current = claim_boundary_bullet(text, "This repository contains Phase 23")
+    phase23_verified = claim_boundary_bullet(text, "Phase 23 verifies")
+    phase23_non_claim = claim_boundary_bullet(text, "Phase 23 does not verify")
+    if "spinning-box position comparison metrics" not in phase23_current:
+        fail("claim-boundaries.md must state Phase 23 position-comparison evidence")
+    phase23_required = (
+        "initial_position_m",
+        "final_position_m",
+        "M-ABD spinning-box development lane",
+        "finite length-three vector validation",
+        "lane_vector_metrics",
+        "invalid_required_vector_metrics",
+        "lane_vector_metric_differences",
+    )
+    for snippet in phase23_required:
+        if snippet not in phase23_verified:
+            fail(f"claim-boundaries.md must describe Phase 23 position evidence: {snippet}")
+    phase23_non_claims = (
+        "the paper spinning-box experiment",
+        "paper-faithful implicit RBD baseline",
+        "paper-faithful affine collision",
+        "collision detection",
+        "continuous collision detection",
+        "friction",
+        "implicit contact solve",
+        "gravity",
+        "rendered output",
+        "paper timing",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase23_non_claims:
+        if snippet not in phase23_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 23 position evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -1234,6 +1270,74 @@ def validate_phase22_record() -> None:
             fail(f"Phase 22 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase23_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-17-phase23-spinning-box-position-comparison.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit: `080f4908c9a16f5e707a1175ceb33c4e7bda8c2d`",
+        "implementation commit: `434bdeab71a024277311bfc0925eb9b09630bf41`",
+        "implementation commit: `57c8365262f12fd4f026da14163f493c60a86974`",
+        "docs/provenance commit:",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "clone drift check:",
+        "## Metrics And Thresholds",
+        "initial_position_m = [0.0, 0.05, 0.0]",
+        "final_position_m = [4.0, 0.05, 0.0]",
+        "required_vector_metrics = [`initial_position_m`, `final_position_m`]",
+        "lane_vector_metrics",
+        "lane_vector_metric_differences",
+        "invalid_required_vector_metrics",
+        "mabd_newton:final_position_m_invalid",
+        "spinning_box_comparison_report_incomplete",
+        "report status: `incomplete`",
+        "## Artifacts",
+        "`src/mabd_reproduction/single_body_reports.py`",
+        "`src/mabd_reproduction/comparison_reports.py`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+        "M-ABD report tests: Ran 2 tests, OK",
+        "comparison tests: Ran 4 tests, OK",
+        "Docs GREEN result:",
+        "phase bootstrap docs tests: Ran 41 tests, OK",
+        (
+            "docs validator: Phase "
+            "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23 "
+            "docs/provenance validation passed"
+        ),
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 23 record missing required evidence field: {snippet}")
+
+    forbidden_snippets = (
+        "Phase 23 verifies the paper spinning-box experiment",
+        "Phase 23 passes experiment.single_body.spinning_box",
+        "Phase 23 verifies paper-faithful implicit RBD baseline",
+        "Phase 23 verifies paper-faithful affine collision",
+        "Phase 23 verifies collision detection",
+        "Phase 23 verifies implicit contact solve",
+        "Phase 23 verifies paper timing",
+        "Phase 23 verifies paper trajectory agreement",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 23 record overclaims unsupported evidence: {snippet}")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -1456,13 +1560,14 @@ def main() -> int:
     validate_phase20_record()
     validate_phase21_record()
     validate_phase22_record()
+    validate_phase23_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23 "
         "docs/provenance validation passed"
     )
     return 0
