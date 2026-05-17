@@ -95,7 +95,15 @@ class PhysicalPendulumComparisonReportTests(unittest.TestCase):
         self.assertEqual(report.status, EvidenceStatus.INCOMPLETE)
         self.assertFalse(report.observed["full_experiment_claim_passed"])
         self.assertEqual(report.observed["missing_required_lanes"], [])
-        self.assertIn("joint_force_waveform_agreement_missing", report.observed["blocking_reasons"])
+        self.assertIn("pendulum_geometry_unknown", report.observed["blocking_reasons"])
+        self.assertNotIn(
+            "joint_force_waveform_agreement_missing",
+            report.observed["blocking_reasons"],
+        )
+        self.assertEqual(
+            report.observed["missing_paper_metrics"],
+            ["joint_force_error:paper_geometry_unknown"],
+        )
         self.assertEqual(report.observed["matched_sample_count"], 5)
         self.assertEqual(report.observed["mabd_sample_count"], 5)
         self.assertEqual(report.observed["rbd_sample_count"], 5)
@@ -105,7 +113,11 @@ class PhysicalPendulumComparisonReportTests(unittest.TestCase):
         self.assertGreater(len(report.observed["angle_sample_differences_rad"]), 0)
         self.assertEqual(
             report.observed["paper_metric_statuses"]["joint_force_error"]["status"],
-            "diagnostic_reaction_not_paper_waveform",
+            "diagnostic_scalar_reference_not_paper_geometry",
+        )
+        self.assertEqual(
+            report.observed["joint_force_waveform_diagnostics"]["matched_sample_count"],
+            5,
         )
         self.assertEqual(
             report.observed["paper_metric_statuses"]["phase_drift"]["status"],
