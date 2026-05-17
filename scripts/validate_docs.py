@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25 docs."""
+"""Validate Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26 docs."""
 
 from __future__ import annotations
 
@@ -63,6 +63,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-17-phase23-spinning-box-position-comparison.md",
     "docs/records/2026-05-17-phase24-spinning-box-trajectory-shape-diagnostics.md",
     "docs/records/2026-05-17-phase25-spinning-box-no-polar-material-lane.md",
+    "docs/records/2026-05-17-phase26-corotated-material-rhs.md",
     "reports/README.md",
     "assets/manifests/README.md",
     "assets/manifests/paper_asset_sources.yaml",
@@ -603,6 +604,53 @@ def validate_claim_boundaries() -> None:
     for snippet in phase25_non_claims:
         if snippet not in phase25_non_claim:
             fail(f"claim-boundaries.md must bound Phase 25 material evidence: {snippet}")
+    phase26_current = claim_boundary_bullet(text, "This repository contains Phase 26")
+    phase26_verified = claim_boundary_bullet(text, "Phase 26 verifies")
+    phase26_non_claim = claim_boundary_bullet(text, "Phase 26 does not verify")
+    if "co-rotated material RHS" not in phase26_current or "rotation_mode = polar" not in phase26_current:
+        fail("claim-boundaries.md must state Phase 26 co-rotated polar evidence")
+    phase26_required = (
+        "unconstrained CPU oracle",
+        "rotation_mode = polar",
+        "pure-rotation zero material strain",
+        "co-rotated material force helper",
+        "constrained CPU oracle polar rejection",
+        "mabd_rotation_mode = polar",
+        "material_model = paper_linear_elastic_corotated_development",
+        "material_rhs_frame = corotated_local_all_blocks",
+        "translation_frame = corotated_polar_all_blocks",
+        "report status: `incomplete`",
+        "angular momentum",
+        "relative energy drift",
+        "affine shape",
+        "development diagnostics",
+    )
+    for snippet in phase26_required:
+        if snippet not in phase26_verified:
+            fail(f"claim-boundaries.md must describe Phase 26 corotated evidence: {snippet}")
+    phase26_non_claims = (
+        "the paper spinning-box experiment",
+        "full M-ABD dynamics",
+        "multi-body polar or no-polar constraints",
+        "unconfigured production `SolverMABD.step()`",
+        "Warp/CUDA/GPU paths",
+        "paper ABD-ABA performance",
+        "paper-faithful implicit RBD baseline",
+        "paper-faithful affine collision",
+        "collision detection",
+        "continuous collision detection",
+        "friction",
+        "implicit contact solve",
+        "gravity",
+        "rendered output",
+        "paper timing",
+        "paper trajectory agreement",
+        "generated report artifacts as committed evidence",
+        "any passed `experiment.*` claim",
+    )
+    for snippet in phase26_non_claims:
+        if snippet not in phase26_non_claim:
+            fail(f"claim-boundaries.md must bound Phase 26 corotated evidence: {snippet}")
 
 
 def validate_phase9_record() -> None:
@@ -1617,6 +1665,114 @@ def validate_phase25_record() -> None:
             fail(f"Phase 25 record overclaims unsupported evidence: {snippet}")
 
 
+def validate_phase26_record() -> None:
+    text = (ROOT / "docs/records/2026-05-17-phase26-corotated-material-rhs.md").read_text(
+        encoding="utf-8"
+    )
+    required_snippets = (
+        "## Status\n\npassed",
+        "## Config Path",
+        "configs/experiments/single_body_spinning_box.yaml",
+        "## Repository",
+        "plan commit: `96509da8cd8f98124d885b8b1377351329b886ba`",
+        "polar CPU oracle implementation commit:",
+        "`d2ddb2a2e1e6b74d4deb1c6d8720ca7ee09f7ddb`",
+        "spinning-box polar report lane implementation commit:",
+        "`a5755baaed1d577fa23a6bd47e3ef4751a5e191a`",
+        "docs/record creation commit:",
+        "review disposition record commit:",
+        "independent review:",
+        "affine-only local transform",
+        "not paper-equivalent",
+        "exploratory metrics were not evidence",
+        "record/validator requirements were under-specified",
+        "## Vendored Newton",
+        "96713fa965463b69c229a4d30582c733ff3526bb",
+        "local patch status: Phase 26 modifies vendored Newton",
+        "## Paper Source",
+        "PDF SHA256:",
+        "TeX source SHA256:",
+        "singleabd.tex:87-125",
+        "singleabd.tex:127-156",
+        "experiment.tex:40-55",
+        "## Environment",
+        "mabd-newton-py310",
+        "physics-primitive-newton-py310",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "## Metrics And Diagnostics",
+        "mabd_rotation_mode = polar",
+        "material_model = paper_linear_elastic_corotated_development",
+        "material_rhs_frame = corotated_local_all_blocks",
+        "translation_frame = corotated_polar_all_blocks",
+        "material_young_modulus_pa = 1000000000.0",
+        "material_poisson_ratio = 0.3",
+        "material_volume_m3 = 0.001",
+        "material_stiffness_trace",
+        "material_stiffness_rank",
+        "linear_momentum_error <= 1.0e-9",
+        "angular_momentum_error remains a development gap",
+        "relative_energy_drift remains a development gap",
+        "affine_shape_diagnostic_status = development_gap_observed",
+        "report status: `incomplete`",
+        "## Artifacts",
+        "`vendor/newton/newton/_src/solvers/mabd/step_oracle.py`",
+        "`src/mabd_reproduction/single_body_reports.py`",
+        "generated reports: not committed",
+        "No `experiment.*` claim is passed in this phase.",
+        "CPU oracle tests: Ran 17 tests, OK",
+        "vendored CPU oracle tests: Ran 11 tests, OK",
+        "comparison and runner tests: Ran 21 tests, OK",
+        (
+            "docs validator: Phase "
+            "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26 "
+            "docs/provenance validation passed"
+        ),
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 26 record missing required evidence field: {snippet}")
+    if "TO_BE_BACKFILLED_PHASE26_DOCS_COMMIT" in text:
+        fail("Phase 26 record contains stale docs commit placeholder")
+    if "TO_BE_BACKFILLED_PHASE26_REVIEW_DISPOSITION_COMMIT" in text:
+        fail("Phase 26 record contains stale review disposition commit placeholder")
+    forbidden_snippets = (
+        "Phase 26 verifies the paper spinning-box experiment",
+        "Phase 26 passes experiment.single_body.spinning_box",
+        "Phase 26 verifies paper-faithful implicit RBD baseline",
+        "Phase 26 verifies paper-faithful affine collision",
+        "Phase 26 verifies collision detection",
+        "Phase 26 verifies implicit contact solve",
+        "Phase 26 verifies paper timing",
+        "Phase 26 verifies paper trajectory agreement",
+    )
+    for snippet in forbidden_snippets:
+        if snippet in text:
+            fail(f"Phase 26 record overclaims unsupported evidence: {snippet}")
+
+    data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment."):
+            if claim.get("reproduction_status") == "passed":
+                fail("Phase 26 must not pass experiment.* claims")
+
+    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    spinning_box = next(
+        experiment
+        for experiment in matrix.experiments
+        if experiment.claim_id == "experiment.single_body.spinning_box"
+    )
+    if "rbd_implicit_baseline_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 26 spinning-box matrix must retain incomplete RBD baseline blocker")
+    if "spinning_box_comparison_report_incomplete" not in spinning_box.blocking_reasons:
+        fail("Phase 26 spinning-box matrix must retain incomplete comparison report blocker")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -1842,13 +1998,14 @@ def main() -> int:
     validate_phase23_record()
     validate_phase24_record()
     validate_phase25_record()
+    validate_phase26_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26 "
         "docs/provenance validation passed"
     )
     return 0

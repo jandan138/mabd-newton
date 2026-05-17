@@ -293,6 +293,27 @@
   collision detection, friction, implicit contact solve, gravity, rendered
   output, paper timing, paper trajectory agreement, generated report artifacts
   as committed evidence, or any passed `experiment.*` claim.
+- This repository contains Phase 26 co-rotated material RHS evidence for the
+  spinning-box M-ABD development lane. It adds unconstrained CPU oracle
+  `rotation_mode = polar` and records a polar co-rotated all-block material RHS
+  report lane.
+- Phase 26 verifies unconstrained CPU oracle `rotation_mode = polar` routing,
+  pure-rotation zero material strain, consistency with the co-rotated material
+  force helper for a small deformation, constrained CPU oracle polar rejection,
+  report fields `mabd_rotation_mode = polar`,
+  `material_model = paper_linear_elastic_corotated_development`,
+  `material_rhs_frame = corotated_local_all_blocks`, and
+  `translation_frame = corotated_polar_all_blocks`. The spinning-box
+  report status: `incomplete`; angular momentum, relative energy drift, and
+  affine shape remain development diagnostics.
+- Phase 26 does not verify the paper spinning-box experiment, full M-ABD
+  dynamics, multi-body polar or no-polar constraints, unconfigured production
+  `SolverMABD.step()`, Warp/CUDA/GPU paths, paper ABD-ABA performance,
+  paper-faithful implicit RBD baseline, paper-faithful affine collision,
+  collision detection, continuous collision detection, friction, implicit
+  contact solve, gravity, rendered output, paper timing, paper trajectory
+  agreement, generated report artifacts as committed evidence, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 

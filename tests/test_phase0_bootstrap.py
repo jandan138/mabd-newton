@@ -1121,6 +1121,85 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE25_DOCS_COMMIT", text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE25_REVIEW_DISPOSITION_COMMIT", text)
 
+    def test_phase26_corotated_material_rhs_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 26")
+        verified = claim_boundary_bullet(text, "Phase 26 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 26 does not verify")
+
+        self.assertIn("co-rotated material RHS", current)
+        self.assertIn("rotation_mode = polar", current)
+        self.assertIn("unconstrained CPU oracle", verified)
+        self.assertIn("rotation_mode = polar", verified)
+        self.assertIn("material_rhs_frame = corotated_local_all_blocks", verified)
+        self.assertIn("translation_frame = corotated_polar_all_blocks", verified)
+        self.assertIn("report status: `incomplete`", verified)
+        self.assertIn("the paper spinning-box experiment", non_claim)
+        self.assertIn("paper-faithful implicit RBD baseline", non_claim)
+        self.assertIn("paper-faithful affine collision", non_claim)
+        self.assertIn("unconfigured production `SolverMABD.step()`", non_claim)
+        self.assertIn("Warp/CUDA/GPU paths", non_claim)
+        self.assertIn("paper timing", non_claim)
+        self.assertIn("paper trajectory agreement", non_claim)
+        self.assertIn("any passed `experiment.*` claim", non_claim)
+
+    def test_phase26_record_has_required_evidence_fields(self) -> None:
+        text = (ROOT / "docs/records/2026-05-17-phase26-corotated-material-rhs.md").read_text()
+
+        for snippet in (
+            "## Status\n\npassed",
+            "## Config Path",
+            "configs/experiments/single_body_spinning_box.yaml",
+            "## Repository",
+            "plan commit: `96509da",
+            "polar CPU oracle implementation commit: `d2ddb2a",
+            "spinning-box polar report lane implementation commit: `a5755ba",
+            "docs/record creation commit:",
+            "review disposition record commit:",
+            "## Vendored Newton",
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch status: Phase 26 modifies vendored Newton",
+            "## Paper Source",
+            "PDF SHA256:",
+            "TeX source SHA256:",
+            "singleabd.tex:87-125",
+            "singleabd.tex:127-156",
+            "experiment.tex:40-55",
+            "## Environment",
+            "mabd-newton-py310",
+            "physics-primitive-newton-py310",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "## Metrics And Diagnostics",
+            "mabd_rotation_mode = polar",
+            "material_model = paper_linear_elastic_corotated_development",
+            "material_rhs_frame = corotated_local_all_blocks",
+            "translation_frame = corotated_polar_all_blocks",
+            "linear_momentum_error <= 1.0e-9",
+            "angular_momentum_error remains a development gap",
+            "relative_energy_drift remains a development gap",
+            "affine_shape_diagnostic_status = development_gap_observed",
+            "report status: `incomplete`",
+            "## Artifacts",
+            "`vendor/newton/newton/_src/solvers/mabd/step_oracle.py`",
+            "`src/mabd_reproduction/single_body_reports.py`",
+            "generated reports: not committed",
+            "No `experiment.*` claim is passed in this phase.",
+            "CPU oracle tests: Ran 17 tests, OK",
+            "vendored CPU oracle tests: Ran 11 tests, OK",
+            "comparison and runner tests: Ran 21 tests, OK",
+            (
+                "docs validator: Phase "
+                "0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26 "
+                "docs/provenance validation passed"
+            ),
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE26_DOCS_COMMIT", text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE26_REVIEW_DISPOSITION_COMMIT", text)
+
     def test_vendored_newton_import_resolves_inside_repo(self) -> None:
         result = subprocess.run(
             [
@@ -1152,7 +1231,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
