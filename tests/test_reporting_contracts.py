@@ -37,6 +37,54 @@ def _report() -> ClaimReport:
     )
 
 
+def _lane_pass_gate(
+    *,
+    baseline_lane: str = "rbd_implicit_baseline",
+    full_experiment_claim_passed: bool = False,
+) -> dict[str, object]:
+    return {
+        "gate_version": "required_lane_v1",
+        "claim_id": "experiment.single_body.spinning_box",
+        "baseline_lane": baseline_lane,
+        "solver_mode": "paper_faithful_implicit_rbd",
+        "backend": "cpu_numpy_newton_only",
+        "scope": "required_lane_only",
+        "full_experiment_claim_passed": full_experiment_claim_passed,
+    }
+
+
+def _gated_rbd_lane_report(
+    *,
+    baseline_lane: str = "rbd_implicit_baseline",
+    full_experiment_claim_passed: bool = False,
+) -> ClaimReport:
+    gate = _lane_pass_gate(
+        baseline_lane=baseline_lane,
+        full_experiment_claim_passed=full_experiment_claim_passed,
+    )
+    return replace(
+        _report(),
+        baseline_lane="rbd_implicit_baseline",
+        solver_mode="paper_faithful_implicit_rbd",
+        backend="cpu_numpy_newton_only",
+        expected={"lane_pass_gate": gate},
+        observed={
+            "linear_momentum_error": 0.0,
+            "angular_momentum_error": 0.0,
+            "energy_drift": 0.0,
+            "lane_gate_status": "passed",
+            "lane_pass_gate": {**gate, "thresholds_met": True},
+        },
+        threshold={
+            "linear_momentum_error": 1.0e-12,
+            "angular_momentum_error": 1.0e-12,
+            "energy_drift": 1.0e-12,
+        },
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason="full paper claim still requires mabd_newton lane and comparison pass gate",
+    )
+
+
 class ReportingContractTests(unittest.TestCase):
     def test_claim_report_json_round_trips_required_fields(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -80,6 +128,63 @@ class ReportingContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "passed experiment"):
                 write_claim_report(report, path)
             self.assertFalse(path.exists())
+
+    def test_report_validation_accepts_experiment_required_lane_gate(self) -> None:
+        report = _gated_rbd_lane_report()
+
+        loaded = validate_claim_report_mapping(report.to_mapping())
+
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(loaded.observed["lane_gate_status"], "passed")
+        self.assertFalse(loaded.observed["lane_pass_gate"]["full_experiment_claim_passed"])
+
+    def test_report_writer_accepts_experiment_required_lane_gate(self) -> None:
+        report = _gated_rbd_lane_report()
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "rbd_lane_gate.json"
+            write_claim_report(report, path)
+            loaded = load_claim_report(path)
+
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.observed["lane_gate_status"], "passed")
+        self.assertEqual(loaded.solver_mode, "paper_faithful_implicit_rbd")
+
+    def test_report_validation_still_rejects_passed_experiment_even_with_lane_gate(self) -> None:
+        report = replace(_gated_rbd_lane_report(), status=EvidenceStatus.PASSED)
+
+        with self.assertRaisesRegex(ValueError, "passed experiment"):
+            validate_claim_report_mapping(report.to_mapping())
+
+    def test_report_validation_rejects_lane_gate_claiming_full_experiment_pass(self) -> None:
+        report = _gated_rbd_lane_report(full_experiment_claim_passed=True)
+
+        with self.assertRaisesRegex(ValueError, "full_experiment_claim_passed"):
+            validate_claim_report_mapping(report.to_mapping())
+
+    def test_report_validation_rejects_passed_lane_gate_without_threshold_confirmation(self) -> None:
+        report = _gated_rbd_lane_report()
+        mapping = report.to_mapping()
+        mapping["observed"]["lane_pass_gate"]["thresholds_met"] = False
+
+        with self.assertRaisesRegex(ValueError, "thresholds_met"):
+            validate_claim_report_mapping(mapping)
+
+    def test_report_validation_rejects_lane_gate_not_bound_to_top_level_lane(self) -> None:
+        report = _gated_rbd_lane_report(baseline_lane="mabd_newton")
+
+        with self.assertRaisesRegex(ValueError, "baseline_lane"):
+            validate_claim_report_mapping(report.to_mapping())
+
+    def test_report_validation_rejects_lane_gate_for_unallowlisted_solver_mode(self) -> None:
+        report = replace(
+            _gated_rbd_lane_report(),
+            solver_mode="newton_semimplicit_rbd_cpu_development",
+        )
+
+        with self.assertRaisesRegex(ValueError, "paper_faithful_implicit_rbd"):
+            validate_claim_report_mapping(report.to_mapping())
 
 
 if __name__ == "__main__":
