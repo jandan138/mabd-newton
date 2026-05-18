@@ -21,6 +21,9 @@ import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
+import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import MathBridge from "../../components/MathBridge.astro";
+import WorkedExercise from "../../components/WorkedExercise.astro";
 import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-map.png";
 
 <ProblemCard title="它解决的问题">
@@ -47,6 +50,16 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
   <li>知道控制点关节会把一个或多个体上的局部点联系起来。</li>
   <li>理解本教程是概念解释，不等同于完整 M-ABD solver 已有证据。</li>
 </PrereqBox>
+
+<GuidedProjectStep title="用 marked-point joints 连接多块印章" step="Lesson 11 project step">
+现在复制多个 toy stamps，每块都有自己的 `q` block。把不同 stamp 上的 marked points 通过 joint 连起来，再观察每条 joint 只触碰相关 body blocks，而不是让整张多体矩阵都变成稠密。
+</GuidedProjectStep>
+
+<MathBridge>
+  <li>先复制多个 toy stamps，每个 stamp 都有自己的 `q` block。</li>
+  <li>再用 marked-point joint 连接两个 block，得到稀疏的约束行。</li>
+  <li>最后比较 chain、tree、loop、graph 对 block solve 的影响。</li>
+</MathBridge>
 
 ## 控制点关节
 
@@ -106,6 +119,18 @@ delta_q, lambda = solve_kkt_system(H, residual, constraints)`}
 <PracticePrompt title="动手练习">
 画三个仿射体组成三角闭环，给三条 joint 编号，并列出每条 joint 会触碰哪两个 body block。
 </PracticePrompt>
+
+<WorkedExercise title="带答案的练习：三角 loop 的 block 触碰关系">
+  <p>画三块 toy stamps `B1`、`B2`、`B3` 成三角形，用 `J12`、`J23`、`J31` 连接相邻 marked points，并列出每条 joint 的两个 body blocks。</p>
+  <details>
+    <summary>提示</summary>
+    <p>每条边只看它两端的 stamps；闭环来自三条边合起来，不是单条 joint 触碰所有 body。</p>
+  </details>
+  <details>
+    <summary>参考答案</summary>
+    <p>`J12` 触碰 `B1` 和 `B2` 的 `q` blocks，`J23` 触碰 `B2` 和 `B3`，`J31` 触碰 `B3` 和 `B1`。因此对应的 `G` 行在这两个相关 body blocks 上有非零块，在第三个 body block 上为零。这个练习只说明 loop 拓扑和稀疏 block 直觉，不声称仓库已经完成完整 M-ABD 拓扑求解器。</p>
+  </details>
+</WorkedExercise>
 
 <RememberBox title="核心记忆">
   <ul>

@@ -24,6 +24,8 @@ import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
+import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import WorkedExercise from "../../components/WorkedExercise.astro";
 import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 
 <ProblemCard title="它解决的问题">
@@ -50,6 +52,10 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
   <li>知道仓库中 `docs/reference/` 和 `docs/records/` 分别保存边界、映射和记录。</li>
   <li>接受 incomplete 是诚实边界，不是可以忽略的措辞。</li>
 </PrereqBox>
+
+<GuidedProjectStep title="把 toy tutorial 和仓库证据分开放回地图" step="Lesson 12 project step">
+贯穿教程的 rubber stamp 帮助读者理解 ABD/M-ABD 结构，但它本身不是证据。最后一步是把 toy tutorial 的概念理解、dated records 的验证范围和 claim boundaries 的禁止越界说法分开记录。
+</GuidedProjectStep>
 
 ## 先看边界，再看证据
 
@@ -114,6 +120,18 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 <PracticePrompt title="动手练习">
 打开 `docs/reference/claim-boundaries.md`，摘录一条 forbidden claim，并把它改写成只陈述记录已支持范围的安全说法。
 </PracticePrompt>
+
+<WorkedExercise title="带答案的练习：把危险说法改成有边界说法">
+  <p>选择一句不安全说法，例如“这个仓库已经复现了完整 M-ABD 论文”，把它改写成必须同时引用记录范围和 claim boundaries 的安全说法。</p>
+  <details>
+    <summary>提示</summary>
+    <p>安全说法通常要包含“在某个记录范围内”“conceptual / scoped / incomplete”等边界词，并明确哪些更大结论还不能说。</p>
+  </details>
+  <details>
+    <summary>参考答案</summary>
+    <p>不安全说法：“这个仓库已经复现了完整 M-ABD 论文。” 有边界改写：“学习站点提供了 ABD/M-ABD 的 conceptual toy-stamp 教程；仓库中若干 dated records 支持特定 CPU oracle、材料项或开发 lane 的 scoped claims。根据 `docs/reference/claim-boundaries.md`，在 `SolverMABD` 方法记录、完整实验记录和所有必要 paper claims 通过之前，不能声称完整 M-ABD solver 或完整论文复现已经完成。”</p>
+  </details>
+</WorkedExercise>
 
 <RememberBox title="核心记忆">
   <ul>
