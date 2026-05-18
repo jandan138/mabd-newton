@@ -35,7 +35,11 @@ const forbiddenClaimPatterns = [
 const requiredFrontmatterKeys = ["title", "description", "module", "order", "status", "claimStatus"];
 const requiredLessonComponents = ["<ProblemCard", "<ConceptCard", "<RememberBox"];
 const requiredFigureProps = ["alt", "caption", "kind", "provenance", "claimStatus"];
-const allowedFigureSvgImport = /^\.\.\/\.\.\/assets\/diagrams\/[^/]+\.svg$/;
+const allowedFigureAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/[^/]+\.(?:png|webp)$/;
+const rasterDiagramAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/([^/]+\.(?:png|webp))$/;
+const requiredLessonFigureProvenance = "ai-generated-raster";
+const aiDiagramManifestPath = "src/assets/diagrams/ai-diagram-manifest.json";
+const aiDiagramManifestDisplayPath = "site/src/assets/diagrams/ai-diagram-manifest.json";
 const forbiddenAssetExtensions = new Set([".pdf", ".tex", ".mp4", ".mov", ".avi", ".log", ".usd", ".usda", ".usdc"]);
 
 function walk(dir) {
@@ -134,7 +138,72 @@ function importsFigureComponent(text) {
   return /^\s*import\s+Figure\s+from\s+["']\.\.\/\.\.\/components\/Figure\.astro["'];?\s*$/m.test(text);
 }
 
+function manifestEntries(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.entries)) return value.entries;
+  if (Array.isArray(value?.diagrams)) return value.diagrams;
+  return null;
+}
+
+function aiDiagramManifestIssues(importedRasterDiagrams) {
+  if (importedRasterDiagrams.length === 0) return [];
+
+  const issues = [];
+  const text = readIfExists(aiDiagramManifestPath);
+  if (text === null) {
+    return [`${aiDiagramManifestDisplayPath}: missing AI diagram manifest`];
+  }
+
+  let manifest;
+  try {
+    manifest = JSON.parse(text);
+  } catch (error) {
+    return [`${aiDiagramManifestDisplayPath}: invalid JSON (${error.message})`];
+  }
+
+  const entries = manifestEntries(manifest);
+  if (entries === null) {
+    return [`${aiDiagramManifestDisplayPath}: must be an array or contain entries/diagrams array`];
+  }
+
+  const entriesByFile = new Map();
+  for (const entry of entries) {
+    if (entry && typeof entry.file === "string") {
+      if (entriesByFile.has(entry.file)) {
+        issues.push(`${aiDiagramManifestDisplayPath}: duplicate entry for ${entry.file}`);
+      }
+      entriesByFile.set(entry.file, entry);
+    }
+  }
+
+  for (const diagram of importedRasterDiagrams) {
+    const entry = entriesByFile.get(diagram.file);
+    if (entry === undefined) {
+      issues.push(`${aiDiagramManifestDisplayPath}: missing entry for ${diagram.file}`);
+      continue;
+    }
+    if (entry.lesson !== diagram.lesson) {
+      issues.push(`${aiDiagramManifestDisplayPath}: ${diagram.file} lesson must be ${diagram.lesson}`);
+    }
+    if (entry.provenance !== requiredLessonFigureProvenance) {
+      issues.push(`${aiDiagramManifestDisplayPath}: ${diagram.file} provenance must be ${requiredLessonFigureProvenance}`);
+    }
+    if (entry.claimStatus !== "conceptual" && entry.claimStatus !== "not_evidence") {
+      issues.push(`${aiDiagramManifestDisplayPath}: ${diagram.file} claimStatus must be conceptual or not_evidence`);
+    }
+    if (typeof entry.prompt !== "string" || entry.prompt.trim() === "") {
+      issues.push(`${aiDiagramManifestDisplayPath}: ${diagram.file} prompt must be a non-empty string`);
+    }
+    if (typeof entry.reviewNotes !== "string" || entry.reviewNotes.trim() === "") {
+      issues.push(`${aiDiagramManifestDisplayPath}: ${diagram.file} reviewNotes must be a non-empty string`);
+    }
+  }
+
+  return issues;
+}
+
 const issues = [];
+const importedRasterDiagrams = [];
 const requiredLessons = requiredLessonSlugs();
 
 if (requiredLessons === null) {
@@ -238,8 +307,8 @@ for (const file of checkedFiles) {
       if (figurePropValue(figure, "kind") !== "diagram") {
         issues.push(`${relative}: Figure ${index + 1} kind must be diagram`);
       }
-      if (figurePropValue(figure, "provenance") !== "authored-svg") {
-        issues.push(`${relative}: Figure ${index + 1} provenance must be authored-svg`);
+      if (figurePropValue(figure, "provenance") !== requiredLessonFigureProvenance) {
+        issues.push(`${relative}: Figure ${index + 1} provenance must be ${requiredLessonFigureProvenance}`);
       }
       const claimStatus = figurePropValue(figure, "claimStatus");
       if (claimStatus !== "conceptual" && claimStatus !== "not_evidence") {
@@ -247,7 +316,7 @@ for (const file of checkedFiles) {
       }
       const srcName = figureSrcName(figure);
       if (srcName === null) {
-        issues.push(`${relative}: Figure ${index + 1} src must reference an imported SVG asset`);
+        issues.push(`${relative}: Figure ${index + 1} src must reference an imported PNG/WebP asset`);
         return;
       }
       const importedPath = importsByName.get(srcName);
@@ -255,17 +324,26 @@ for (const file of checkedFiles) {
         issues.push(`${relative}: Figure ${index + 1} src ${srcName} is not imported`);
         return;
       }
-      if (!allowedFigureSvgImport.test(importedPath)) {
-        issues.push(`${relative}: Figure ${index + 1} asset ${importedPath} must be from ../../assets/diagrams/*.svg`);
+      if (!allowedFigureAssetImport.test(importedPath)) {
+        issues.push(`${relative}: Figure ${index + 1} asset ${importedPath} must be from ../../assets/diagrams/*.png or *.webp`);
       }
     });
     for (const imported of imports) {
-      if (imported.path.includes("/assets/") && !allowedFigureSvgImport.test(imported.path)) {
-        issues.push(`${relative}: imported site asset ${imported.path} must be an SVG from ../../assets/diagrams/*.svg`);
+      const rasterDiagramMatch = imported.path.match(rasterDiagramAssetImport);
+      if (rasterDiagramMatch) {
+        importedRasterDiagrams.push({
+          file: rasterDiagramMatch[1],
+          lesson: path.basename(file, ".mdx"),
+        });
+      }
+      if (imported.path.includes("/assets/") && !allowedFigureAssetImport.test(imported.path)) {
+        issues.push(`${relative}: imported site asset ${imported.path} must be a PNG/WebP from ../../assets/diagrams/*.png or *.webp`);
       }
     }
   }
 }
+
+issues.push(...aiDiagramManifestIssues(importedRasterDiagrams));
 
 if (issues.length) {
   for (const issue of issues) console.error(issue);
