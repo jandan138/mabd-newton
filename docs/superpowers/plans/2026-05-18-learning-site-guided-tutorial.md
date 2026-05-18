@@ -384,17 +384,17 @@ For `newton-hessian-kkt.mdx`, include:
 For `single-body-abd.mdx`, include:
 
 ```mdx
-<li>先把 toy stamp 的 `q=[A,t]` 当作一个小规模状态。</li>
-<li>再看质量、材料力和 residual 如何组成单体参考问题。</li>
+<li>先把软橡胶印章的 `q=[A,t]` 当作一个小规模状态。</li>
+<li>再看质量、材料力和残差如何组成单体参考问题。</li>
 <li>最后只把记录中验证过的 CPU oracle 范围称为证据，不升级为完整求解器。</li>
 ```
 
 For `multi-body-mabd.mdx`, include:
 
 ```mdx
-<li>先复制多个 toy stamps，每个 stamp 都有自己的 `q` block。</li>
-<li>再用 marked-point joint 连接两个 block，得到稀疏的约束行。</li>
-<li>最后比较 chain、tree、loop、graph 对 block solve 的影响。</li>
+<li>先复制多块软橡胶印章，每块印章都有自己的 `q` block。</li>
+<li>再用标记点关节连接两个 block，得到稀疏的约束行。</li>
+<li>最后比较 chain、tree、loop、graph 对块求解的影响。</li>
 ```
 
 - [ ] **Step 4: Add worked exercises before `RememberBox`**
@@ -414,20 +414,20 @@ In `site/src/pages/learn/index.astro`, update the opening problem paragraph to m
 
 ```astro
   <section class="tutorial-card tutorial-card--guided-project">
-    <p class="tutorial-card__eyebrow">Default tutorial track</p>
+    <p class="tutorial-card__eyebrow">默认教程路线</p>
     <h2>贯穿小项目：一块带标记点的软橡胶印章</h2>
     <p>
-      默认路线会反复回到同一个 toy stamp：先看它为什么需要仿射体表示，再把它写成矩阵、状态、力映射、隐式残差、KKT 约束和有边界的仓库证据。
+      默认路线会反复回到同一块软橡胶印章：先看它为什么需要仿射体表示，再把它写成矩阵、状态、力映射、隐式残差、KKT 约束和有边界的仓库证据。
     </p>
   </section>
 ```
 
 - [ ] **Step 6: Update roadmap page**
 
-In `site/src/pages/learn/roadmap.astro`, change the second path title from `补齐完整基础` to `默认教程路线：跟着 toy stamp 走完一遍`, and change its description to:
+In `site/src/pages/learn/roadmap.astro`, change the second path title from `补齐完整基础` to `默认教程路线：跟着软橡胶印章走完一遍`, and change its description to:
 
 ```ts
-description: "推荐新读者按 12 节课顺序走完同一个 rubber-stamp 小项目，逐步跨过矩阵、Jacobian、隐式积分和 KKT。",
+description: "推荐新读者按 12 节课顺序走完同一个软橡胶印章小项目，逐步跨过矩阵、Jacobian、隐式积分和 KKT。",
 ```
 
 - [ ] **Step 7: Verify Task 4 content**
