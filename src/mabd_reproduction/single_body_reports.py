@@ -13,9 +13,11 @@ from .reporting import ClaimReport, EvidenceStatus, write_claim_report
 from .spinning_box_physics import (
     abd_generalized_velocity_from_paper_momenta,
     mabd_momentum_diagnostics,
+    paper_spatial_twist_from_momenta,
     spinning_box_affine_shape_diagnostics,
     spinning_box_contact_diagnostics,
     spinning_box_cube_corners,
+    spinning_box_decoupled_twist_state,
     spinning_box_kinematic_feasibility,
     spinning_box_mabd_mass_diagonal,
     spinning_box_mabd_material_properties,
@@ -30,6 +32,10 @@ CONTACT_RESPONSE_DIAGNOSTIC_POLICY = "evaluated_from_current_mabd_states_for_nex
 NORMAL_CONSTRAINT_POLICY = "free_predict_then_active_point_plane_normal_constraints"
 NORMAL_CONSTRAINT_SCOPE = "diagnostic_only_no_lane_gate"
 NORMAL_CONSTRAINT_RANK_FILTER_POLICY = "increment_map_row_rank_filter"
+DECOUPLED_TWIST_POLICY = "decoupled_spatial_twist_with_exponential_rigid_update"
+DECOUPLED_TWIST_SCOPE = "diagnostic_only_no_lane_gate"
+DECOUPLED_TWIST_SOLVER_STEP_POLICY = "no_solver_step_rigid_reconstruction_diagnostic"
+DECOUPLED_TWIST_RESIDUAL_STATUS = "not_evaluated_no_kkt_solve"
 
 
 def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOracleBody:
@@ -542,6 +548,242 @@ def _run_spinning_box_paper_horizon_step_size(
     return summary
 
 
+def _decoupled_twist_state_metrics(
+    *,
+    config: SpinningBoxRunConfig,
+    q: np.ndarray,
+    qd: np.ndarray,
+    previous_q: np.ndarray | None,
+    mass_matrix: np.ndarray,
+    step_index: int,
+    time_step_s: float,
+    initial_kinetic_energy: float,
+    initial_total_energy: float,
+    target_spatial_twist: np.ndarray,
+) -> dict[str, object]:
+    metrics = _paper_horizon_state_metrics(
+        config=config,
+        q=q,
+        qd=qd,
+        mass_matrix=mass_matrix,
+        step_index=step_index,
+        time_step_s=time_step_s,
+        residual_norm=0.0,
+        initial_kinetic_energy=initial_kinetic_energy,
+        initial_total_energy=initial_total_energy,
+    )
+    metrics.pop("residual_norm")
+    if previous_q is None:
+        velocity_state_inconsistency = 0.0
+        finite_difference_twist_error = 0.0
+    else:
+        finite_difference_qd = (q - previous_q) / time_step_s
+        A, _t = mabd.unpack_q(q)
+        finite_difference_twist = mabd.twist_map_G(A) @ finite_difference_qd
+        velocity_state_inconsistency = float(np.linalg.norm(qd - finite_difference_qd))
+        finite_difference_twist_error = float(
+            np.linalg.norm(finite_difference_twist - target_spatial_twist)
+        )
+    metrics.update(
+        {
+            "velocity_semantics_policy": DECOUPLED_TWIST_POLICY,
+            "velocity_semantics_scope": DECOUPLED_TWIST_SCOPE,
+            "solver_step_policy": DECOUPLED_TWIST_SOLVER_STEP_POLICY,
+            "solver_residual_status": DECOUPLED_TWIST_RESIDUAL_STATUS,
+            "velocity_state_inconsistency_norm": velocity_state_inconsistency,
+            "finite_difference_twist_error": finite_difference_twist_error,
+        }
+    )
+    return metrics
+
+
+def _decoupled_twist_state_values_finite(
+    q: np.ndarray,
+    qd: np.ndarray,
+    metrics: dict[str, object],
+) -> bool:
+    finite_scalars = (
+        "linear_momentum_error",
+        "angular_momentum_error",
+        "kinetic_energy_j",
+        "elastic_energy_j",
+        "total_energy_j",
+        "relative_kinetic_energy_drift",
+        "relative_total_energy_drift",
+        "affine_determinant",
+        "affine_abs_det_minus_one",
+        "affine_min_singular_value",
+        "affine_max_singular_value",
+        "affine_orthogonality_error",
+        "contact_min_signed_distance_m",
+        "contact_max_penetration_m",
+        "contact_normal_force_norm_n",
+        "contact_generalized_force_norm",
+        "velocity_state_inconsistency_norm",
+        "finite_difference_twist_error",
+    )
+    return (
+        np.all(np.isfinite(q))
+        and np.all(np.isfinite(qd))
+        and all(_finite_metric_value(metrics[key]) for key in finite_scalars)
+    )
+
+
+def _run_spinning_box_decoupled_twist_step_size(
+    *,
+    config: SpinningBoxRunConfig,
+    time_step_s: float,
+) -> dict[str, object]:
+    duration = config.paper_horizon.duration_s
+    feasibility = spinning_box_kinematic_feasibility(config, time_step_s)
+    step_count = int(round(duration / time_step_s))
+    if abs(step_count * time_step_s - duration) > 1.0e-12:
+        raise ValueError("paper_horizon duration_s must be divisible by time_step_grid_s entries")
+
+    mass_matrix = np.diag(config.mass_diagonal)
+    initial_q, initial_qd = spinning_box_decoupled_twist_state(config, time_step_s, 0)
+    initial_kinetic_energy = _kinetic_energy(initial_qd, mass_matrix)
+    initial_elastic_energy = _elastic_energy(config=config, q=initial_q)
+    initial_total_energy = initial_kinetic_energy + initial_elastic_energy
+    sample_indices = _paper_horizon_sample_indices(
+        step_count,
+        config.paper_horizon.sample_count,
+    )
+    target_spatial_twist = paper_spatial_twist_from_momenta(config)
+    samples: list[dict[str, object]] = []
+    extrema: dict[str, tuple[float, int]] = {
+        "max_linear_momentum_error": (-np.inf, 0),
+        "max_angular_momentum_error": (-np.inf, 0),
+        "max_kinetic_energy_drift_j": (-np.inf, 0),
+        "max_total_energy_drift_j": (-np.inf, 0),
+        "max_relative_kinetic_energy_drift": (-np.inf, 0),
+        "max_relative_total_energy_drift": (-np.inf, 0),
+        "max_abs_det_minus_one": (-np.inf, 0),
+        "min_singular_value": (np.inf, 0),
+        "max_singular_value": (-np.inf, 0),
+        "max_affine_orthogonality_error": (-np.inf, 0),
+        "max_contact_active_count": (-np.inf, 0),
+        "min_contact_signed_distance_m": (np.inf, 0),
+        "max_contact_penetration_m": (-np.inf, 0),
+        "max_contact_normal_force_n": (-np.inf, 0),
+        "max_contact_generalized_force_norm": (-np.inf, 0),
+        "max_velocity_state_inconsistency_norm": (-np.inf, 0),
+        "max_finite_difference_twist_error": (-np.inf, 0),
+    }
+
+    def update(metrics: dict[str, object]) -> None:
+        step_index = int(metrics["step_index"])
+        candidates = {
+            "max_linear_momentum_error": float(metrics["linear_momentum_error"]),
+            "max_angular_momentum_error": float(metrics["angular_momentum_error"]),
+            "max_kinetic_energy_drift_j": abs(
+                float(metrics["kinetic_energy_j"]) - initial_kinetic_energy
+            ),
+            "max_total_energy_drift_j": abs(
+                float(metrics["total_energy_j"]) - initial_total_energy
+            ),
+            "max_relative_kinetic_energy_drift": float(
+                metrics["relative_kinetic_energy_drift"]
+            ),
+            "max_relative_total_energy_drift": float(
+                metrics["relative_total_energy_drift"]
+            ),
+            "max_abs_det_minus_one": float(metrics["affine_abs_det_minus_one"]),
+            "min_singular_value": float(metrics["affine_min_singular_value"]),
+            "max_singular_value": float(metrics["affine_max_singular_value"]),
+            "max_affine_orthogonality_error": float(metrics["affine_orthogonality_error"]),
+            "max_contact_active_count": float(metrics["contact_active_count"]),
+            "min_contact_signed_distance_m": float(metrics["contact_min_signed_distance_m"]),
+            "max_contact_penetration_m": float(metrics["contact_max_penetration_m"]),
+            "max_contact_normal_force_n": float(metrics["contact_normal_force_norm_n"]),
+            "max_contact_generalized_force_norm": float(
+                metrics["contact_generalized_force_norm"]
+            ),
+            "max_velocity_state_inconsistency_norm": float(
+                metrics["velocity_state_inconsistency_norm"]
+            ),
+            "max_finite_difference_twist_error": float(
+                metrics["finite_difference_twist_error"]
+            ),
+        }
+        for key, value in candidates.items():
+            current, _current_step = extrema[key]
+            if key in {"min_singular_value", "min_contact_signed_distance_m"}:
+                if value < current:
+                    extrema[key] = (value, step_index)
+            elif value > current:
+                extrema[key] = (value, step_index)
+
+    previous_q: np.ndarray | None = None
+    first_nonfinite_step: int | None = None
+    steps_completed = 0
+    q = initial_q
+    qd = initial_qd
+    for step_index in range(step_count + 1):
+        if step_index > 0:
+            q, qd = spinning_box_decoupled_twist_state(config, time_step_s, step_index)
+        metrics = _decoupled_twist_state_metrics(
+            config=config,
+            q=q,
+            qd=qd,
+            previous_q=previous_q,
+            mass_matrix=mass_matrix,
+            step_index=step_index,
+            time_step_s=time_step_s,
+            initial_kinetic_energy=initial_kinetic_energy,
+            initial_total_energy=initial_total_energy,
+            target_spatial_twist=target_spatial_twist,
+        )
+        if not _decoupled_twist_state_values_finite(q, qd, metrics):
+            first_nonfinite_step = step_index
+            break
+        update(metrics)
+        steps_completed = step_index
+        if step_index in sample_indices:
+            samples.append(metrics)
+        previous_q = q
+
+    summary: dict[str, object] = {
+        "time_step_s": float(time_step_s),
+        "duration_s": duration,
+        "steps_attempted": step_count,
+        "steps_completed": steps_completed,
+        "first_nonfinite_step": first_nonfinite_step,
+        "initial_position_m": initial_q[9:12].tolist(),
+        "final_position_m": q[9:12].tolist(),
+        "kinetic_energy_initial_j": initial_kinetic_energy,
+        "elastic_energy_initial_j": initial_elastic_energy,
+        "total_energy_initial_j": initial_total_energy,
+        "kinetic_energy_final_j": _kinetic_energy(qd, mass_matrix),
+        "elastic_energy_final_j": _elastic_energy(config=config, q=q),
+        "kinematic_feasibility": feasibility.to_report(),
+        "velocity_semantics_policy": DECOUPLED_TWIST_POLICY,
+        "velocity_semantics_scope": DECOUPLED_TWIST_SCOPE,
+        "solver_step_policy": DECOUPLED_TWIST_SOLVER_STEP_POLICY,
+        "solver_residual_status": DECOUPLED_TWIST_RESIDUAL_STATUS,
+        "trajectory_samples": samples,
+    }
+    for key, (value, step_index) in extrema.items():
+        summary[key] = int(value) if key == "max_contact_active_count" else value
+        summary[f"{key}_step_index"] = step_index
+    thresholds_without_residual = {
+        key: value
+        for key, value in config.paper_horizon.thresholds.items()
+        if key != "max_residual_norm"
+    }
+    summary["thresholds_not_evaluated"] = ["max_residual_norm"]
+    summary["threshold_violations"] = _threshold_violations(
+        summary,
+        thresholds_without_residual,
+    )
+    summary["decoupled_twist_status"] = (
+        "decoupled_twist_diagnostic_thresholds_violated"
+        if summary["threshold_violations"]
+        else "decoupled_twist_thresholds_met_no_lane_gate"
+    )
+    return summary
+
+
 def write_spinning_box_contact_response_report(
     path: str | Path,
     *,
@@ -792,6 +1034,169 @@ def write_spinning_box_normal_constraint_report(
         failure_reason=(
             "normal constraint active-set diagnostic is not a paper-faithful "
             "contact solve or spinning-box experiment pass"
+        ),
+        timing_distribution={
+            "scope": "not_timed",
+            "step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        },
+        raw_outputs={"time_series": "compact_samples_only"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
+def write_spinning_box_decoupled_twist_report(
+    path: str | Path,
+    *,
+    config: SpinningBoxRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
+    if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
+        raise ValueError("single_body_spinning_box mass_diagonal must match paper cube ABD mass")
+
+    results = [
+        _run_spinning_box_decoupled_twist_step_size(
+            config=config,
+            time_step_s=time_step_s,
+        )
+        for time_step_s in config.paper_horizon.time_step_grid_s
+    ]
+    all_violations = sorted(
+        {
+            violation
+            for result in results
+            for violation in result["threshold_violations"]
+        }
+    )
+    feasibility_statuses = sorted(
+        {
+            str(result["kinematic_feasibility"]["status"])
+            for result in results
+        }
+    )
+    max_velocity_state_inconsistency = max(
+        float(result["max_velocity_state_inconsistency_norm"]) for result in results
+    )
+    max_finite_difference_twist_error = max(
+        float(result["max_finite_difference_twist_error"]) for result in results
+    )
+    max_abs_det_minus_one = max(float(result["max_abs_det_minus_one"]) for result in results)
+    min_singular_value = min(float(result["min_singular_value"]) for result in results)
+    max_singular_value = max(float(result["max_singular_value"]) for result in results)
+    max_affine_orthogonality = max(
+        float(result["max_affine_orthogonality_error"]) for result in results
+    )
+    max_relative_kinetic_energy_drift = max(
+        float(result["max_relative_kinetic_energy_drift"]) for result in results
+    )
+    max_relative_total_energy_drift = max(
+        float(result["max_relative_total_energy_drift"]) for result in results
+    )
+    max_linear_momentum_error = max(
+        float(result["max_linear_momentum_error"]) for result in results
+    )
+    max_angular_momentum_error = max(
+        float(result["max_angular_momentum_error"]) for result in results
+    )
+    max_contact_penetration = max(float(result["max_contact_penetration_m"]) for result in results)
+    shape_thresholds_met = not any(
+        violation
+        in {
+            "max_abs_det_minus_one",
+            "min_singular_value",
+            "max_singular_value",
+            "max_affine_orthogonality_error",
+        }
+        for violation in all_violations
+    )
+    energy_thresholds_met = not any(
+        violation
+        in {
+            "max_relative_kinetic_energy_drift",
+            "max_relative_total_energy_drift",
+        }
+        for violation in all_violations
+    )
+    blockers = [
+        "mabd_newton_report_incomplete",
+        "spinning_box_decoupled_twist_not_paper_faithful",
+        "spinning_box_comparison_pass_gate_not_enabled",
+    ]
+    if "paper_momentum_requires_affine_stretch_under_q_delta_over_h" in feasibility_statuses:
+        blockers.append("mabd_kinematic_feasibility_blocker_recorded")
+    if all_violations:
+        blockers.insert(1, "spinning_box_decoupled_twist_thresholds_violated")
+
+    observed = {
+        "paper_horizon_duration_s": config.paper_horizon.duration_s,
+        "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        "paper_source_lines": list(config.source_lines),
+        "figure_text_source": config.paper_horizon.figure_text_source,
+        "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+        "velocity_semantics_policy": DECOUPLED_TWIST_POLICY,
+        "velocity_semantics_scope": DECOUPLED_TWIST_SCOPE,
+        "solver_step_policy": DECOUPLED_TWIST_SOLVER_STEP_POLICY,
+        "solver_residual_status": DECOUPLED_TWIST_RESIDUAL_STATUS,
+        "mabd_kinematic_feasibility_statuses": feasibility_statuses,
+        "threshold_violations": all_violations,
+        "thresholds_not_evaluated": ["max_residual_norm"],
+        "decoupled_twist_status": (
+            "decoupled_twist_diagnostic_thresholds_violated"
+            if all_violations
+            else "decoupled_twist_thresholds_met_no_lane_gate"
+        ),
+        "shape_thresholds_met_by_decoupled_twist": shape_thresholds_met,
+        "energy_thresholds_met_by_decoupled_twist": energy_thresholds_met,
+        "max_linear_momentum_error": max_linear_momentum_error,
+        "max_angular_momentum_error": max_angular_momentum_error,
+        "max_abs_det_minus_one": max_abs_det_minus_one,
+        "min_singular_value": min_singular_value,
+        "max_singular_value": max_singular_value,
+        "max_affine_orthogonality_error": max_affine_orthogonality,
+        "max_relative_kinetic_energy_drift": max_relative_kinetic_energy_drift,
+        "max_relative_total_energy_drift": max_relative_total_energy_drift,
+        "max_contact_penetration_m": max_contact_penetration,
+        "max_velocity_state_inconsistency_norm": max_velocity_state_inconsistency,
+        "max_finite_difference_twist_error": max_finite_difference_twist_error,
+        "initial_position_m": config.initial_q[9:12].tolist(),
+        "final_position_m": results[0]["final_position_m"],
+        "decoupled_twist_results": results,
+        "blocking_reasons": blockers,
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={"primitive_cube": "not_applicable_procedural"},
+        solver_mode="decoupled_twist_rigid_reconstruction_diagnostic",
+        backend="cpu_numpy",
+        baseline_lane=config.baseline_lane,
+        expected={
+            "paper_claim_status": "decoupled twist diagnostic only; no lane gate",
+            "paper_horizon_duration_s": config.paper_horizon.duration_s,
+            "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+            "source_lines": list(config.source_lines),
+            "figure_text_source": config.paper_horizon.figure_text_source,
+            "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+            "velocity_semantics_policy": DECOUPLED_TWIST_POLICY,
+            "velocity_semantics_scope": DECOUPLED_TWIST_SCOPE,
+            "solver_step_policy": DECOUPLED_TWIST_SOLVER_STEP_POLICY,
+            "solver_residual_status": DECOUPLED_TWIST_RESIDUAL_STATUS,
+            "phase64_gate_policy": "diagnostic_only_no_lane_gate",
+        },
+        observed=observed,
+        threshold=config.paper_horizon.thresholds,
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason=(
+            "decoupled spatial twist reconstruction preserves rigid shape and paper "
+            "momenta as a diagnostic, but it is not a paper-faithful M-ABD solve"
         ),
         timing_distribution={
             "scope": "not_timed",
@@ -1096,6 +1501,7 @@ def write_spinning_box_paper_horizon_report(
 
 __all__ = [
     "write_spinning_box_contact_response_report",
+    "write_spinning_box_decoupled_twist_report",
     "write_spinning_box_development_report",
     "write_spinning_box_normal_constraint_report",
     "write_spinning_box_paper_horizon_report",

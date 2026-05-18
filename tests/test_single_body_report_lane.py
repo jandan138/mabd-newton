@@ -12,6 +12,7 @@ import numpy as np
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 from mabd_reproduction.single_body_reports import (
     write_spinning_box_contact_response_report,
+    write_spinning_box_decoupled_twist_report,
     write_spinning_box_development_report,
     write_spinning_box_normal_constraint_report,
     write_spinning_box_paper_horizon_report,
@@ -473,6 +474,116 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             self.assertIn("max_skipped_plane_constraint_count", entry)
             self.assertIn("max_normal_constraint_residual_norm", entry)
             self.assertTrue(np.isfinite(entry["max_normal_constraint_residual_norm"]))
+            self.assertLessEqual(
+                len(entry["trajectory_samples"]),
+                config.paper_horizon.sample_count,
+            )
+
+    def test_spinning_box_decoupled_twist_report_records_velocity_semantics_diagnostic(self) -> None:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_spinning_box_decoupled_twist.json"
+            report = write_spinning_box_decoupled_twist_report(
+                path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(path)
+
+        self.assertEqual(report.scene_id, config.scene_id)
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(
+            loaded.solver_mode,
+            "decoupled_twist_rigid_reconstruction_diagnostic",
+        )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertEqual(
+            loaded.observed["velocity_semantics_policy"],
+            "decoupled_spatial_twist_with_exponential_rigid_update",
+        )
+        self.assertEqual(
+            loaded.observed["velocity_semantics_scope"],
+            "diagnostic_only_no_lane_gate",
+        )
+        self.assertEqual(
+            loaded.observed["blocking_reasons"],
+            [
+                "mabd_newton_report_incomplete",
+                "spinning_box_decoupled_twist_not_paper_faithful",
+                "spinning_box_comparison_pass_gate_not_enabled",
+                "mabd_kinematic_feasibility_blocker_recorded",
+            ],
+        )
+        self.assertEqual(
+            loaded.observed["solver_step_policy"],
+            "no_solver_step_rigid_reconstruction_diagnostic",
+        )
+        self.assertEqual(
+            loaded.observed["solver_residual_status"],
+            "not_evaluated_no_kkt_solve",
+        )
+        self.assertEqual(
+            loaded.observed["decoupled_twist_status"],
+            "decoupled_twist_thresholds_met_no_lane_gate",
+        )
+        self.assertTrue(loaded.observed["shape_thresholds_met_by_decoupled_twist"])
+        self.assertTrue(loaded.observed["energy_thresholds_met_by_decoupled_twist"])
+        self.assertEqual(loaded.observed["threshold_violations"], [])
+        self.assertGreater(loaded.observed["max_velocity_state_inconsistency_norm"], 0.0)
+        self.assertGreater(loaded.observed["max_finite_difference_twist_error"], 0.0)
+        self.assertEqual(
+            len(loaded.observed["decoupled_twist_results"]),
+            len(config.paper_horizon.time_step_grid_s),
+        )
+        for entry in loaded.observed["decoupled_twist_results"]:
+            self.assertIn(entry["time_step_s"], [0.01, 0.001])
+            self.assertEqual(entry["threshold_violations"], [])
+            self.assertEqual(
+                entry["solver_step_policy"],
+                "no_solver_step_rigid_reconstruction_diagnostic",
+            )
+            self.assertEqual(
+                entry["solver_residual_status"],
+                "not_evaluated_no_kkt_solve",
+            )
+            self.assertGreater(entry["max_velocity_state_inconsistency_norm"], 0.0)
+            self.assertGreater(entry["max_finite_difference_twist_error"], 0.0)
+            self.assertEqual(entry["max_contact_penetration_m"], 0.0)
+            self.assertLessEqual(
+                entry["max_abs_det_minus_one"],
+                config.paper_horizon.thresholds["max_abs_det_minus_one"],
+            )
+            self.assertGreaterEqual(
+                entry["min_singular_value"],
+                config.paper_horizon.thresholds["min_singular_value"],
+            )
+            self.assertLessEqual(
+                entry["max_singular_value"],
+                config.paper_horizon.thresholds["max_singular_value"],
+            )
+            self.assertLessEqual(
+                entry["max_affine_orthogonality_error"],
+                config.paper_horizon.thresholds["max_affine_orthogonality_error"],
+            )
+            self.assertLessEqual(
+                entry["max_relative_kinetic_energy_drift"],
+                config.paper_horizon.thresholds["max_relative_kinetic_energy_drift"],
+            )
+            self.assertLessEqual(
+                entry["max_relative_total_energy_drift"],
+                config.paper_horizon.thresholds["max_relative_total_energy_drift"],
+            )
+            self.assertTrue(np.isfinite(entry["max_velocity_state_inconsistency_norm"]))
+            self.assertTrue(np.isfinite(entry["max_finite_difference_twist_error"]))
+            self.assertEqual(
+                entry["kinematic_feasibility"]["status"],
+                "paper_momentum_requires_affine_stretch_under_q_delta_over_h",
+            )
             self.assertLessEqual(
                 len(entry["trajectory_samples"]),
                 config.paper_horizon.sample_count,
