@@ -8,6 +8,8 @@
 
 **Tech Stack:** Python 3.10, NumPy, vendored Newton `newton.solvers.mabd`, `unittest`, repo reporting/config helpers, `scripts/validate_docs.py`.
 
+**Claim Impact:** No `experiment.*` claim is passed.
+
 ---
 
 ## File Structure

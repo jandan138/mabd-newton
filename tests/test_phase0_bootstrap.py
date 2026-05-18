@@ -3986,6 +3986,141 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("top-level penetration", str(context.exception))
 
+    def test_phase63_spinning_box_normal_constraint_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 63")
+        verified = claim_boundary_bullet(text, "Phase 63 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 63 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 63 spinning-box normal-constraint")
+
+        self.assertIn("point-plane normal-constraint diagnostic evidence", current)
+        self.assertIn("free_predict_then_active_point_plane_normal_constraints", verified)
+        self.assertIn("increment_map_row_rank_filter", verified)
+        self.assertIn("reduced free-predicted penetration", verified)
+        self.assertIn("no lane gate", verified)
+        self.assertIn("passed spinning-box experiment", non_claim)
+        self.assertIn("contact solver", non_claim)
+        self.assertIn("paper-faithful affine collision", non_claim)
+        self.assertIn("IPC", non_claim)
+        self.assertIn("full paper reproduction", forbidden)
+
+        import scripts.validate_docs as validate_docs
+
+        report_path = ROOT / validate_docs.SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH
+        report = load_claim_report(report_path)
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertNotIn("lane_gate_status", report.observed)
+        self.assertEqual(
+            report.solver_mode,
+            "mabd_cpu_oracle_point_plane_normal_constraint_diagnostic",
+        )
+        self.assertEqual(
+            report.observed["contact_constraint_policy"],
+            "free_predict_then_active_point_plane_normal_constraints",
+        )
+        self.assertEqual(report.observed["contact_constraint_scope"], "diagnostic_only_no_lane_gate")
+        self.assertEqual(report.observed["rank_filter_policy"], "increment_map_row_rank_filter")
+        self.assertIn(
+            "spinning_box_normal_constraint_not_paper_faithful",
+            report.observed["blocking_reasons"],
+        )
+        self.assertGreater(report.observed["max_free_predicted_contact_penetration_m"], 0.0)
+        self.assertGreaterEqual(report.observed["max_requested_plane_constraint_count"], 1)
+        self.assertGreaterEqual(report.observed["max_accepted_plane_constraint_count"], 1)
+        self.assertGreaterEqual(report.observed["max_skipped_plane_constraint_count"], 0)
+        self.assertLess(
+            report.observed["max_constrained_contact_penetration_m"],
+            report.observed["max_free_predicted_contact_penetration_m"],
+        )
+        self.assertTrue(report.observed["normal_constraint_reduced_free_predicted_penetration"])
+        self.assertEqual(len(report.observed["normal_constraint_results"]), 2)
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT,
+        )
+        self.assertNotIn(report.source_commit, validate_docs.PLACEHOLDER_SOURCE_COMMITS)
+        self.assertEqual(
+            validate_docs.sha256_file(report_path),
+            validate_docs.PHASE63_SPINNING_BOX_NORMAL_CONSTRAINT_SHA256,
+        )
+
+    def test_phase63_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-19-phase63-point-plane-normal-constraints.md"
+        ).read_text()
+        import scripts.validate_docs as validate_docs
+
+        for snippet in (
+            "## Status\n\npassed_for_spinning_box_normal_constraint_diagnostic_slice",
+            "phase63-point-plane-normal-constraints",
+            validate_docs.PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json",
+            validate_docs.PHASE63_SPINNING_BOX_NORMAL_CONSTRAINT_SHA256,
+            "free_predict_then_active_point_plane_normal_constraints",
+            "increment_map_row_rank_filter",
+            "spinning_box_normal_constraint_not_paper_faithful",
+            "max_free_predicted_contact_penetration_m = `0.001041191335932834`",
+            "max_constrained_contact_penetration_m = `2.081690722340676e-20`",
+            "normal_constraint_residual_norm = `1.3877787807814457e-17`",
+            "No `experiment.*` claim is passed.",
+            "does not implement a contact solver",
+            "paper-faithful affine collision",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE63", text)
+        self.assertNotIn("phase63-working-tree", text)
+
+    def test_phase63_validator_rejects_nonfinite_normal_constraint_residual(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json"
+        )
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "normal_constraint_residual_norm": math.nan,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase63_record()
+
+        self.assertIn("normal constraint residual", str(context.exception))
+
+    def test_phase63_validator_rejects_inconsistent_constrained_penetration(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json"
+        )
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "max_constrained_contact_penetration_m": 1.0e-10,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase63_record()
+
+        self.assertIn("top-level constrained penetration", str(context.exception))
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -4832,7 +4967,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

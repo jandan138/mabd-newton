@@ -14,6 +14,7 @@ This phase is a diagnostic contact-row capability slice. It does not claim
 Incremental Potential Contact, generic inequality-constrained M-ABD KKT,
 broadphase, narrowphase, friction, continuous collision, paper-faithful affine
 collision, or a passed spinning-box experiment.
+It does not claim Incremental Potential Contact. This is not a nonlinear complementarity solver.
 
 ## Current Gap
 

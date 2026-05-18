@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-62 docs and provenance contracts."""
+"""Validate Phase 0-63 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -141,6 +141,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase60-reproduction-gap-audit.md",
     "docs/records/2026-05-18-phase61-spinning-box-contact-diagnostics.md",
     "docs/records/2026-05-18-phase62-spinning-box-contact-response.md",
+    "docs/records/2026-05-19-phase63-point-plane-normal-constraints.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -203,9 +204,12 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase61-spinning-box-contact-diagnostics.md",
     "docs/superpowers/specs/2026-05-18-phase62-spinning-box-contact-response-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase62-spinning-box-contact-response.md",
+    "docs/superpowers/specs/2026-05-19-phase63-point-plane-normal-constraints-design.md",
+    "docs/superpowers/plans/2026-05-19-mabd-phase63-point-plane-normal-constraints.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
+    "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
     "reports/experiment_matrix/single_body_spinning_box_comparison.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
@@ -255,17 +259,24 @@ PHASE59_T_HANDLE_AGREEMENT_COMMIT = "5d8a0079876d17568464a87c320c53be2d898089"
 PHASE60_REPRODUCTION_GAP_AUDIT_COMMIT = "f83889adbec6402e0baa1b4c55db5962a224808d"
 PHASE61_SPINNING_BOX_CONTACT_COMMIT = "d73e105515c270d4bac9b3b373553132c7c6d99b"
 PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT = "98f66d7344c3bb09995d1c9187beb1830683195e"
+PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT = "ea33e90cd7613212aad4440b9dcf0ac758e07c61"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
 SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json"
 )
+SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json"
+)
 PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256 = (
     "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
 )
 PHASE62_SPINNING_BOX_CONTACT_RESPONSE_SHA256 = (
     "0dac0d45baeccbab0120059112268453b59ceb4af025d123ce1979ecb4c91942"
+)
+PHASE63_SPINNING_BOX_NORMAL_CONSTRAINT_SHA256 = (
+    "5f710498e8651a8ad22dcbcadc5ac1212410100eb36ef5733c721b6cba566394"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -312,6 +323,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase61-working-tree",
     "TO_BE_BACKFILLED_PHASE62",
     "phase62-working-tree",
+    "TO_BE_BACKFILLED_PHASE63",
+    "phase63-working-tree",
 }
 
 
@@ -10321,7 +10334,10 @@ def validate_phase60_record() -> None:
             fail(f"Phase 60 audit duplicate report entry: {path}")
         report_entries[path] = entry
 
-    phase60_post_audit_reports = {SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH}
+    phase60_post_audit_reports = {
+        SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH,
+        SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH,
+    }
     expected_report_paths = sorted(
         relative_path
         for path in (ROOT / "reports/experiment_matrix").glob("*.json")
@@ -10972,6 +10988,352 @@ def validate_phase62_record() -> None:
             fail("Phase 62 must not pass experiment.* claims")
 
 
+def validate_phase63_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-19-phase63-point-plane-normal-constraints.md"
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-19-phase63-point-plane-normal-constraints-design.md"
+    )
+    plan_path = (
+        ROOT / "docs/superpowers/plans/2026-05-19-mabd-phase63-point-plane-normal-constraints.md"
+    )
+    report_path = SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_spinning_box_normal_constraint_diagnostic_slice",
+        "phase63-point-plane-normal-constraints",
+        PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+        SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH,
+        PHASE63_SPINNING_BOX_NORMAL_CONSTRAINT_SHA256,
+        "contact_constraint_policy =",
+        "`free_predict_then_active_point_plane_normal_constraints`",
+        "`increment_map_row_rank_filter`",
+        "spinning_box_normal_constraint_not_paper_faithful",
+        "max_free_predicted_contact_penetration_m = `0.001041191335932834`",
+        "max_constrained_contact_penetration_m = `2.081690722340676e-20`",
+        "normal_constraint_residual_norm = `1.3877787807814457e-17`",
+        "No `experiment.*` claim is passed.",
+        "does not implement a contact solver",
+        "paper-faithful affine collision",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane spinning_box_normal_constraint",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 63 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE63",
+        "TO_BE_BACKFILLED_PHASE63_REPORT_SHA256",
+        "phase63-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 63 record contains stale placeholder")
+    if PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 63 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "spinning-box experiment passed",
+        "passed spinning-box experiment",
+        "m-abd lane passed",
+        "contact solver implemented",
+        "collision implementation verified",
+        "ipc implemented",
+        "comparison pass gate enabled",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 63 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 63")
+    verified = claim_boundary_bullet(boundary_text, "Phase 63 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 63 does not verify")
+    forbidden = claim_boundary_bullet(boundary_text, "Phase 63 spinning-box normal-constraint")
+    for snippet in (
+        "point-plane normal-constraint diagnostic evidence",
+        "Phase 63 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 63 current boundary missing: {snippet}")
+    for snippet in (
+        "free_predict_then_active_point_plane_normal_constraints",
+        "`increment_map_row_rank_filter`",
+        "`spinning_box_normal_constraint_not_paper_faithful`",
+        "reduced free-predicted penetration",
+        "top-level report status: `incomplete`",
+        "no lane gate",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 63 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed spinning-box experiment",
+        "M-ABD lane pass",
+        "contact solver",
+        "collision implementation",
+        "IPC",
+        "generic inequality-constrained M-ABD KKT",
+        "paper-faithful affine collision",
+        "comparison pass gate",
+        "rendered result",
+        "runtime performance",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 63 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 63 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 63 Point-Plane Normal Constraints Design",
+        "MABDCPUOraclePlaneConstraint",
+        "rank filtering",
+        "free_predict_then_active_point_plane_normal_constraints",
+        "diagnostic_only_no_lane_gate",
+        "not a nonlinear complementarity solver",
+        "does not claim Incremental Potential Contact",
+        "paper-faithful affine collision",
+        "full paper reproduction",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 63 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 63 Point-Plane Normal Constraints Implementation Plan",
+        "MABDCPUOraclePlaneConstraint",
+        "spinning_box_normal_constraint",
+        "normal_constraint_output_report",
+        "write_spinning_box_normal_constraint_report",
+        "run_spinning_box_normal_constraint",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 63 plan missing required boundary text: {snippet}")
+
+    try:
+        config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_spinning_box_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 63 spinning-box config validation failed: {exc}")
+
+    if config.paper_horizon.normal_constraint_output_report != report_path:
+        fail("Phase 63 config normal constraint output report changed")
+
+    report = load_claim_report(ROOT / report_path)
+    if report.source_commit != PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT:
+        fail("Phase 63 normal-constraint report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 63 normal-constraint report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 63 normal-constraint report vendored Newton commit changed")
+    if report.claim_id != config.claim_id:
+        fail("Phase 63 normal-constraint report claim_id does not match config")
+    if report.scene_id != config.scene_id:
+        fail("Phase 63 normal-constraint report scene_id does not match config")
+    if report.baseline_lane != "mabd_newton":
+        fail("Phase 63 normal-constraint report lane changed")
+    if report.solver_mode != "mabd_cpu_oracle_point_plane_normal_constraint_diagnostic":
+        fail("Phase 63 normal-constraint solver mode changed")
+    if report.backend != "cpu_numpy":
+        fail("Phase 63 normal-constraint backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 63 normal-constraint report must remain incomplete")
+
+    observed = report.observed
+    if observed.get("contact_constraint_policy") != (
+        "free_predict_then_active_point_plane_normal_constraints"
+    ):
+        fail("Phase 63 normal constraint policy changed")
+    if observed.get("contact_constraint_scope") != "diagnostic_only_no_lane_gate":
+        fail("Phase 63 normal constraint scope changed")
+    if observed.get("contact_constraint_status") != "normal_constraint_diagnostic_incomplete":
+        fail("Phase 63 normal constraint status changed")
+    if observed.get("rank_filter_policy") != "increment_map_row_rank_filter":
+        fail("Phase 63 rank-filter policy changed")
+    if observed.get("normal_constraint_reduced_free_predicted_penetration") is not True:
+        fail("Phase 63 report must record reduced free-predicted penetration")
+    if "lane_gate_status" in observed:
+        fail("Phase 63 normal-constraint report must not expose a passed lane gate")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 63 normal-constraint blockers must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "mabd_paper_horizon_diagnostic_thresholds_violated",
+        "spinning_box_normal_constraint_not_paper_faithful",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "mabd_kinematic_feasibility_blocker_recorded",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 63 normal-constraint blocker missing: {blocker}")
+
+    corner_count = spinning_box_contact_diagnostics(config, config.initial_q, config.initial_qd).corner_count
+    free_penetration = _require_finite_scalar(
+        observed.get("max_free_predicted_contact_penetration_m"),
+        "Phase 63 free-predicted penetration",
+    )
+    constrained_penetration = _require_finite_scalar(
+        observed.get("max_constrained_contact_penetration_m"),
+        "Phase 63 constrained penetration",
+    )
+    requested_count = _require_integer_count(
+        observed.get("max_requested_plane_constraint_count"),
+        "Phase 63 requested plane constraint count",
+        maximum=corner_count,
+    )
+    accepted_count = _require_integer_count(
+        observed.get("max_accepted_plane_constraint_count"),
+        "Phase 63 accepted plane constraint count",
+        maximum=corner_count,
+    )
+    skipped_count = _require_integer_count(
+        observed.get("max_skipped_plane_constraint_count"),
+        "Phase 63 skipped plane constraint count",
+        maximum=corner_count,
+    )
+    normal_residual = _require_finite_scalar(
+        observed.get("normal_constraint_residual_norm"),
+        "Phase 63 normal constraint residual",
+    )
+    if free_penetration <= 0.0:
+        fail("Phase 63 report must record positive free-predicted penetration")
+    if constrained_penetration < 0.0:
+        fail("Phase 63 report must record nonnegative constrained penetration")
+    if constrained_penetration >= free_penetration:
+        fail("Phase 63 constrained penetration must remain below free-predicted penetration")
+    if requested_count < 1 or accepted_count < 1:
+        fail("Phase 63 report must record requested and accepted normal constraint rows")
+    if accepted_count + skipped_count != requested_count:
+        fail("Phase 63 top-level accepted/skipped counts must equal requested count")
+    if normal_residual < 0.0:
+        fail("Phase 63 normal constraint residual must be nonnegative")
+
+    results = observed.get("normal_constraint_results")
+    if not isinstance(results, list) or len(results) != len(config.paper_horizon.time_step_grid_s):
+        fail("Phase 63 normal-constraint results must cover the configured step grid")
+    result_free_penetrations: list[float] = []
+    result_constrained_penetrations: list[float] = []
+    result_requested_counts: list[int] = []
+    result_accepted_counts: list[int] = []
+    result_skipped_counts: list[int] = []
+    result_residuals: list[float] = []
+    for result in results:
+        if not isinstance(result, dict):
+            fail("Phase 63 normal-constraint result must be a mapping")
+        if result.get("contact_constraint_policy") != (
+            "free_predict_then_active_point_plane_normal_constraints"
+        ):
+            fail("Phase 63 per-step normal constraint policy changed")
+        if result.get("rank_filter_policy") != "increment_map_row_rank_filter":
+            fail("Phase 63 per-step rank-filter policy changed")
+        result_free = _require_finite_scalar(
+            result.get("max_free_predicted_contact_penetration_m"),
+            "Phase 63 result free-predicted penetration",
+        )
+        result_constrained = _require_finite_scalar(
+            result.get("max_constrained_contact_penetration_m"),
+            "Phase 63 result constrained penetration",
+        )
+        result_requested = _require_integer_count(
+            result.get("max_requested_plane_constraint_count"),
+            "Phase 63 result requested plane constraints",
+            maximum=corner_count,
+        )
+        result_accepted = _require_integer_count(
+            result.get("max_accepted_plane_constraint_count"),
+            "Phase 63 result accepted plane constraints",
+            maximum=corner_count,
+        )
+        result_skipped = _require_integer_count(
+            result.get("max_skipped_plane_constraint_count"),
+            "Phase 63 result skipped plane constraints",
+            maximum=corner_count,
+        )
+        result_residual = _require_finite_scalar(
+            result.get("max_normal_constraint_residual_norm"),
+            "Phase 63 result normal constraint residual",
+        )
+        result_free_penetrations.append(result_free)
+        result_constrained_penetrations.append(result_constrained)
+        result_requested_counts.append(result_requested)
+        result_accepted_counts.append(result_accepted)
+        result_skipped_counts.append(result_skipped)
+        result_residuals.append(result_residual)
+        if result_free <= 0.0:
+            fail("Phase 63 per-step result must record positive free-predicted penetration")
+        if result_constrained < 0.0:
+            fail("Phase 63 per-step result must record nonnegative constrained penetration")
+        if result_constrained >= result_free:
+            fail("Phase 63 per-step constrained penetration must be below free prediction")
+        if result_requested < 1 or result_accepted < 1:
+            fail("Phase 63 per-step result must request and accept normal constraints")
+        if result_accepted + result_skipped != result_requested:
+            fail("Phase 63 per-step accepted/skipped counts must equal requested count")
+        samples = result.get("trajectory_samples")
+        if not isinstance(samples, list) or not samples:
+            fail("Phase 63 per-step result must retain compact trajectory samples")
+        for sample in samples:
+            if not isinstance(sample, dict):
+                fail("Phase 63 trajectory sample must be a mapping")
+            if sample.get("contact_constraint_policy") != (
+                "free_predict_then_active_point_plane_normal_constraints"
+            ):
+                fail("Phase 63 trajectory sample normal constraint policy changed")
+            for key in (
+                "contact_min_signed_distance_m",
+                "contact_max_penetration_m",
+                "contact_normal_force_norm_n",
+                "contact_generalized_force_norm",
+            ):
+                _require_finite_scalar(sample.get(key), f"Phase 63 trajectory sample {key}")
+
+    if not np.isclose(free_penetration, max(result_free_penetrations), rtol=0.0, atol=1.0e-12):
+        fail("Phase 63 top-level free-predicted penetration must match per-step maximum")
+    if not np.isclose(
+        constrained_penetration,
+        max(result_constrained_penetrations),
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        fail("Phase 63 top-level constrained penetration must match per-step maximum")
+    if requested_count != max(result_requested_counts):
+        fail("Phase 63 top-level requested count must match per-step maximum")
+    if accepted_count != max(result_accepted_counts):
+        fail("Phase 63 top-level accepted count must match per-step maximum")
+    if skipped_count != max(result_skipped_counts):
+        fail("Phase 63 top-level skipped count must match per-step maximum")
+    if not np.isclose(normal_residual, max(result_residuals), rtol=0.0, atol=1.0e-12):
+        fail("Phase 63 top-level normal constraint residual must match per-step maximum")
+
+    actual_hash = sha256_file(ROOT / report_path)
+    if actual_hash != PHASE63_SPINNING_BOX_NORMAL_CONSTRAINT_SHA256:
+        fail("Phase 63 normal-constraint report sha256 changed")
+    record_hash = _record_sha256_for_artifact(text, report_path)
+    if record_hash != actual_hash:
+        fail("Phase 63 normal-constraint report sha256 mismatch")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.spinning_box":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 63 must keep spinning-box experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 63 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -11276,13 +11638,14 @@ def main() -> int:
     validate_phase60_record()
     validate_phase61_record()
     validate_phase62_record()
+    validate_phase63_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63 "
         "docs/provenance validation passed"
     )
     return 0

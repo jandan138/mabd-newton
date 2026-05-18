@@ -710,6 +710,29 @@
   solver, collision implementation, implicit contact solve, paper-faithful
   affine collision, comparison pass gate, rendered result, runtime
   performance, full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 63 spinning-box point-plane
+  normal-constraint diagnostic evidence after the Phase 63 record is created.
+- Phase 63 verifies the current spinning-box paper-horizon `mabd_newton`
+  diagnostic can use `contact_constraint_policy =
+  free_predict_then_active_point_plane_normal_constraints` to rerun penetrating
+  free-predicted steps with active scalar point-plane normal rows in the Newton
+  CPU oracle, records rank filtering with
+  `rank_filter_policy = increment_map_row_rank_filter` and
+  `increment_map_row_rank_filter`, records
+  `spinning_box_normal_constraint_not_paper_faithful`, records reduced
+  free-predicted penetration, top-level report status: `incomplete`, and no
+  lane gate.
+- Phase 63 does not verify a passed spinning-box experiment, M-ABD lane pass,
+  contact solver, collision implementation, IPC, generic
+  inequality-constrained M-ABD KKT, paper-faithful affine collision, comparison
+  pass gate, rendered result, runtime performance, full paper reproduction, or
+  any passed `experiment.*` claim.
+- Phase 63 spinning-box normal-constraint diagnostic evidence must not be
+  described as a passed spinning-box experiment, M-ABD lane pass, contact
+  solver, collision implementation, IPC, generic inequality-constrained M-ABD
+  KKT, paper-faithful affine collision, comparison pass gate, rendered result,
+  runtime performance, full paper reproduction, or any passed `experiment.*`
+  claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1049,6 +1072,12 @@
   affine collision, not a comparison pass gate, not a rendered result, not
   runtime performance evidence, not a full paper reproduction, and not any
   passed `experiment.*` claim.
+- Phase 63 spinning-box normal-constraint diagnostics are not a passed
+  spinning-box experiment, not a passed M-ABD lane, not a contact solver, not a
+  collision implementation, not IPC, not generic inequality-constrained M-ABD
+  KKT, not paper-faithful affine collision, not a comparison pass gate, not a
+  rendered result, not runtime performance evidence, not a full paper
+  reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
