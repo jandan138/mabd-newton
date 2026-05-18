@@ -24,6 +24,7 @@ from .step_oracle import (
     MABDCPUOracleBody,
     MABDCPUOracleConfig,
     MABDCPUOracleConstraint,
+    MABDCPUOraclePlaneConstraint,
     MABDCPUOracleStepResult,
     MABDCPUOracleWorldConstraint,
     solve_cpu_oracle_step,
@@ -41,6 +42,7 @@ class SolverMABD(SolverBase):
     MABD_BODY_FREQUENCY = "mabd:body"
     MABD_CONSTRAINT_FREQUENCY = "mabd:constraint"
     MABD_WORLD_CONSTRAINT_FREQUENCY = "mabd:world_constraint"
+    MABD_PLANE_CONSTRAINT_FREQUENCY = "mabd:plane_constraint"
     MABD_GRAVITY_FREQUENCY = "mabd:gravity"
     MABD_CONTROL_FREQUENCY = "mabd:control"
 
@@ -203,6 +205,19 @@ class SolverMABD(SolverBase):
             world_point=np.asarray(namespace.world_point.numpy()[row], dtype=float),
         )
 
+    def _plane_constraint_from_model_row(self, row: int, body_count: int) -> MABDCPUOraclePlaneConstraint:
+        namespace = self.model.mabd
+        body = int(namespace.plane_body.numpy()[row])
+        if not 0 <= body < body_count:
+            raise ValueError("mabd:plane_body must reference a mabd:body row")
+        return MABDCPUOraclePlaneConstraint(
+            body=body,
+            rest_point=np.asarray(namespace.plane_rest_point.numpy()[row], dtype=float),
+            plane_normal=np.asarray(namespace.plane_normal.numpy()[row], dtype=float),
+            plane_offset=float(namespace.plane_offset.numpy()[row]),
+            active=bool(int(namespace.plane_active.numpy()[row])),
+        )
+
     def _gravity_from_model(self) -> np.ndarray | None:
         count = self._custom_frequency_count(self.MABD_GRAVITY_FREQUENCY)
         namespace = self.model.mabd
@@ -238,12 +253,17 @@ class SolverMABD(SolverBase):
             raise ValueError("model-derived SolverMABD.step() requires at least one mabd:body row")
         constraint_count = self._custom_frequency_count(self.MABD_CONSTRAINT_FREQUENCY)
         world_constraint_count = self._custom_frequency_count(self.MABD_WORLD_CONSTRAINT_FREQUENCY)
+        plane_constraint_count = self._custom_frequency_count(self.MABD_PLANE_CONSTRAINT_FREQUENCY)
         config = MABDCPUOracleConfig(
             bodies=tuple(self._body_precompute_from_model_row(row) for row in range(body_count)),
             constraints=tuple(self._constraint_from_model_row(row, body_count) for row in range(constraint_count)),
             world_constraints=tuple(
                 self._world_constraint_from_model_row(row, body_count)
                 for row in range(world_constraint_count)
+            ),
+            plane_constraints=tuple(
+                self._plane_constraint_from_model_row(row, body_count)
+                for row in range(plane_constraint_count)
             ),
             gravity=self._gravity_from_model(),
             actuations=actuation_specs_from_model(self.model),
@@ -320,6 +340,7 @@ class SolverMABD(SolverBase):
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="body", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="constraint", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="world_constraint", namespace="mabd"))
+        builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="plane_constraint", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="gravity", namespace="mabd"))
         builder.add_custom_frequency(ModelBuilder.CustomFrequency(name="control", namespace="mabd"))
 
@@ -611,6 +632,50 @@ class SolverMABD(SolverBase):
             ),
         )
 
+        plane_constraint_attrs = (
+            ModelBuilder.CustomAttribute(
+                name="plane_body",
+                frequency=cls.MABD_PLANE_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=-1,
+                namespace="mabd",
+                references=cls.MABD_BODY_FREQUENCY,
+            ),
+            ModelBuilder.CustomAttribute(
+                name="plane_rest_point",
+                frequency=cls.MABD_PLANE_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 0.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="plane_normal",
+                frequency=cls.MABD_PLANE_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.vec3,
+                default=wp.vec3(0.0, 1.0, 0.0),
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="plane_offset",
+                frequency=cls.MABD_PLANE_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.float32,
+                default=0.0,
+                namespace="mabd",
+            ),
+            ModelBuilder.CustomAttribute(
+                name="plane_active",
+                frequency=cls.MABD_PLANE_CONSTRAINT_FREQUENCY,
+                assignment=Model.AttributeAssignment.MODEL,
+                dtype=wp.int32,
+                default=1,
+                namespace="mabd",
+            ),
+        )
+
         gravity_attrs = (
             ModelBuilder.CustomAttribute(
                 name="gravity_enabled",
@@ -762,7 +827,15 @@ class SolverMABD(SolverBase):
             ),
         )
 
-        for attr in (*model_attrs, *state_attrs, *constraint_attrs, *world_constraint_attrs, *gravity_attrs, *control_attrs):
+        for attr in (
+            *model_attrs,
+            *state_attrs,
+            *constraint_attrs,
+            *world_constraint_attrs,
+            *plane_constraint_attrs,
+            *gravity_attrs,
+            *control_attrs,
+        ):
             builder.add_custom_attribute(attr)
 
 

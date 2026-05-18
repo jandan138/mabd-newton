@@ -253,6 +253,26 @@ def _add_model_world_constraint_row(
     )
 
 
+def _add_model_plane_constraint_row(
+    builder: newton.ModelBuilder,
+    *,
+    body: int,
+    rest_point: tuple[float, float, float],
+    plane_normal: tuple[float, float, float] = (0.0, 1.0, 0.0),
+    plane_offset: float = 0.0,
+    active: int = 1,
+) -> None:
+    builder.add_custom_values(
+        **{
+            "mabd:plane_body": body,
+            "mabd:plane_rest_point": wp.vec3(*rest_point),
+            "mabd:plane_normal": wp.vec3(*plane_normal),
+            "mabd:plane_offset": plane_offset,
+            "mabd:plane_active": active,
+        }
+    )
+
+
 def _add_model_gravity_row(
     builder: newton.ModelBuilder,
     *,
@@ -1342,6 +1362,168 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertLess(solver.last_step_result.constraint_residual_norm, 1.0e-10)
         self.assertEqual(solver.last_step_result.topology, "dense")
         self.assertEqual(solver.last_step_result.dlambda.shape, (3,))
+
+    def test_solver_step_model_path_consumes_plane_constraint_rows(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_plane_constraint_row(
+            builder,
+            body=0,
+            rest_point=(0.25, 0.0, 0.0),
+            plane_normal=(0.0, 2.0, 0.0),
+            plane_offset=0.04,
+        )
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.5, -1.0, 0.25])
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        dt = 0.05
+
+        solver.step(state, state, None, None, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=np.array([0.25, 0.0, 0.0], dtype=float),
+                        plane_normal=np.array([0.0, 2.0, 0.0], dtype=float),
+                        plane_offset=0.04,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        self.assertEqual(len(solver.model_cpu_oracle_config.plane_constraints), 1)
+        self.assertEqual(solver.last_step_result.topology, "dense")
+        self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 1)
+        self.assertEqual(solver.last_step_result.plane_constraint_accepted_count, 1)
+        self.assertEqual(solver.last_step_result.plane_constraint_skipped_count, 0)
+        point = mabd.point_jacobian(np.array([0.25, 0.0, 0.0], dtype=float)) @ q_next[0]
+        self.assertLess(abs(float(np.array([0.0, 1.0, 0.0]) @ point) - 0.02), 1.0e-8)
+
+    def test_solver_step_model_path_ignores_disabled_plane_constraint_rows(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_plane_constraint_row(
+            builder,
+            body=0,
+            rest_point=(0.25, 0.0, 0.0),
+            plane_normal=(0.0, 1.0, 0.0),
+            plane_offset=0.0,
+            active=0,
+        )
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.5, -1.0, 0.25])
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        dt = 0.05
+
+        solver.step(state, state, None, None, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=np.array([0.25, 0.0, 0.0], dtype=float),
+                        plane_normal=np.array([0.0, 1.0, 0.0], dtype=float),
+                        plane_offset=0.0,
+                        active=False,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        self.assertEqual(len(solver.model_cpu_oracle_config.plane_constraints), 1)
+        self.assertFalse(solver.model_cpu_oracle_config.plane_constraints[0].active)
+        self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 0)
+        self.assertEqual(solver.last_step_result.dlambda.shape, (0,))
+
+    def test_solver_step_model_path_rejects_out_of_range_plane_body(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_plane_constraint_row(builder, body=1, rest_point=(0.0, 0.0, 0.0))
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        with self.assertRaisesRegex(ValueError, "mabd:plane_body"):
+            solver.step(state, state, None, None, 0.05)
+
+    def test_solver_step_model_path_rejects_zero_plane_normal(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_plane_constraint_row(
+            builder,
+            body=0,
+            rest_point=(0.0, 0.0, 0.0),
+            plane_normal=(0.0, 0.0, 0.0),
+        )
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        with self.assertRaisesRegex(ValueError, "plane_normal"):
+            solver.step(state, state, None, None, 0.05)
+
+    def test_solver_step_manual_config_takes_precedence_over_model_plane_constraints(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_plane_constraint_row(builder, body=0, rest_point=(0.25, 0.0, 0.0))
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        manual_config = mabd.MABDCPUOracleConfig(bodies=[_body()])
+        solver.configure_cpu_oracle(manual_config)
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+
+        solver.step(state, state, None, None, 0.05)
+
+        self.assertIsNone(solver.model_cpu_oracle_config)
+        self.assertEqual(solver.last_step_result.topology, "unconstrained")
+
+    def test_solver_step_still_rejects_newton_contacts_input_with_model_plane_rows(self) -> None:
+        builder = newton.ModelBuilder()
+        SolverMABD.register_custom_attributes(builder)
+        _add_model_body_row(builder, young_modulus=1.0)
+        _add_model_plane_constraint_row(builder, body=0, rest_point=(0.25, 0.0, 0.0))
+        model = builder.finalize()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+
+        with self.assertRaisesRegex(NotImplementedError, "Contacts input"):
+            solver.step(state, state, None, object(), 0.05)
 
     def test_solver_step_manual_config_takes_precedence_over_model_world_constraints(self) -> None:
         model = _mabd_model_with_one_world_constraint()

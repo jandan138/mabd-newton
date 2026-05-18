@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-66 docs and provenance contracts."""
+"""Validate Phase 0-67 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -159,6 +159,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-19-phase64-spinning-box-decoupled-twist.md",
     "docs/records/2026-05-19-phase65-spinning-box-figure-curves.md",
     "docs/records/2026-05-19-phase66-spinning-box-figure-agreement-diagnostics.md",
+    "docs/records/2026-05-19-phase67-model-plane-constraints.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -229,6 +230,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-19-mabd-phase65-spinning-box-figure-curves.md",
     "docs/superpowers/specs/2026-05-19-phase66-spinning-box-figure-agreement-diagnostics-design.md",
     "docs/superpowers/plans/2026-05-19-mabd-phase66-spinning-box-figure-agreement-diagnostics.md",
+    "docs/superpowers/specs/2026-05-19-phase67-model-plane-constraints-design.md",
+    "docs/superpowers/plans/2026-05-19-mabd-phase67-model-plane-constraints.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -288,6 +291,7 @@ PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT = "ea33e90cd7613212aad4440b9dcf0ac7
 PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT = "8c00873c9e85ca8a85d518f02f7bbf415f946d91"
 PHASE65_SPINNING_BOX_FIGURE_CURVES_COMMIT = "8cfbb4647742cdf032706c03e16bcb37d8dbbc28"
 PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT = "27650c74cadb5008fdb3d69f1a3faed069da2757"
+PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT = "6252693a584e9a4cd5f1640440060c39c840fd33"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -377,6 +381,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "TO_BE_BACKFILLED_PHASE64",
     "phase64-working-tree",
     "phase65-working-tree",
+    "TO_BE_BACKFILLED_PHASE67",
+    "phase67-working-tree",
 }
 
 
@@ -12278,6 +12284,323 @@ def validate_phase66_record() -> None:
             fail("Phase 66 must not pass experiment.* claims")
 
 
+def _phase67_model_plane_constraint_smoke() -> None:
+    import newton
+    import warp as wp
+    from newton.solvers import SolverMABD, mabd
+
+    def add_body_row(builder: Any) -> None:
+        body_id = builder.add_body()
+        builder.add_custom_values(
+            **{
+                "mabd:body_index": body_id,
+                "mabd:young_modulus": 1.0,
+                "mabd:poisson_ratio": 0.25,
+                "mabd:density": 1.0,
+                "mabd:polar_mode": 0,
+                "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+                "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+                "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+                "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+                "mabd:point_mass0": -1.0,
+                "mabd:point_mass1": -1.0,
+                "mabd:point_mass2": -1.0,
+                "mabd:point_mass3": -1.0,
+                "mabd:volume": -1.0,
+            }
+        )
+
+    def add_plane_row(builder: Any) -> None:
+        builder.add_custom_values(
+            **{
+                "mabd:plane_body": 0,
+                "mabd:plane_rest_point": wp.vec3(0.25, 0.0, 0.0),
+                "mabd:plane_normal": wp.vec3(0.0, 2.0, 0.0),
+                "mabd:plane_offset": 0.04,
+                "mabd:plane_active": 1,
+            }
+        )
+
+    def assign_state(state: Any, q: np.ndarray, qd: np.ndarray) -> None:
+        q_arr = np.asarray([q], dtype=np.float32)
+        qd_arr = np.asarray([qd], dtype=np.float32)
+        state.mabd.q0.assign(q_arr[:, 0:3])
+        state.mabd.q1.assign(q_arr[:, 3:6])
+        state.mabd.q2.assign(q_arr[:, 6:9])
+        state.mabd.t.assign(q_arr[:, 9:12])
+        state.mabd.qd0.assign(qd_arr[:, 0:3])
+        state.mabd.qd1.assign(qd_arr[:, 3:6])
+        state.mabd.qd2.assign(qd_arr[:, 6:9])
+        state.mabd.td.assign(qd_arr[:, 9:12])
+
+    builder = newton.ModelBuilder()
+    SolverMABD.register_custom_attributes(builder)
+    add_body_row(builder)
+    add_plane_row(builder)
+    model = builder.finalize()
+    solver = SolverMABD(model)
+    q = mabd.pack_q(np.eye(3), np.array([0.0, -0.1, 0.0], dtype=float))
+    qd = np.zeros(12, dtype=float)
+    qd[9:12] = np.array([0.5, -1.0, 0.25], dtype=float)
+    state = model.state()
+    assign_state(state, q, qd)
+
+    solver.step(state, state, None, None, 0.05)
+
+    config = solver.model_cpu_oracle_config
+    if config is None:
+        fail("Phase 67 smoke did not build model_cpu_oracle_config")
+    if len(config.plane_constraints) != 1:
+        fail("Phase 67 smoke did not extract exactly one plane constraint")
+    result = solver.last_step_result
+    if result is None:
+        fail("Phase 67 smoke did not record last_step_result")
+    if result.plane_constraint_requested_count != 1:
+        fail("Phase 67 smoke requested plane constraint count changed")
+    if result.plane_constraint_accepted_count != 1:
+        fail("Phase 67 smoke accepted plane constraint count changed")
+    if result.plane_constraint_skipped_count != 0:
+        fail("Phase 67 smoke skipped plane constraint count changed")
+    residual = _require_finite_scalar(result.constraint_residual_norm, "Phase 67 smoke residual")
+    if residual > 1.0e-8:
+        fail("Phase 67 smoke residual exceeded tolerance")
+
+    manual_solver = SolverMABD(model)
+    manual_solver.configure_cpu_oracle(mabd.MABDCPUOracleConfig(bodies=[config.bodies[0]]))
+    manual_state = model.state()
+    assign_state(manual_state, q, qd)
+    manual_solver.step(manual_state, manual_state, None, None, 0.05)
+    if manual_solver.model_cpu_oracle_config is not None:
+        fail("Phase 67 manual config smoke unexpectedly built model config")
+
+    with_contacts_solver = SolverMABD(model)
+    with_contacts_state = model.state()
+    assign_state(with_contacts_state, q, qd)
+    try:
+        with_contacts_solver.step(with_contacts_state, with_contacts_state, None, object(), 0.05)
+    except NotImplementedError as exc:
+        if "Contacts input" not in str(exc):
+            fail("Phase 67 contacts smoke raised unexpected NotImplementedError")
+    else:
+        fail("Phase 67 contacts smoke must reject Contacts input")
+
+
+def _validate_phase67_paper_claim_statuses() -> None:
+    data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = data.get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    by_id: dict[str, dict[str, Any]] = {}
+    for claim in claims:
+        if not isinstance(claim, dict):
+            fail("paper-claims.yaml claim entry must be a mapping")
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id in by_id:
+            fail(f"paper-claims.yaml duplicate claim id: {claim_id}")
+        by_id[claim_id] = claim
+
+    expected_passed_methods = {
+        "method.single_body.affine_kinematics",
+        "method.single_body.corotated_stiffness",
+        "method.single_body.no_polar_mode",
+        "method.single_body.twist_wrench_maps",
+        "method.force_mapping.point_load_penalty_contact",
+        "method.force_mapping.gravity_generalized_force",
+        "method.actuation.affine_control_forces",
+        "method.joints.ball",
+        "method.joints.hinge",
+        "method.joints.universal",
+        "method.joints.prismatic",
+        "method.kkt.residual_corrected_rhs",
+        "method.topology.chain_block_tridiagonal",
+        "method.topology.tree_traversal_dense_dual_oracle",
+        "method.topology.loop_schur_complement",
+        "method.topology.graph_gauss_seidel",
+        "method.topology.graph_classification_reconstruction",
+        "method.solver.configured_cpu_step",
+        "method.joint_limits.strain_clamp_penalty",
+    }
+    expected_experiments = {
+        "experiment.single_body.rolling_spinning",
+        "experiment.single_body.spinning_box",
+        "experiment.single_body.t_handle",
+        "experiment.single_body.heavy_top",
+        "experiment.single_body.physical_pendulum",
+        "experiment.joints.heavy_end_chain",
+        "experiment.joints.ball_joint_nets",
+        "experiment.joints.pulley",
+        "experiment.hierarchy.trees",
+        "experiment.cloak",
+        "experiment.armadillo_coupling",
+        "experiment.ragdoll_on_net",
+        "experiment.mixed_joints.falling",
+        "experiment.robot.franka",
+        "experiment.protein_chain",
+    }
+    expected_claims = expected_passed_methods | expected_experiments
+    if set(by_id) != expected_claims:
+        fail("Phase 67 paper claim id set changed")
+    for claim_id in expected_passed_methods:
+        if by_id[claim_id].get("reproduction_status") != "passed":
+            fail(f"Phase 67 method claim status changed: {claim_id}")
+    for claim_id in expected_experiments:
+        if by_id[claim_id].get("reproduction_status") != "intended":
+            fail(f"Phase 67 experiment claim status changed: {claim_id}")
+    contact_claim = by_id["method.force_mapping.point_load_penalty_contact"]
+    if contact_claim.get("conflict_note") != (
+        "CPU oracle force mapping only; not collision detection, friction, broadphase, "
+        "or a full contact solver"
+    ):
+        fail("Phase 67 must not widen point-load/penalty-contact conflict note")
+
+
+def validate_phase67_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-19-phase67-model-plane-constraints.md"
+    spec_path = ROOT / "docs/superpowers/specs/2026-05-19-phase67-model-plane-constraints-design.md"
+    plan_path = ROOT / "docs/superpowers/plans/2026-05-19-mabd-phase67-model-plane-constraints.md"
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_solver_model_plane_constraint_config_slice",
+        "phase67-model-plane-constraints",
+        PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        "local patch files:",
+        "vendor/newton/newton/_src/solvers/mabd/solver_mabd.py",
+        "tests/test_mabd_phase4_solver_step.py",
+        "vendor/newton/newton/tests/test_mabd_phase4_solver_step.py",
+        "`Phase67 modifies vendored Newton inside this repository; unmodified Newton support is not claimed.`",
+        "`mutates_reference_environment=false`, `uses_reference_python=false`,\n  `uses_ambient_python=false`",
+        "mabd:plane_constraint",
+        "mabd:plane_body",
+        "mabd:plane_rest_point",
+        "mabd:plane_normal",
+        "mabd:plane_offset",
+        "mabd:plane_active",
+        "requested=1",
+        "accepted=1",
+        "skipped=0",
+        "manual-config precedence smoke",
+        "NotImplementedError",
+        "No `experiment.*` claim is passed.",
+        "`paper-claims.yaml` is unchanged.",
+        "not a contact solver",
+        "not Newton `Contacts` ingestion",
+        "not paper-faithful affine collision/contact",
+        "not unmodified Newton M-ABD support",
+        "not full paper reproduction",
+        "PYTHONPATH=vendor/newton",
+        "scripts/env/readiness_check.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 67 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE67",
+        "phase67-working-tree",
+        "<commit after solver implementation>",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 67 record contains stale placeholder")
+    if PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 67 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "contact solver implemented",
+        "paper-faithful affine collision implemented",
+        "passed experiment",
+        "full reproduction complete",
+        "unmodified newton supports m-abd",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 67 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 67")
+    verified = claim_boundary_bullet(boundary_text, "Phase 67 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 67 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text,
+        "Phase 67 model-derived point-plane normal constraint",
+    )
+    for snippet in (
+        "model-derived point-plane normal constraint row extraction evidence",
+        "Phase 67 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 67 current boundary missing: {snippet}")
+    for snippet in (
+        "mabd:plane_constraint",
+        "mabd:plane_body",
+        "mabd:plane_rest_point",
+        "mabd:plane_normal",
+        "mabd:plane_offset",
+        "mabd:plane_active",
+        "vendored/local Newton CPU oracle config",
+        "SolverMABD.step()",
+        "no experiment claim passed",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 67 verified boundary missing: {snippet}")
+    for snippet in (
+        "contact solver",
+        "Newton `Contacts` ingestion",
+        "collision detection",
+        "active-set generation",
+        "IPC",
+        "generic inequality-constrained M-ABD KKT",
+        "paper-faithful affine contact",
+        "paper-faithful M-ABD stepping",
+        "comparison pass gate",
+        "runtime performance",
+        "any passed `experiment.*` claim",
+        "full paper reproduction",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 67 non-claim boundary missing: {snippet}")
+    for snippet in (
+        "unmodified Newton M-ABD support",
+        "paper-faithful affine collision/contact",
+        "contact solver",
+        "full paper reproduction",
+    ):
+        if snippet not in forbidden:
+            fail(f"Phase 67 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 67 Model Plane Constraints Design",
+        "vendored/local Newton M-ABD CPU-oracle",
+        "mabd:plane_constraint",
+        "mabd:plane_body",
+        "mabd:plane_normal",
+        "Newton `Contacts` ingestion",
+        "method.force_mapping.point_load_penalty_contact",
+        "unmodified Newton supports M-ABD",
+        "full paper reproduction",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 67 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 67 Model Plane Constraints Implementation Plan",
+        "vendored/local",
+        "PYTHONPATH=vendor/newton",
+        "model-path smoke",
+        "all current `experiment.*` claims remain `intended`",
+        "method.force_mapping.point_load_penalty_contact",
+        "mutates_reference_environment=false",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 67 plan missing required boundary text: {snippet}")
+
+    _phase67_model_plane_constraint_smoke()
+    _validate_phase67_paper_claim_statuses()
+
+
 def _validate_phase65_digitized_curve(
     curve: Any,
     *,
@@ -12655,13 +12978,14 @@ def main() -> int:
     validate_phase64_record()
     validate_phase65_record()
     validate_phase66_record()
+    validate_phase67_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67 "
         "docs/provenance validation passed"
     )
     return 0
