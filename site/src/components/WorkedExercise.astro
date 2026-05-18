@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = "带答案的练习" } = Astro.props;
+---
+
+<section class="tutorial-card tutorial-card--worked-exercise">
+  <h3>{title}</h3>
+  <div class="worked-exercise">
+    <slot />
+  </div>
+</section>

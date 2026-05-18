@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+  step?: string;
+}
+
+const { title = "贯穿小项目", step = "本节推进" } = Astro.props;
+---
+
+<section class="tutorial-card tutorial-card--guided-project">
+  <p class="tutorial-card__eyebrow">{step}</p>
+  <h3>{title}</h3>
+  <slot />
+</section>

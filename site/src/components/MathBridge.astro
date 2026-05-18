@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = "数学坡道" } = Astro.props;
+---
+
+<section class="tutorial-card tutorial-card--math-bridge">
+  <h3>{title}</h3>
+  <ol class="math-bridge-list">
+    <slot />
+  </ol>
+</section>
