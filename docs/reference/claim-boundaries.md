@@ -800,6 +800,23 @@
   agreement, paper-faithful M-ABD stepping, contact solver, paper-faithful
   affine collision, comparison pass gate, rendered output inspection, runtime
   performance, full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 67 model-derived point-plane normal constraint
+  row extraction evidence after the Phase 67 record is created.
+- Phase 67 verifies that explicit `mabd:plane_constraint` model rows with
+  `mabd:plane_body`, `mabd:plane_rest_point`, `mabd:plane_normal`,
+  `mabd:plane_offset`, and `mabd:plane_active` are extracted into the
+  vendored/local Newton CPU oracle config used by `SolverMABD.step()`, and
+  keeps no experiment claim passed.
+- Phase 67 does not verify contact solver behavior, Newton `Contacts`
+  ingestion, collision detection, active-set generation, IPC, generic
+  inequality-constrained M-ABD KKT, paper-faithful affine contact,
+  paper-faithful M-ABD stepping, comparison pass gate, runtime performance,
+  rendered output, any passed `experiment.*` claim, or full paper
+  reproduction.
+- Phase 67 model-derived point-plane normal constraint rows must not be
+  described as unmodified Newton M-ABD support, paper-faithful affine
+  collision/contact, a contact solver, a passed experiment, or full paper
+  reproduction.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1167,6 +1184,14 @@
   gate, not rendered-output inspection evidence, not runtime performance
   evidence, not a full paper reproduction, and not any passed `experiment.*`
   claim.
+- Phase 67 model-derived point-plane normal constraint rows are not unmodified
+  Newton M-ABD support, not a contact solver, not Newton `Contacts` ingestion,
+  not collision detection, not active-set generation, not IPC, not generic
+  inequality-constrained M-ABD KKT, not paper-faithful affine contact, not
+  paper-faithful affine collision/contact, not paper-faithful M-ABD stepping,
+  not a comparison pass gate, not rendered-output evidence, not runtime
+  performance evidence, not a full paper reproduction, and not any passed
+  `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

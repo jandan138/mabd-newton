@@ -4587,6 +4587,153 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("agreement", str(context.exception))
 
+    def test_phase67_model_plane_constraints_are_bounded(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 67")
+        verified = claim_boundary_bullet(text, "Phase 67 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 67 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 67 model-derived point-plane normal constraint",
+        )
+
+        self.assertIn("model-derived point-plane normal constraint row extraction evidence", current)
+        self.assertIn("mabd:plane_constraint", verified)
+        self.assertIn("mabd:plane_body", verified)
+        self.assertIn("mabd:plane_rest_point", verified)
+        self.assertIn("mabd:plane_normal", verified)
+        self.assertIn("mabd:plane_offset", verified)
+        self.assertIn("mabd:plane_active", verified)
+        self.assertIn("vendored/local Newton CPU oracle config", verified)
+        self.assertIn("SolverMABD.step()", verified)
+        for snippet in (
+            "contact solver",
+            "Newton `Contacts` ingestion",
+            "collision detection",
+            "active-set generation",
+            "IPC",
+            "generic inequality-constrained M-ABD KKT",
+            "paper-faithful affine contact",
+            "paper-faithful M-ABD stepping",
+            "comparison pass gate",
+            "runtime performance",
+            "any passed `experiment.*` claim",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "unmodified Newton M-ABD support",
+            "paper-faithful affine collision/contact",
+            "contact solver",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        self.assertFalse(
+            any(
+                claim["claim_id"].startswith("experiment.")
+                and claim["reproduction_status"] == "passed"
+                for claim in data["claims"]
+            )
+        )
+        contact_claim = next(
+            claim
+            for claim in data["claims"]
+            if claim["claim_id"] == "method.force_mapping.point_load_penalty_contact"
+        )
+        self.assertEqual(
+            contact_claim["conflict_note"],
+            "CPU oracle force mapping only; not collision detection, friction, broadphase, or a full contact solver",
+        )
+        validate_docs.validate_phase67_record()
+
+    def test_phase67_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT / "docs/records/2026-05-19-phase67-model-plane-constraints.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_solver_model_plane_constraint_config_slice",
+            "phase67-model-plane-constraints",
+            validate_docs.PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "Phase67 modifies vendored Newton inside this repository; unmodified Newton support is not claimed.",
+            "mutates_reference_environment=false",
+            "uses_ambient_python=false",
+            "mabd:plane_constraint",
+            "mabd:plane_body",
+            "mabd:plane_rest_point",
+            "mabd:plane_normal",
+            "mabd:plane_offset",
+            "mabd:plane_active",
+            "requested=1",
+            "accepted=1",
+            "skipped=0",
+            "manual-config precedence smoke",
+            "NotImplementedError",
+            "No `experiment.*` claim is passed.",
+            "`paper-claims.yaml` is unchanged.",
+            "not a contact solver",
+            "not Newton `Contacts` ingestion",
+            "not paper-faithful affine collision/contact",
+            "not unmodified Newton M-ABD support",
+            "not full paper reproduction",
+            "PYTHONPATH=vendor/newton",
+            "scripts/env/readiness_check.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE67", text)
+        self.assertNotIn("phase67-working-tree", text)
+
+    def test_phase67_validator_rejects_passed_experiment_claim(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        corrupted = {
+            **data,
+            "claims": [
+                {
+                    **claim,
+                    "reproduction_status": (
+                        "passed"
+                        if claim["claim_id"] == "experiment.single_body.spinning_box"
+                        else claim["reproduction_status"]
+                    ),
+                }
+                for claim in data["claims"]
+            ],
+        }
+
+        def fake_read_yaml(path):
+            if str(path).endswith("paper-claims.yaml"):
+                return corrupted
+            return validate_docs.read_yaml(path)
+
+        with patch.object(validate_docs, "read_yaml", side_effect=fake_read_yaml):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase67_record()
+
+        self.assertIn("experiment claim status", str(context.exception))
+
+    def test_phase67_validator_rejects_failed_model_plane_smoke(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        with patch.object(
+            validate_docs,
+            "_phase67_model_plane_constraint_smoke",
+            side_effect=SystemExit("validate_docs.py: Phase 67 smoke residual exceeded tolerance"),
+        ):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase67_record()
+
+        self.assertIn("Phase 67 smoke residual", str(context.exception))
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -5433,7 +5580,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
