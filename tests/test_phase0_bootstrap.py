@@ -191,6 +191,44 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("reports/generated/environment-readiness/local/readiness.json", environment_text)
         self.assertIn("smoke_passed", environment_text)
 
+    def test_phase54_environment_clone_contract_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 54")
+        verified = claim_boundary_bullet(text, "Phase 54 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 54 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 54 environment clone/sync scripting")
+
+        self.assertIn("environment clone/sync contract", current)
+        self.assertIn("scripts/env", verified)
+        self.assertIn("conda create -y -p", verified)
+        self.assertIn("--sync-existing", verified)
+        self.assertIn("mutates_reference_environment=false", verified)
+        self.assertIn("solver behavior", non_claim)
+        self.assertIn("paper experiment reproduction", non_claim)
+        self.assertIn("full paper reproduction", forbidden)
+
+        environment_text = (ROOT / "docs/operations/environment.md").read_text()
+        self.assertIn("scripts/env/clone_from_reference.py --dry-run", environment_text)
+        self.assertIn("target_exists", environment_text)
+        self.assertIn("ready_to_clone", environment_text)
+        self.assertIn("rsync -a --delete", environment_text)
+
+        record_text = (
+            ROOT / "docs/records/2026-05-18-phase54-environment-clone-contract.md"
+        ).read_text()
+        for snippet in (
+            "passed_for_environment_clone_contract",
+            "scripts/env/clone_from_reference.py",
+            "src/mabd_reproduction/environment_clone.py",
+            "tests/test_environment_clone.py",
+            "target_exists",
+            "ready_to_clone",
+            "ready_to_sync_existing",
+            "mutates_reference_environment=false",
+            "No `experiment.*` claim is passed.",
+        ):
+            self.assertIn(snippet, record_text)
+
     def test_phase9_point_contact_force_claim_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         claims = {claim["claim_id"]: claim for claim in data["claims"]}
@@ -4009,7 +4047,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

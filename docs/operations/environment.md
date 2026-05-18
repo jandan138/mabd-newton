@@ -89,6 +89,52 @@ behavior, method correctness, scene dynamics, timing, or paper experiment
 reproduction. Generated readiness JSON under `reports/generated/` is not
 committed.
 
+## Clone And Sync Maintenance
+
+Phase 54 makes the reference-project clone process executable:
+
+```bash
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  scripts/env/clone_from_reference.py --dry-run
+```
+
+On the current machine this dry run is expected to report `target_exists`
+because `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310` already
+exists. The script refuses to overwrite or refresh that target by default.
+
+If the target environment is absent, the planned command is:
+
+```bash
+/cpfs/user/zhuzihou/conda-managed/miniforge3/bin/conda create -y \
+  -p /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310 \
+  --clone /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310
+```
+
+That missing-target dry run reports `ready_to_clone`.
+
+If an operator intentionally wants to refresh the existing target clone, the
+script requires the explicit sync flag:
+
+```bash
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  scripts/env/clone_from_reference.py --sync-existing --dry-run
+```
+
+The non-dry-run sync command is:
+
+```bash
+rsync -a --delete \
+  /cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/ \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/
+```
+
+The script's JSON plan records `mutates_reference_environment=false`,
+`uses_reference_python=false`, and `uses_ambient_python=false`. A non-dry-run
+`--sync-existing` mutates only the project-owned target environment and should
+be recorded under `docs/records/` before its results are used as evidence.
+
 ## Dependency Changes
 
 Dependency installation is an explicit environment-maintenance action, not part

@@ -708,6 +708,21 @@
   rendered output, runtime performance, generated videos or raw simulation
   logs, a comparison pass gate, a full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 54 executable environment clone/sync contract
+  evidence after the Phase 54 record is created.
+- Phase 54 verifies that the reference `physics-primitive-agent` Newton
+  environment clone process is represented by a tested `scripts/env`
+  maintenance CLI, that missing-target clone plans use
+  `conda create -y -p mabd-newton-py310 --clone physics-primitive-newton-py310`,
+  that existing targets are not overwritten by default, that explicit
+  `--sync-existing` plans use `rsync -a --delete`, that reference/target path
+  aliasing and nesting are rejected, and that dry-run JSON records
+  `mutates_reference_environment=false`, `uses_reference_python=false`, and
+  `uses_ambient_python=false`.
+- Phase 54 does not verify dependency freshness, solver behavior, M-ABD method
+  correctness, scene dynamics, paper experiment reproduction, timing,
+  comparative baselines, runtime performance, rendered output, a full paper
+  reproduction, or any passed `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -829,6 +844,11 @@
   pass gate, not a paper timing result, not rendered output evidence, not
   generated-video evidence, not a full paper reproduction, and not any passed
   `experiment.*` claim.
+- Phase 54 environment clone/sync scripting is not dependency freshness
+  evidence, not solver behavior evidence, not method correctness evidence, not
+  paper experiment reproduction, not timing evidence, not comparative baseline
+  evidence, not runtime performance evidence, not a full paper reproduction,
+  and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

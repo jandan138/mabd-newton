@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-53 docs and provenance contracts."""
+"""Validate Phase 0-54 docs and provenance contracts."""
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import hashlib
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -118,6 +120,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase51-heavy-top-comparison-protocol.md",
     "docs/records/2026-05-18-phase52-heavy-top-mabd-metrics.md",
     "docs/records/2026-05-18-phase53-heavy-top-figure-curves.md",
+    "docs/records/2026-05-18-phase54-environment-clone-contract.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -162,6 +165,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase52-heavy-top-mabd-metrics.md",
     "docs/superpowers/specs/2026-05-18-phase53-heavy-top-figure-curve-digitization-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase53-heavy-top-figure-curves.md",
+    "docs/superpowers/specs/2026-05-18-phase54-environment-clone-contract.md",
+    "docs/superpowers/plans/2026-05-18-phase54-environment-clone-contract.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -187,6 +192,9 @@ REQUIRED_PATHS = (
     "configs/experiments/single_body_t_handle.yaml",
     "scripts/run_experiment.py",
     "scripts/env/readiness_check.py",
+    "scripts/env/clone_from_reference.py",
+    "src/mabd_reproduction/environment_clone.py",
+    "tests/test_environment_clone.py",
     "tests/test_environment_readiness.py",
     "vendor/newton/PROVENANCE.md",
     "vendor/newton/LICENSE.md",
@@ -317,6 +325,14 @@ def validate_environment_contract() -> None:
         "readiness_check.py",
         "reports/generated/environment-readiness/local/readiness.json",
         "smoke_passed",
+        "Clone And Sync Maintenance",
+        "scripts/env/clone_from_reference.py --dry-run",
+        "target_exists",
+        "ready_to_clone",
+        "--sync-existing",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
     ):
         if snippet not in text:
             fail(f"environment.md missing {snippet}")
@@ -8168,6 +8184,196 @@ def validate_phase53_record() -> None:
         fail("paper-claims.yaml missing heavy-top claim")
 
 
+def validate_phase54_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase54-environment-clone-contract.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed_for_environment_clone_contract",
+        "phase54-environment-clone-contract",
+        "75eb19423f5b7a3be1129bf44341fb19901c4276",
+        VENDORED_NEWTON_COMMIT,
+        "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310",
+        "scripts/env/clone_from_reference.py",
+        "src/mabd_reproduction/environment_clone.py",
+        "tests/test_environment_clone.py",
+        "target_exists",
+        "ready_to_clone",
+        "ready_to_sync_existing",
+        "conda create -y -p",
+        "rsync -a --delete",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "No `experiment.*` claim is passed.",
+        "does not prove dependency freshness",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_environment_clone tests.test_environment_readiness",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/clone_from_reference.py --dry-run",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c \"import newton; print(newton.__file__)\"",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 54 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE54",
+        "phase54-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 54 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "dependency freshness is verified",
+        "solver behavior passed",
+        "m-abd method correctness passed",
+        "paper experiment reproduction passed",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 54 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 54")
+    verified = claim_boundary_bullet(boundary_text, "Phase 54 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 54 does not verify")
+    forbidden = claim_boundary_bullet(boundary_text, "Phase 54 environment clone/sync scripting")
+    for snippet in ("environment clone/sync contract", "Phase 54 record"):
+        if snippet not in current:
+            fail(f"Phase 54 current boundary missing: {snippet}")
+    for snippet in (
+        "scripts/env",
+        "conda create -y -p",
+        "--sync-existing",
+        "rsync -a --delete",
+        "aliasing and nesting",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 54 verified boundary missing: {snippet}")
+    for snippet in (
+        "dependency freshness",
+        "solver behavior",
+        "M-ABD method correctness",
+        "paper experiment reproduction",
+        "timing",
+        "comparative baselines",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 54 non-claim boundary missing: {snippet}")
+    for snippet in (
+        "dependency freshness evidence",
+        "solver behavior evidence",
+        "method correctness evidence",
+        "paper experiment reproduction",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in forbidden:
+            fail(f"Phase 54 forbidden boundary missing: {snippet}")
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"
+    with tempfile.TemporaryDirectory() as temp_dir:
+        base = Path(temp_dir)
+        reference = base / "physics-primitive-newton-py310"
+        target = base / "mabd-newton-py310"
+        conda = base / "miniforge3/bin/conda"
+        reference.mkdir()
+        conda.parent.mkdir(parents=True)
+
+        clone_result = subprocess.run(
+            [
+                str(MABD_PYTHON),
+                "scripts/env/clone_from_reference.py",
+                "--reference-env",
+                str(reference),
+                "--target-env",
+                str(target),
+                "--conda",
+                str(conda),
+                "--dry-run",
+            ],
+            cwd=ROOT,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if clone_result.returncode != 0:
+            fail("Phase 54 clone dry-run failed: " + clone_result.stderr.strip())
+        clone_payload = json.loads(clone_result.stdout)
+        if clone_payload.get("status") != "ready_to_clone":
+            fail("Phase 54 clone dry-run did not report ready_to_clone")
+        if clone_payload.get("executed") is not False:
+            fail("Phase 54 clone dry-run executed commands")
+        if clone_payload.get("non_pollution", {}).get("mutates_reference_environment") is not False:
+            fail("Phase 54 clone dry-run mutates reference environment")
+
+        target.mkdir()
+        target_exists_result = subprocess.run(
+            [
+                str(MABD_PYTHON),
+                "scripts/env/clone_from_reference.py",
+                "--reference-env",
+                str(reference),
+                "--target-env",
+                str(target),
+                "--dry-run",
+            ],
+            cwd=ROOT,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if target_exists_result.returncode != 2:
+            fail("Phase 54 existing target dry-run must return 2")
+        target_exists_payload = json.loads(target_exists_result.stdout)
+        if target_exists_payload.get("status") != "target_exists":
+            fail("Phase 54 existing target dry-run did not report target_exists")
+        if target_exists_payload.get("can_execute") is not False:
+            fail("Phase 54 existing target dry-run must not be executable")
+
+        sync_result = subprocess.run(
+            [
+                str(MABD_PYTHON),
+                "scripts/env/clone_from_reference.py",
+                "--reference-env",
+                str(reference),
+                "--target-env",
+                str(target),
+                "--sync-existing",
+                "--dry-run",
+            ],
+            cwd=ROOT,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if sync_result.returncode != 0:
+            fail("Phase 54 sync dry-run failed: " + sync_result.stderr.strip())
+        sync_payload = json.loads(sync_result.stdout)
+        if sync_payload.get("status") != "ready_to_sync_existing":
+            fail("Phase 54 sync dry-run did not report ready_to_sync_existing")
+        if sync_payload.get("executed") is not False:
+            fail("Phase 54 sync dry-run executed commands")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -8450,13 +8656,14 @@ def main() -> int:
     validate_phase51_record()
     validate_phase52_record()
     validate_phase53_record()
+    validate_phase54_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54 "
         "docs/provenance validation passed"
     )
     return 0
