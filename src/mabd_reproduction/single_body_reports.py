@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from math import isfinite
 from pathlib import Path
 
+import newton
 import numpy as np
-from newton.solvers import mabd
+import warp as wp
+from newton.solvers import SolverMABD, mabd
 
 from .experiment_configs import SpinningBoxRunConfig
 from .reporting import ClaimReport, EvidenceStatus, write_claim_report
@@ -32,10 +35,25 @@ CONTACT_RESPONSE_DIAGNOSTIC_POLICY = "evaluated_from_current_mabd_states_for_nex
 NORMAL_CONSTRAINT_POLICY = "free_predict_then_active_point_plane_normal_constraints"
 NORMAL_CONSTRAINT_SCOPE = "diagnostic_only_no_lane_gate"
 NORMAL_CONSTRAINT_RANK_FILTER_POLICY = "increment_map_row_rank_filter"
+MODEL_PLANE_CONSTRAINT_POLICY = "solver_mabd_model_rows_free_predict_then_active_plane_constraints"
+MODEL_PLANE_CONSTRAINT_SCOPE = "diagnostic_only_no_lane_gate"
+MODEL_PLANE_CONSTRAINT_CONFIG_SOURCE = "mabd:plane_constraint_custom_rows"
+MODEL_PLANE_CONSTRAINT_BACKEND = "cpu_numpy_newton_solver_mabd_model_rows"
 DECOUPLED_TWIST_POLICY = "decoupled_spatial_twist_with_exponential_rigid_update"
 DECOUPLED_TWIST_SCOPE = "diagnostic_only_no_lane_gate"
 DECOUPLED_TWIST_SOLVER_STEP_POLICY = "no_solver_step_rigid_reconstruction_diagnostic"
 DECOUPLED_TWIST_RESIDUAL_STATUS = "not_evaluated_no_kkt_solve"
+
+
+@dataclass(frozen=True)
+class SolverMABDModelStepResult:
+    q: np.ndarray
+    qd: np.ndarray
+    residual_norm: float
+    constraint_residual_norm: float
+    plane_constraint_requested_count: int
+    plane_constraint_accepted_count: int
+    plane_constraint_skipped_count: int
 
 
 def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOracleBody:
@@ -57,6 +75,123 @@ def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOrac
         ),
         rest_q=rest_q,
         rotation_mode=rotation_mode,
+    )
+
+
+def _spinning_box_solver_mabd_body_points(config: SpinningBoxRunConfig) -> np.ndarray:
+    properties = spinning_box_physical_properties(config)
+    affine_second_moment = float(config.mass_diagonal[0])
+    point_radius = (affine_second_moment / properties.mass_kg) ** 0.5
+    return np.array(
+        [
+            [point_radius, point_radius, point_radius],
+            [point_radius, -point_radius, -point_radius],
+            [-point_radius, point_radius, -point_radius],
+            [-point_radius, -point_radius, point_radius],
+        ],
+        dtype=float,
+    )
+
+
+def _assign_solver_mabd_state(state: object, q: np.ndarray, qd: np.ndarray) -> None:
+    q_arr = np.asarray(q, dtype=np.float32).reshape(1, 12)
+    qd_arr = np.asarray(qd, dtype=np.float32).reshape(1, 12)
+    state.mabd.q0.assign(q_arr[:, 0:3])
+    state.mabd.q1.assign(q_arr[:, 3:6])
+    state.mabd.q2.assign(q_arr[:, 6:9])
+    state.mabd.t.assign(q_arr[:, 9:12])
+    state.mabd.qd0.assign(qd_arr[:, 0:3])
+    state.mabd.qd1.assign(qd_arr[:, 3:6])
+    state.mabd.qd2.assign(qd_arr[:, 6:9])
+    state.mabd.td.assign(qd_arr[:, 9:12])
+
+
+def _read_solver_mabd_state(state: object) -> tuple[np.ndarray, np.ndarray]:
+    q = np.concatenate(
+        [
+            state.mabd.q0.numpy()[0],
+            state.mabd.q1.numpy()[0],
+            state.mabd.q2.numpy()[0],
+            state.mabd.t.numpy()[0],
+        ]
+    ).astype(float, copy=False)
+    qd = np.concatenate(
+        [
+            state.mabd.qd0.numpy()[0],
+            state.mabd.qd1.numpy()[0],
+            state.mabd.qd2.numpy()[0],
+            state.mabd.td.numpy()[0],
+        ]
+    ).astype(float, copy=False)
+    return q, qd
+
+
+def _run_spinning_box_solver_mabd_model_step(
+    *,
+    config: SpinningBoxRunConfig,
+    q: np.ndarray,
+    qd: np.ndarray,
+    time_step_s: float,
+    plane_constraints: list[object] | None = None,
+) -> SolverMABDModelStepResult:
+    constraints = [] if plane_constraints is None else list(plane_constraints)
+    properties = spinning_box_physical_properties(config)
+    material = spinning_box_mabd_material_properties(config)
+    rest_points = _spinning_box_solver_mabd_body_points(config)
+    point_mass = properties.mass_kg / 4.0
+
+    builder = newton.ModelBuilder()
+    SolverMABD.register_custom_attributes(builder)
+    body_id = builder.add_body()
+    builder.add_custom_values(
+        **{
+            "mabd:body_index": body_id,
+            "mabd:young_modulus": material.young_modulus_pa,
+            "mabd:poisson_ratio": material.poisson_ratio,
+            "mabd:density": properties.density_kg_m3,
+            "mabd:polar_mode": 1,
+            "mabd:rest_point0": wp.vec3(*rest_points[0]),
+            "mabd:rest_point1": wp.vec3(*rest_points[1]),
+            "mabd:rest_point2": wp.vec3(*rest_points[2]),
+            "mabd:rest_point3": wp.vec3(*rest_points[3]),
+            "mabd:point_mass0": point_mass,
+            "mabd:point_mass1": point_mass,
+            "mabd:point_mass2": point_mass,
+            "mabd:point_mass3": point_mass,
+            "mabd:volume": material.volume_m3,
+            "mabd:zero_stiffness_diagnostic": 0,
+        }
+    )
+    for constraint in constraints:
+        builder.add_custom_values(
+            **{
+                "mabd:plane_body": int(constraint.body),
+                "mabd:plane_rest_point": wp.vec3(*np.asarray(constraint.rest_point, dtype=float)),
+                "mabd:plane_normal": wp.vec3(*np.asarray(constraint.plane_normal, dtype=float)),
+                "mabd:plane_offset": float(constraint.plane_offset),
+                "mabd:plane_active": int(getattr(constraint, "active", True)),
+            }
+        )
+
+    model = builder.finalize()
+    state = model.state()
+    _assign_solver_mabd_state(state, q, qd)
+    solver = SolverMABD(model)
+    solver.step(state, state, control=None, contacts=None, dt=time_step_s)
+    q_next, qd_next = _read_solver_mabd_state(state)
+    result = solver.last_step_result
+    if result is None:
+        raise RuntimeError("SolverMABD.step() did not record last_step_result")
+    return SolverMABDModelStepResult(
+        q=q_next,
+        qd=qd_next,
+        residual_norm=float(result.residual_norm),
+        constraint_residual_norm=float(getattr(result, "constraint_residual_norm", 0.0)),
+        plane_constraint_requested_count=int(
+            getattr(result, "plane_constraint_requested_count", len(constraints))
+        ),
+        plane_constraint_accepted_count=int(getattr(result, "plane_constraint_accepted_count", 0)),
+        plane_constraint_skipped_count=int(getattr(result, "plane_constraint_skipped_count", 0)),
     )
 
 
@@ -129,6 +264,7 @@ def _paper_horizon_state_metrics(
     contact_diagnostic_policy: str = CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY,
     contact_response_policy: str | None = None,
     normal_constraint_policy: str | None = None,
+    model_plane_constraint_policy: str | None = None,
 ) -> dict[str, object]:
     shape = spinning_box_affine_shape_diagnostics(q)
     momentum = mabd_momentum_diagnostics(config, q, qd)
@@ -171,6 +307,10 @@ def _paper_horizon_state_metrics(
         metrics["contact_response_policy"] = contact_response_policy
     if normal_constraint_policy is not None:
         metrics["contact_constraint_policy"] = normal_constraint_policy
+    if model_plane_constraint_policy is not None:
+        metrics["contact_constraint_policy"] = NORMAL_CONSTRAINT_POLICY
+        metrics["model_plane_constraint_policy"] = model_plane_constraint_policy
+        metrics["model_plane_constraint_config_source"] = MODEL_PLANE_CONSTRAINT_CONFIG_SOURCE
     return metrics
 
 
@@ -234,9 +374,15 @@ def _run_spinning_box_paper_horizon_step_size(
     time_step_s: float,
     contact_response_policy: str | None = None,
     normal_constraint_policy: str | None = None,
+    model_plane_constraint_policy: str | None = None,
 ) -> dict[str, object]:
-    if contact_response_policy is not None and normal_constraint_policy is not None:
-        raise ValueError("contact_response_policy and normal_constraint_policy are mutually exclusive")
+    enabled_modes = [
+        contact_response_policy is not None,
+        normal_constraint_policy is not None,
+        model_plane_constraint_policy is not None,
+    ]
+    if sum(enabled_modes) > 1:
+        raise ValueError("contact, normal-constraint, and model-plane modes are mutually exclusive")
     duration = config.paper_horizon.duration_s
     feasibility = spinning_box_kinematic_feasibility(config, time_step_s)
     step_count = int(round(duration / time_step_s))
@@ -285,6 +431,14 @@ def _run_spinning_box_paper_horizon_step_size(
         "max_accepted_plane_constraint_count": (-np.inf, 0),
         "max_skipped_plane_constraint_count": (-np.inf, 0),
         "max_normal_constraint_residual_norm": (-np.inf, 0),
+    }
+    model_plane_constraint_extrema: dict[str, tuple[float, int]] = {
+        "max_free_predicted_contact_active_count": (-np.inf, 0),
+        "max_free_predicted_contact_penetration_m": (-np.inf, 0),
+        "max_requested_plane_constraint_count": (-np.inf, 0),
+        "max_accepted_plane_constraint_count": (-np.inf, 0),
+        "max_skipped_plane_constraint_count": (-np.inf, 0),
+        "max_model_plane_constraint_residual_norm": (-np.inf, 0),
     }
 
     def update(metrics: dict[str, object]) -> None:
@@ -371,6 +525,36 @@ def _run_spinning_box_paper_horizon_step_size(
             if value > current:
                 normal_constraint_extrema[key] = (value, step_index)
 
+    def update_model_plane_constraint(
+        *,
+        free_predicted_contact: object,
+        result: SolverMABDModelStepResult,
+        requested_count: int,
+        step_index: int,
+    ) -> None:
+        candidates = {
+            "max_free_predicted_contact_active_count": float(
+                free_predicted_contact.active_contact_count
+            ),
+            "max_free_predicted_contact_penetration_m": float(
+                free_predicted_contact.max_penetration_depth
+            ),
+            "max_requested_plane_constraint_count": float(requested_count),
+            "max_accepted_plane_constraint_count": float(
+                result.plane_constraint_accepted_count
+            ),
+            "max_skipped_plane_constraint_count": float(
+                result.plane_constraint_skipped_count
+            ),
+            "max_model_plane_constraint_residual_norm": float(
+                result.constraint_residual_norm
+            ),
+        }
+        for key, value in candidates.items():
+            current, _current_step = model_plane_constraint_extrema[key]
+            if value > current:
+                model_plane_constraint_extrema[key] = (value, step_index)
+
     def active_plane_constraints(contact: object) -> list[object]:
         surface = config.contact_surface
         return [
@@ -390,7 +574,11 @@ def _run_spinning_box_paper_horizon_step_size(
 
     contact_diagnostic_policy = (
         CONTACT_RESPONSE_DIAGNOSTIC_POLICY
-        if contact_response_policy is not None or normal_constraint_policy is not None
+        if (
+            contact_response_policy is not None
+            or normal_constraint_policy is not None
+            or model_plane_constraint_policy is not None
+        )
         else CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY
     )
     metrics = _paper_horizon_state_metrics(
@@ -406,6 +594,7 @@ def _run_spinning_box_paper_horizon_step_size(
         contact_diagnostic_policy=contact_diagnostic_policy,
         contact_response_policy=contact_response_policy,
         normal_constraint_policy=normal_constraint_policy,
+        model_plane_constraint_policy=model_plane_constraint_policy,
     )
     update(metrics)
     if 0 in sample_indices:
@@ -458,10 +647,43 @@ def _run_spinning_box_paper_horizon_step_size(
                 requested_count=len(constraints),
                 step_index=step_index - 1,
             )
+        elif model_plane_constraint_policy is not None:
+            free_result = _run_spinning_box_solver_mabd_model_step(
+                config=config,
+                q=q,
+                qd=qd,
+                time_step_s=time_step_s,
+            )
+            free_contact = spinning_box_contact_diagnostics(
+                config,
+                free_result.q,
+                free_result.qd,
+            )
+            constraints = active_plane_constraints(free_contact)
+            if constraints:
+                result = _run_spinning_box_solver_mabd_model_step(
+                    config=config,
+                    q=q,
+                    qd=qd,
+                    time_step_s=time_step_s,
+                    plane_constraints=constraints,
+                )
+            else:
+                result = free_result
+            update_model_plane_constraint(
+                free_predicted_contact=free_contact,
+                result=result,
+                requested_count=len(constraints),
+                step_index=step_index - 1,
+            )
         else:
             result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=time_step_s, config=step_config)
-        q = result.q[0]
-        qd = result.qd[0]
+        if model_plane_constraint_policy is not None:
+            q = result.q
+            qd = result.qd
+        else:
+            q = result.q[0]
+            qd = result.qd[0]
         metrics = _paper_horizon_state_metrics(
             config=config,
             q=q,
@@ -475,6 +697,7 @@ def _run_spinning_box_paper_horizon_step_size(
             contact_diagnostic_policy=contact_diagnostic_policy,
             contact_response_policy=contact_response_policy,
             normal_constraint_policy=normal_constraint_policy,
+            model_plane_constraint_policy=model_plane_constraint_policy,
         )
         if not _all_state_values_finite(q, qd, metrics):
             first_nonfinite_step = step_index
@@ -521,6 +744,19 @@ def _run_spinning_box_paper_horizon_step_size(
                 value = 0.0
             summary[key] = int(value) if key.endswith("_count") else value
             summary[f"{key}_step_index"] = step_index
+    elif model_plane_constraint_policy is not None:
+        summary["contact_constraint_policy"] = NORMAL_CONSTRAINT_POLICY
+        summary["contact_diagnostic_policy"] = contact_diagnostic_policy
+        summary["rank_filter_policy"] = NORMAL_CONSTRAINT_RANK_FILTER_POLICY
+        summary["model_plane_constraint_policy"] = model_plane_constraint_policy
+        summary["model_plane_constraint_scope"] = MODEL_PLANE_CONSTRAINT_SCOPE
+        summary["model_plane_constraint_config_source"] = MODEL_PLANE_CONSTRAINT_CONFIG_SOURCE
+        summary["max_constrained_contact_penetration_m"] = summary["max_contact_penetration_m"]
+        for key, (value, step_index) in model_plane_constraint_extrema.items():
+            if value == -np.inf:
+                value = 0.0
+            summary[key] = int(value) if key.endswith("_count") else value
+            summary[f"{key}_step_index"] = step_index
     else:
         summary["contact_diagnostic_policy"] = CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY
     summary["contact_diagnostic_status"] = (
@@ -533,7 +769,7 @@ def _run_spinning_box_paper_horizon_step_size(
         and contact_response_policy is not None
         else "contact_penetration_observed_after_normal_constraint"
         if summary["max_contact_active_count"] > 0
-        and normal_constraint_policy is not None
+        and (normal_constraint_policy is not None or model_plane_constraint_policy is not None)
         else "no_contact_penetration_observed"
     )
     summary["threshold_violations"] = _threshold_violations(
@@ -1049,6 +1285,135 @@ def write_spinning_box_normal_constraint_report(
     return report
 
 
+def write_spinning_box_model_plane_constraint_report(
+    path: str | Path,
+    *,
+    config: SpinningBoxRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
+    if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
+        raise ValueError("single_body_spinning_box mass_diagonal must match paper cube ABD mass")
+
+    results = [
+        _run_spinning_box_paper_horizon_step_size(
+            config=config,
+            time_step_s=time_step_s,
+            model_plane_constraint_policy=MODEL_PLANE_CONSTRAINT_POLICY,
+        )
+        for time_step_s in config.paper_horizon.time_step_grid_s
+    ]
+    all_violations = sorted(
+        {
+            violation
+            for result in results
+            for violation in result["threshold_violations"]
+        }
+    )
+    feasibility_statuses = sorted(
+        {
+            str(result["kinematic_feasibility"]["status"])
+            for result in results
+        }
+    )
+    max_free_predicted_penetration = max(
+        float(result["max_free_predicted_contact_penetration_m"]) for result in results
+    )
+    max_constrained_penetration = max(
+        float(result["max_constrained_contact_penetration_m"]) for result in results
+    )
+    max_requested_count = max(
+        int(result["max_requested_plane_constraint_count"]) for result in results
+    )
+    max_accepted_count = max(
+        int(result["max_accepted_plane_constraint_count"]) for result in results
+    )
+    max_skipped_count = max(
+        int(result["max_skipped_plane_constraint_count"]) for result in results
+    )
+    max_residual_norm = max(
+        float(result["max_model_plane_constraint_residual_norm"]) for result in results
+    )
+    reduced_free_predicted_penetration = (
+        max_constrained_penetration < max_free_predicted_penetration
+    )
+    blockers = [
+        "mabd_newton_report_incomplete",
+        "spinning_box_model_plane_constraint_not_paper_faithful",
+        "spinning_box_comparison_pass_gate_not_enabled",
+    ]
+    if all_violations:
+        blockers.insert(1, "mabd_paper_horizon_diagnostic_thresholds_violated")
+    if "paper_momentum_requires_affine_stretch_under_q_delta_over_h" in feasibility_statuses:
+        blockers.append("mabd_kinematic_feasibility_blocker_recorded")
+
+    observed = {
+        "paper_horizon_duration_s": config.paper_horizon.duration_s,
+        "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        "paper_source_lines": list(config.source_lines),
+        "figure_text_source": config.paper_horizon.figure_text_source,
+        "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+        "model_plane_constraint_policy": MODEL_PLANE_CONSTRAINT_POLICY,
+        "model_plane_constraint_scope": MODEL_PLANE_CONSTRAINT_SCOPE,
+        "model_plane_constraint_config_source": MODEL_PLANE_CONSTRAINT_CONFIG_SOURCE,
+        "contact_constraint_policy": NORMAL_CONSTRAINT_POLICY,
+        "rank_filter_policy": NORMAL_CONSTRAINT_RANK_FILTER_POLICY,
+        "mabd_kinematic_feasibility_statuses": feasibility_statuses,
+        "threshold_violations": all_violations,
+        "max_free_predicted_contact_penetration_m": max_free_predicted_penetration,
+        "max_constrained_contact_penetration_m": max_constrained_penetration,
+        "max_requested_plane_constraint_count": max_requested_count,
+        "max_accepted_plane_constraint_count": max_accepted_count,
+        "max_skipped_plane_constraint_count": max_skipped_count,
+        "max_model_plane_constraint_residual_norm": max_residual_norm,
+        "model_plane_constraint_reduced_free_predicted_penetration": (
+            reduced_free_predicted_penetration
+        ),
+        "initial_position_m": config.initial_q[9:12].tolist(),
+        "final_position_m": results[0]["final_position_m"],
+        "model_plane_constraint_results": results,
+        "blocking_reasons": blockers,
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={"primitive_cube": "not_applicable_procedural"},
+        solver_mode="solver_mabd_model_plane_constraint_diagnostic",
+        backend=MODEL_PLANE_CONSTRAINT_BACKEND,
+        baseline_lane=config.baseline_lane,
+        expected={
+            "paper_claim_status": "model plane row diagnostic only; no lane gate",
+            "paper_horizon_duration_s": config.paper_horizon.duration_s,
+            "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+            "source_lines": list(config.source_lines),
+            "figure_text_source": config.paper_horizon.figure_text_source,
+            "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+            "phase68_gate_policy": "diagnostic_only_no_lane_gate",
+        },
+        observed=observed,
+        threshold=config.paper_horizon.thresholds,
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason=(
+            "SolverMABD model plane rows are a diagnostic extraction path, not a "
+            "paper-faithful contact solve or spinning-box experiment pass"
+        ),
+        timing_distribution={
+            "scope": "not_timed",
+            "step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        },
+        raw_outputs={"time_series": "compact_samples_only"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 def write_spinning_box_decoupled_twist_report(
     path: str | Path,
     *,
@@ -1503,6 +1868,7 @@ __all__ = [
     "write_spinning_box_contact_response_report",
     "write_spinning_box_decoupled_twist_report",
     "write_spinning_box_development_report",
+    "write_spinning_box_model_plane_constraint_report",
     "write_spinning_box_normal_constraint_report",
     "write_spinning_box_paper_horizon_report",
 ]
