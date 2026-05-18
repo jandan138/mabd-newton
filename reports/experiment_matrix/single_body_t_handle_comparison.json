@@ -1,0 +1,345 @@
+{
+  "asset_hashes": {
+    "t_handle_procedural": "not_applicable_procedural"
+  },
+  "backend": "report_protocol",
+  "baseline_lane": "t_handle_comparison_protocol",
+  "claim_id": "experiment.single_body.t_handle",
+  "expected": {
+    "full_experiment_claim_passed": false,
+    "known_source_gaps": [
+      "exact_t_handle_geometry_unknown",
+      "raw_t_handle_reference_curve_data_missing",
+      "paper_timing_curve_unavailable"
+    ],
+    "paper_claim_status": "formal RK4 and M-ABD diagnostic lanes are present, but paper geometry, raw waveform curves, timing evidence, and the comparison pass gate remain required",
+    "paper_values": {
+      "asymmetry": "subtle",
+      "initial_angular_speed_rad_s": 3,
+      "reference_h_s": 0.0001,
+      "reference_integrator": "RK4"
+    },
+    "required_lanes": [
+      "mabd_newton",
+      "rbd_rk4_reference"
+    ],
+    "required_metrics": [
+      "flip_timing_error",
+      "intermediate_axis_angular_velocity_waveform",
+      "energy_loss"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:57-75"
+    ]
+  },
+  "failure_reason": "T-handle comparison protocol is incomplete because exact geometry, raw paper waveform data, paper timing evidence, the MABD lane pass, and the comparison pass gate remain missing",
+  "observed": {
+    "blocking_reasons": [
+      "exact_t_handle_geometry_unknown",
+      "raw_t_handle_reference_curve_data_missing",
+      "mabd_newton_report_incomplete",
+      "t_handle_comparison_report_incomplete",
+      "t_handle_timing_evidence_missing",
+      "t_handle_comparison_pass_gate_not_enabled"
+    ],
+    "energy_drift_diagnostics": {
+      "limitation": "signed relative_energy_drift diagnostic, not paper energy_loss",
+      "mabd_minus_rk4_relative_energy_drift": -2.2223942600217873e-12,
+      "mabd_relative_energy_drift": -2.2352228624317797e-12,
+      "rk4_relative_energy_drift": -1.2828602409992419e-14
+    },
+    "finite_matched_sample_count": 9,
+    "flip_timing_diagnostics": {
+      "axis_component": "omega_y_rad_s",
+      "axis_index": 1,
+      "comparison_status": "sample_grid_flip_delta_unavailable",
+      "limitation": "sample-grid interpolation only; not RK4 step-resolution or paper timing",
+      "mabd_first_sample_grid_flip_time_s": null,
+      "mabd_minus_rk4_flip_time_s": null,
+      "mabd_status": "sample_grid_flip_unavailable",
+      "method": "sample_grid_linear_interpolation",
+      "rk4_first_sample_grid_flip_time_s": 3.4516975611627894,
+      "rk4_status": "sample_grid_flip_available"
+    },
+    "full_experiment_claim_passed": false,
+    "input_report_provenance": {
+      "mabd_newton": {
+        "backend": "cpu_numpy_newton_only",
+        "baseline_lane": "mabd_newton",
+        "mabd_diagnostic_scope": "t_handle_model_derived_proxy",
+        "path": "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
+        "sha256": "969e8aa66516af3b846bf64699cc2339df66dfaa6a22c851fee4a9957744e55b",
+        "solver_mode": "mabd_cpu_oracle_t_handle_newton_lane",
+        "solver_model_config_source": "newton_model_derived",
+        "source_commit": "51745677bd115a0b98294dd8bbf9132e94fc4f3a",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      },
+      "rbd_rk4_reference": {
+        "backend": "cpu_numpy",
+        "baseline_lane": "rbd_rk4_reference",
+        "path": "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+        "reference_scope": "torque_free_principal_axis_rk4_diagnostic",
+        "sha256": "a0153e2bd4f0e20aa5271ecbaaec726661e352b6b4baebe96dcfc76dddd25b67",
+        "solver_mode": "t_handle_torque_free_rk4_reference",
+        "source_commit": "d741e6f5b1d85f7c02afb520f55b8bb273947604",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      }
+    },
+    "intermediate_axis_component": "omega_y_rad_s",
+    "intermediate_axis_index": 1,
+    "intermediate_axis_waveform_rmse_rad_s": 2.21913405945304,
+    "lane_metrics": {
+      "mabd_newton": {
+        "angular_momentum_norm_drift": -6.166533408032632e-13,
+        "energy_final": 9.000900044979883,
+        "energy_initial": 9.000900045000002,
+        "relative_energy_drift": -2.2352228624317797e-12
+      },
+      "rbd_rk4_reference": {
+        "angular_momentum_norm_drift": -5.329003906068249e-15,
+        "energy_final": 9.000449999999885,
+        "energy_initial": 9.00045,
+        "relative_energy_drift": -1.2828602409992419e-14
+      }
+    },
+    "lane_observed_statuses": {
+      "mabd_newton": "incomplete_diagnostic_failed",
+      "rbd_rk4_reference": "diagnostic_generated"
+    },
+    "lane_solver_modes": {
+      "mabd_newton": "mabd_cpu_oracle_t_handle_newton_lane",
+      "rbd_rk4_reference": "t_handle_torque_free_rk4_reference"
+    },
+    "lane_statuses": {
+      "mabd_newton": "incomplete",
+      "rbd_rk4_reference": "incomplete"
+    },
+    "mabd_sample_count": 9,
+    "matched_sample_index_count": 9,
+    "max_abs_angular_velocity_delta_rad_s": 2.992369356563783,
+    "max_sample_time_delta_s": 0.0,
+    "missing_paper_metrics": [
+      "flip_timing_error:raw_paper_timing_missing",
+      "intermediate_axis_angular_velocity_waveform:raw_paper_curve_missing",
+      "energy_loss:paper_energy_loss_metric_unavailable"
+    ],
+    "missing_required_lanes": [],
+    "paper_metric_statuses": {
+      "energy_loss": {
+        "diagnostic_field": "energy_drift_diagnostics",
+        "limitation": "relative_energy_drift is signed diagnostic drift, not paper energy loss",
+        "status": "signed_energy_drift_diagnostic_not_paper_loss"
+      },
+      "flip_timing_error": {
+        "diagnostic_field": "flip_timing_diagnostics",
+        "limitation": "sample-grid interpolation only; raw paper timing unavailable",
+        "status": "sample_grid_diagnostic_not_paper_timing"
+      },
+      "intermediate_axis_angular_velocity_waveform": {
+        "diagnostic_field": "intermediate_axis_waveform_rmse_rad_s",
+        "limitation": "compares diagnostic lanes, not raw paper waveform curves",
+        "status": "diagnostic_available_not_paper_curve"
+      }
+    },
+    "rk4_sample_count": 9,
+    "sample_index_differences": [
+      {
+        "abs_omega_x_delta_rad_s": 0.0,
+        "abs_omega_y_delta_rad_s": 0.0,
+        "abs_omega_z_delta_rad_s": 0.0,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": 0.0,
+        "mabd_minus_rk4_omega_y_rad_s": 0.0,
+        "mabd_minus_rk4_omega_z_rad_s": 0.0,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.03,
+        "mabd_omega_y_rad_s": 3.0,
+        "mabd_omega_z_rad_s": 0.0,
+        "mabd_time_s": 0.0,
+        "rk4_omega_x_rad_s": 0.03,
+        "rk4_omega_y_rad_s": 3.0,
+        "rk4_omega_z_rad_s": 0.0,
+        "rk4_time_s": 0.0,
+        "sample_index": 0
+      },
+      {
+        "abs_omega_x_delta_rad_s": 0.03274043312938658,
+        "abs_omega_y_delta_rad_s": 2.0768488708994557,
+        "abs_omega_z_delta_rad_s": 0.016946234482309686,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": -0.03274043312938658,
+        "mabd_minus_rk4_omega_y_rad_s": -2.0768488708994557,
+        "mabd_minus_rk4_omega_z_rad_s": 0.016946234482309686,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.009230138434737571,
+        "mabd_omega_y_rad_s": 0.9230075375178732,
+        "mabd_omega_z_rad_s": -4.217284650925163e-08,
+        "mabd_time_s": 0.5,
+        "rk4_omega_x_rad_s": 0.04197057156412415,
+        "rk4_omega_y_rad_s": 2.9998564084173287,
+        "rk4_omega_z_rad_s": -0.016946276655156196,
+        "rk4_time_s": 0.5,
+        "sample_index": 1
+      },
+      {
+        "abs_omega_x_delta_rad_s": 0.08442465743142813,
+        "abs_omega_y_delta_rad_s": 2.6989059940711178,
+        "abs_omega_z_delta_rad_s": 0.047409666776525895,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": -0.08442465743142813,
+        "mabd_minus_rk4_omega_y_rad_s": -2.6989059940711178,
+        "mabd_minus_rk4_omega_z_rad_s": 0.047409666776525895,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.0029998410358905896,
+        "mabd_omega_y_rad_s": 0.2999699548583498,
+        "mabd_omega_z_rad_s": -4.7179801070280913e-08,
+        "mabd_time_s": 1.0,
+        "rk4_omega_x_rad_s": 0.08742449846731871,
+        "rk4_omega_y_rad_s": 2.9988759489294674,
+        "rk4_omega_z_rad_s": -0.04740971395632697,
+        "rk4_time_s": 1.0,
+        "sample_index": 2
+      },
+      {
+        "abs_omega_x_delta_rad_s": 0.20105951126303648,
+        "abs_omega_y_delta_rad_s": 2.8521463508025975,
+        "abs_omega_z_delta_rad_s": 0.1156064834969508,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": -0.20105951126303648,
+        "mabd_minus_rk4_omega_y_rad_s": -2.8521463508025975,
+        "mabd_minus_rk4_omega_z_rad_s": 0.1156064834969508,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.0014116813109432587,
+        "mabd_omega_y_rad_s": 0.1411637594561954,
+        "mabd_omega_z_rad_s": -9.720817869401932e-09,
+        "mabd_time_s": 1.5,
+        "rk4_omega_x_rad_s": 0.20247119257397975,
+        "rk4_omega_y_rad_s": 2.993310110258793,
+        "rk4_omega_z_rad_s": -0.11560649321776867,
+        "rk4_time_s": 1.5,
+        "sample_index": 3
+      },
+      {
+        "abs_omega_x_delta_rad_s": 0.4758813639342871,
+        "abs_omega_y_delta_rad_s": 2.880960893827282,
+        "abs_omega_z_delta_rad_s": 0.27467268241273185,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": -0.4758813639342871,
+        "mabd_minus_rk4_omega_y_rad_s": -2.880960893827282,
+        "mabd_minus_rk4_omega_z_rad_s": 0.27467268241273185,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.0008105615911666616,
+        "mabd_omega_y_rad_s": 0.0810763794254895,
+        "mabd_omega_z_rad_s": 3.369480497481675e-08,
+        "mabd_time_s": 2.0,
+        "rk4_omega_x_rad_s": 0.47669192552545375,
+        "rk4_omega_y_rad_s": 2.9620372732527716,
+        "rk4_omega_z_rad_s": -0.27467264871792685,
+        "rk4_time_s": 2.0,
+        "sample_index": 4
+      },
+      {
+        "abs_omega_x_delta_rad_s": 1.0994533301131382,
+        "abs_omega_y_delta_rad_s": 2.738827806432438,
+        "abs_omega_z_delta_rad_s": 0.6348356759374701,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": -1.0994533301131382,
+        "mabd_minus_rk4_omega_y_rad_s": -2.738827806432438,
+        "mabd_minus_rk4_omega_z_rad_s": 0.6348356759374701,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.0005233385756837572,
+        "mabd_omega_y_rad_s": 0.05239976013036987,
+        "mabd_omega_z_rad_s": 8.786242705529496e-08,
+        "mabd_time_s": 2.5,
+        "rk4_omega_x_rad_s": 1.099976668688822,
+        "rk4_omega_y_rad_s": 2.791227566562808,
+        "rk4_omega_z_rad_s": -0.6348355880750431,
+        "rk4_time_s": 2.5,
+        "sample_index": 5
+      },
+      {
+        "abs_omega_x_delta_rad_s": 2.2500266571101255,
+        "abs_omega_y_delta_rad_s": 1.9475128286699326,
+        "abs_omega_z_delta_rad_s": 1.2991489017512832,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": -2.2500266571101255,
+        "mabd_minus_rk4_omega_y_rad_s": -1.9475128286699326,
+        "mabd_minus_rk4_omega_z_rad_s": 1.2991489017512832,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.0003650758924939667,
+        "mabd_omega_y_rad_s": 0.03658319925646472,
+        "mabd_omega_z_rad_s": 8.400348313762802e-08,
+        "mabd_time_s": 3.0,
+        "rk4_omega_x_rad_s": 2.2503917330026195,
+        "rk4_omega_y_rad_s": 1.9840960279263973,
+        "rk4_omega_z_rad_s": -1.2991488177478,
+        "rk4_time_s": 3.0,
+        "sample_index": 6
+      },
+      {
+        "abs_omega_x_delta_rad_s": 2.992369356563783,
+        "abs_omega_y_delta_rad_s": 0.2391338914380504,
+        "abs_omega_z_delta_rad_s": 1.7277137677966876,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": -2.992369356563783,
+        "mabd_minus_rk4_omega_y_rad_s": 0.2391338914380504,
+        "mabd_minus_rk4_omega_z_rad_s": 1.7277137677966876,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.0002689252784797902,
+        "mabd_omega_y_rad_s": 0.026963879296832832,
+        "mabd_omega_z_rad_s": 6.794671266342062e-08,
+        "mabd_time_s": 3.5,
+        "rk4_omega_x_rad_s": 2.9926382818422628,
+        "rk4_omega_y_rad_s": -0.21217001214121756,
+        "rk4_omega_z_rad_s": -1.727713699849975,
+        "rk4_time_s": 3.5,
+        "sample_index": 7
+      },
+      {
+        "abs_omega_x_delta_rad_s": 2.038088566985776,
+        "abs_omega_y_delta_rad_s": 2.222108345629655,
+        "abs_omega_z_delta_rad_s": 1.1766826145104943,
+        "abs_sample_time_delta_s": 0.0,
+        "mabd_minus_rk4_omega_x_rad_s": -2.038088566985776,
+        "mabd_minus_rk4_omega_y_rad_s": 2.222108345629655,
+        "mabd_minus_rk4_omega_z_rad_s": 1.1766826145104943,
+        "mabd_minus_rk4_time_s": 0.0,
+        "mabd_omega_x_rad_s": 0.00020619215930312522,
+        "mabd_omega_y_rad_s": 0.020687333001322653,
+        "mabd_omega_z_rad_s": 5.675778543879663e-08,
+        "mabd_time_s": 4.0,
+        "rk4_omega_x_rad_s": 2.038294759145079,
+        "rk4_omega_y_rad_s": -2.2014210126283325,
+        "rk4_omega_z_rad_s": -1.176682557752709,
+        "rk4_time_s": 4.0,
+        "sample_index": 8
+      }
+    ],
+    "sample_nonfinite": false,
+    "time_aligned_sample_count": 9,
+    "time_grid_mismatch": false,
+    "unmatched_mabd_samples": [],
+    "unmatched_rk4_samples": []
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "mabd_report": "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
+    "rk4_report": "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
+  },
+  "scene_id": "single_body_t_handle",
+  "solver_mode": "t_handle_multilane_comparison_development",
+  "source_commit": "5ad17151f1e70172b922fda4d96da8144cd60774",
+  "status": "incomplete",
+  "threshold": {
+    "max_sample_time_delta_s": 1e-12
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "not_timed"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

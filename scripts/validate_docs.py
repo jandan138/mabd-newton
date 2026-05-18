@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-56 docs and provenance contracts."""
+"""Validate Phase 0-57 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -128,6 +128,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase54-environment-clone-contract.md",
     "docs/records/2026-05-18-phase55-heavy-top-paper-horizon-mabd.md",
     "docs/records/2026-05-18-phase56-t-handle-mabd-newton.md",
+    "docs/records/2026-05-18-phase57-t-handle-comparison-protocol.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -178,6 +179,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase55-heavy-top-paper-horizon.md",
     "docs/superpowers/specs/2026-05-18-phase56-t-handle-mabd-newton-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase56-t-handle-newton-lane.md",
+    "docs/superpowers/specs/2026-05-18-phase57-t-handle-comparison-protocol-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase57-t-handle-comparison-protocol.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -189,6 +192,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
     "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
     "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
+    "reports/experiment_matrix/single_body_t_handle_comparison.json",
     "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
     "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
     "reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json",
@@ -256,6 +260,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase52-working-tree",
     "TO_BE_BACKFILLED_PHASE53",
     "phase53-working-tree",
+    "TO_BE_BACKFILLED_PHASE57",
+    "phase57-working-tree",
 }
 
 
@@ -5656,10 +5662,14 @@ def validate_phase43_record() -> None:
     for blocker in (
         "exact_t_handle_geometry_unknown",
         "raw_t_handle_reference_curve_data_missing",
-        "t_handle_comparison_report_missing",
     ):
         if blocker not in matrix_blockers:
             fail(f"Phase 43 matrix blocker missing: {blocker}")
+    if not (
+        "t_handle_comparison_report_missing" in matrix_blockers
+        or "t_handle_comparison_report_incomplete" in matrix_blockers
+    ):
+        fail("Phase 43 matrix blocker missing: t_handle_comparison report state")
     if not (
         "mabd_newton_report_missing" in matrix_blockers
         or "mabd_newton_report_incomplete" in matrix_blockers
@@ -8911,6 +8921,314 @@ def validate_phase56_record() -> None:
             fail("Phase 56 must not pass experiment.* claims")
 
 
+def validate_phase57_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase57-t-handle-comparison-protocol.md"
+    ).read_text(encoding="utf-8")
+    comparison_path = "reports/experiment_matrix/single_body_t_handle_comparison.json"
+    rk4_path = "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
+    mabd_path = "reports/experiment_matrix/single_body_t_handle_mabd_newton.json"
+    implementation_commit = "5ad17151f1e70172b922fda4d96da8144cd60774"
+    comparison_sha256 = "258a56e8c0530a14c86268b9a9f7e08a801b0fe026db133e579e283d2263861e"
+    required_snippets = (
+        "## Status\n\npassed_for_t_handle_comparison_protocol",
+        "phase57-t-handle-comparison",
+        implementation_commit,
+        VENDORED_NEWTON_COMMIT,
+        comparison_path,
+        comparison_sha256,
+        rk4_path,
+        "a0153e2bd4f0e20aa5271ecbaaec726661e352b6b4baebe96dcfc76dddd25b67",
+        mabd_path,
+        "969e8aa66516af3b846bf64699cc2339df66dfaa6a22c851fee4a9957744e55b",
+        "t_handle_multilane_comparison_development",
+        "t_handle_comparison_protocol",
+        "report_protocol",
+        "mabd_newton_report_incomplete",
+        "t_handle_comparison_report_incomplete",
+        "t_handle_comparison_pass_gate_not_enabled",
+        "flip_timing_error:raw_paper_timing_missing",
+        "intermediate_axis_angular_velocity_waveform:raw_paper_curve_missing",
+        "energy_loss:paper_energy_loss_metric_unavailable",
+        "sample_grid_diagnostic_not_paper_timing",
+        "diagnostic_available_not_paper_curve",
+        "signed_energy_drift_diagnostic_not_paper_loss",
+        "matched sample index count: `9`",
+        "finite matched sample count: `9`",
+        "max sample time delta: `0.0`",
+        "`time_grid_mismatch`: `false`",
+        "`sample_nonfinite`: `false`",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.t_handle` remains intended",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_t_handle_comparison_reports tests.test_reporting_contracts tests.test_experiment_runner",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 57 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE57",
+        "phase57-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 57 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "t-handle experiment passed",
+        "t-handle comparison passed",
+        "t-handle mabd lane passed",
+        "paper-faithful t-handle geometry reconstructed",
+        "raw waveform agreement passed",
+        "energy loss agreement passed",
+        "comparison pass gate passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 57 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 57")
+    verified = claim_boundary_bullet(boundary_text, "Phase 57 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 57 does not verify")
+    forbidden = claim_boundary_bullet(boundary_text, "Phase 57 T-handle comparison protocol")
+    for snippet in (
+        "T-handle comparison protocol evidence",
+        "Phase 57 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 57 current boundary missing: {snippet}")
+    for snippet in (
+        "`t_handle_comparison_protocol` report",
+        "input report provenance and sha256 hashes",
+        "`rbd_rk4_reference`",
+        "`mabd_newton`",
+        "`reference_not_paper_geometry = true`",
+        "`t_handle_model_derived_proxy`",
+        "`newton_model_derived`",
+        "finite aligned-sample RMSE",
+        "sample-grid sign-flip timing diagnostic",
+        "`energy_loss` remains unavailable as a paper metric",
+        "`t_handle_comparison_report_incomplete`",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 57 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed T-handle experiment",
+        "passed T-handle MABD lane",
+        "paper-faithful T-handle geometry",
+        "raw waveform agreement",
+        "paper energy loss",
+        "paper timing",
+        "comparison pass gate",
+        "runtime performance",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 57 non-claim boundary missing: {snippet}")
+    for snippet in (
+        "passed T-handle experiment",
+        "passed M-ABD lane",
+        "paper-faithful T-handle geometry or inertia",
+        "raw curve agreement",
+        "paper energy-loss agreement",
+        "comparison pass gate",
+        "paper timing result",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in forbidden:
+            fail(f"Phase 57 forbidden boundary missing: {snippet}")
+
+    try:
+        config = load_t_handle_config(ROOT / "configs/experiments/single_body_t_handle.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_t_handle_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 57 T-handle config validation failed: {exc}")
+    if config.comparison.output_report != comparison_path:
+        fail("Phase 57 comparison output report binding changed")
+    if config.comparison.required_lanes != ("mabd_newton", "rbd_rk4_reference"):
+        fail("Phase 57 comparison required lanes changed")
+    if config.comparison.required_metrics != (
+        "flip_timing_error",
+        "intermediate_axis_angular_velocity_waveform",
+        "energy_loss",
+    ):
+        fail("Phase 57 comparison required metrics changed")
+
+    report = load_claim_report(ROOT / comparison_path)
+    rk4_report = load_claim_report(ROOT / rk4_path)
+    mabd_report = load_claim_report(ROOT / mabd_path)
+    if report.source_commit != implementation_commit:
+        fail("Phase 57 report source_commit changed")
+    if report.source_commit not in text:
+        fail("Phase 57 record must list report source_commit")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 57 report vendored Newton commit changed")
+    if report.status.value != "incomplete":
+        fail("Phase 57 comparison report must remain incomplete")
+    if _record_sha256_for_artifact(text, comparison_path) != sha256_file(ROOT / comparison_path):
+        fail("Phase 57 comparison report sha256 mismatch")
+    if report.claim_id != config.claim_id or report.scene_id != config.scene_id:
+        fail("Phase 57 report identity does not match config")
+    if report.asset_hashes.get("t_handle_procedural") != "not_applicable_procedural":
+        fail("Phase 57 T-handle asset hash must remain procedural")
+    if report.baseline_lane != "t_handle_comparison_protocol":
+        fail("Phase 57 comparison baseline lane changed")
+    if report.solver_mode != "t_handle_multilane_comparison_development":
+        fail("Phase 57 comparison solver mode changed")
+    if report.backend != "report_protocol":
+        fail("Phase 57 comparison backend changed")
+
+    observed = report.observed
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 57 comparison must not pass full experiment claim")
+    if observed.get("missing_required_lanes") != []:
+        fail("Phase 57 comparison missing required lanes changed")
+    if observed.get("matched_sample_index_count") != config.reference.sample_count:
+        fail("Phase 57 comparison matched sample count changed")
+    if observed.get("finite_matched_sample_count") != config.reference.sample_count:
+        fail("Phase 57 comparison finite matched sample count changed")
+    if observed.get("time_aligned_sample_count") != config.reference.sample_count:
+        fail("Phase 57 comparison time-aligned sample count changed")
+    if observed.get("time_grid_mismatch") is not False:
+        fail("Phase 57 comparison must not record a time-grid mismatch")
+    if observed.get("sample_nonfinite") is not False:
+        fail("Phase 57 comparison sample_nonfinite changed")
+    if _require_finite_scalar(
+        observed.get("max_sample_time_delta_s"),
+        "Phase 57 max_sample_time_delta_s",
+    ) > config.comparison.thresholds["max_sample_time_delta_s"]:
+        fail("Phase 57 max sample time delta exceeds threshold")
+    for key in (
+        "intermediate_axis_waveform_rmse_rad_s",
+        "max_abs_angular_velocity_delta_rad_s",
+    ):
+        _require_finite_scalar(observed.get(key), f"Phase 57 {key}")
+
+    missing_metrics = observed.get("missing_paper_metrics")
+    if missing_metrics != [
+        "flip_timing_error:raw_paper_timing_missing",
+        "intermediate_axis_angular_velocity_waveform:raw_paper_curve_missing",
+        "energy_loss:paper_energy_loss_metric_unavailable",
+    ]:
+        fail("Phase 57 missing paper metrics changed")
+    paper_metric_statuses = observed.get("paper_metric_statuses")
+    if not isinstance(paper_metric_statuses, dict):
+        fail("Phase 57 paper_metric_statuses must be a mapping")
+    expected_statuses = {
+        "flip_timing_error": "sample_grid_diagnostic_not_paper_timing",
+        "intermediate_axis_angular_velocity_waveform": "diagnostic_available_not_paper_curve",
+        "energy_loss": "signed_energy_drift_diagnostic_not_paper_loss",
+    }
+    for metric, expected_status in expected_statuses.items():
+        status = paper_metric_statuses.get(metric, {}).get("status")
+        if status != expected_status:
+            fail(f"Phase 57 {metric} paper metric status changed")
+
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 57 comparison blockers must be a list")
+    for blocker in (
+        "exact_t_handle_geometry_unknown",
+        "raw_t_handle_reference_curve_data_missing",
+        "mabd_newton_report_incomplete",
+        "t_handle_comparison_report_incomplete",
+        "t_handle_timing_evidence_missing",
+        "t_handle_comparison_pass_gate_not_enabled",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 57 comparison blocker missing: {blocker}")
+    if "t_handle_comparison_report_missing" in blockers:
+        fail("Phase 57 comparison must not keep missing comparison blocker")
+
+    provenance = observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 57 comparison provenance must be a mapping")
+    for lane, path, lane_report in (
+        ("rbd_rk4_reference", rk4_path, rk4_report),
+        ("mabd_newton", mabd_path, mabd_report),
+    ):
+        lane_provenance = provenance.get(lane)
+        if not isinstance(lane_provenance, dict):
+            fail(f"Phase 57 comparison missing {lane} provenance")
+        if lane_provenance.get("path") != path:
+            fail(f"Phase 57 {lane} input path changed")
+        if lane_provenance.get("sha256") != sha256_file(ROOT / path):
+            fail(f"Phase 57 {lane} input sha256 mismatch")
+        if lane_provenance.get("source_commit") != lane_report.source_commit:
+            fail(f"Phase 57 {lane} source_commit provenance mismatch")
+        if lane_report.status.value != "incomplete":
+            fail(f"Phase 57 {lane} input report must remain incomplete")
+    if provenance["rbd_rk4_reference"].get("reference_scope") != (
+        "torque_free_principal_axis_rk4_diagnostic"
+    ):
+        fail("Phase 57 RK4 provenance reference scope changed")
+    if provenance["mabd_newton"].get("mabd_diagnostic_scope") != "t_handle_model_derived_proxy":
+        fail("Phase 57 MABD provenance diagnostic scope changed")
+    if provenance["mabd_newton"].get("solver_model_config_source") != T_HANDLE_MABD_CONFIG_SOURCE:
+        fail("Phase 57 MABD provenance solver_model_config_source changed")
+
+    flip = observed.get("flip_timing_diagnostics")
+    if not isinstance(flip, dict):
+        fail("Phase 57 flip timing diagnostics must be a mapping")
+    if flip.get("method") != "sample_grid_linear_interpolation":
+        fail("Phase 57 flip timing method changed")
+    if flip.get("comparison_status") != "sample_grid_flip_delta_unavailable":
+        fail("Phase 57 flip comparison status changed")
+    energy = observed.get("energy_drift_diagnostics")
+    if not isinstance(energy, dict):
+        fail("Phase 57 energy drift diagnostics must be a mapping")
+    if "not paper energy_loss" not in str(energy.get("limitation", "")):
+        fail("Phase 57 energy drift limitation changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.t_handle":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 57 must keep T-handle experiment status intended")
+            conflict_note = str(claim.get("conflict_note", ""))
+            if "t_handle_comparison_report_incomplete" not in conflict_note:
+                fail("Phase 57 T-handle conflict_note missing comparison blocker")
+            if "t_handle_comparison_report_missing" in conflict_note:
+                fail("Phase 57 T-handle conflict_note must not keep missing blocker")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 57 must not pass experiment.* claims")
+
+    matrix_data = read_yaml(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    experiments = matrix_data.get("experiments")
+    if not isinstance(experiments, list):
+        fail("Phase 57 experiment matrix missing experiments")
+    matrix_entry = next(
+        (
+            item
+            for item in experiments
+            if isinstance(item, dict)
+            and item.get("claim_id") == "experiment.single_body.t_handle"
+        ),
+        None,
+    )
+    if matrix_entry is None:
+        fail("Phase 57 matrix missing T-handle experiment")
+    matrix_blockers = matrix_entry.get("blocking_reasons")
+    if not isinstance(matrix_blockers, list):
+        fail("Phase 57 matrix T-handle blockers must be a list")
+    if "t_handle_comparison_report_incomplete" not in matrix_blockers:
+        fail("Phase 57 matrix missing t_handle_comparison_report_incomplete")
+    if "t_handle_comparison_report_missing" in matrix_blockers:
+        fail("Phase 57 matrix must not keep missing comparison blocker")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -9060,6 +9378,19 @@ def validate_experiment_contracts() -> None:
         fail("Phase 51 heavy-top matrix must not keep missing M-ABD lane blocker")
     if "heavy_top_comparison_report_missing" in heavy_top.blocking_reasons:
         fail("Phase 51 heavy-top matrix must not keep missing comparison report blocker")
+    t_handle = next(
+        experiment
+        for experiment in matrix.experiments
+        if experiment.claim_id == "experiment.single_body.t_handle"
+    )
+    if "mabd_newton_report_incomplete" not in t_handle.blocking_reasons:
+        fail("Phase 57 T-handle matrix must record incomplete M-ABD lane blocker")
+    if "t_handle_comparison_report_incomplete" not in t_handle.blocking_reasons:
+        fail("Phase 57 T-handle matrix must record incomplete comparison report blocker")
+    if "mabd_newton_report_missing" in t_handle.blocking_reasons:
+        fail("Phase 57 T-handle matrix must not keep missing M-ABD lane blocker")
+    if "t_handle_comparison_report_missing" in t_handle.blocking_reasons:
+        fail("Phase 57 T-handle matrix must not keep missing comparison report blocker")
 
 
 def validate_phase13_config(
@@ -9196,13 +9527,14 @@ def main() -> int:
     validate_phase54_record()
     validate_phase55_record()
     validate_phase56_record()
+    validate_phase57_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57 "
         "docs/provenance validation passed"
     )
     return 0

@@ -3201,6 +3201,112 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("sha256 mismatch", str(context.exception))
 
+    def test_phase57_t_handle_comparison_protocol_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        t_handle_claim = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.t_handle"
+        )
+        self.assertEqual(t_handle_claim["reproduction_status"], "intended")
+        self.assertIn("t_handle_comparison_report_incomplete", t_handle_claim["conflict_note"])
+        self.assertNotIn("t_handle_comparison_report_missing", t_handle_claim["conflict_note"])
+
+        matrix = yaml.safe_load((ROOT / "configs/experiments/paper_experiment_matrix.yaml").read_text())
+        matrix_entry = next(
+            item for item in matrix["experiments"] if item["claim_id"] == "experiment.single_body.t_handle"
+        )
+        self.assertEqual(matrix_entry["reproduction_status"], "planned")
+        self.assertIn("t_handle_comparison_report_incomplete", matrix_entry["blocking_reasons"])
+        self.assertNotIn("t_handle_comparison_report_missing", matrix_entry["blocking_reasons"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 57")
+        verified = claim_boundary_bullet(text, "Phase 57 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 57 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 57 T-handle comparison protocol")
+
+        self.assertIn("T-handle comparison protocol", current)
+        self.assertIn("t_handle_comparison_protocol", verified)
+        self.assertIn("input report provenance and sha256 hashes", verified)
+        self.assertIn("reference_not_paper_geometry = true", verified)
+        self.assertIn("finite aligned-sample RMSE", verified)
+        self.assertIn("energy_loss", verified)
+        self.assertIn("passed T-handle experiment", non_claim)
+        self.assertIn("paper-faithful T-handle geometry", non_claim)
+        self.assertIn("raw waveform agreement", non_claim)
+        self.assertIn("must not be described as a passed T-handle experiment", forbidden)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+        report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_comparison.json"
+        )
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.baseline_lane, "t_handle_comparison_protocol")
+        self.assertEqual(report.solver_mode, "t_handle_multilane_comparison_development")
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(report.observed["missing_required_lanes"], [])
+        self.assertEqual(report.observed["matched_sample_index_count"], 9)
+        self.assertEqual(report.observed["finite_matched_sample_count"], 9)
+        self.assertEqual(report.observed["time_aligned_sample_count"], 9)
+        self.assertFalse(report.observed["time_grid_mismatch"])
+        self.assertFalse(report.observed["sample_nonfinite"])
+        self.assertIn("t_handle_comparison_report_incomplete", report.observed["blocking_reasons"])
+        self.assertNotIn("t_handle_comparison_report_missing", report.observed["blocking_reasons"])
+
+        metric_statuses = report.observed["paper_metric_statuses"]
+        self.assertEqual(
+            metric_statuses["flip_timing_error"]["status"],
+            "sample_grid_diagnostic_not_paper_timing",
+        )
+        self.assertEqual(
+            metric_statuses["intermediate_axis_angular_velocity_waveform"]["status"],
+            "diagnostic_available_not_paper_curve",
+        )
+        self.assertEqual(
+            metric_statuses["energy_loss"]["status"],
+            "signed_energy_drift_diagnostic_not_paper_loss",
+        )
+
+        record_text = (
+            ROOT / "docs/records/2026-05-18-phase57-t-handle-comparison-protocol.md"
+        ).read_text()
+        for snippet in (
+            "passed_for_t_handle_comparison_protocol",
+            "reports/experiment_matrix/single_body_t_handle_comparison.json",
+            "258a56e8c0530a14c86268b9a9f7e08a801b0fe026db133e579e283d2263861e",
+            "t_handle_multilane_comparison_development",
+            "t_handle_comparison_protocol",
+            "sample_grid_diagnostic_not_paper_timing",
+            "diagnostic_available_not_paper_curve",
+            "signed_energy_drift_diagnostic_not_paper_loss",
+            "No `experiment.*` claim is passed.",
+        ):
+            self.assertIn(snippet, record_text)
+
+    def test_phase57_validator_rejects_t_handle_comparison_pass(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_comparison.json"
+        )
+        overclaimed = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "full_experiment_claim_passed": True,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_t_handle_comparison.json"):
+                return overclaimed
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase57_record()
+
+        self.assertIn("must not pass full experiment claim", str(context.exception))
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -4047,7 +4153,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

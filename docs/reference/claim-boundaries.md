@@ -582,6 +582,28 @@
   geometry or inertia reconstruction, raw curve agreement, comparison pass
   gate, paper timing result, full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 57 T-handle comparison protocol evidence
+  after the Phase 57 record is created.
+- Phase 57 verifies an executable `t_handle_comparison_protocol` report that
+  consumes the existing `rbd_rk4_reference` and `mabd_newton` T-handle
+  diagnostic reports, validates input report provenance and sha256 hashes,
+  requires `reference_not_paper_geometry = true`, records the MABD
+  `t_handle_model_derived_proxy` scope and `newton_model_derived` config
+  source, computes finite aligned-sample RMSE and max angular-velocity deltas,
+  records sample-grid sign-flip timing diagnostic limits, records that
+  `energy_loss` remains unavailable as a paper metric, and replaces the
+  current comparison blocker with `t_handle_comparison_report_incomplete`.
+- Phase 57 does not verify a passed T-handle experiment, passed T-handle MABD
+  lane, paper-faithful T-handle geometry, paper-faithful inertia, raw waveform
+  agreement, paper energy loss, ABD-vs-RBD comparison pass, paper timing,
+  rendered output, runtime performance, generated videos or raw simulation
+  logs, comparison pass gate, full paper reproduction, or any passed
+  `experiment.*` claim.
+- Phase 57 T-handle comparison protocol evidence must not be described as a
+  passed T-handle experiment, passed M-ABD lane, paper-faithful T-handle
+  geometry or inertia reconstruction, raw curve agreement, paper energy-loss
+  agreement, comparison pass gate, paper timing result, full paper
+  reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -894,6 +916,12 @@
   evidence, not paper-faithful heavy-top MABD dynamics, not paper-faithful
   heavy-top inertia or geometry reconstruction, not raw curve agreement, not a
   comparison pass gate, not a paper timing result, not rendered-output
+  evidence, not generated-video evidence, not a full paper reproduction, and
+  not any passed `experiment.*` claim.
+- Phase 57 T-handle comparison protocol is not a passed T-handle experiment,
+  not a passed M-ABD lane, not paper-faithful T-handle geometry or inertia
+  reconstruction, not raw curve agreement, not paper energy-loss agreement, not
+  a comparison pass gate, not a paper timing result, not rendered-output
   evidence, not generated-video evidence, not a full paper reproduction, and
   not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
