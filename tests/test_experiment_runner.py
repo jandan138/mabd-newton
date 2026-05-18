@@ -795,6 +795,33 @@ class ExperimentRunnerTests(unittest.TestCase):
             0.0,
         )
 
+    def test_run_heavy_top_figure_curves_writes_digitized_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_heavy_top_figure_curves
+
+        with TemporaryDirectory() as tmpdir:
+            result = run_heavy_top_figure_curves(
+                config_path=HEAVY_TOP_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_root=tmpdir,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(
+            result.report_path,
+            Path(tmpdir) / "reports/experiment_matrix/single_body_heavy_top_figure_curves.json",
+        )
+        self.assertEqual(result.claim_id, "experiment.single_body.heavy_top")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "paper_figure_digitization")
+        self.assertEqual(loaded.baseline_lane, "paper_figure_digitization")
+        self.assertEqual(loaded.solver_mode, "heavy_top_paper_figure_digitization")
+        self.assertEqual(loaded.backend, "pdftocairo_pillow")
+        self.assertEqual(loaded.observed["lane_status"], "reference_curves_digitized")
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertTrue(loaded.observed["reference_curve_available"])
+
     def test_run_heavy_top_comparison_writes_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_heavy_top_comparison
 
@@ -1285,6 +1312,52 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.solver_mode, "heavy_top_rk4_reference_diagnostic")
         self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
 
+    def test_run_experiment_cli_writes_heavy_top_figure_curve_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "heavy_top_figure_curves",
+                    "--config",
+                    str(HEAVY_TOP_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output-root",
+                    tmpdir,
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            output_path = (
+                Path(tmpdir) / "reports/experiment_matrix/single_body_heavy_top_figure_curves.json"
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.heavy_top")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "paper_figure_digitization")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
+        self.assertEqual(loaded.observed["lane_status"], "reference_curves_digitized")
+
     def test_run_experiment_cli_writes_heavy_top_comparison_report(self) -> None:
         import json
         import os
@@ -1338,6 +1411,70 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.observed["input_report_provenance"]["rbd_rk4_reference"]["source_commit"],
             "test-source",
         )
+
+    def test_run_experiment_cli_heavy_top_comparison_accepts_figure_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        from mabd_reproduction.experiment_configs import load_heavy_top_config
+        from mabd_reproduction.heavy_top_digitization import write_heavy_top_figure_curve_report
+
+        with TemporaryDirectory() as tmpdir:
+            rk4_path, mabd_path = self._write_heavy_top_lane_inputs(tmpdir)
+            config = load_heavy_top_config(HEAVY_TOP_CONFIG_PATH)
+            figure_path = Path(tmpdir) / "heavy_top_figure_curves.json"
+            write_heavy_top_figure_curve_report(
+                figure_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+                sample_count=51,
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "heavy_top_comparison",
+                    "--config",
+                    str(HEAVY_TOP_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--mabd-report",
+                    str(mabd_path),
+                    "--rbd-report",
+                    str(rk4_path),
+                    "--figure-report",
+                    str(figure_path),
+                    "--output-root",
+                    tmpdir,
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            output_path = (
+                Path(tmpdir) / "reports/experiment_matrix/single_body_heavy_top_comparison.json"
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["baseline_lane"], "heavy_top_comparison_protocol")
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["nutation_angle_error"]["status"],
+            "paper_figure_digitized_reference_available",
+        )
+        self.assertIn("paper_figure_curves", loaded.observed["input_report_provenance"])
 
     def test_run_experiment_cli_heavy_top_comparison_requires_input_reports(self) -> None:
         import os

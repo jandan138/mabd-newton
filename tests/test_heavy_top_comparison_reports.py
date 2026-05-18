@@ -11,6 +11,7 @@ from mabd_reproduction.heavy_top_reports import (
     write_heavy_top_mabd_newton_report,
     write_heavy_top_rk4_reference_report,
 )
+from mabd_reproduction.heavy_top_digitization import write_heavy_top_figure_curve_report
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 
 
@@ -45,9 +46,13 @@ class HeavyTopComparisonReportTests(unittest.TestCase):
         config: object,
         rk4_path: Path,
         mabd_path: Path,
+        figure_path: Path | None = None,
     ):
         from mabd_reproduction.comparison_reports import write_heavy_top_comparison_report
 
+        kwargs = {}
+        if figure_path is not None:
+            kwargs["figure_curve_report_path"] = figure_path
         return write_heavy_top_comparison_report(
             output_path,
             config=config,
@@ -55,6 +60,7 @@ class HeavyTopComparisonReportTests(unittest.TestCase):
             mabd_report_path=mabd_path,
             source_commit="test-source",
             vendored_newton_commit="test-newton",
+            **kwargs,
         )
 
     def _mutate_report(self, path: Path, *keys: str, value: object) -> None:
@@ -184,6 +190,79 @@ class HeavyTopComparisonReportTests(unittest.TestCase):
         self.assertEqual(
             report.observed["paper_metric_statuses"]["precession_velocity_error"]["status"],
             "missing_mabd_precession_velocity_samples",
+        )
+
+    def test_heavy_top_comparison_consumes_digitized_figure_reference_report(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            figure_path = Path(tmpdir) / "figure_curves.json"
+            write_heavy_top_figure_curve_report(
+                figure_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+                sample_count=51,
+            )
+            output_path = Path(tmpdir) / "comparison.json"
+            report = self._write_comparison(
+                output_path=output_path,
+                config=config,
+                rk4_path=rk4_path,
+                mabd_path=mabd_path,
+                figure_path=figure_path,
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(report.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["nutation_angle_error"]["status"],
+            "paper_figure_digitized_reference_available",
+        )
+        self.assertEqual(
+            loaded.observed["missing_paper_metrics"],
+            ["nutation_angle_error:paper_figure_digitized_curve_agreement_not_passed"],
+        )
+        self.assertIn(
+            "raw_heavy_top_reference_curve_data_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "heavy_top_digitized_figure_curve_agreement_not_passed",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn("paper_figure_curves", loaded.observed["input_report_provenance"])
+        self.assertTrue(loaded.observed["digitized_figure_reference_available"])
+
+    def test_heavy_top_comparison_ignores_invalid_digitized_figure_report(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            figure_path = Path(tmpdir) / "figure_curves.json"
+            write_heavy_top_figure_curve_report(
+                figure_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+                sample_count=51,
+            )
+            payload = json.loads(figure_path.read_text(encoding="utf-8"))
+            payload["observed"]["reference_curve_available"] = False
+            figure_path.write_text(json.dumps(payload), encoding="utf-8")
+            output_path = Path(tmpdir) / "comparison.json"
+            report = self._write_comparison(
+                output_path=output_path,
+                config=config,
+                rk4_path=rk4_path,
+                mabd_path=mabd_path,
+                figure_path=figure_path,
+            )
+
+        self.assertEqual(
+            report.observed["paper_metric_statuses"]["nutation_angle_error"]["status"],
+            "paper_reference_curve_missing",
+        )
+        self.assertEqual(
+            report.observed["missing_paper_metrics"],
+            ["nutation_angle_error:paper_reference_curve_missing"],
         )
 
     def test_heavy_top_comparison_rejects_wrong_lane_identity(self) -> None:

@@ -59,6 +59,9 @@ HEAVY_TOP_INPUT_LANES = {
         "backend": "cpu_numpy_newton_only",
     },
 }
+HEAVY_TOP_FIGURE_BASELINE_LANE = "paper_figure_digitization"
+HEAVY_TOP_FIGURE_SOLVER_MODE = "heavy_top_paper_figure_digitization"
+HEAVY_TOP_FIGURE_BACKEND = "pdftocairo_pillow"
 
 
 def _require_lane_report(
@@ -140,6 +143,54 @@ def _require_heavy_top_lane_report(
         raise ValueError(f"{lane} report must use heavy_top_procedural")
     if report.observed.get("full_experiment_claim_passed") is not False:
         raise ValueError(f"{lane} report must not claim full experiment pass")
+    return report
+
+
+def _finite_heavy_top_nutation_reference_samples(report: ClaimReport) -> bool:
+    curves = report.observed.get("reference_curves")
+    if not isinstance(curves, dict):
+        return False
+    nutation = curves.get("reference_nutation")
+    if not isinstance(nutation, dict):
+        return False
+    samples = nutation.get("samples")
+    if not isinstance(samples, list) or not samples:
+        return False
+    return all(
+        isinstance(sample, dict)
+        and _finite_scalar(sample.get("time_s")) is not None
+        and _finite_scalar(sample.get("value")) is not None
+        for sample in samples
+    )
+
+
+def _valid_heavy_top_figure_report_or_none(
+    path: str | Path | None,
+    *,
+    config: HeavyTopRunConfig,
+) -> ClaimReport | None:
+    if path is None:
+        return None
+    try:
+        report = load_claim_report(path)
+    except (OSError, ValueError):
+        return None
+    if report.claim_id != config.claim_id or report.scene_id != config.scene_id:
+        return None
+    if report.baseline_lane != HEAVY_TOP_FIGURE_BASELINE_LANE:
+        return None
+    if report.solver_mode != HEAVY_TOP_FIGURE_SOLVER_MODE:
+        return None
+    if report.backend != HEAVY_TOP_FIGURE_BACKEND:
+        return None
+    if report.status != EvidenceStatus.INCOMPLETE:
+        return None
+    if report.observed.get("full_experiment_claim_passed") is not False:
+        return None
+    if report.observed.get("reference_curve_available") is not True:
+        return None
+    if not _finite_heavy_top_nutation_reference_samples(report):
+        return None
     return report
 
 
@@ -930,6 +981,7 @@ def write_heavy_top_comparison_report(
     config: HeavyTopRunConfig,
     rk4_report_path: str | Path,
     mabd_report_path: str | Path,
+    figure_curve_report_path: str | Path | None = None,
     source_commit: str,
     vendored_newton_commit: str,
     paper_source_version: str = "2603.08079v2",
@@ -953,12 +1005,22 @@ def write_heavy_top_comparison_report(
     mabd_energy_available = _finite_scalar(
         mabd_report.observed.get("relative_energy_drift")
     ) is not None
+    figure_report = _valid_heavy_top_figure_report_or_none(
+        figure_curve_report_path,
+        config=config,
+    )
+    figure_reference_available = figure_report is not None
     missing_paper_metrics = []
     if not mabd_precession_available:
         missing_paper_metrics.append(
             "precession_velocity_error:mabd_precession_velocity_samples_missing"
         )
-    missing_paper_metrics.append("nutation_angle_error:paper_reference_curve_missing")
+    if figure_reference_available:
+        missing_paper_metrics.append(
+            "nutation_angle_error:paper_figure_digitized_curve_agreement_not_passed"
+        )
+    else:
+        missing_paper_metrics.append("nutation_angle_error:paper_reference_curve_missing")
     if not mabd_energy_available:
         missing_paper_metrics.append("energy_drift:mabd_energy_drift_missing")
     blocking_reasons = [
@@ -970,6 +1032,8 @@ def write_heavy_top_comparison_report(
         "heavy_top_timing_evidence_missing",
         "heavy_top_comparison_pass_gate_not_enabled",
     ]
+    if figure_reference_available:
+        blocking_reasons.append("heavy_top_digitized_figure_curve_agreement_not_passed")
     if sample_diagnostics["matched_sample_index_count"] == 0:
         blocking_reasons.append("sample_index_alignment_missing")
     if sample_diagnostics["time_grid_mismatch"]:
@@ -1026,9 +1090,18 @@ def write_heavy_top_comparison_report(
                 ),
             },
             "nutation_angle_error": {
-                "status": "paper_reference_curve_missing",
+                "status": (
+                    "paper_figure_digitized_reference_available"
+                    if figure_reference_available
+                    else "paper_reference_curve_missing"
+                ),
                 "rk4_field": "precession_nutation_samples.nutation_angle_deg",
                 "mabd_field": "precession_nutation_samples.nutation_angle_deg",
+                "paper_figure_field": (
+                    "reference_curves.reference_nutation.samples"
+                    if figure_reference_available
+                    else None
+                ),
             },
             "energy_drift": {
                 "status": (
@@ -1043,6 +1116,7 @@ def write_heavy_top_comparison_report(
         "missing_required_lanes": [],
         "missing_paper_metrics": missing_paper_metrics,
         "blocking_reasons": blocking_reasons,
+        "digitized_figure_reference_available": figure_reference_available,
         "rk4_sample_count": sample_diagnostics["rk4_sample_count"],
         "mabd_sample_count": sample_diagnostics["mabd_sample_count"],
         "matched_sample_index_count": sample_diagnostics["matched_sample_index_count"],
@@ -1055,6 +1129,19 @@ def write_heavy_top_comparison_report(
         "time_grid_mismatch": sample_diagnostics["time_grid_mismatch"],
         "sample_nonfinite": sample_diagnostics["nonfinite"],
     }
+    if figure_reference_available and figure_report is not None and figure_curve_report_path is not None:
+        observed["input_report_provenance"]["paper_figure_curves"] = _heavy_top_lane_provenance(
+            figure_curve_report_path,
+            figure_report,
+        )
+        observed["digitized_figure_reference_samples"] = {
+            "nutation": len(
+                figure_report.observed["reference_curves"]["reference_nutation"]["samples"]
+            ),
+            "precession": len(
+                figure_report.observed["reference_curves"]["reference_precession"]["samples"]
+            ),
+        }
 
     report = ClaimReport(
         claim_id=config.claim_id,
@@ -1094,6 +1181,11 @@ def write_heavy_top_comparison_report(
         raw_outputs={
             "rk4_report": Path(rk4_report_path).as_posix(),
             "mabd_report": Path(mabd_report_path).as_posix(),
+            **(
+                {"figure_curve_report": Path(figure_curve_report_path).as_posix()}
+                if figure_reference_available and figure_curve_report_path is not None
+                else {}
+            ),
         },
         plot_paths={},
         source_commit=source_commit,
