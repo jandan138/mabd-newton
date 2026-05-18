@@ -18,7 +18,7 @@ The structured audit is:
 ## Repository
 
 - branch: `phase60-reproduction-gap-audit`
-- implementation commit: `6f4b4b1fb8a66c11f92f8c59a2cfdb26b56a0fec`
+- implementation commit: `f83889adbec6402e0baa1b4c55db5962a224808d`
 - vendored Newton commit: `96713fa965463b69c229a4d30582c733ff3526bb`
 - paper: `2603.08079v2`
 - canonical Python:

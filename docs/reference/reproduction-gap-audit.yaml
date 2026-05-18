@@ -1,7 +1,7 @@
 schema_version: 1
 audit_id: phase60_reproduction_gap_audit
 audit_date: "2026-05-18"
-source_commit: "6f4b4b1fb8a66c11f92f8c59a2cfdb26b56a0fec"
+source_commit: "f83889adbec6402e0baa1b4c55db5962a224808d"
 vendored_newton_commit: "96713fa965463b69c229a4d30582c733ff3526bb"
 paper:
   arxiv_id: "2603.08079"
