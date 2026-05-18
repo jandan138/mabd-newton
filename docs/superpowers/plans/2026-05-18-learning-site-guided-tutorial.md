@@ -216,7 +216,7 @@ For `vectors-matrices-transforms.mdx`, include three `<li>` items:
 For `affine-state.mdx`, include three `<li>` items:
 
 ```mdx
-<li>先用 `A @ x_rest` 改变点相对物体中心的方向和长度。</li>
+<li>先用 `A @ x_rest` 改变点在静止参考坐标中的方向和长度。</li>
 <li>再用 `+ t` 把整个变形后的物体搬到世界位置。</li>
 <li>最后把 `A` 的 9 个数和 `t` 的 3 个数排成求解器读得懂的 `q`。</li>
 ```
