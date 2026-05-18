@@ -733,6 +733,26 @@
   KKT, paper-faithful affine collision, comparison pass gate, rendered result,
   runtime performance, full paper reproduction, or any passed `experiment.*`
   claim.
+- This repository contains Phase 64 decoupled spatial-twist rigid
+  reconstruction diagnostic evidence after the Phase 64 record is created.
+- Phase 64 verifies the configured spinning-box paper-horizon report lane can
+  use `decoupled_spatial_twist_with_exponential_rigid_update` in
+  `decoupled_twist_rigid_reconstruction_diagnostic`, records
+  `not_evaluated_no_kkt_solve`, records
+  `spinning_box_decoupled_twist_not_paper_faithful`, records positive
+  finite-difference velocity inconsistency diagnostics while shape and energy
+  thresholds are met, top-level report status: `incomplete`, and no lane gate.
+- Phase 64 does not verify a passed spinning-box experiment, M-ABD lane pass,
+  the paper solver's private velocity semantics, paper-faithful M-ABD
+  stepping, contact solver, paper-faithful affine collision, comparison pass
+  gate, rendered result, runtime performance, full paper reproduction, or any
+  passed `experiment.*` claim.
+- Phase 64 spinning-box decoupled twist diagnostic evidence must not be
+  described as a passed spinning-box experiment, M-ABD lane pass, proof of the
+  paper solver's private velocity semantics, paper-faithful M-ABD stepping,
+  contact solver, paper-faithful affine collision, comparison pass gate,
+  rendered result, runtime performance, full paper reproduction, or any passed
+  `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1078,6 +1098,12 @@
   KKT, not paper-faithful affine collision, not a comparison pass gate, not a
   rendered result, not runtime performance evidence, not a full paper
   reproduction, and not any passed `experiment.*` claim.
+- Phase 64 spinning-box decoupled twist diagnostics are not a passed
+  spinning-box experiment, not a passed M-ABD lane, not proof of the paper
+  solver's private velocity semantics, not paper-faithful M-ABD stepping, not a
+  contact solver, not paper-faithful affine collision, not a comparison pass
+  gate, not a rendered result, not runtime performance evidence, not a full
+  paper reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

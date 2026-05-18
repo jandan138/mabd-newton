@@ -4121,6 +4121,139 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("top-level constrained penetration", str(context.exception))
 
+    def test_phase64_spinning_box_decoupled_twist_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 64")
+        verified = claim_boundary_bullet(text, "Phase 64 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 64 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 64 spinning-box decoupled")
+
+        self.assertIn("decoupled spatial-twist rigid reconstruction diagnostic evidence", current)
+        self.assertIn("decoupled_spatial_twist_with_exponential_rigid_update", verified)
+        self.assertIn("decoupled_twist_rigid_reconstruction_diagnostic", verified)
+        self.assertIn("not_evaluated_no_kkt_solve", verified)
+        self.assertIn("finite-difference velocity inconsistency", verified)
+        self.assertIn("no lane gate", verified)
+        self.assertIn("passed spinning-box experiment", non_claim)
+        self.assertIn("paper solver's private velocity semantics", non_claim)
+        self.assertIn("paper-faithful M-ABD stepping", non_claim)
+        self.assertIn("full paper reproduction", forbidden)
+
+        import scripts.validate_docs as validate_docs
+
+        report_path = ROOT / validate_docs.SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH
+        report = load_claim_report(report_path)
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertNotIn("lane_gate_status", report.observed)
+        self.assertEqual(
+            report.solver_mode,
+            "decoupled_twist_rigid_reconstruction_diagnostic",
+        )
+        self.assertEqual(
+            report.observed["velocity_semantics_policy"],
+            "decoupled_spatial_twist_with_exponential_rigid_update",
+        )
+        self.assertEqual(report.observed["solver_residual_status"], "not_evaluated_no_kkt_solve")
+        self.assertEqual(report.observed["threshold_violations"], [])
+        self.assertTrue(report.observed["shape_thresholds_met_by_decoupled_twist"])
+        self.assertTrue(report.observed["energy_thresholds_met_by_decoupled_twist"])
+        self.assertIn(
+            "spinning_box_decoupled_twist_not_paper_faithful",
+            report.observed["blocking_reasons"],
+        )
+        self.assertGreater(report.observed["max_velocity_state_inconsistency_norm"], 0.0)
+        self.assertGreater(report.observed["max_finite_difference_twist_error"], 0.0)
+        self.assertEqual(report.observed["max_contact_penetration_m"], 0.0)
+        self.assertEqual(len(report.observed["decoupled_twist_results"]), 2)
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT,
+        )
+        self.assertNotIn(report.source_commit, validate_docs.PLACEHOLDER_SOURCE_COMMITS)
+        self.assertEqual(
+            validate_docs.sha256_file(report_path),
+            validate_docs.PHASE64_SPINNING_BOX_DECOUPLED_TWIST_SHA256,
+        )
+
+    def test_phase64_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-19-phase64-spinning-box-decoupled-twist.md"
+        ).read_text()
+        import scripts.validate_docs as validate_docs
+
+        for snippet in (
+            "## Status\n\npassed_for_spinning_box_decoupled_twist_diagnostic_slice",
+            "phase64-spinning-box-velocity-semantics",
+            validate_docs.PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json",
+            validate_docs.PHASE64_SPINNING_BOX_DECOUPLED_TWIST_SHA256,
+            "decoupled_twist_rigid_reconstruction_diagnostic",
+            "decoupled_spatial_twist_with_exponential_rigid_update",
+            "not_evaluated_no_kkt_solve",
+            "spinning_box_decoupled_twist_not_paper_faithful",
+            "max_velocity_state_inconsistency_norm = `85328.56614876063`",
+            "max_finite_difference_twist_error = `60304.81062110217`",
+            "threshold_violations = `[]`",
+            "No `experiment.*` claim is passed.",
+            "does not prove paper velocity semantics",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE64", text)
+        self.assertNotIn("phase64-working-tree", text)
+
+    def test_phase64_validator_rejects_missing_residual_status(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json"
+        )
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "solver_residual_status": "0.0",
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase64_record()
+
+        self.assertIn("solver residual status", str(context.exception))
+
+    def test_phase64_validator_rejects_inconsistent_velocity_inconsistency(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json"
+        )
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "max_velocity_state_inconsistency_norm": (
+                    actual.observed["max_velocity_state_inconsistency_norm"] * 0.5
+                ),
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase64_record()
+
+        self.assertIn("top-level velocity inconsistency", str(context.exception))
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -4967,7 +5100,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

@@ -142,6 +142,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase61-spinning-box-contact-diagnostics.md",
     "docs/records/2026-05-18-phase62-spinning-box-contact-response.md",
     "docs/records/2026-05-19-phase63-point-plane-normal-constraints.md",
+    "docs/records/2026-05-19-phase64-spinning-box-decoupled-twist.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -206,10 +207,13 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase62-spinning-box-contact-response.md",
     "docs/superpowers/specs/2026-05-19-phase63-point-plane-normal-constraints-design.md",
     "docs/superpowers/plans/2026-05-19-mabd-phase63-point-plane-normal-constraints.md",
+    "docs/superpowers/specs/2026-05-19-phase64-spinning-box-decoupled-twist-design.md",
+    "docs/superpowers/plans/2026-05-19-mabd-phase64-spinning-box-decoupled-twist.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
     "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json",
+    "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
     "reports/experiment_matrix/single_body_spinning_box_comparison.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
@@ -260,6 +264,7 @@ PHASE60_REPRODUCTION_GAP_AUDIT_COMMIT = "f83889adbec6402e0baa1b4c55db5962a224808
 PHASE61_SPINNING_BOX_CONTACT_COMMIT = "d73e105515c270d4bac9b3b373553132c7c6d99b"
 PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT = "98f66d7344c3bb09995d1c9187beb1830683195e"
 PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT = "ea33e90cd7613212aad4440b9dcf0ac758e07c61"
+PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT = "8c00873c9e85ca8a85d518f02f7bbf415f946d91"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -269,6 +274,9 @@ SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH = (
 SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json"
 )
+SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json"
+)
 PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256 = (
     "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
 )
@@ -277,6 +285,9 @@ PHASE62_SPINNING_BOX_CONTACT_RESPONSE_SHA256 = (
 )
 PHASE63_SPINNING_BOX_NORMAL_CONSTRAINT_SHA256 = (
     "5f710498e8651a8ad22dcbcadc5ac1212410100eb36ef5733c721b6cba566394"
+)
+PHASE64_SPINNING_BOX_DECOUPLED_TWIST_SHA256 = (
+    "748e83d4f670222a861c9eb1c38d3c1a21469d046c9be60ee7b0609a8e84242d"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -325,6 +336,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase62-working-tree",
     "TO_BE_BACKFILLED_PHASE63",
     "phase63-working-tree",
+    "TO_BE_BACKFILLED_PHASE64",
+    "phase64-working-tree",
 }
 
 
@@ -10337,6 +10350,7 @@ def validate_phase60_record() -> None:
     phase60_post_audit_reports = {
         SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH,
         SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH,
+        SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH,
     }
     expected_report_paths = sorted(
         relative_path
@@ -11334,6 +11348,314 @@ def validate_phase63_record() -> None:
             fail("Phase 63 must not pass experiment.* claims")
 
 
+def validate_phase64_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-19-phase64-spinning-box-decoupled-twist.md"
+    spec_path = (
+        ROOT / "docs/superpowers/specs/2026-05-19-phase64-spinning-box-decoupled-twist-design.md"
+    )
+    plan_path = (
+        ROOT / "docs/superpowers/plans/2026-05-19-mabd-phase64-spinning-box-decoupled-twist.md"
+    )
+    report_path = SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_spinning_box_decoupled_twist_diagnostic_slice",
+        "phase64-spinning-box-velocity-semantics",
+        PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+        SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH,
+        PHASE64_SPINNING_BOX_DECOUPLED_TWIST_SHA256,
+        "decoupled_twist_rigid_reconstruction_diagnostic",
+        "`decoupled_spatial_twist_with_exponential_rigid_update`",
+        "`no_solver_step_rigid_reconstruction_diagnostic`",
+        "`not_evaluated_no_kkt_solve`",
+        "spinning_box_decoupled_twist_not_paper_faithful",
+        "max_velocity_state_inconsistency_norm = `85328.56614876063`",
+        "max_finite_difference_twist_error = `60304.81062110217`",
+        "threshold_violations = `[]`",
+        "No `experiment.*` claim is passed.",
+        "does not prove paper velocity semantics",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane spinning_box_decoupled_twist",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 64 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE64",
+        "TO_BE_BACKFILLED_PHASE64_REPORT_SHA256",
+        "phase64-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 64 record contains stale placeholder")
+    if PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 64 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "spinning-box experiment passed",
+        "passed spinning-box experiment",
+        "m-abd lane passed",
+        "paper velocity semantics proved",
+        "paper-faithful m-abd solve passed",
+        "paper-faithful m-abd solve verified",
+        "paper-faithful m-abd solve implemented",
+        "comparison pass gate enabled",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 64 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 64")
+    verified = claim_boundary_bullet(boundary_text, "Phase 64 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 64 does not verify")
+    forbidden = claim_boundary_bullet(boundary_text, "Phase 64 spinning-box decoupled")
+    for snippet in (
+        "decoupled spatial-twist rigid reconstruction diagnostic evidence",
+        "Phase 64 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 64 current boundary missing: {snippet}")
+    for snippet in (
+        "decoupled_spatial_twist_with_exponential_rigid_update",
+        "decoupled_twist_rigid_reconstruction_diagnostic",
+        "`not_evaluated_no_kkt_solve`",
+        "`spinning_box_decoupled_twist_not_paper_faithful`",
+        "finite-difference velocity inconsistency",
+        "top-level report status: `incomplete`",
+        "no lane gate",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 64 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed spinning-box experiment",
+        "M-ABD lane pass",
+        "paper solver's private velocity semantics",
+        "paper-faithful M-ABD stepping",
+        "contact solver",
+        "paper-faithful affine collision",
+        "comparison pass gate",
+        "rendered result",
+        "runtime performance",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 64 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 64 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 64 Spinning-Box Decoupled Twist Diagnostic Design",
+        "decoupled_spatial_twist_with_exponential_rigid_update",
+        "decoupled_twist_rigid_reconstruction_diagnostic",
+        "not_evaluated_no_kkt_solve",
+        "spinning_box_decoupled_twist_not_paper_faithful",
+        "does not prove paper solver semantics",
+        "full paper reproduction",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 64 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 64 Spinning-Box Decoupled Twist Implementation Plan",
+        "spinning_box_decoupled_twist",
+        "decoupled_twist_output_report",
+        "write_spinning_box_decoupled_twist_report",
+        "run_spinning_box_decoupled_twist",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 64 plan missing required boundary text: {snippet}")
+
+    try:
+        config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_spinning_box_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 64 spinning-box config validation failed: {exc}")
+
+    if config.paper_horizon.decoupled_twist_output_report != report_path:
+        fail("Phase 64 config decoupled twist output report changed")
+
+    report = load_claim_report(ROOT / report_path)
+    if report.source_commit != PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT:
+        fail("Phase 64 decoupled-twist report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 64 decoupled-twist report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 64 decoupled-twist report vendored Newton commit changed")
+    if report.claim_id != config.claim_id:
+        fail("Phase 64 decoupled-twist report claim_id does not match config")
+    if report.scene_id != config.scene_id:
+        fail("Phase 64 decoupled-twist report scene_id does not match config")
+    if report.baseline_lane != "mabd_newton":
+        fail("Phase 64 decoupled-twist report lane changed")
+    if report.solver_mode != "decoupled_twist_rigid_reconstruction_diagnostic":
+        fail("Phase 64 decoupled-twist solver mode changed")
+    if report.backend != "cpu_numpy":
+        fail("Phase 64 decoupled-twist backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 64 decoupled-twist report must remain incomplete")
+
+    observed = report.observed
+    if "lane_gate_status" in observed:
+        fail("Phase 64 decoupled-twist report must not expose a passed lane gate")
+    if observed.get("velocity_semantics_policy") != (
+        "decoupled_spatial_twist_with_exponential_rigid_update"
+    ):
+        fail("Phase 64 velocity semantics policy changed")
+    if observed.get("velocity_semantics_scope") != "diagnostic_only_no_lane_gate":
+        fail("Phase 64 velocity semantics scope changed")
+    if observed.get("solver_step_policy") != "no_solver_step_rigid_reconstruction_diagnostic":
+        fail("Phase 64 solver step policy changed")
+    if observed.get("solver_residual_status") != "not_evaluated_no_kkt_solve":
+        fail("Phase 64 solver residual status changed")
+    if observed.get("decoupled_twist_status") != "decoupled_twist_thresholds_met_no_lane_gate":
+        fail("Phase 64 decoupled twist status changed")
+    if observed.get("threshold_violations") != []:
+        fail("Phase 64 decoupled-twist report must keep empty threshold violations")
+    if observed.get("thresholds_not_evaluated") != ["max_residual_norm"]:
+        fail("Phase 64 decoupled-twist report must mark residual threshold not evaluated")
+    if observed.get("shape_thresholds_met_by_decoupled_twist") is not True:
+        fail("Phase 64 decoupled-twist shape thresholds must remain met")
+    if observed.get("energy_thresholds_met_by_decoupled_twist") is not True:
+        fail("Phase 64 decoupled-twist energy thresholds must remain met")
+    expected_blockers = [
+        "mabd_newton_report_incomplete",
+        "spinning_box_decoupled_twist_not_paper_faithful",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "mabd_kinematic_feasibility_blocker_recorded",
+    ]
+    if observed.get("blocking_reasons") != expected_blockers:
+        fail("Phase 64 decoupled-twist blockers changed")
+
+    max_velocity_inconsistency = _require_finite_scalar(
+        observed.get("max_velocity_state_inconsistency_norm"),
+        "Phase 64 velocity state inconsistency",
+    )
+    max_twist_error = _require_finite_scalar(
+        observed.get("max_finite_difference_twist_error"),
+        "Phase 64 finite-difference twist error",
+    )
+    max_contact_penetration = _require_finite_scalar(
+        observed.get("max_contact_penetration_m"),
+        "Phase 64 max contact penetration",
+    )
+    if max_velocity_inconsistency <= 0.0:
+        fail("Phase 64 report must record positive velocity-state inconsistency")
+    if max_twist_error <= 0.0:
+        fail("Phase 64 report must record positive finite-difference twist error")
+    if max_contact_penetration != 0.0:
+        fail("Phase 64 decoupled-twist report must keep zero contact penetration")
+
+    results = observed.get("decoupled_twist_results")
+    if not isinstance(results, list) or len(results) != len(config.paper_horizon.time_step_grid_s):
+        fail("Phase 64 decoupled-twist results must cover the configured step grid")
+    result_velocity_inconsistencies: list[float] = []
+    result_twist_errors: list[float] = []
+    for result in results:
+        if not isinstance(result, dict):
+            fail("Phase 64 decoupled-twist result must be a mapping")
+        if "residual_norm" in result:
+            fail("Phase 64 decoupled-twist result must not record numeric residual_norm")
+        if result.get("threshold_violations") != []:
+            fail("Phase 64 per-step threshold violations must remain empty")
+        if result.get("thresholds_not_evaluated") != ["max_residual_norm"]:
+            fail("Phase 64 per-step residual threshold applicability changed")
+        if result.get("solver_step_policy") != "no_solver_step_rigid_reconstruction_diagnostic":
+            fail("Phase 64 per-step solver policy changed")
+        if result.get("solver_residual_status") != "not_evaluated_no_kkt_solve":
+            fail("Phase 64 per-step residual status changed")
+        if result.get("decoupled_twist_status") != "decoupled_twist_thresholds_met_no_lane_gate":
+            fail("Phase 64 per-step diagnostic status changed")
+        feasibility = result.get("kinematic_feasibility")
+        if not isinstance(feasibility, dict):
+            fail("Phase 64 per-step kinematic feasibility must be a mapping")
+        if feasibility.get("status") != "paper_momentum_requires_affine_stretch_under_q_delta_over_h":
+            fail("Phase 64 must retain the Phase 29 feasibility blocker")
+        for key in (
+            "max_linear_momentum_error",
+            "max_angular_momentum_error",
+            "max_abs_det_minus_one",
+            "min_singular_value",
+            "max_singular_value",
+            "max_affine_orthogonality_error",
+            "max_relative_kinetic_energy_drift",
+            "max_relative_total_energy_drift",
+            "max_contact_penetration_m",
+        ):
+            _require_finite_scalar(result.get(key), f"Phase 64 result {key}")
+        if result.get("max_contact_penetration_m") != 0.0:
+            fail("Phase 64 per-step contact penetration must remain zero")
+        velocity_inconsistency = _require_finite_scalar(
+            result.get("max_velocity_state_inconsistency_norm"),
+            "Phase 64 result velocity-state inconsistency",
+        )
+        twist_error = _require_finite_scalar(
+            result.get("max_finite_difference_twist_error"),
+            "Phase 64 result finite-difference twist error",
+        )
+        if velocity_inconsistency <= 0.0 or twist_error <= 0.0:
+            fail("Phase 64 per-step velocity inconsistency metrics must be positive")
+        result_velocity_inconsistencies.append(velocity_inconsistency)
+        result_twist_errors.append(twist_error)
+        samples = result.get("trajectory_samples")
+        if not isinstance(samples, list) or not samples:
+            fail("Phase 64 per-step result must retain compact trajectory samples")
+        for sample in samples:
+            if not isinstance(sample, dict):
+                fail("Phase 64 trajectory sample must be a mapping")
+            if "residual_norm" in sample:
+                fail("Phase 64 trajectory sample must not record numeric residual_norm")
+            if sample.get("solver_residual_status") != "not_evaluated_no_kkt_solve":
+                fail("Phase 64 trajectory sample residual status changed")
+            _require_finite_scalar(
+                sample.get("velocity_state_inconsistency_norm"),
+                "Phase 64 trajectory velocity-state inconsistency",
+            )
+            _require_finite_scalar(
+                sample.get("finite_difference_twist_error"),
+                "Phase 64 trajectory finite-difference twist error",
+            )
+
+    if not np.isclose(
+        max_velocity_inconsistency,
+        max(result_velocity_inconsistencies),
+        rtol=0.0,
+        atol=1.0e-9,
+    ):
+        fail("Phase 64 top-level velocity inconsistency must match per-step maximum")
+    if not np.isclose(max_twist_error, max(result_twist_errors), rtol=0.0, atol=1.0e-9):
+        fail("Phase 64 top-level finite-difference twist error must match per-step maximum")
+
+    actual_hash = sha256_file(ROOT / report_path)
+    if actual_hash != PHASE64_SPINNING_BOX_DECOUPLED_TWIST_SHA256:
+        fail("Phase 64 decoupled-twist report sha256 changed")
+    record_hash = _record_sha256_for_artifact(text, report_path)
+    if record_hash != actual_hash:
+        fail("Phase 64 decoupled-twist report sha256 mismatch")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.spinning_box":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 64 must keep spinning-box experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 64 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -11639,13 +11961,14 @@ def main() -> int:
     validate_phase61_record()
     validate_phase62_record()
     validate_phase63_record()
+    validate_phase64_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64 "
         "docs/provenance validation passed"
     )
     return 0
