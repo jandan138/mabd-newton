@@ -48,7 +48,7 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 <PrereqBox>
   <li>已读单体 ABD 和 KKT 课程，知道一个体的仿射状态如何进入线性系统。</li>
   <li>知道控制点关节会把一个或多个体上的局部点联系起来。</li>
-  <li>理解本教程是概念解释，不等同于完整 M-ABD solver 已有证据。</li>
+  <li>理解本教程是概念解释，不等同于完整 M-ABD 求解器已有证据。</li>
 </PrereqBox>
 
 <GuidedProjectStep title="用标记点关节连接多块印章" step="贯穿小项目 11/12">
@@ -65,8 +65,8 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 
 仿射体上的点由 `x = A x_rest + t` 给出。控制点关节就是在一个或多个体上选取局部点，再要求这些点满足某种关系。球关节可以要求两个控制点重合；铰链还要限制相对旋转轴；万向节允许两个旋转自由度；滑动关节允许沿一条轴移动但限制其他方向。
 
-<ConceptCard title="关节像用夹具连接橡皮砖">
-每个仿射体是一块可轻微变形的砖。球关节像一个万向球头，把两个点扣在一起；铰链像门轴，只允许绕一根轴转；滑动关节像抽屉轨道，只允许沿轨道滑。求解器要同时尊重每块砖自己的动力学和这些夹具规则。
+<ConceptCard title="关节像用夹具连接软橡胶印章">
+每个仿射体是一块可轻微变形的印章。球关节像一个万向球头，把两个点扣在一起；铰链像门轴，只允许绕一根轴转；滑动关节像抽屉轨道，只允许沿轨道滑。求解器要同时尊重每块印章自己的动力学和这些夹具规则。
 </ConceptCard>
 
 <CompareGrid title="常见关节约束">
