@@ -27,6 +27,7 @@ class SpinningBoxPaperHorizonConfig:
     output_report: str
     contact_response_output_report: str
     normal_constraint_output_report: str
+    model_plane_constraint_output_report: str
     decoupled_twist_output_report: str
     figure_curve_output_report: str
     figure_pdf_sha256: str
@@ -662,6 +663,10 @@ def _require_paper_horizon(data: dict[str, Any]) -> SpinningBoxPaperHorizonConfi
         output_report=_require_str(horizon, "output_report"),
         contact_response_output_report=_require_str(horizon, "contact_response_output_report"),
         normal_constraint_output_report=_require_str(horizon, "normal_constraint_output_report"),
+        model_plane_constraint_output_report=_require_str(
+            horizon,
+            "model_plane_constraint_output_report",
+        ),
         decoupled_twist_output_report=_require_str(horizon, "decoupled_twist_output_report"),
         figure_curve_output_report=_require_str(horizon, "figure_curve_output_report"),
         figure_pdf_sha256=_require_str(horizon, "figure_pdf_sha256"),
@@ -1260,6 +1265,24 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
     ):
         raise ExperimentRunConfigError(
             "paper_horizon.figure_curve_output_report must be separate from lane reports"
+        )
+    if (
+        not config.paper_horizon.model_plane_constraint_output_report.startswith(expected_prefix)
+        or not config.paper_horizon.model_plane_constraint_output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "paper_horizon.model_plane_constraint_output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.paper_horizon.model_plane_constraint_output_report in (
+        config.output_report,
+        config.paper_horizon.output_report,
+        config.paper_horizon.contact_response_output_report,
+        config.paper_horizon.normal_constraint_output_report,
+        config.paper_horizon.decoupled_twist_output_report,
+        config.paper_horizon.figure_curve_output_report,
+    ):
+        raise ExperimentRunConfigError(
+            "paper_horizon.model_plane_constraint_output_report must be separate from lane reports"
         )
 
 
