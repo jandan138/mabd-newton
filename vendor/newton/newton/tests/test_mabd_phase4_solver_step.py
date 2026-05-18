@@ -527,6 +527,218 @@ class MABDPhase4InternalTests(unittest.TestCase):
         self.assertGreater(float(np.linalg.norm(result.q[0][:9] - q[:9])), 1.0e-6)
         self.assertTrue(np.allclose(pinned, world_point, atol=1.0e-10))
 
+    def test_dense_cpu_step_plane_constraint_preserves_tangent_motion(self) -> None:
+        q = _identity_q((0.2, -0.3, 0.1))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([2.0, 3.0, -1.0])
+        dt = 0.05
+        rest_point = np.array([0.3, -0.2, 0.1])
+        normal = np.array([0.0, 2.0, 2.0])
+        normal_norm = float(np.linalg.norm(normal))
+        free = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(bodies=[_body()]),
+        )
+        point_jacobian = mabd.point_jacobian(rest_point)
+        free_point = point_jacobian @ free.q[0]
+        plane_offset = float(normal @ free_point + 0.1 * normal_norm)
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body()],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=rest_point,
+                        plane_normal=normal,
+                        plane_offset=plane_offset,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+
+        unit_normal = normal / normal_norm
+        constrained_point = point_jacobian @ result.q[0]
+        self.assertTrue(
+            np.allclose(unit_normal @ constrained_point, plane_offset / normal_norm, atol=1.0e-10)
+        )
+        free_tangent = free_point - unit_normal * float(unit_normal @ free_point)
+        constrained_tangent = constrained_point - unit_normal * float(
+            unit_normal @ constrained_point
+        )
+        self.assertTrue(np.allclose(constrained_tangent, free_tangent, atol=1.0e-10))
+        self.assertEqual(result.dlambda.shape, (1,))
+        self.assertEqual(result.plane_constraint_requested_count, 1)
+        self.assertEqual(result.plane_constraint_accepted_count, 1)
+        self.assertEqual(result.plane_constraint_skipped_count, 0)
+
+    def test_dense_cpu_step_plane_constraint_supports_polar_increment_map(self) -> None:
+        theta = 0.35
+        A = np.array(
+            [
+                [np.cos(theta), -np.sin(theta), 0.0],
+                [np.sin(theta), np.cos(theta), 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+            dtype=float,
+        )
+        q = mabd.pack_q(A, np.array([0.0, -0.2, 0.0]))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.0, -2.0, 0.0])
+        rest_point = np.array([0.2, -0.3, 0.1])
+        dt = 0.05
+        normal = np.array([0.0, 1.0, 0.0])
+        plane_offset = 0.0
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body(rotation_mode="polar")],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=rest_point,
+                        plane_normal=normal,
+                        plane_offset=plane_offset,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+
+        constrained_point = mabd.point_jacobian(rest_point) @ result.q[0]
+        self.assertTrue(np.allclose(normal @ constrained_point, plane_offset, atol=1.0e-10))
+        self.assertEqual(result.plane_constraint_accepted_count, 1)
+        self.assertLess(result.constraint_residual_norm, 1.0e-10)
+
+    def test_inactive_plane_constraint_is_ignored(self) -> None:
+        q = _identity_q((0.0, 0.3, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([1.0, 2.0, 3.0])
+        dt = 0.05
+
+        free = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(bodies=[_body()]),
+        )
+        constrained = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body()],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=np.zeros(3),
+                        plane_normal=np.array([0.0, 1.0, 0.0]),
+                        plane_offset=100.0,
+                        active=False,
+                    )
+                ],
+            ),
+        )
+
+        self.assertTrue(np.allclose(constrained.q[0], free.q[0], atol=1.0e-12))
+        self.assertTrue(np.allclose(constrained.qd[0], free.qd[0], atol=1.0e-12))
+        self.assertEqual(constrained.plane_constraint_requested_count, 0)
+        self.assertEqual(constrained.plane_constraint_accepted_count, 0)
+        self.assertEqual(constrained.plane_constraint_skipped_count, 0)
+
+    def test_plane_constraint_rejects_invalid_parameters(self) -> None:
+        with self.assertRaisesRegex(ValueError, "plane_constraints"):
+            mabd.solve_cpu_oracle_step(
+                q=[_identity_q()],
+                qd=[np.zeros(12)],
+                dt=0.1,
+                config=mabd.MABDCPUOracleConfig(
+                    bodies=[_body()],
+                    plane_constraints=[
+                        mabd.MABDCPUOraclePlaneConstraint(
+                            body=1,
+                            rest_point=np.zeros(3),
+                            plane_normal=np.array([0.0, 1.0, 0.0]),
+                            plane_offset=0.0,
+                        )
+                    ],
+                ),
+            )
+        with self.assertRaisesRegex(ValueError, "plane_normal"):
+            mabd.solve_cpu_oracle_step(
+                q=[_identity_q()],
+                qd=[np.zeros(12)],
+                dt=0.1,
+                config=mabd.MABDCPUOracleConfig(
+                    bodies=[_body()],
+                    plane_constraints=[
+                        mabd.MABDCPUOraclePlaneConstraint(
+                            body=0,
+                            rest_point=np.zeros(3),
+                            plane_normal=np.zeros(3),
+                            plane_offset=0.0,
+                        )
+                    ],
+                ),
+            )
+        with self.assertRaisesRegex(ValueError, "rest_point"):
+            mabd.solve_cpu_oracle_step(
+                q=[_identity_q()],
+                qd=[np.zeros(12)],
+                dt=0.1,
+                config=mabd.MABDCPUOracleConfig(
+                    bodies=[_body()],
+                    plane_constraints=[
+                        mabd.MABDCPUOraclePlaneConstraint(
+                            body=0,
+                            rest_point=np.zeros(2),
+                            plane_normal=np.array([0.0, 1.0, 0.0]),
+                            plane_offset=0.0,
+                        )
+                    ],
+                ),
+            )
+
+    def test_dependent_plane_constraint_rows_are_rank_filtered(self) -> None:
+        q = _identity_q((0.0, -0.05, 0.0))
+        qd = np.zeros(12)
+        dt = 0.05
+        constraints = [
+            mabd.MABDCPUOraclePlaneConstraint(
+                body=0,
+                rest_point=np.array([x, -0.5, z], dtype=float),
+                plane_normal=np.array([0.0, 1.0, 0.0]),
+                plane_offset=0.0,
+            )
+            for x, z in ((-0.5, -0.5), (-0.5, 0.5), (0.5, -0.5), (0.5, 0.5))
+        ]
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body()],
+                plane_constraints=constraints,
+                topology="dense",
+            ),
+        )
+
+        self.assertEqual(result.plane_constraint_requested_count, 4)
+        self.assertEqual(result.plane_constraint_accepted_count, 3)
+        self.assertEqual(result.plane_constraint_skipped_count, 1)
+        self.assertEqual(result.dlambda.shape, (3,))
+        self.assertTrue(np.all(np.isfinite(result.q[0])))
+
     def test_world_anchor_constraints_require_dense_topology(self) -> None:
         config = mabd.MABDCPUOracleConfig(
             bodies=[_body()],

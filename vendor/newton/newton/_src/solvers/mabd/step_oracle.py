@@ -57,10 +57,20 @@ class MABDCPUOracleWorldConstraint:
 
 
 @dataclass(frozen=True)
+class MABDCPUOraclePlaneConstraint:
+    body: int
+    rest_point: np.ndarray
+    plane_normal: np.ndarray
+    plane_offset: float
+    active: bool = True
+
+
+@dataclass(frozen=True)
 class MABDCPUOracleConfig:
     bodies: tuple[MABDCPUOracleBody, ...] | list[MABDCPUOracleBody]
     constraints: tuple[MABDCPUOracleConstraint, ...] | list[MABDCPUOracleConstraint] = field(default_factory=tuple)
     world_constraints: tuple[MABDCPUOracleWorldConstraint, ...] | list[MABDCPUOracleWorldConstraint] = field(default_factory=tuple)
+    plane_constraints: tuple[MABDCPUOraclePlaneConstraint, ...] | list[MABDCPUOraclePlaneConstraint] = field(default_factory=tuple)
     external_forces: tuple[np.ndarray, ...] | list[np.ndarray] | None = None
     gravity: np.ndarray | None = None
     actuations: tuple[MABDActuationSpec, ...] | list[MABDActuationSpec] = field(default_factory=tuple)
@@ -78,6 +88,9 @@ class MABDCPUOracleStepResult:
     residual_norm: float
     constraint_residual_norm: float
     topology: str
+    plane_constraint_requested_count: int = 0
+    plane_constraint_accepted_count: int = 0
+    plane_constraint_skipped_count: int = 0
 
 
 def _as_q_blocks(values: Any, name: str) -> tuple[np.ndarray, ...]:
@@ -93,6 +106,28 @@ def _as_vec3(value: Any, name: str) -> np.ndarray:
     if arr.shape != (3,):
         raise ValueError(f"{name} must have shape (3,), got {arr.shape}")
     return arr
+
+
+def _normalized_plane_constraint_values(
+    constraint_id: int,
+    constraint: MABDCPUOraclePlaneConstraint,
+) -> tuple[int, np.ndarray, np.ndarray, float]:
+    body = int(constraint.body)
+    rest_point = _as_vec3(
+        constraint.rest_point,
+        f"plane_constraints[{constraint_id}].rest_point",
+    )
+    normal = _as_vec3(
+        constraint.plane_normal,
+        f"plane_constraints[{constraint_id}].plane_normal",
+    )
+    normal_norm = float(np.linalg.norm(normal))
+    if normal_norm == 0.0:
+        raise ValueError(f"plane_constraints[{constraint_id}].plane_normal must be nonzero")
+    offset = float(constraint.plane_offset)
+    if not np.isfinite(offset):
+        raise ValueError(f"plane_constraints[{constraint_id}].plane_offset must be finite")
+    return body, rest_point, normal / normal_norm, offset / normal_norm
 
 
 def _body_rest_q(body: MABDCPUOracleBody) -> np.ndarray:
@@ -148,6 +183,11 @@ def _validate_config(config: MABDCPUOracleConfig, body_count: int) -> tuple[MABD
     for constraint_id, constraint in enumerate(world_constraints):
         if not 0 <= int(constraint.body) < body_count:
             raise ValueError(f"world constraint {constraint_id} references a body outside [0, {body_count})")
+    plane_constraints = tuple(config.plane_constraints)
+    for constraint_id, constraint in enumerate(plane_constraints):
+        body, _rest_point, _normal, _offset = _normalized_plane_constraint_values(constraint_id, constraint)
+        if not 0 <= body < body_count:
+            raise ValueError(f"plane_constraints[{constraint_id}] references a body outside [0, {body_count})")
     return bodies
 
 
@@ -316,6 +356,27 @@ def _world_constraint_blocks(
     return bodies, gradients, lower_rhs_blocks, residuals
 
 
+def _plane_constraint_blocks(
+    q: tuple[np.ndarray, ...],
+    config: MABDCPUOracleConfig,
+) -> tuple[list[int], list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+    bodies: list[int] = []
+    gradients: list[np.ndarray] = []
+    lower_rhs_blocks: list[np.ndarray] = []
+    residuals: list[np.ndarray] = []
+    for constraint_id, constraint in enumerate(config.plane_constraints):
+        if not bool(constraint.active):
+            continue
+        body, rest_point, normal, offset = _normalized_plane_constraint_values(constraint_id, constraint)
+        gradient = normal.reshape(1, 3) @ point_jacobian(rest_point)
+        residual = gradient @ q[body] - np.array([offset], dtype=float)
+        bodies.append(body)
+        gradients.append(gradient)
+        lower_rhs_blocks.append(-residual if config.residual_correction else np.zeros_like(residual))
+        residuals.append(residual)
+    return bodies, gradients, lower_rhs_blocks, residuals
+
+
 def _block_diag_hessians(blocks: tuple[np.ndarray, ...]) -> np.ndarray:
     dim = blocks[0].shape[0]
     out = np.zeros((dim * len(blocks), dim * len(blocks)), dtype=float)
@@ -334,8 +395,11 @@ def _assemble_dense_dual_inputs_with_world_constraints(
     world_bodies: list[int],
     world_gradients: list[np.ndarray],
     world_lower_rhs_blocks: list[np.ndarray],
+    plane_bodies: list[int],
+    plane_gradients: list[np.ndarray],
+    plane_lower_rhs_blocks: list[np.ndarray],
     increment_maps: tuple[np.ndarray, ...],
-) -> TopologyDualInputs:
+) -> tuple[TopologyDualInputs, int, int]:
     dim = hessians[0].shape[0]
     H = _block_diag_hessians(hessians)
     f = np.concatenate(body_forces)
@@ -370,6 +434,33 @@ def _assemble_dense_dual_inputs_with_world_constraints(
         lower_blocks.append(lower_rhs)
         edge_slices.append(slice(row_start, row_start + rank))
         row_start += rank
+
+    def plane_row_increases_rank(row: np.ndarray) -> bool:
+        if not rows:
+            return True
+        before = np.linalg.matrix_rank(np.vstack(rows), tol=1.0e-10)
+        after = np.linalg.matrix_rank(np.vstack([*rows, row]), tol=1.0e-10)
+        return bool(after > before)
+
+    accepted_plane_count = 0
+    skipped_plane_count = 0
+    for body, gradient, lower_rhs in zip(
+        plane_bodies,
+        plane_gradients,
+        plane_lower_rhs_blocks,
+        strict=True,
+    ):
+        rank = gradient.shape[0]
+        row = np.zeros((rank, dim * len(hessians)), dtype=float)
+        row[:, dim * body : dim * body + dim] = gradient @ increment_maps[body]
+        if not plane_row_increases_rank(row):
+            skipped_plane_count += 1
+            continue
+        rows.append(row)
+        lower_blocks.append(lower_rhs)
+        edge_slices.append(slice(row_start, row_start + rank))
+        row_start += rank
+        accepted_plane_count += 1
     J = np.vstack(rows)
     lower_rhs = np.concatenate(lower_blocks)
     inv_h_f = np.linalg.solve(H, f)
@@ -383,7 +474,7 @@ def _assemble_dense_dual_inputs_with_world_constraints(
         dual_matrix=dual_matrix,
         dual_rhs=dual_rhs,
         edge_slices=edge_slices,
-    )
+    ), accepted_plane_count, skipped_plane_count
 
 
 def _solve_constrained_step(
@@ -396,9 +487,10 @@ def _solve_constrained_step(
 ) -> MABDCPUOracleStepResult:
     edges, gradients, lower_rhs_blocks, _residuals = _constraint_blocks(q, config)
     world_bodies, world_gradients, world_lower_rhs_blocks, _world_residuals = _world_constraint_blocks(q, config)
+    plane_bodies, plane_gradients, plane_lower_rhs_blocks, _plane_residuals = _plane_constraint_blocks(q, config)
     topology = str(config.topology)
-    if world_bodies and topology != "dense":
-        raise ValueError("world constraints currently require topology='dense'")
+    if (world_bodies or plane_bodies) and topology != "dense":
+        raise ValueError("world and plane constraints currently require topology='dense'")
 
     if topology == "auto":
         classification = classify_constraint_graph(len(q), edges)
@@ -413,8 +505,10 @@ def _solve_constrained_step(
         raise NotImplementedError("constrained rotated CPU oracle steps require topology='dense'")
 
     if topology == "dense":
+        accepted_plane_count = 0
+        skipped_plane_count = 0
         if world_bodies:
-            inputs = _assemble_dense_dual_inputs_with_world_constraints(
+            inputs, accepted_plane_count, skipped_plane_count = _assemble_dense_dual_inputs_with_world_constraints(
                 hessians,
                 edges,
                 gradients,
@@ -423,6 +517,24 @@ def _solve_constrained_step(
                 world_bodies,
                 world_gradients,
                 world_lower_rhs_blocks,
+                plane_bodies,
+                plane_gradients,
+                plane_lower_rhs_blocks,
+                increment_maps,
+            )
+        elif plane_bodies:
+            inputs, accepted_plane_count, skipped_plane_count = _assemble_dense_dual_inputs_with_world_constraints(
+                hessians,
+                edges,
+                gradients,
+                rhs,
+                lower_rhs_blocks,
+                world_bodies,
+                world_gradients,
+                world_lower_rhs_blocks,
+                plane_bodies,
+                plane_gradients,
+                plane_lower_rhs_blocks,
                 increment_maps,
             )
         else:
@@ -437,15 +549,23 @@ def _solve_constrained_step(
         residual_norm = float(np.linalg.norm(inputs.dual_matrix @ dlambda - inputs.dual_rhs))
         result_topology = "dense"
     elif topology == "chain":
+        accepted_plane_count = 0
+        skipped_plane_count = 0
         topo = solve_chain_block_tridiagonal_kkt(hessians, edges, gradients, rhs, lower_rhs_blocks)
         dq, dlambda, residual_norm, result_topology = topo.dq, topo.dlambda, topo.residual_norm, topo.topology
     elif topology == "tree":
+        accepted_plane_count = 0
+        skipped_plane_count = 0
         topo = solve_tree_elimination_kkt(hessians, edges, gradients, rhs, lower_rhs_blocks)
         dq, dlambda, residual_norm, result_topology = topo.dq, topo.dlambda, topo.residual_norm, topo.topology
     elif topology == "single_loop":
+        accepted_plane_count = 0
+        skipped_plane_count = 0
         topo = solve_loop_schur_complement_kkt(hessians, edges, gradients, rhs, lower_rhs_blocks)
         dq, dlambda, residual_norm, result_topology = topo.dq, topo.dlambda, topo.residual_norm, topo.topology
     elif topology == "general_graph":
+        accepted_plane_count = 0
+        skipped_plane_count = 0
         topo = solve_graph_block_gauss_seidel_kkt(
             hessians,
             edges,
@@ -472,6 +592,11 @@ def _solve_constrained_step(
         - _as_vec3(constraint.world_point, "world_point")
         for constraint in config.world_constraints
     )
+    _plane_bodies_after, _plane_gradients_after, _plane_lower_after, plane_residual_after = _plane_constraint_blocks(
+        q_next,
+        config,
+    )
+    residual_after.extend(plane_residual_after)
     constraint_norm = float(np.linalg.norm(np.concatenate(residual_after))) if residual_after else 0.0
     return MABDCPUOracleStepResult(
         q=q_next,
@@ -481,6 +606,9 @@ def _solve_constrained_step(
         residual_norm=float(residual_norm),
         constraint_residual_norm=constraint_norm,
         topology=result_topology,
+        plane_constraint_requested_count=len(plane_bodies),
+        plane_constraint_accepted_count=accepted_plane_count,
+        plane_constraint_skipped_count=skipped_plane_count,
     )
 
 
@@ -514,7 +642,8 @@ def solve_cpu_oracle_step(
         ),
     )
     hessians, rhs = _step_body_systems(q_blocks, qd_blocks, dt_float, bodies, external_forces)
-    if not tuple(config.constraints) and not tuple(config.world_constraints):
+    has_active_plane_constraints = any(bool(constraint.active) for constraint in config.plane_constraints)
+    if not tuple(config.constraints) and not tuple(config.world_constraints) and not has_active_plane_constraints:
         return _unconstrained_step(q_blocks, dt_float, hessians, rhs, bodies)
     body_systems = tuple(
         _body_solve_system(body_q, body_rhs, body)
@@ -529,6 +658,7 @@ __all__ = [
     "MABDCPUOracleBody",
     "MABDCPUOracleConfig",
     "MABDCPUOracleConstraint",
+    "MABDCPUOraclePlaneConstraint",
     "MABDCPUOracleStepResult",
     "MABDCPUOracleWorldConstraint",
     "solve_cpu_oracle_step",
