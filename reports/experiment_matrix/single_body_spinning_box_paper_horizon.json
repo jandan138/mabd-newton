@@ -958,7 +958,7 @@
   },
   "scene_id": "single_body_spinning_box",
   "solver_mode": "mabd_cpu_oracle_paper_horizon_diagnostic",
-  "source_commit": "cb0d761cfb6f84e8f3b5b5045101bfd054409662",
+  "source_commit": "e11cb83163368af36a5000fa3a1338a8c6206aab",
   "status": "incomplete",
   "threshold": {
     "max_abs_det_minus_one": 0.1,

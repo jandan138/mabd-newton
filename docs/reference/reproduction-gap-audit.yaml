@@ -276,7 +276,7 @@ current_evidence_reports:
     sha256: "357676246e8d9fb1297966f2a698d6031610bb3fab9e814e51ddb671a04ad5b9"
   - path: reports/experiment_matrix/single_body_spinning_box_paper_horizon.json
     status: incomplete
-    sha256: "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
+    sha256: "7f538d76fb9a123db022c8f64682aceb1b55fecb74d6f8ff577fc3847b5b0fa9"
   - path: reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json
     status: incomplete
     sha256: "64e7fda65ed0a25f2e9e2d4fbcbddaed1a75c7f0aba5aa56f79517db6e507836"

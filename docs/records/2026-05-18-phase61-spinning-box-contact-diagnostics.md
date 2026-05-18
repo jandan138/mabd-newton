@@ -7,14 +7,12 @@ passed_for_spinning_box_contact_diagnostic_gap_slice
 ## Scope
 
 Phase 61 records contact penetration and normal-force diagnostics for the
-current spinning-box paper-horizon M-ABD diagnostic lane. It does not implement
-a contact solver, does not apply contact response to the implicit step, and
-does not pass the spinning-box experiment.
+current spinning-box paper-horizon M-ABD diagnostic lane. It does not implement a contact solver, does not apply contact response to the implicit step, and does not pass the spinning-box experiment.
 
 ## Repository
 
 - branch: `phase61-spinning-box-contact-mabd-lane`
-- implementation commit: `TO_BE_BACKFILLED_PHASE61`
+- implementation commit: `e11cb83163368af36a5000fa3a1338a8c6206aab`
 - vendored Newton commit: `96713fa965463b69c229a4d30582c733ff3526bb`
 - paper: `2603.08079v2`
 - canonical Python:
@@ -33,9 +31,9 @@ does not pass the spinning-box experiment.
 
 - `reports/experiment_matrix/single_body_spinning_box_paper_horizon.json`
   - sha256:
-    `TO_BE_BACKFILLED_PHASE61_REPORT_SHA256`
+    `7f538d76fb9a123db022c8f64682aceb1b55fecb74d6f8ff577fc3847b5b0fa9`
   - source_commit:
-    `TO_BE_BACKFILLED_PHASE61`
+    `e11cb83163368af36a5000fa3a1338a8c6206aab`
   - baseline lane: `mabd_newton`
   - solver mode: `mabd_cpu_oracle_paper_horizon_diagnostic`
   - backend: `cpu_numpy`
@@ -52,10 +50,10 @@ The report now records:
 - retained blocker: `mabd_kinematic_feasibility_blocker_recorded`
 - new blocker: `spinning_box_contact_response_missing`
 - max_contact_active_count = `4`
-- max_contact_penetration_m = `TO_BE_BACKFILLED_PHASE61_MAX_PENETRATION`
-- max_contact_normal_force_n = `TO_BE_BACKFILLED_PHASE61_MAX_NORMAL_FORCE`
+- max_contact_penetration_m = `0.001041191335932834`
+- max_contact_normal_force_n = `5769.558012703554`
 - max_contact_generalized_force_norm =
-  `TO_BE_BACKFILLED_PHASE61_MAX_GENERALIZED_FORCE`
+  `5776.765458377781`
 
 The diagnostic policy means contact force is evaluated from current M-ABD
 states for evidence only. It is not applied to the step, so the positive
@@ -73,7 +71,7 @@ performance, generated video, raw simulation log, or full paper reproduction.
 ## Verification Commands
 
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_single_body_report_lane tests.test_spinning_box_report_artifacts`
-- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane mabd_paper_horizon --config configs/experiments/single_body_spinning_box.yaml --output reports/experiment_matrix/single_body_spinning_box_paper_horizon.json --source-commit TO_BE_BACKFILLED_PHASE61 --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb`
+- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane mabd_paper_horizon --config configs/experiments/single_body_spinning_box.yaml --output reports/experiment_matrix/single_body_spinning_box_paper_horizon.json --source-commit e11cb83163368af36a5000fa3a1338a8c6206aab --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .`
