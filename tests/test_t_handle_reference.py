@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from mabd_reproduction.experiment_configs import load_t_handle_config
+from mabd_reproduction.t_handle_mabd import roll_out_t_handle_mabd_model_derived
 from mabd_reproduction.t_handle_reference import roll_out_t_handle_rk4_reference
 
 
@@ -50,6 +51,26 @@ class THandleReferenceTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "zero gravity"):
             roll_out_t_handle_rk4_reference(drifted)
+
+    def test_mabd_newton_rollout_generates_finite_diagnostic_samples(self) -> None:
+        config = load_t_handle_config(CONFIG_PATH)
+
+        rollout = roll_out_t_handle_mabd_model_derived(config)
+
+        self.assertEqual(rollout.step_count, config.mabd_newton.step_count)
+        self.assertEqual(rollout.sample_count, config.mabd_newton.sample_count)
+        self.assertEqual(rollout.rotation_mode, "polar")
+        self.assertAlmostEqual(rollout.samples[0].time_s, 0.0)
+        self.assertAlmostEqual(rollout.samples[-1].time_s, config.reference.duration_s)
+        self.assertTrue(rollout.finite)
+        self.assertEqual(rollout.solver_model_config_source, "newton_model_derived")
+        self.assertEqual(
+            rollout.newton_model_derived_custom_frequencies,
+            ("mabd:body", "mabd:gravity"),
+        )
+        self.assertGreaterEqual(rollout.max_proxy_inertia_relative_error, 0.0)
+        self.assertGreaterEqual(rollout.max_affine_shape_spread_m, 0.0)
+        self.assertTrue(all(np.isfinite(sample.angular_velocity_rad_s).all() for sample in rollout.samples))
 
 
 if __name__ == "__main__":

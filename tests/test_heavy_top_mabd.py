@@ -111,6 +111,45 @@ class HeavyTopMABDTests(unittest.TestCase):
             rollout.max_abs_precession_velocity_rad_s,
         )
 
+    def test_model_derived_heavy_top_paper_horizon_matches_reference_sample_grid(self) -> None:
+        config = load_heavy_top_config(CONFIG_PATH)
+
+        rollout = roll_out_heavy_top_mabd_model_derived(
+            config,
+            mabd_config=config.mabd_paper_horizon,
+        )
+
+        self.assertEqual(rollout.step_count, 10000)
+        self.assertEqual(rollout.sample_count, config.reference.sample_count)
+        self.assertEqual(len(rollout.samples), config.reference.sample_count)
+        self.assertTrue(rollout.finite)
+        self.assertLessEqual(
+            rollout.max_pivot_residual_m,
+            config.mabd_paper_horizon.thresholds["max_pivot_residual_m"],
+        )
+        self.assertLessEqual(
+            rollout.max_constraint_residual_norm,
+            config.mabd_paper_horizon.thresholds["max_constraint_residual_norm"],
+        )
+        self.assertTrue(np.isfinite(rollout.max_affine_shape_spread_m))
+        self.assertTrue(np.isfinite(rollout.relative_energy_drift))
+        expected_times = np.linspace(
+            0.0,
+            config.reference.duration_s,
+            config.reference.sample_count,
+        )
+        actual_times = np.asarray([sample.time_s for sample in rollout.samples], dtype=float)
+        np.testing.assert_allclose(actual_times, expected_times, rtol=0.0, atol=1.0e-12)
+        self.assertAlmostEqual(rollout.samples[-1].time_s, 10.0)
+        self.assertTrue(np.all(np.isfinite(actual_times)))
+        self.assertTrue(
+            np.all(
+                np.isfinite(
+                    [sample.precession_velocity_rad_s for sample in rollout.samples]
+                )
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

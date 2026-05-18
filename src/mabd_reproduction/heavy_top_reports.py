@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .experiment_configs import HeavyTopRunConfig
+from .experiment_configs import HeavyTopMABDNewtonConfig, HeavyTopRunConfig
 from .heavy_top_mabd import (
     NEWTON_MODEL_DERIVED_CONFIG_SOURCE,
     NEWTON_MODEL_DERIVED_CUSTOM_FREQUENCIES,
@@ -172,16 +172,10 @@ def write_heavy_top_rk4_reference_report(
     return report
 
 
-def write_heavy_top_mabd_newton_report(
-    path: str | Path,
-    *,
-    config: HeavyTopRunConfig,
-    source_commit: str,
-    vendored_newton_commit: str,
-    paper_source_version: str = "2603.08079v2",
-) -> ClaimReport:
-    rollout = roll_out_heavy_top_mabd_model_derived(config)
-    thresholds = config.mabd_newton.thresholds
+def _heavy_top_mabd_threshold_violations(
+    rollout: HeavyTopMABDRollout,
+    thresholds: dict[str, float],
+) -> list[str]:
     threshold_violations: list[str] = []
     if rollout.max_pivot_residual_m > thresholds["max_pivot_residual_m"]:
         threshold_violations.append("max_pivot_residual_m")
@@ -196,6 +190,22 @@ def write_heavy_top_mabd_newton_report(
         threshold_violations.append("max_affine_shape_spread_m")
     if not rollout.finite:
         threshold_violations.append("finite_rollout")
+    return threshold_violations
+
+
+def _write_heavy_top_mabd_report(
+    path: str | Path,
+    *,
+    config: HeavyTopRunConfig,
+    mabd_config: HeavyTopMABDNewtonConfig,
+    diagnostic_scope: str,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    rollout = roll_out_heavy_top_mabd_model_derived(config, mabd_config=mabd_config)
+    thresholds = mabd_config.thresholds
+    threshold_violations = _heavy_top_mabd_threshold_violations(rollout, thresholds)
 
     lane_status = (
         "incomplete_diagnostic_generated"
@@ -208,15 +218,17 @@ def write_heavy_top_mabd_newton_report(
         "step_count": rollout.step_count,
         "sample_count": rollout.sample_count,
         "time_step_s": rollout.time_step_s,
+        "duration_s": rollout.step_count * rollout.time_step_s,
+        "mabd_diagnostic_scope": diagnostic_scope,
         "mabd_rotation_mode": rollout.rotation_mode,
         "solver_model_config_source": rollout.solver_model_config_source,
         "newton_model_derived_custom_frequencies": list(NEWTON_MODEL_DERIVED_CUSTOM_FREQUENCIES),
-        "rest_points_m": config.mabd_newton.rest_points_m.tolist(),
-        "point_masses_kg": config.mabd_newton.point_masses_kg.tolist(),
-        "pivot_rest_point_m": config.mabd_newton.pivot_rest_point_m.tolist(),
-        "pivot_world_point_m": config.mabd_newton.pivot_world_point_m.tolist(),
-        "angle_probe_rest_point_m": config.mabd_newton.angle_probe_rest_point_m.tolist(),
-        "gravity_m_s2": config.mabd_newton.gravity_m_s2.tolist(),
+        "rest_points_m": mabd_config.rest_points_m.tolist(),
+        "point_masses_kg": mabd_config.point_masses_kg.tolist(),
+        "pivot_rest_point_m": mabd_config.pivot_rest_point_m.tolist(),
+        "pivot_world_point_m": mabd_config.pivot_world_point_m.tolist(),
+        "angle_probe_rest_point_m": mabd_config.angle_probe_rest_point_m.tolist(),
+        "gravity_m_s2": mabd_config.gravity_m_s2.tolist(),
         "energy_initial": rollout.energy_initial,
         "energy_final": rollout.energy_final,
         "relative_energy_drift": rollout.relative_energy_drift,
@@ -246,12 +258,13 @@ def write_heavy_top_mabd_newton_report(
             "figure_pdf_sha256": config.reference.figure_pdf_sha256,
             "figure_text_source": config.reference.figure_text_source,
             "matrix_claim_report": "reports/experiment_matrix/single_body_heavy_top.json",
-            "lane_report": config.mabd_newton.output_report,
+            "lane_report": mabd_config.output_report,
+            "mabd_diagnostic_scope": diagnostic_scope,
             "solver_model_config_source": NEWTON_MODEL_DERIVED_CONFIG_SOURCE,
             "newton_model_derived_custom_frequencies": list(NEWTON_MODEL_DERIVED_CUSTOM_FREQUENCIES),
             "world_anchor_constraint": {
-                "pivot_rest_point_m": config.mabd_newton.pivot_rest_point_m.tolist(),
-                "pivot_world_point_m": config.mabd_newton.pivot_world_point_m.tolist(),
+                "pivot_rest_point_m": mabd_config.pivot_rest_point_m.tolist(),
+                "pivot_world_point_m": mabd_config.pivot_world_point_m.tolist(),
             },
             "known_source_gaps": [
                 "exact_heavy_top_inertia_unknown",
@@ -289,9 +302,48 @@ def write_heavy_top_mabd_newton_report(
     return report
 
 
+def write_heavy_top_mabd_newton_report(
+    path: str | Path,
+    *,
+    config: HeavyTopRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    return _write_heavy_top_mabd_report(
+        path,
+        config=config,
+        mabd_config=config.mabd_newton,
+        diagnostic_scope="short_development_sample_grid",
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+
+
+def write_heavy_top_mabd_paper_horizon_report(
+    path: str | Path,
+    *,
+    config: HeavyTopRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    return _write_heavy_top_mabd_report(
+        path,
+        config=config,
+        mabd_config=config.mabd_paper_horizon,
+        diagnostic_scope="paper_horizon_sample_grid",
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+
+
 __all__ = [
     "HEAVY_TOP_MABD_REPORT_BLOCKERS",
     "HEAVY_TOP_REPORT_BLOCKERS",
     "write_heavy_top_mabd_newton_report",
+    "write_heavy_top_mabd_paper_horizon_report",
     "write_heavy_top_rk4_reference_report",
 ]

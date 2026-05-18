@@ -11,7 +11,7 @@ from typing import Callable
 import numpy as np
 from newton.solvers import mabd
 
-from .experiment_configs import HeavyTopRunConfig
+from .experiment_configs import HeavyTopMABDNewtonConfig, HeavyTopRunConfig
 
 
 NEWTON_MODEL_DERIVED_CONFIG_SOURCE = "newton_model_derived"
@@ -298,7 +298,13 @@ def _model_derived_stepper(config: HeavyTopRunConfig) -> Callable[[np.ndarray, n
     return step_once
 
 
-def roll_out_heavy_top_mabd_model_derived(config: HeavyTopRunConfig) -> HeavyTopMABDRollout:
+def roll_out_heavy_top_mabd_model_derived(
+    config: HeavyTopRunConfig,
+    *,
+    mabd_config: HeavyTopMABDNewtonConfig | None = None,
+) -> HeavyTopMABDRollout:
+    if mabd_config is not None:
+        config = replace(config, mabd_newton=mabd_config)
     lane = config.mabd_newton
     q, qd = _initial_state(config)
     step_once = _model_derived_stepper(config)

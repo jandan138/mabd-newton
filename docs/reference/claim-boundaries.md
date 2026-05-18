@@ -561,6 +561,27 @@
   T-handle geometry, raw figure curve agreement, M-ABD T-handle lane pass,
   ABD-vs-RBD comparison, rendered output, runtime performance, generated videos
   or raw simulation logs, or any passed `experiment.*` claim.
+- This repository contains Phase 56 T-handle MABD Newton diagnostic lane
+  evidence after the Phase 56 record is created.
+- Phase 56 verifies a `mabd_newton` diagnostic report for
+  `experiment.single_body.t_handle` generated through vendored Newton
+  `SolverMABD.step()`, model-derived `mabd:body` and disabled `mabd:gravity`
+  rows, `solver_model_config_source = newton_model_derived`, a 4 second
+  horizon, 9 samples aligned to the RK4 diagnostic grid, finite energy and
+  angular-momentum drift diagnostics, proxy inertia mismatch diagnostics,
+  current `max_affine_shape_spread_m` threshold failure, top-level report
+  status: `incomplete`, and replacement of the matrix blocker with
+  `mabd_newton_report_incomplete`.
+- Phase 56 does not verify a passed T-handle experiment, passed T-handle MABD
+  lane, paper-faithful T-handle geometry, paper-faithful inertia, raw waveform
+  agreement, ABD-vs-RBD comparison pass, paper timing, rendered output, runtime
+  performance, generated videos or raw simulation logs, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 56 T-handle MABD Newton diagnostic evidence must not be described as a
+  passed T-handle experiment, passed M-ABD lane, paper-faithful T-handle
+  geometry or inertia reconstruction, raw curve agreement, comparison pass
+  gate, paper timing result, full paper reproduction, or any passed
+  `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -666,8 +687,9 @@
   consumes the current `rbd_rk4_reference` and `mabd_newton` heavy-top lane
   reports, records input report provenance and sha256 hashes, maps RK4
   `relative_energy_drift` to the paper `energy_drift` diagnostic field, records
-  missing M-ABD precession/energy and raw paper reference-curve gaps, detects
-  the current sample time-grid mismatch, retains
+  missing M-ABD precession/energy and raw paper reference-curve gaps, detected
+  the then-current sample time-grid mismatch before Phase 55 introduced an
+  aligned paper-horizon MABD diagnostic, retains
   `mabd_newton_report_incomplete`, `heavy_top_comparison_report_incomplete`,
   and `heavy_top_timing_evidence_missing` blockers, and keeps
   `full_experiment_claim_passed = false`.
@@ -683,11 +705,12 @@
   `energy_final`, and `relative_energy_drift`, and that the heavy-top
   comparison protocol consumes those MABD-side diagnostics. The comparison
   report no longer marks MABD precession velocity or MABD energy drift as
-  missing, retains `nutation_angle_error:paper_reference_curve_missing`,
+  missing, historically retained `nutation_angle_error:paper_reference_curve_missing`,
   `mabd_newton_report_incomplete`,
   `heavy_top_comparison_report_incomplete`,
-  `heavy_top_timing_evidence_missing`, and `sample_time_grid_mismatch`, and
-  keeps `full_experiment_claim_passed = false`.
+  `heavy_top_timing_evidence_missing`, and `sample_time_grid_mismatch` before
+  Phase 55 aligned the current sample grid, and keeps
+  `full_experiment_claim_passed = false`.
 - Phase 52 does not verify a passed heavy-top experiment, paper-faithful
   heavy-top inertia or geometry, raw figure curve agreement, paper timing,
   rendered output, runtime performance, generated videos or raw simulation
@@ -723,6 +746,23 @@
   correctness, scene dynamics, paper experiment reproduction, timing,
   comparative baselines, runtime performance, rendered output, a full paper
   reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 55 heavy-top paper-horizon MABD diagnostic
+  evidence after the Phase 55 record is created.
+- Phase 55 verifies that a Newton-backed heavy-top `mabd_newton` diagnostic
+  report with `mabd_diagnostic_scope = paper_horizon_sample_grid` covers the
+  0 to 10 second paper figure horizon with 11 samples, preserves
+  `solver_model_config_source = newton_model_derived` and Newton custom
+  frequencies `mabd:body`, `mabd:world_constraint`, and `mabd:gravity`, records
+  current `max_affine_shape_spread_m` threshold failure as
+  `incomplete_diagnostic_failed`, and regenerates the heavy-top comparison so
+  RK4 and MABD sample grids are aligned with `time_grid_mismatch = false` and
+  no current `sample_time_grid_mismatch` blocker.
+- Phase 55 does not verify a passed heavy-top experiment, a passed heavy-top
+  MABD lane, paper-horizon MABD stability or accuracy, paper-faithful
+  heavy-top MABD dynamics, paper-faithful inertia or geometry, raw author curve
+  data, digitized curve agreement, a comparison pass gate, paper timing,
+  rendered output, generated videos, a full paper reproduction, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -849,6 +889,13 @@
   paper experiment reproduction, not timing evidence, not comparative baseline
   evidence, not runtime performance evidence, not a full paper reproduction,
   and not any passed `experiment.*` claim.
+- Phase 55 heavy-top paper-horizon MABD diagnostic is not a passed heavy-top
+  experiment, not a passed M-ABD lane, not paper-horizon stability or accuracy
+  evidence, not paper-faithful heavy-top MABD dynamics, not paper-faithful
+  heavy-top inertia or geometry reconstruction, not raw curve agreement, not a
+  comparison pass gate, not a paper timing result, not rendered-output
+  evidence, not generated-video evidence, not a full paper reproduction, and
+  not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

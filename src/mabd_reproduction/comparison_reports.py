@@ -232,7 +232,7 @@ def _physical_lane_provenance(path: str | Path, report: ClaimReport) -> dict[str
 
 
 def _heavy_top_lane_provenance(path: str | Path, report: ClaimReport) -> dict[str, str]:
-    return {
+    provenance = {
         "path": Path(path).as_posix(),
         "sha256": _sha256_file(path),
         "source_commit": report.source_commit,
@@ -242,6 +242,10 @@ def _heavy_top_lane_provenance(path: str | Path, report: ClaimReport) -> dict[st
         "baseline_lane": report.baseline_lane,
         "status": report.status.value,
     }
+    diagnostic_scope = report.observed.get("mabd_diagnostic_scope")
+    if isinstance(diagnostic_scope, str) and diagnostic_scope:
+        provenance["mabd_diagnostic_scope"] = diagnostic_scope
+    return provenance
 
 
 def _heavy_top_nutation_range_deg(report: ClaimReport) -> float | None:

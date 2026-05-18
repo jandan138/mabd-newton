@@ -1,0 +1,360 @@
+{
+  "asset_hashes": {
+    "heavy_top_procedural": "not_applicable_procedural"
+  },
+  "backend": "cpu_numpy_newton_only",
+  "baseline_lane": "mabd_newton",
+  "claim_id": "experiment.single_body.heavy_top",
+  "expected": {
+    "blocking_reasons": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing",
+      "mabd_newton_report_incomplete",
+      "heavy_top_comparison_report_incomplete",
+      "heavy_top_timing_evidence_missing"
+    ],
+    "figure_pdf_sha256": "c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d",
+    "figure_text_source": "pdftotext /tmp/mabd-paper/source/images/spinning_top/spinning_top.pdf -",
+    "full_experiment_claim_passed": false,
+    "known_source_gaps": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing"
+    ],
+    "lane_report": "reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json",
+    "mabd_diagnostic_scope": "paper_horizon_sample_grid",
+    "matrix_claim_report": "reports/experiment_matrix/single_body_heavy_top.json",
+    "newton_model_derived_custom_frequencies": [
+      "mabd:body",
+      "mabd:world_constraint",
+      "mabd:gravity"
+    ],
+    "nonclaim_limitations": [
+      "procedural point-mass tetrahedron is not the paper's undisclosed heavy-top geometry",
+      "configured inertia is not matched to the paper's undisclosed heavy-top inertia",
+      "no raw paper curve digitization or curve agreement gate is generated",
+      "no ABD-vs-RBD comparison pass gate is generated",
+      "no rendered figure or timing distribution is generated"
+    ],
+    "paper_claim_status": "formal M-ABD lane generated; full heavy-top experiment incomplete",
+    "paper_values": {
+      "angular_speed_rad_s": 10,
+      "reference_h_s": 0.0001,
+      "tilt_deg": 5
+    },
+    "solver_model_config_source": "newton_model_derived",
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:65-75"
+    ],
+    "world_anchor_constraint": {
+      "pivot_rest_point_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pivot_world_point_m": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "failure_reason": "heavy_top mabd_newton diagnostic lane remains incomplete because exact_heavy_top_inertia_unknown, exact_heavy_top_geometry_unknown, raw_heavy_top_reference_curve_data_missing, heavy_top_comparison_report_incomplete, and heavy_top_timing_evidence_missing remain unresolved",
+  "observed": {
+    "angle_probe_rest_point_m": [
+      0.0,
+      0.0,
+      0.25025025025
+    ],
+    "blocking_reasons": [
+      "exact_heavy_top_inertia_unknown",
+      "exact_heavy_top_geometry_unknown",
+      "raw_heavy_top_reference_curve_data_missing",
+      "mabd_newton_report_incomplete",
+      "heavy_top_comparison_report_incomplete",
+      "heavy_top_timing_evidence_missing"
+    ],
+    "duration_s": 10.0,
+    "energy_final": 9.041070524290262,
+    "energy_initial": 8.562042497067562,
+    "full_experiment_claim_passed": false,
+    "gravity_m_s2": [
+      0.0,
+      -9.81,
+      0.0
+    ],
+    "lane_status": "incomplete_diagnostic_failed",
+    "mabd_diagnostic_scope": "paper_horizon_sample_grid",
+    "mabd_rotation_mode": "polar",
+    "max_abs_precession_velocity_rad_s": 5.296885270556946e-11,
+    "max_affine_shape_spread_m": 493.7440194273506,
+    "max_constraint_residual_norm": 7.275175436423342e-15,
+    "max_nutation_angle_deg": 179.99745128889066,
+    "max_pivot_residual_m": 7.275175697841875e-15,
+    "max_world_anchor_reaction_magnitude_n": 0.009810000928775554,
+    "min_nutation_angle_deg": 4.999999999999992,
+    "newton_model_derived_custom_frequencies": [
+      "mabd:body",
+      "mabd:world_constraint",
+      "mabd:gravity"
+    ],
+    "pivot_rest_point_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "pivot_world_point_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "point_masses_kg": [
+      0.001,
+      0.333,
+      0.333,
+      0.333
+    ],
+    "precession_nutation_samples": [
+      {
+        "affine_shape_spread_m": 0.0,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 4.999999999999992,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": 0.0,
+        "precession_velocity_rad_s": 1.8590894113481913e-13,
+        "sample_index": 0,
+        "step": 0,
+        "time_s": 0.0,
+        "world_anchor_reaction_magnitude_n": 0.0,
+        "world_anchor_reaction_vector_n": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 5.614440991852141,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.73186646635855,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": 1.8590894113481913e-13,
+        "precession_velocity_rad_s": -1.7965195038924856e-12,
+        "sample_index": 1,
+        "step": 1000,
+        "time_s": 1.0,
+        "world_anchor_reaction_magnitude_n": 0.009810000887302578,
+        "world_anchor_reaction_vector_n": [
+          2.0783495060893202e-13,
+          -0.009810000887302578,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 20.661456761675215,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.93551861979617,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -3.593039007784971e-12,
+        "precession_velocity_rad_s": -7.751978445156396e-12,
+        "sample_index": 2,
+        "step": 2000,
+        "time_s": 2.0,
+        "world_anchor_reaction_magnitude_n": 0.009810000886110705,
+        "world_anchor_reaction_vector_n": [
+          1.751553200651985e-13,
+          -0.009810000886110705,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 45.472687473511115,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.97154010485082,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -1.5318047949177974e-11,
+        "precession_velocity_rad_s": -1.660281701623089e-11,
+        "sample_index": 3,
+        "step": 3000,
+        "time_s": 3.0,
+        "world_anchor_reaction_magnitude_n": 0.009810000880729005,
+        "world_anchor_reaction_vector_n": [
+          -4.658720436053849e-14,
+          -0.009810000880729005,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 80.08372945180375,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.98402961571844,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -3.679867304024675e-11,
+        "precession_velocity_rad_s": -2.276804057530474e-11,
+        "sample_index": 4,
+        "step": 4000,
+        "time_s": 4.0,
+        "world_anchor_reaction_magnitude_n": 0.009810000902528279,
+        "world_anchor_reaction_vector_n": [
+          5.715746922182035e-14,
+          -0.009810000902528279,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 124.50108242610781,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.98979014452686,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -6.085412909978745e-11,
+        "precession_velocity_rad_s": -2.488078866157805e-11,
+        "sample_index": 5,
+        "step": 5000,
+        "time_s": 5.0,
+        "world_anchor_reaction_magnitude_n": 0.00981000089273059,
+        "world_anchor_reaction_vector_n": [
+          0.0,
+          -0.00981000089273059,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 178.72664190080727,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.99291399237177,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -8.656025036340285e-11,
+        "precession_velocity_rad_s": -2.956193446103822e-11,
+        "sample_index": 6,
+        "step": 6000,
+        "time_s": 6.0,
+        "world_anchor_reaction_magnitude_n": 0.009810000886637995,
+        "world_anchor_reaction_vector_n": [
+          0.0,
+          -0.009810000886637995,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 242.761606764635,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.99479578780858,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -1.1997799802186389e-10,
+        "precession_velocity_rad_s": -3.9237480746774054e-11,
+        "sample_index": 7,
+        "step": 7000,
+        "time_s": 7.0,
+        "world_anchor_reaction_magnitude_n": 0.009810000883950521,
+        "world_anchor_reaction_vector_n": [
+          -6.138390297442893e-14,
+          -0.009810000883950521,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 316.6091319864034,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.99601646691326,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -1.6503521185695096e-10,
+        "precession_velocity_rad_s": -4.564123374385944e-11,
+        "sample_index": 8,
+        "step": 8000,
+        "time_s": 8.0,
+        "world_anchor_reaction_magnitude_n": 0.00981000087254011,
+        "world_anchor_reaction_vector_n": [
+          -8.087621423093123e-14,
+          -0.00981000087254011,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 400.26989834648754,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.99685304813076,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -2.1126046550958276e-10,
+        "precession_velocity_rad_s": -4.959705317910063e-11,
+        "sample_index": 9,
+        "step": 9000,
+        "time_s": 9.0,
+        "world_anchor_reaction_magnitude_n": 0.009810000873543702,
+        "world_anchor_reaction_vector_n": [
+          -2.4222767275904626e-14,
+          -0.009810000873543702,
+          0.0
+        ]
+      },
+      {
+        "affine_shape_spread_m": 493.7440194273506,
+        "constraint_residual_norm": 0.0,
+        "nutation_angle_deg": 179.99745128889066,
+        "pivot_residual_m": 0.0,
+        "precession_angle_rad": -2.642293182151522e-10,
+        "precession_velocity_rad_s": -5.296885270556946e-11,
+        "sample_index": 10,
+        "step": 10000,
+        "time_s": 10.0,
+        "world_anchor_reaction_magnitude_n": 0.009810000858722056,
+        "world_anchor_reaction_vector_n": [
+          -1.0648148411985702e-13,
+          -0.009810000858722056,
+          0.0
+        ]
+      }
+    ],
+    "relative_energy_drift": 0.05594786844222786,
+    "required_missing_lanes": [],
+    "rest_points_m": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.35,
+        0.0,
+        0.25025025025
+      ],
+      [
+        -0.175,
+        0.3031088913245535,
+        0.25025025025
+      ],
+      [
+        -0.175,
+        -0.3031088913245535,
+        0.25025025025
+      ]
+    ],
+    "sample_count": 11,
+    "solver_model_config_source": "newton_model_derived",
+    "step_count": 10000,
+    "threshold_violations": [
+      "max_affine_shape_spread_m"
+    ],
+    "time_step_s": 0.001
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "time_series": "compact_samples_only"
+  },
+  "scene_id": "single_body_heavy_top",
+  "solver_mode": "mabd_cpu_oracle_heavy_top_newton_lane",
+  "source_commit": "db5347a1ff5c46f0cdb695bce842273428c4a1af",
+  "status": "incomplete",
+  "threshold": {
+    "max_affine_shape_spread_m": 1.1,
+    "max_constraint_residual_norm": 1e-05,
+    "max_pivot_residual_m": 1e-05,
+    "min_nutation_angle_range_deg": 1e-08
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "status": "not_measured"
+  },
+  "unit": "angle_deg",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

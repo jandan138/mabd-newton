@@ -7,11 +7,12 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from mabd_reproduction.experiment_configs import load_heavy_top_config
+from mabd_reproduction.heavy_top_digitization import write_heavy_top_figure_curve_report
 from mabd_reproduction.heavy_top_reports import (
     write_heavy_top_mabd_newton_report,
+    write_heavy_top_mabd_paper_horizon_report,
     write_heavy_top_rk4_reference_report,
 )
-from mabd_reproduction.heavy_top_digitization import write_heavy_top_figure_curve_report
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 
 
@@ -32,6 +33,25 @@ class HeavyTopComparisonReportTests(unittest.TestCase):
             vendored_newton_commit="test-newton",
         )
         write_heavy_top_mabd_newton_report(
+            mabd_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        return config, rk4_path, mabd_path
+
+    def _write_paper_horizon_lane_reports(self, tmpdir: str) -> tuple[object, Path, Path]:
+        config = load_heavy_top_config(CONFIG_PATH)
+        root = Path(tmpdir)
+        rk4_path = root / "rk4.json"
+        mabd_path = root / "mabd_paper_horizon.json"
+        write_heavy_top_rk4_reference_report(
+            rk4_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        write_heavy_top_mabd_paper_horizon_report(
             mabd_path,
             config=config,
             source_commit="test-source",
@@ -166,6 +186,97 @@ class HeavyTopComparisonReportTests(unittest.TestCase):
             loaded.observed["paper_metric_statuses"]["energy_drift"]["status"],
             "diagnostic_available",
         )
+
+    def test_heavy_top_paper_horizon_report_records_aligned_sample_grid(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, _rk4_path, mabd_path = self._write_paper_horizon_lane_reports(tmpdir)
+            loaded = load_claim_report(mabd_path)
+
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_heavy_top_newton_lane")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_only")
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.observed["lane_status"], "incomplete_diagnostic_failed")
+        self.assertEqual(loaded.observed["mabd_diagnostic_scope"], "paper_horizon_sample_grid")
+        self.assertEqual(loaded.observed["solver_model_config_source"], "newton_model_derived")
+        self.assertEqual(
+            loaded.observed["newton_model_derived_custom_frequencies"],
+            ["mabd:body", "mabd:world_constraint", "mabd:gravity"],
+        )
+        self.assertEqual(loaded.observed["step_count"], 10000)
+        self.assertEqual(loaded.observed["sample_count"], config.reference.sample_count)
+        self.assertAlmostEqual(loaded.observed["duration_s"], config.reference.duration_s)
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertAlmostEqual(
+            loaded.observed["precession_nutation_samples"][-1]["time_s"],
+            config.reference.duration_s,
+        )
+        self.assertIn("max_affine_shape_spread_m", loaded.observed["threshold_violations"])
+        self.assertTrue(
+            all(
+                isfinite(sample["precession_velocity_rad_s"])
+                for sample in loaded.observed["precession_nutation_samples"]
+            )
+        )
+
+    def test_heavy_top_comparison_consumes_paper_horizon_mabd_without_time_grid_mismatch(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_paper_horizon_lane_reports(tmpdir)
+            figure_path = Path(tmpdir) / "figure_curves.json"
+            write_heavy_top_figure_curve_report(
+                figure_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+                sample_count=51,
+            )
+            output_path = Path(tmpdir) / "comparison.json"
+            report = self._write_comparison(
+                output_path=output_path,
+                config=config,
+                rk4_path=rk4_path,
+                mabd_path=mabd_path,
+                figure_path=figure_path,
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(report.status, EvidenceStatus.INCOMPLETE)
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertFalse(loaded.observed["time_grid_mismatch"])
+        self.assertNotIn("sample_time_grid_mismatch", loaded.observed["blocking_reasons"])
+        self.assertEqual(
+            loaded.observed["matched_sample_index_count"],
+            config.reference.sample_count,
+        )
+        self.assertEqual(loaded.observed["rk4_sample_count"], config.reference.sample_count)
+        self.assertEqual(loaded.observed["mabd_sample_count"], config.reference.sample_count)
+        self.assertLessEqual(
+            loaded.observed["max_sample_time_delta_s"],
+            loaded.threshold["max_sample_time_delta_s"],
+        )
+        self.assertEqual(
+            loaded.observed["input_report_provenance"]["mabd_newton"]["path"],
+            mabd_path.as_posix(),
+        )
+        self.assertEqual(
+            loaded.observed["input_report_provenance"]["mabd_newton"][
+                "mabd_diagnostic_scope"
+            ],
+            "paper_horizon_sample_grid",
+        )
+        for blocker in (
+            "exact_heavy_top_inertia_unknown",
+            "exact_heavy_top_geometry_unknown",
+            "raw_heavy_top_reference_curve_data_missing",
+            "mabd_newton_report_incomplete",
+            "heavy_top_comparison_report_incomplete",
+            "heavy_top_timing_evidence_missing",
+            "heavy_top_comparison_pass_gate_not_enabled",
+            "heavy_top_digitized_figure_curve_agreement_not_passed",
+        ):
+            self.assertIn(blocker, loaded.observed["blocking_reasons"])
 
     def test_heavy_top_comparison_requires_per_sample_mabd_precession_velocity(self) -> None:
         with TemporaryDirectory() as tmpdir:

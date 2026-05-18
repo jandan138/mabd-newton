@@ -149,6 +149,21 @@ class THandleReferenceConfig:
 
 
 @dataclass(frozen=True)
+class THandleMABDNewtonConfig:
+    time_step_s: float
+    step_count: int
+    sample_count: int
+    rest_points_m: np.ndarray
+    point_masses_kg: np.ndarray
+    volume_m3: float
+    rotation_mode: str
+    initial_angular_velocity_rad_s: np.ndarray
+    gravity_m_s2: np.ndarray
+    output_report: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class THandleRunConfig:
     schema_version: int
     claim_id: str
@@ -159,6 +174,7 @@ class THandleRunConfig:
     required_missing_lanes: tuple[str, ...]
     paper_values: dict[str, Any]
     reference: THandleReferenceConfig
+    mabd_newton: THandleMABDNewtonConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -223,6 +239,7 @@ class HeavyTopRunConfig:
     paper_values: dict[str, Any]
     reference: HeavyTopReferenceConfig
     mabd_newton: HeavyTopMABDNewtonConfig
+    mabd_paper_horizon: HeavyTopMABDNewtonConfig
     comparison: HeavyTopComparisonConfig
     figure_curves: HeavyTopFigureCurvesConfig
     report_status: EvidenceStatus
@@ -301,6 +318,15 @@ T_HANDLE_THRESHOLD_KEYS = frozenset(
         "min_intermediate_axis_sign_flips",
     }
 )
+T_HANDLE_MABD_NEWTON_THRESHOLD_KEYS = frozenset(
+    {
+        "max_relative_energy_drift",
+        "max_angular_momentum_norm_drift",
+        "max_affine_shape_spread_m",
+        "max_proxy_inertia_relative_error",
+    }
+)
+T_HANDLE_MABD_NEWTON_ROTATION_MODES = frozenset({"polar"})
 T_HANDLE_REQUIRED_MISSING_LANES = ("mabd_newton",)
 T_HANDLE_EXPECTED_FIGURE_PDF_SHA256 = (
     "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c"
@@ -312,7 +338,7 @@ T_HANDLE_REQUIRED_BLOCKERS = frozenset(
     {
         "exact_t_handle_geometry_unknown",
         "raw_t_handle_reference_curve_data_missing",
-        "mabd_newton_report_missing",
+        "mabd_newton_report_incomplete",
         "t_handle_comparison_report_missing",
     }
 )
@@ -810,6 +836,55 @@ def _require_t_handle_reference(data: dict[str, Any]) -> THandleReferenceConfig:
     )
 
 
+def _require_t_handle_mabd_newton(data: dict[str, Any]) -> THandleMABDNewtonConfig:
+    mabd_newton = _require_mapping(data, "mabd_newton")
+    rest_points = _require_points(mabd_newton, "rest_points_m")
+    if rest_points.shape != (4, 3):
+        raise ExperimentRunConfigError("mabd_newton.rest_points_m must contain exactly 4 3D points")
+    rank = np.linalg.matrix_rank(rest_points[1:] - rest_points[0], tol=1.0e-12)
+    if rank != 3:
+        raise ExperimentRunConfigError("mabd_newton.rest_points_m must be nondegenerate")
+    masses = _require_positive_mass_vector(mabd_newton, "point_masses_kg", 4)
+    step_count = _require_positive_int(mabd_newton, "step_count")
+    sample_count = _require_positive_int(mabd_newton, "sample_count")
+    if sample_count < 2:
+        raise ExperimentRunConfigError("mabd_newton.sample_count must be at least 2")
+    if sample_count > step_count + 1:
+        raise ExperimentRunConfigError("mabd_newton.sample_count must be at most step_count + 1")
+    rotation_mode = _require_str(mabd_newton, "rotation_mode")
+    if rotation_mode not in T_HANDLE_MABD_NEWTON_ROTATION_MODES:
+        raise ExperimentRunConfigError("mabd_newton.rotation_mode must be polar")
+    thresholds = _require_float_mapping(mabd_newton, "thresholds")
+    missing = sorted(T_HANDLE_MABD_NEWTON_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "mabd_newton.thresholds missing required keys: " + ", ".join(missing)
+        )
+    try:
+        gravity_m_s2 = _require_zero_vec3_array(mabd_newton, "gravity_m_s2")
+    except ExperimentRunConfigError as exc:
+        raise ExperimentRunConfigError("mabd_newton.gravity_m_s2 must be zero gravity") from exc
+    initial_angular_velocity = _require_vec3_array(
+        mabd_newton,
+        "initial_angular_velocity_rad_s",
+    )
+    if np.linalg.norm(initial_angular_velocity) <= 1.0e-15:
+        raise ExperimentRunConfigError("mabd_newton.initial_angular_velocity_rad_s must be nonzero")
+    return THandleMABDNewtonConfig(
+        time_step_s=_require_positive_float(mabd_newton, "time_step_s"),
+        step_count=step_count,
+        sample_count=sample_count,
+        rest_points_m=rest_points,
+        point_masses_kg=masses,
+        volume_m3=_require_positive_float(mabd_newton, "volume_m3"),
+        rotation_mode=rotation_mode,
+        initial_angular_velocity_rad_s=initial_angular_velocity,
+        gravity_m_s2=gravity_m_s2,
+        output_report=_require_str(mabd_newton, "output_report"),
+        thresholds=thresholds,
+    )
+
+
 def _require_heavy_top_reference(data: dict[str, Any]) -> HeavyTopReferenceConfig:
     reference = _require_mapping(data, "reference")
     thresholds = _require_float_mapping(reference, "thresholds")
@@ -852,11 +927,14 @@ def _require_heavy_top_reference(data: dict[str, Any]) -> HeavyTopReferenceConfi
     )
 
 
-def _require_heavy_top_mabd_newton(data: dict[str, Any]) -> HeavyTopMABDNewtonConfig:
-    mabd_newton = _require_mapping(data, "mabd_newton")
+def _require_heavy_top_mabd_lane(
+    data: dict[str, Any],
+    key: str,
+) -> HeavyTopMABDNewtonConfig:
+    mabd_newton = _require_mapping(data, key)
     rest_points = _require_points(mabd_newton, "rest_points_m")
     if rest_points.shape != (4, 3):
-        raise ExperimentRunConfigError("mabd_newton.rest_points_m must contain exactly 4 3D points")
+        raise ExperimentRunConfigError(f"{key}.rest_points_m must contain exactly 4 3D points")
     basis = np.column_stack(
         (
             rest_points[1] - rest_points[0],
@@ -865,30 +943,30 @@ def _require_heavy_top_mabd_newton(data: dict[str, Any]) -> HeavyTopMABDNewtonCo
         )
     )
     if abs(float(np.linalg.det(basis))) <= 1.0e-12:
-        raise ExperimentRunConfigError("mabd_newton.rest_points_m must be nondegenerate")
+        raise ExperimentRunConfigError(f"{key}.rest_points_m must be nondegenerate")
 
     step_count = _require_positive_int(mabd_newton, "step_count")
     sample_count = _require_positive_int(mabd_newton, "sample_count")
     if sample_count < 2:
-        raise ExperimentRunConfigError("mabd_newton.sample_count must be at least 2")
+        raise ExperimentRunConfigError(f"{key}.sample_count must be at least 2")
     if sample_count > step_count + 1:
-        raise ExperimentRunConfigError("mabd_newton.sample_count must be at most step_count + 1")
+        raise ExperimentRunConfigError(f"{key}.sample_count must be at most step_count + 1")
 
     thresholds = _require_float_mapping(mabd_newton, "thresholds")
     missing = sorted(HEAVY_TOP_MABD_NEWTON_THRESHOLD_KEYS - set(thresholds))
     if missing:
         raise ExperimentRunConfigError(
-            "mabd_newton.thresholds missing required keys: " + ", ".join(missing)
+            f"{key}.thresholds missing required keys: " + ", ".join(missing)
         )
 
     pivot_rest = _require_vec3_array(mabd_newton, "pivot_rest_point_m")
     angle_probe = _require_vec3_array(mabd_newton, "angle_probe_rest_point_m")
     if np.linalg.norm(angle_probe - pivot_rest) <= 1.0e-12:
-        raise ExperimentRunConfigError("mabd_newton angle probe must be distinct from pivot")
+        raise ExperimentRunConfigError(f"{key} angle probe must be distinct from pivot")
 
     rotation_mode = _require_str(mabd_newton, "rotation_mode")
     if rotation_mode not in HEAVY_TOP_MABD_NEWTON_ROTATION_MODES:
-        raise ExperimentRunConfigError("mabd_newton.rotation_mode must be polar")
+        raise ExperimentRunConfigError(f"{key}.rotation_mode must be polar")
 
     return HeavyTopMABDNewtonConfig(
         time_step_s=_require_positive_float(mabd_newton, "time_step_s"),
@@ -908,6 +986,87 @@ def _require_heavy_top_mabd_newton(data: dict[str, Any]) -> HeavyTopMABDNewtonCo
         output_report=_require_str(mabd_newton, "output_report"),
         thresholds=thresholds,
     )
+
+
+def _require_heavy_top_mabd_newton(data: dict[str, Any]) -> HeavyTopMABDNewtonConfig:
+    return _require_heavy_top_mabd_lane(data, "mabd_newton")
+
+
+def _require_heavy_top_mabd_paper_horizon(
+    data: dict[str, Any],
+) -> HeavyTopMABDNewtonConfig:
+    return _require_heavy_top_mabd_lane(data, "mabd_paper_horizon")
+
+
+def _require_heavy_top_paper_horizon_alignment(config: HeavyTopRunConfig) -> None:
+    lane = config.mabd_paper_horizon
+    reference = config.reference
+    short_lane = config.mabd_newton
+    duration = lane.step_count * lane.time_step_s
+    if not np.isclose(duration, reference.duration_s, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon step_count*time_step_s must match reference.duration_s"
+        )
+    if lane.sample_count != reference.sample_count:
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.sample_count must match reference.sample_count"
+        )
+    if lane.step_count % (lane.sample_count - 1) != 0:
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon sample grid must divide step_count evenly"
+        )
+    if lane.output_report == short_lane.output_report:
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.output_report must be separate from mabd_newton.output_report"
+        )
+    if not np.allclose(lane.rest_points_m, short_lane.rest_points_m, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.rest_points_m must match mabd_newton.rest_points_m"
+        )
+    if not np.allclose(
+        lane.point_masses_kg,
+        short_lane.point_masses_kg,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.point_masses_kg must match mabd_newton.point_masses_kg"
+        )
+    if not np.allclose(
+        lane.pivot_rest_point_m,
+        short_lane.pivot_rest_point_m,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.pivot_rest_point_m must match mabd_newton.pivot_rest_point_m"
+        )
+    if not np.allclose(
+        lane.pivot_world_point_m,
+        short_lane.pivot_world_point_m,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.pivot_world_point_m must match mabd_newton.pivot_world_point_m"
+        )
+    if not np.allclose(
+        lane.angle_probe_rest_point_m,
+        short_lane.angle_probe_rest_point_m,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.angle_probe_rest_point_m must match mabd_newton.angle_probe_rest_point_m"
+        )
+    if lane.rotation_mode != short_lane.rotation_mode:
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.rotation_mode must match mabd_newton.rotation_mode"
+        )
+    if lane.thresholds != short_lane.thresholds:
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.thresholds must match mabd_newton.thresholds"
+        )
 
 
 def _require_heavy_top_comparison(data: dict[str, Any]) -> HeavyTopComparisonConfig:
@@ -1198,7 +1357,7 @@ def load_t_handle_config(path: str | Path) -> THandleRunConfig:
             "report.thresholds missing required keys: " + ", ".join(missing)
         )
 
-    return THandleRunConfig(
+    config = THandleRunConfig(
         schema_version=1,
         claim_id=claim_id,
         scene_id=_require_str(data, "scene_id"),
@@ -1212,11 +1371,27 @@ def load_t_handle_config(path: str | Path) -> THandleRunConfig:
         ),
         paper_values=_require_mapping(data, "paper_values"),
         reference=_require_t_handle_reference(data),
+        mabd_newton=_require_t_handle_mabd_newton(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
         thresholds=thresholds,
     )
+    mabd_duration = config.mabd_newton.step_count * config.mabd_newton.time_step_s
+    if not np.isclose(mabd_duration, config.reference.duration_s, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError("mabd_newton step_count*time_step_s must match reference.duration_s")
+    if config.mabd_newton.sample_count != config.reference.sample_count:
+        raise ExperimentRunConfigError("mabd_newton.sample_count must match reference.sample_count")
+    if not np.allclose(
+        config.mabd_newton.initial_angular_velocity_rad_s,
+        config.reference.initial_angular_velocity_rad_s,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_newton.initial_angular_velocity_rad_s must match reference"
+        )
+    return config
 
 
 def validate_t_handle_config_against_matrix(
@@ -1252,6 +1427,8 @@ def validate_t_handle_config_against_matrix(
         raise ExperimentRunConfigError(
             "T-handle matrix blockers missing: " + ", ".join(missing_blockers)
         )
+    if "mabd_newton_report_missing" in blockers:
+        raise ExperimentRunConfigError("T-handle matrix must use mabd_newton_report_incomplete")
     if entry.reproduction_status != "planned":
         raise ExperimentRunConfigError("matrix reproduction_status must remain planned")
     for metric in (
@@ -1277,6 +1454,31 @@ def validate_t_handle_config_against_matrix(
         )
     if config.output_report != config.reference.output_report:
         raise ExperimentRunConfigError("output_report must match reference.output_report")
+    if (
+        not config.mabd_newton.output_report.startswith(expected_prefix)
+        or not config.mabd_newton.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_newton.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.mabd_newton.output_report == config.reference.output_report:
+        raise ExperimentRunConfigError("mabd_newton.output_report must be separate from reference output_report")
+    mabd_duration = config.mabd_newton.step_count * config.mabd_newton.time_step_s
+    if not np.isclose(mabd_duration, config.reference.duration_s, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError("mabd_newton step_count*time_step_s must match reference.duration_s")
+    if config.mabd_newton.sample_count != config.reference.sample_count:
+        raise ExperimentRunConfigError("mabd_newton.sample_count must match reference.sample_count")
+    if not np.allclose(
+        config.mabd_newton.initial_angular_velocity_rad_s,
+        config.reference.initial_angular_velocity_rad_s,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_newton.initial_angular_velocity_rad_s must match reference"
+        )
+    if not np.allclose(config.mabd_newton.gravity_m_s2, np.zeros(3), rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError("mabd_newton.gravity_m_s2 must remain zero")
     for blocker in T_HANDLE_REQUIRED_BLOCKERS:
         if blocker not in config.failure_reason:
             raise ExperimentRunConfigError(f"report.failure_reason missing {blocker}")
@@ -1308,7 +1510,7 @@ def load_heavy_top_config(path: str | Path) -> HeavyTopRunConfig:
             "report.thresholds missing required keys: " + ", ".join(missing)
         )
 
-    return HeavyTopRunConfig(
+    config = HeavyTopRunConfig(
         schema_version=1,
         claim_id=claim_id,
         scene_id=_require_str(data, "scene_id"),
@@ -1323,6 +1525,7 @@ def load_heavy_top_config(path: str | Path) -> HeavyTopRunConfig:
         paper_values=_require_mapping(data, "paper_values"),
         reference=_require_heavy_top_reference(data),
         mabd_newton=_require_heavy_top_mabd_newton(data),
+        mabd_paper_horizon=_require_heavy_top_mabd_paper_horizon(data),
         comparison=_require_heavy_top_comparison(data),
         figure_curves=_require_heavy_top_figure_curves(data),
         report_status=status,
@@ -1330,6 +1533,8 @@ def load_heavy_top_config(path: str | Path) -> HeavyTopRunConfig:
         output_report=_require_str(report, "output_report"),
         thresholds=thresholds,
     )
+    _require_heavy_top_paper_horizon_alignment(config)
+    return config
 
 
 def validate_heavy_top_config_against_matrix(
@@ -1420,6 +1625,20 @@ def validate_heavy_top_config_against_matrix(
     if config.mabd_newton.output_report == config.reference.output_report:
         raise ExperimentRunConfigError("mabd_newton.output_report must be separate from reference output_report")
     if (
+        not config.mabd_paper_horizon.output_report.startswith(expected_prefix)
+        or not config.mabd_paper_horizon.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.mabd_paper_horizon.output_report in (
+        config.reference.output_report,
+        config.mabd_newton.output_report,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.output_report must be separate from other lane reports"
+        )
+    if (
         not config.comparison.output_report.startswith(expected_prefix)
         or not config.comparison.output_report.endswith(".json")
     ):
@@ -1429,6 +1648,7 @@ def validate_heavy_top_config_against_matrix(
     if config.comparison.output_report in (
         config.reference.output_report,
         config.mabd_newton.output_report,
+        config.mabd_paper_horizon.output_report,
     ):
         raise ExperimentRunConfigError("comparison.output_report must be separate from lane reports")
     if (
@@ -1441,9 +1661,11 @@ def validate_heavy_top_config_against_matrix(
     if config.figure_curves.output_report in (
         config.reference.output_report,
         config.mabd_newton.output_report,
+        config.mabd_paper_horizon.output_report,
         config.comparison.output_report,
     ):
         raise ExperimentRunConfigError("figure_curves.output_report must be separate from lane reports")
+    _require_heavy_top_paper_horizon_alignment(config)
     if not np.isclose(
         float(np.sum(config.mabd_newton.point_masses_kg)),
         config.reference.mass_kg,
@@ -1458,6 +1680,22 @@ def validate_heavy_top_config_against_matrix(
         atol=1.0e-15,
     ):
         raise ExperimentRunConfigError("mabd_newton.gravity_m_s2 must match reference.gravity_m_s2")
+    if not np.isclose(
+        float(np.sum(config.mabd_paper_horizon.point_masses_kg)),
+        config.reference.mass_kg,
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        raise ExperimentRunConfigError("mabd_paper_horizon.point_masses_kg must sum to reference.mass_kg")
+    if not np.allclose(
+        config.mabd_paper_horizon.gravity_m_s2,
+        config.reference.gravity_m_s2,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_paper_horizon.gravity_m_s2 must match reference.gravity_m_s2"
+        )
     for blocker in HEAVY_TOP_REQUIRED_BLOCKERS:
         if blocker not in config.failure_reason:
             raise ExperimentRunConfigError(f"report.failure_reason missing {blocker}")
@@ -1489,6 +1727,8 @@ __all__ = [
     "T_HANDLE_EXPECTED_FIGURE_TEXT_SOURCE",
     "T_HANDLE_REQUIRED_BLOCKERS",
     "T_HANDLE_REQUIRED_MISSING_LANES",
+    "T_HANDLE_MABD_NEWTON_ROTATION_MODES",
+    "T_HANDLE_MABD_NEWTON_THRESHOLD_KEYS",
     "T_HANDLE_THRESHOLD_KEYS",
     "HeavyTopComparisonConfig",
     "HeavyTopMABDNewtonConfig",
@@ -1502,6 +1742,7 @@ __all__ = [
     "PhysicalPendulumRunConfig",
     "SpinningBoxPaperHorizonConfig",
     "SpinningBoxRunConfig",
+    "THandleMABDNewtonConfig",
     "THandleReferenceConfig",
     "THandleRunConfig",
     "load_physical_pendulum_config",

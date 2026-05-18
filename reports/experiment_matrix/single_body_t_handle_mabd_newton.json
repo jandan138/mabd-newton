@@ -1,0 +1,244 @@
+{
+  "asset_hashes": {
+    "t_handle_procedural": "not_applicable_procedural"
+  },
+  "backend": "cpu_numpy_newton_only",
+  "baseline_lane": "mabd_newton",
+  "claim_id": "experiment.single_body.t_handle",
+  "expected": {
+    "blocking_reasons": [
+      "exact_t_handle_geometry_unknown",
+      "raw_t_handle_reference_curve_data_missing",
+      "mabd_newton_report_incomplete",
+      "t_handle_comparison_report_missing",
+      "t_handle_timing_evidence_missing"
+    ],
+    "figure_pdf_sha256": "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c",
+    "figure_text_source": "pdftotext /tmp/mabd-paper/source/images/T-handle/T-handle.pdf -",
+    "full_experiment_claim_passed": false,
+    "known_source_gaps": [
+      "exact_t_handle_geometry_unknown",
+      "principal_inertias_only_proxy",
+      "subtle_asymmetry_magnitude_unknown",
+      "raw_t_handle_reference_curve_data_missing"
+    ],
+    "lane_report": "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
+    "matrix_claim_report": "reports/experiment_matrix/single_body_t_handle.json",
+    "paper_claim_status": "Newton MABD diagnostic lane only; full experiment incomplete",
+    "paper_values": {
+      "asymmetry": "subtle",
+      "initial_angular_speed_rad_s": 3,
+      "reference_h_s": 0.0001,
+      "reference_integrator": "RK4"
+    },
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:57-75"
+    ]
+  },
+  "failure_reason": "t_handle mabd_newton diagnostic lane remains incomplete because paper-faithful geometry, raw waveform agreement, comparison, and timing evidence are unavailable",
+  "observed": {
+    "angular_momentum_norm_drift": -6.166533408032632e-13,
+    "angular_momentum_norm_final": 6.000375010777627,
+    "angular_momentum_norm_initial": 6.000375010781327,
+    "angular_velocity_samples": [
+      {
+        "affine_shape_spread_m": 0.0,
+        "angular_momentum_norm": 6.000375010781327,
+        "energy": 9.000900045000002,
+        "omega_x_rad_s": 0.03,
+        "omega_y_rad_s": 3.0,
+        "omega_z_rad_s": 0.0,
+        "sample_index": 0,
+        "step": 0,
+        "time_s": 0.0
+      },
+      {
+        "affine_shape_spread_m": 2.270664311665066,
+        "angular_momentum_norm": 6.000375010777933,
+        "energy": 9.000900044979883,
+        "omega_x_rad_s": 0.009230138434737571,
+        "omega_y_rad_s": 0.9230075375178732,
+        "omega_z_rad_s": -4.217284650925163e-08,
+        "sample_index": 1,
+        "step": 500,
+        "time_s": 0.5
+      },
+      {
+        "affine_shape_spread_m": 6.116043122570382,
+        "angular_momentum_norm": 6.000375010777836,
+        "energy": 9.000900044979883,
+        "omega_x_rad_s": 0.0029998410358905896,
+        "omega_y_rad_s": 0.2999699548583498,
+        "omega_z_rad_s": -4.7179801070280913e-08,
+        "sample_index": 2,
+        "step": 1000,
+        "time_s": 1.0
+      },
+      {
+        "affine_shape_spread_m": 10.210198730969012,
+        "angular_momentum_norm": 6.000375010777731,
+        "energy": 9.000900044979883,
+        "omega_x_rad_s": 0.0014116813109432587,
+        "omega_y_rad_s": 0.1411637594561954,
+        "omega_z_rad_s": -9.720817869401932e-09,
+        "sample_index": 3,
+        "step": 1500,
+        "time_s": 1.5
+      },
+      {
+        "affine_shape_spread_m": 14.376244935367973,
+        "angular_momentum_norm": 6.000375010777475,
+        "energy": 9.000900044979883,
+        "omega_x_rad_s": 0.0008105615911666616,
+        "omega_y_rad_s": 0.0810763794254895,
+        "omega_z_rad_s": 3.369480497481675e-08,
+        "sample_index": 4,
+        "step": 2000,
+        "time_s": 2.0
+      },
+      {
+        "affine_shape_spread_m": 18.572327407314965,
+        "angular_momentum_norm": 6.000375010777533,
+        "energy": 9.000900044979883,
+        "omega_x_rad_s": 0.0005233385756837572,
+        "omega_y_rad_s": 0.05239976013036987,
+        "omega_z_rad_s": 8.786242705529496e-08,
+        "sample_index": 5,
+        "step": 2500,
+        "time_s": 2.5
+      },
+      {
+        "affine_shape_spread_m": 22.784135461069525,
+        "angular_momentum_norm": 6.000375010777912,
+        "energy": 9.000900044979883,
+        "omega_x_rad_s": 0.0003650758924939667,
+        "omega_y_rad_s": 0.03658319925646472,
+        "omega_z_rad_s": 8.400348313762802e-08,
+        "sample_index": 6,
+        "step": 3000,
+        "time_s": 3.0
+      },
+      {
+        "affine_shape_spread_m": 27.00497619572736,
+        "angular_momentum_norm": 6.000375010777965,
+        "energy": 9.000900044979883,
+        "omega_x_rad_s": 0.0002689252784797902,
+        "omega_y_rad_s": 0.026963879296832832,
+        "omega_z_rad_s": 6.794671266342062e-08,
+        "sample_index": 7,
+        "step": 3500,
+        "time_s": 3.5
+      },
+      {
+        "affine_shape_spread_m": 31.231352244994007,
+        "angular_momentum_norm": 6.000375010777627,
+        "energy": 9.000900044979883,
+        "omega_x_rad_s": 0.00020619215930312522,
+        "omega_y_rad_s": 0.020687333001322653,
+        "omega_z_rad_s": 5.675778543879663e-08,
+        "sample_index": 8,
+        "step": 4000,
+        "time_s": 4.0
+      }
+    ],
+    "blocking_reasons": [
+      "exact_t_handle_geometry_unknown",
+      "raw_t_handle_reference_curve_data_missing",
+      "mabd_newton_report_incomplete",
+      "t_handle_comparison_report_missing",
+      "t_handle_timing_evidence_missing"
+    ],
+    "duration_s": 4.0,
+    "energy_final": 9.000900044979883,
+    "energy_initial": 9.000900045000002,
+    "finite": true,
+    "full_experiment_claim_passed": false,
+    "gravity_m_s2": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "initial_angular_velocity_rad_s": [
+      0.03,
+      3.0,
+      0.0
+    ],
+    "lane_status": "incomplete_diagnostic_failed",
+    "mabd_diagnostic_scope": "t_handle_model_derived_proxy",
+    "max_affine_shape_spread_m": 31.231352244994007,
+    "max_proxy_inertia_relative_error": 0.00010000000000021103,
+    "newton_model_derived_custom_frequencies": [
+      "mabd:body",
+      "mabd:gravity"
+    ],
+    "point_masses_kg": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "proxy_principal_inertia_kg_m2": [
+      1.0001000000000002,
+      2.0001000000000007,
+      3.0000000000000004
+    ],
+    "reference_not_paper_geometry": true,
+    "reference_principal_inertia_kg_m2": [
+      1.0,
+      2.0,
+      3.0
+    ],
+    "relative_energy_drift": -2.2352228624317797e-12,
+    "required_missing_lanes": [],
+    "rest_points_m": [
+      [
+        1.4142135623730951,
+        1.0,
+        0.01
+      ],
+      [
+        1.4142135623730951,
+        -1.0,
+        -0.01
+      ],
+      [
+        -1.4142135623730951,
+        1.0,
+        -0.01
+      ],
+      [
+        -1.4142135623730951,
+        -1.0,
+        0.01
+      ]
+    ],
+    "rotation_mode": "polar",
+    "sample_count": 9,
+    "solver_model_config_source": "newton_model_derived",
+    "step_count": 4000,
+    "threshold_violations": [
+      "max_affine_shape_spread_m"
+    ],
+    "time_step_s": 0.001,
+    "volume_m3": 1.0
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_t_handle",
+  "solver_mode": "mabd_cpu_oracle_t_handle_newton_lane",
+  "source_commit": "51745677bd115a0b98294dd8bbf9132e94fc4f3a",
+  "status": "incomplete",
+  "threshold": {
+    "max_affine_shape_spread_m": 10.0,
+    "max_angular_momentum_norm_drift": 2.0,
+    "max_proxy_inertia_relative_error": 0.001,
+    "max_relative_energy_drift": 2.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "status": "not_measured"
+  },
+  "unit": "dimensionless",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

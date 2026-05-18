@@ -3,10 +3,11 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import yaml
 
-from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
+from mabd_reproduction.reporting import ClaimReport, EvidenceStatus, load_claim_report
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,6 +127,34 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(payload["status"], "not_a_physical_pendulum_paper_metric")
         self.assertFalse(payload["runtime_timing_claim_present"])
         self.assertFalse(payload["required_metric"])
+
+    def _fake_heavy_top_paper_horizon_report(self) -> ClaimReport:
+        return ClaimReport(
+            claim_id="experiment.single_body.heavy_top",
+            scene_id="single_body_heavy_top",
+            asset_hashes={"heavy_top_procedural": "not_applicable_procedural"},
+            solver_mode="mabd_cpu_oracle_heavy_top_newton_lane",
+            backend="cpu_numpy_newton_only",
+            baseline_lane="mabd_newton",
+            expected={"full_experiment_claim_passed": False},
+            observed={
+                "full_experiment_claim_passed": False,
+                "lane_status": "incomplete_diagnostic_failed",
+                "mabd_diagnostic_scope": "paper_horizon_sample_grid",
+                "step_count": 10000,
+                "sample_count": 11,
+            },
+            threshold={},
+            unit="angle_deg",
+            status=EvidenceStatus.INCOMPLETE,
+            failure_reason="test fake incomplete heavy-top paper-horizon report",
+            timing_distribution={"status": "not_measured"},
+            raw_outputs={},
+            plot_paths={},
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+            paper_source_version="2603.08079v2",
+        )
 
     def test_run_spinning_box_experiment_writes_override_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_experiment
@@ -678,6 +707,75 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertIn("t_handle_comparison_report_missing", loaded.observed["blocking_reasons"])
         self.assertNotIn("lane_gate_status", loaded.observed)
 
+    def test_run_t_handle_mabd_newton_writes_incomplete_newton_diagnostic_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_t_handle_mabd_newton
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "t_handle_mabd_newton.json"
+            result = run_t_handle_mabd_newton(
+                config_path=T_HANDLE_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.t_handle")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_t_handle_newton_lane")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_only")
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.observed["solver_model_config_source"], "newton_model_derived")
+        self.assertEqual(
+            loaded.observed["newton_model_derived_custom_frequencies"],
+            ["mabd:body", "mabd:gravity"],
+        )
+        self.assertEqual(loaded.observed["step_count"], 4000)
+        self.assertEqual(loaded.observed["sample_count"], 9)
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertIn("exact_t_handle_geometry_unknown", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "raw_t_handle_reference_curve_data_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertNotIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("t_handle_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertEqual(loaded.observed["required_missing_lanes"], [])
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_t_handle_mabd_report_rejects_nonfinite_rollout(self) -> None:
+        from dataclasses import replace
+
+        from mabd_reproduction.experiment_configs import load_t_handle_config
+        from mabd_reproduction.t_handle_mabd import roll_out_t_handle_mabd_model_derived
+        from mabd_reproduction.t_handle_reports import write_t_handle_mabd_newton_report
+
+        config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
+        finite_rollout = roll_out_t_handle_mabd_model_derived(config)
+        nonfinite_rollout = replace(
+            finite_rollout,
+            finite=False,
+            relative_energy_drift=float("nan"),
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "t_handle_mabd_newton.json"
+            with patch(
+                "mabd_reproduction.t_handle_reports.roll_out_t_handle_mabd_model_derived",
+                return_value=nonfinite_rollout,
+            ):
+                with self.assertRaisesRegex(ValueError, "finite"):
+                    write_t_handle_mabd_newton_report(
+                        output_path,
+                        config=config,
+                        source_commit="test-source",
+                        vendored_newton_commit="test-newton",
+                    )
+            self.assertFalse(output_path.exists())
+
     def test_run_t_handle_rk4_reference_requires_incomplete_status(self) -> None:
         from mabd_reproduction.experiment_runner import run_t_handle_rk4_reference
 
@@ -794,6 +892,37 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.observed["max_nutation_angle_deg"] - loaded.observed["min_nutation_angle_deg"],
             0.0,
         )
+
+    def test_run_heavy_top_mabd_paper_horizon_dispatches_configured_report(self) -> None:
+        from mabd_reproduction import experiment_runner
+
+        fake_report = self._fake_heavy_top_paper_horizon_report()
+        with TemporaryDirectory() as tmpdir:
+            with patch.object(
+                experiment_runner,
+                "write_heavy_top_mabd_paper_horizon_report",
+                return_value=fake_report,
+            ) as writer:
+                result = experiment_runner.run_heavy_top_mabd_paper_horizon(
+                    config_path=HEAVY_TOP_CONFIG_PATH,
+                    matrix_path=MATRIX_PATH,
+                    output_root=tmpdir,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+
+        self.assertEqual(
+            result.report_path,
+            Path(tmpdir)
+            / "reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json",
+        )
+        self.assertEqual(result.claim_id, "experiment.single_body.heavy_top")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.observed["mabd_diagnostic_scope"], "paper_horizon_sample_grid")
+        writer.assert_called_once()
+        called_config = writer.call_args.kwargs["config"]
+        self.assertEqual(called_config.mabd_paper_horizon.step_count, 10000)
+        self.assertEqual(called_config.mabd_paper_horizon.sample_count, 11)
 
     def test_run_heavy_top_figure_curves_writes_digitized_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_heavy_top_figure_curves
@@ -1269,6 +1398,49 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.solver_mode, "t_handle_torque_free_rk4_reference")
         self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
 
+    def test_run_experiment_cli_writes_t_handle_mabd_newton_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "t_handle_mabd_newton_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "t_handle_mabd_newton",
+                    "--config",
+                    str(T_HANDLE_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.t_handle")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "mabd_newton")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_t_handle_newton_lane")
+        self.assertEqual(loaded.observed["solver_model_config_source"], "newton_model_derived")
+
     def test_run_experiment_cli_writes_heavy_top_rk4_reference_report(self) -> None:
         import json
         import os
@@ -1311,6 +1483,65 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.solver_mode, "heavy_top_rk4_reference_diagnostic")
         self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
+
+    def test_run_experiment_main_dispatches_heavy_top_mabd_paper_horizon_lane(self) -> None:
+        import importlib.util
+        import io
+        import json
+        from contextlib import redirect_stdout
+
+        class FakeResult:
+            def to_summary(self) -> dict[str, str]:
+                return {
+                    "claim_id": "experiment.single_body.heavy_top",
+                    "scene_id": "single_body_heavy_top",
+                    "status": "incomplete",
+                    "output_report": "fake.json",
+                    "baseline_lane": "mabd_newton",
+                }
+
+        script_path = ROOT / "scripts/run_experiment.py"
+        spec = importlib.util.spec_from_file_location(
+            "run_experiment_phase55_test",
+            script_path,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with patch.object(
+            module,
+            "run_heavy_top_mabd_paper_horizon",
+            return_value=FakeResult(),
+        ) as runner:
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                code = module.main(
+                    [
+                        "--lane",
+                        "heavy_top_mabd_paper_horizon",
+                        "--config",
+                        str(HEAVY_TOP_CONFIG_PATH),
+                        "--matrix",
+                        str(MATRIX_PATH),
+                        "--output-root",
+                        "unused-root",
+                        "--source-commit",
+                        "cli-source",
+                        "--vendored-newton-commit",
+                        "cli-newton",
+                    ]
+                )
+
+        self.assertEqual(code, 0)
+        summary = json.loads(stdout.getvalue())
+        self.assertEqual(summary["claim_id"], "experiment.single_body.heavy_top")
+        self.assertEqual(summary["baseline_lane"], "mabd_newton")
+        runner.assert_called_once()
+        self.assertEqual(
+            runner.call_args.kwargs["output_root"],
+            Path("unused-root"),
+        )
 
     def test_run_experiment_cli_writes_heavy_top_figure_curve_report(self) -> None:
         import json
