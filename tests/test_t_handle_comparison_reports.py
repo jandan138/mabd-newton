@@ -9,6 +9,7 @@ from tempfile import TemporaryDirectory
 
 from mabd_reproduction.experiment_configs import load_t_handle_config
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
+from mabd_reproduction.t_handle_digitization import write_t_handle_figure_curve_report
 from mabd_reproduction.t_handle_reports import (
     write_t_handle_mabd_newton_report,
     write_t_handle_rk4_reference_report,
@@ -39,6 +40,18 @@ class THandleComparisonReportTests(unittest.TestCase):
         )
         return config, rk4_path, mabd_path
 
+    def _write_figure_report(self, tmpdir: str) -> Path:
+        config = load_t_handle_config(CONFIG_PATH)
+        figure_path = Path(tmpdir) / "figure_curves.json"
+        write_t_handle_figure_curve_report(
+            figure_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+            sample_count=51,
+        )
+        return figure_path
+
     def _write_comparison(
         self,
         *,
@@ -46,6 +59,7 @@ class THandleComparisonReportTests(unittest.TestCase):
         config: object,
         rk4_path: Path,
         mabd_path: Path,
+        figure_path: Path | None = None,
     ):
         from mabd_reproduction.comparison_reports import write_t_handle_comparison_report
 
@@ -54,6 +68,7 @@ class THandleComparisonReportTests(unittest.TestCase):
             config=config,
             rk4_report_path=rk4_path,
             mabd_report_path=mabd_path,
+            figure_curve_report_path=figure_path,
             source_commit="test-source",
             vendored_newton_commit="test-newton",
         )
@@ -148,6 +163,91 @@ class THandleComparisonReportTests(unittest.TestCase):
         self.assertIn("t_handle_timing_evidence_missing", blockers)
         self.assertIn("sample_grid_flip_delta_unavailable", blockers)
         self.assertNotIn("t_handle_comparison_report_missing", blockers)
+
+    def test_t_handle_comparison_consumes_valid_figure_curve_report(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            figure_path = self._write_figure_report(tmpdir)
+            output_path = Path(tmpdir) / "comparison.json"
+            self._write_comparison(
+                output_path=output_path,
+                config=config,
+                rk4_path=rk4_path,
+                mabd_path=mabd_path,
+                figure_path=figure_path,
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertTrue(loaded.observed["digitized_figure_reference_available"])
+        self.assertIn("paper_figure_curves", loaded.observed["input_report_provenance"])
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"][
+                "intermediate_axis_angular_velocity_waveform"
+            ]["status"],
+            "paper_figure_digitized_color_family_available_not_curve_agreement",
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["energy_loss"]["status"],
+            "paper_figure_digitized_color_family_available_not_energy_agreement",
+        )
+        self.assertIn(
+            "t_handle_digitized_figure_curve_agreement_not_passed",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "raw_t_handle_reference_curve_data_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertEqual(
+            loaded.observed["digitized_figure_reference_samples"][
+                "angular_velocity_color_families"
+            ],
+            {"blue": 51, "orange": 51, "green": 51},
+        )
+        self.assertEqual(
+            loaded.observed["digitized_figure_reference_samples"][
+                "energy_loss_color_families"
+            ],
+            {"blue": 51, "orange": 51, "green": 51},
+        )
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+
+    def test_t_handle_comparison_ignores_invalid_figure_curve_report(self) -> None:
+        cases = (
+            ("status", ("status",), "failed"),
+            ("reference_curve_available", ("observed", "reference_curve_available"), False),
+        )
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            valid_figure_path = self._write_figure_report(tmpdir)
+            for name, keys, value in cases:
+                figure_path = Path(tmpdir) / f"figure_{name}.json"
+                shutil.copyfile(valid_figure_path, figure_path)
+                self._mutate_report(figure_path, *keys, value=value)
+                output_path = Path(tmpdir) / f"comparison_{name}.json"
+                with self.subTest(name=name):
+                    self._write_comparison(
+                        output_path=output_path,
+                        config=config,
+                        rk4_path=rk4_path,
+                        mabd_path=mabd_path,
+                        figure_path=figure_path,
+                    )
+                    loaded = load_claim_report(output_path)
+
+                    self.assertFalse(loaded.observed["digitized_figure_reference_available"])
+                    self.assertNotIn("paper_figure_curves", loaded.observed["input_report_provenance"])
+                    self.assertEqual(
+                        loaded.observed["paper_metric_statuses"][
+                            "intermediate_axis_angular_velocity_waveform"
+                        ]["status"],
+                        "diagnostic_available_not_paper_curve",
+                    )
+                    self.assertEqual(
+                        loaded.observed["paper_metric_statuses"]["energy_loss"]["status"],
+                        "signed_energy_drift_diagnostic_not_paper_loss",
+                    )
 
     def test_t_handle_comparison_rejects_wrong_input_identity(self) -> None:
         cases = (

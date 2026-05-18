@@ -78,6 +78,9 @@ T_HANDLE_INPUT_LANES = {
 HEAVY_TOP_FIGURE_BASELINE_LANE = "paper_figure_digitization"
 HEAVY_TOP_FIGURE_SOLVER_MODE = "heavy_top_paper_figure_digitization"
 HEAVY_TOP_FIGURE_BACKEND = "pdftocairo_pillow"
+T_HANDLE_FIGURE_BASELINE_LANE = "paper_figure_digitization"
+T_HANDLE_FIGURE_SOLVER_MODE = "t_handle_paper_figure_digitization"
+T_HANDLE_FIGURE_BACKEND = "pdftocairo_pillow"
 
 
 def _require_lane_report(
@@ -252,6 +255,77 @@ def _valid_heavy_top_figure_report_or_none(
     if not _finite_heavy_top_nutation_reference_samples(report):
         return None
     return report
+
+
+def _finite_t_handle_figure_curve_samples(report: ClaimReport) -> bool:
+    for metric_key in ("angular_velocity_curves", "energy_loss_curves"):
+        curves = report.observed.get(metric_key)
+        if not isinstance(curves, dict):
+            return False
+        for color_family in ("blue", "orange", "green"):
+            curve = curves.get(color_family)
+            if not isinstance(curve, dict):
+                return False
+            if curve.get("curve_identity_status") != "color_family_not_legend_entry":
+                return False
+            samples = curve.get("samples")
+            if not isinstance(samples, list) or not samples:
+                return False
+            if not all(
+                isinstance(sample, dict)
+                and _finite_scalar(sample.get("time_s")) is not None
+                and _finite_scalar(sample.get("value")) is not None
+                for sample in samples
+            ):
+                return False
+    return True
+
+
+def _valid_t_handle_figure_report_or_none(
+    path: str | Path | None,
+    *,
+    config: THandleRunConfig,
+) -> ClaimReport | None:
+    if path is None:
+        return None
+    try:
+        report = load_claim_report(path)
+    except (OSError, ValueError):
+        return None
+    if report.claim_id != config.claim_id or report.scene_id != config.scene_id:
+        return None
+    if report.baseline_lane != T_HANDLE_FIGURE_BASELINE_LANE:
+        return None
+    if report.solver_mode != T_HANDLE_FIGURE_SOLVER_MODE:
+        return None
+    if report.backend != T_HANDLE_FIGURE_BACKEND:
+        return None
+    if report.status != EvidenceStatus.INCOMPLETE:
+        return None
+    if report.observed.get("full_experiment_claim_passed") is not False:
+        return None
+    if report.observed.get("reference_curve_available") is not True:
+        return None
+    if report.observed.get("figure_curve_scope") != "color_family_digitization_only":
+        return None
+    if not _finite_t_handle_figure_curve_samples(report):
+        return None
+    return report
+
+
+def _t_handle_figure_sample_counts(report: ClaimReport) -> dict[str, dict[str, int]]:
+    result: dict[str, dict[str, int]] = {}
+    for output_key, report_key in (
+        ("angular_velocity_color_families", "angular_velocity_curves"),
+        ("energy_loss_color_families", "energy_loss_curves"),
+    ):
+        curves = report.observed[report_key]
+        result[output_key] = {
+            str(color_family): len(curve["samples"])
+            for color_family, curve in curves.items()
+            if isinstance(curve, dict) and isinstance(curve.get("samples"), list)
+        }
+    return result
 
 
 def _finite_scalar(value: Any) -> float | None:
@@ -753,6 +827,7 @@ def _t_handle_paper_metric_statuses(
     sample_diagnostics: dict[str, Any],
     *,
     flip_delta: float | None,
+    digitized_figure_reference_available: bool = False,
 ) -> dict[str, dict[str, str]]:
     flip_status = (
         "sample_grid_diagnostic_not_paper_timing"
@@ -764,6 +839,20 @@ def _t_handle_paper_metric_statuses(
         if sample_diagnostics["time_aligned_sample_count"] > 0
         else "diagnostic_unavailable_time_alignment_missing"
     )
+    energy_status = "signed_energy_drift_diagnostic_not_paper_loss"
+    waveform_limitation = "compares diagnostic lanes, not raw paper waveform curves"
+    energy_limitation = "relative_energy_drift is signed diagnostic drift, not paper energy loss"
+    if digitized_figure_reference_available:
+        waveform_status = "paper_figure_digitized_color_family_available_not_curve_agreement"
+        energy_status = "paper_figure_digitized_color_family_available_not_energy_agreement"
+        waveform_limitation = (
+            "paper figure color-family digitization is available, but no curve "
+            "agreement gate has passed"
+        )
+        energy_limitation = (
+            "paper figure color-family digitization is available, but no energy-loss "
+            "agreement gate has passed"
+        )
     return {
         "flip_timing_error": {
             "status": flip_status,
@@ -773,12 +862,12 @@ def _t_handle_paper_metric_statuses(
         "intermediate_axis_angular_velocity_waveform": {
             "status": waveform_status,
             "diagnostic_field": "intermediate_axis_waveform_rmse_rad_s",
-            "limitation": "compares diagnostic lanes, not raw paper waveform curves",
+            "limitation": waveform_limitation,
         },
         "energy_loss": {
-            "status": "signed_energy_drift_diagnostic_not_paper_loss",
+            "status": energy_status,
             "diagnostic_field": "energy_drift_diagnostics",
-            "limitation": "relative_energy_drift is signed diagnostic drift, not paper energy loss",
+            "limitation": energy_limitation,
         },
     }
 
@@ -1349,6 +1438,7 @@ def write_t_handle_comparison_report(
     mabd_report_path: str | Path,
     source_commit: str,
     vendored_newton_commit: str,
+    figure_curve_report_path: str | Path | None = None,
     paper_source_version: str = "2603.08079v2",
 ) -> ClaimReport:
     rk4_report = _require_t_handle_lane_report(
@@ -1361,6 +1451,11 @@ def write_t_handle_comparison_report(
         config=config,
         lane="mabd_newton",
     )
+    figure_report = _valid_t_handle_figure_report_or_none(
+        figure_curve_report_path,
+        config=config,
+    )
+    figure_reference_available = figure_report is not None
     axis_index = config.reference.intermediate_axis_index
     sample_diagnostics = _t_handle_sample_index_differences(
         rk4_report,
@@ -1412,9 +1507,36 @@ def write_t_handle_comparison_report(
         blocking_reasons.append("sample_grid_flip_delta_unavailable")
     if rk4_energy_drift is None or mabd_energy_drift is None:
         blocking_reasons.append("energy_drift_nonfinite")
+    if figure_reference_available:
+        blocking_reasons.append("t_handle_digitized_figure_curve_agreement_not_passed")
+
+    input_report_provenance = {
+        "rbd_rk4_reference": _t_handle_lane_provenance(
+            rk4_report_path,
+            rk4_report,
+        ),
+        "mabd_newton": _t_handle_lane_provenance(
+            mabd_report_path,
+            mabd_report,
+        ),
+    }
+    raw_outputs = {
+        "rk4_report": Path(rk4_report_path).as_posix(),
+        "mabd_report": Path(mabd_report_path).as_posix(),
+    }
+    figure_sample_counts: dict[str, dict[str, int]] = {}
+    if figure_reference_available and figure_report is not None and figure_curve_report_path is not None:
+        input_report_provenance["paper_figure_curves"] = _t_handle_lane_provenance(
+            figure_curve_report_path,
+            figure_report,
+        )
+        raw_outputs["figure_curve_report"] = Path(figure_curve_report_path).as_posix()
+        figure_sample_counts = _t_handle_figure_sample_counts(figure_report)
 
     observed = {
         "full_experiment_claim_passed": False,
+        "digitized_figure_reference_available": figure_reference_available,
+        "digitized_figure_reference_samples": figure_sample_counts,
         "lane_statuses": {
             "rbd_rk4_reference": rk4_report.status.value,
             "mabd_newton": mabd_report.status.value,
@@ -1427,16 +1549,7 @@ def write_t_handle_comparison_report(
             "rbd_rk4_reference": rk4_report.solver_mode,
             "mabd_newton": mabd_report.solver_mode,
         },
-        "input_report_provenance": {
-            "rbd_rk4_reference": _t_handle_lane_provenance(
-                rk4_report_path,
-                rk4_report,
-            ),
-            "mabd_newton": _t_handle_lane_provenance(
-                mabd_report_path,
-                mabd_report,
-            ),
-        },
+        "input_report_provenance": input_report_provenance,
         "lane_metrics": {
             "rbd_rk4_reference": _t_handle_metric_snapshot(rk4_report),
             "mabd_newton": _t_handle_metric_snapshot(mabd_report),
@@ -1444,6 +1557,7 @@ def write_t_handle_comparison_report(
         "paper_metric_statuses": _t_handle_paper_metric_statuses(
             sample_diagnostics,
             flip_delta=flip_delta,
+            digitized_figure_reference_available=figure_reference_available,
         ),
         "missing_required_lanes": [],
         "missing_paper_metrics": [
@@ -1539,10 +1653,7 @@ def write_t_handle_comparison_report(
             "and the comparison pass gate remain missing"
         ),
         timing_distribution={"scope": "not_timed", "paper_comparable": False},
-        raw_outputs={
-            "rk4_report": Path(rk4_report_path).as_posix(),
-            "mabd_report": Path(mabd_report_path).as_posix(),
-        },
+        raw_outputs=raw_outputs,
         plot_paths={},
         source_commit=source_commit,
         vendored_newton_commit=vendored_newton_commit,

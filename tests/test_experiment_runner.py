@@ -772,6 +772,33 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.observed["required_missing_lanes"], [])
         self.assertNotIn("lane_gate_status", loaded.observed)
 
+    def test_run_t_handle_figure_curves_writes_digitized_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_t_handle_figure_curves
+
+        with TemporaryDirectory() as tmpdir:
+            result = run_t_handle_figure_curves(
+                config_path=T_HANDLE_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_root=tmpdir,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(
+            result.report_path,
+            Path(tmpdir) / "reports/experiment_matrix/single_body_t_handle_figure_curves.json",
+        )
+        self.assertEqual(result.claim_id, "experiment.single_body.t_handle")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "paper_figure_digitization")
+        self.assertEqual(loaded.baseline_lane, "paper_figure_digitization")
+        self.assertEqual(loaded.solver_mode, "t_handle_paper_figure_digitization")
+        self.assertEqual(loaded.backend, "pdftocairo_pillow")
+        self.assertEqual(loaded.observed["lane_status"], "figure_color_families_digitized")
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertTrue(loaded.observed["reference_curve_available"])
+
     def test_run_t_handle_comparison_writes_incomplete_protocol_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_t_handle_comparison
 
@@ -1537,14 +1564,72 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_t_handle_newton_lane")
         self.assertEqual(loaded.observed["solver_model_config_source"], "newton_model_derived")
 
-    def test_run_experiment_cli_writes_t_handle_comparison_report(self) -> None:
+    def test_run_experiment_cli_writes_t_handle_figure_curve_report(self) -> None:
         import json
         import os
         import subprocess
         import sys
 
         with TemporaryDirectory() as tmpdir:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "t_handle_figure_curves",
+                    "--config",
+                    str(T_HANDLE_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output-root",
+                    tmpdir,
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            output_path = (
+                Path(tmpdir) / "reports/experiment_matrix/single_body_t_handle_figure_curves.json"
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.t_handle")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "paper_figure_digitization")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
+        self.assertEqual(loaded.observed["lane_status"], "figure_color_families_digitized")
+
+    def test_run_experiment_cli_writes_t_handle_comparison_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        from mabd_reproduction.experiment_configs import load_t_handle_config
+        from mabd_reproduction.t_handle_digitization import write_t_handle_figure_curve_report
+
+        with TemporaryDirectory() as tmpdir:
             rk4_path, mabd_path = self._write_t_handle_lane_inputs(tmpdir)
+            figure_path = Path(tmpdir) / "t_handle_figure_curves.json"
+            config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
+            write_t_handle_figure_curve_report(
+                figure_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+                sample_count=51,
+            )
             output_path = Path(tmpdir) / "t_handle_comparison_cli.json"
             result = subprocess.run(
                 [
@@ -1560,6 +1645,8 @@ class ExperimentRunnerTests(unittest.TestCase):
                     str(rk4_path),
                     "--mabd-report",
                     str(mabd_path),
+                    "--figure-report",
+                    str(figure_path),
                     "--output",
                     str(output_path),
                     "--source-commit",
@@ -1583,6 +1670,11 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["baseline_lane"], "t_handle_comparison_protocol")
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.solver_mode, "t_handle_multilane_comparison_development")
+        self.assertIn("paper_figure_curves", loaded.observed["input_report_provenance"])
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["energy_loss"]["status"],
+            "paper_figure_digitized_color_family_available_not_energy_agreement",
+        )
 
     def test_run_experiment_cli_writes_heavy_top_rk4_reference_report(self) -> None:
         import json

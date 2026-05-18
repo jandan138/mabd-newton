@@ -44,6 +44,7 @@ from .t_handle_reports import (
     write_t_handle_mabd_newton_report,
     write_t_handle_rk4_reference_report,
 )
+from .t_handle_digitization import write_t_handle_figure_curve_report
 
 
 @dataclass(frozen=True)
@@ -507,6 +508,7 @@ def run_t_handle_comparison(
     vendored_newton_commit: str,
     rk4_report_path: str | Path | None = None,
     mabd_report_path: str | Path | None = None,
+    figure_curve_report_path: str | Path | None = None,
     output_path: str | Path | None = None,
     output_root: str | Path | None = None,
     paper_source_version: str = "2603.08079v2",
@@ -529,6 +531,43 @@ def run_t_handle_comparison(
         config=config,
         rk4_report_path=rk4_report_path,
         mabd_report_path=mabd_report_path,
+        figure_curve_report_path=figure_curve_report_path,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
+def run_t_handle_figure_curves(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    config = load_t_handle_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_t_handle_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError("Phase 58 T-handle figure-curve runner requires incomplete status")
+    report_path = _resolve_output_path(
+        config.figure_curves.output_report,
+        output_path=output_path,
+        output_root=output_root,
+    )
+    report = write_t_handle_figure_curve_report(
+        report_path,
+        config=config,
         source_commit=source_commit,
         vendored_newton_commit=vendored_newton_commit,
         paper_source_version=paper_source_version,
@@ -748,6 +787,7 @@ __all__ = [
     "run_spinning_box_paper_horizon",
     "run_spinning_box_rbd_baseline",
     "run_t_handle_comparison",
+    "run_t_handle_figure_curves",
     "run_t_handle_mabd_newton",
     "run_t_handle_rk4_reference",
 ]
