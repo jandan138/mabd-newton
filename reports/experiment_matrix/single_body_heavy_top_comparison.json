@@ -49,9 +49,9 @@
         "backend": "cpu_numpy_newton_only",
         "baseline_lane": "mabd_newton",
         "path": "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
-        "sha256": "b71b71fdd06d5daed97efae29eb6428dd1a9e000662329e7b05b4c004512f149",
+        "sha256": "9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324",
         "solver_mode": "mabd_cpu_oracle_heavy_top_newton_lane",
-        "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+        "source_commit": "ef53522077c53b4842f5198938dd5c24190e7863",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       },
@@ -59,22 +59,22 @@
         "backend": "cpu_numpy",
         "baseline_lane": "rbd_rk4_reference",
         "path": "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
-        "sha256": "2359c0108d10bccbeaeac9ba99896c5d02ac8e0b392c6145597e63f2b3a07156",
+        "sha256": "41418e964dd9e7fba1516f420fa97ced8cfaf9157d552d9072f85fcbb08f564c",
         "solver_mode": "heavy_top_rk4_reference_diagnostic",
-        "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+        "source_commit": "ef53522077c53b4842f5198938dd5c24190e7863",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       }
     },
     "lane_metrics": {
       "mabd_newton": {
-        "energy_drift": null,
+        "energy_drift": -0.0014033729823068706,
         "max_abs_precession_velocity_rad_s": 6.211950805675907e-13,
         "max_affine_shape_spread_m": 1.026072417876121,
         "max_constraint_residual_norm": 1.9857179087041432e-16,
         "max_pivot_residual_m": 1.9857179528336718e-16,
         "nutation_angle_range_deg": 154.54996086066706,
-        "source_relative_energy_drift": null
+        "source_relative_energy_drift": -0.0014033729823068706
       },
       "rbd_rk4_reference": {
         "energy_drift": 3.4498174841031286e-14,
@@ -104,16 +104,14 @@
     "max_abs_precession_delta_rad": 3.618025997274943,
     "max_sample_time_delta_s": 4.75,
     "missing_paper_metrics": [
-      "precession_velocity_error:mabd_precession_velocity_samples_missing",
-      "nutation_angle_error:paper_reference_curve_missing",
-      "energy_drift:mabd_energy_drift_missing"
+      "nutation_angle_error:paper_reference_curve_missing"
     ],
     "missing_required_lanes": [],
     "paper_metric_statuses": {
       "energy_drift": {
-        "mabd_field": null,
+        "mabd_field": "relative_energy_drift",
         "rk4_field": "relative_energy_drift",
-        "status": "mabd_energy_drift_missing"
+        "status": "diagnostic_available"
       },
       "nutation_angle_error": {
         "mabd_field": "precession_nutation_samples.nutation_angle_deg",
@@ -121,9 +119,9 @@
         "status": "paper_reference_curve_missing"
       },
       "precession_velocity_error": {
-        "mabd_field": null,
+        "mabd_field": "precession_nutation_samples.precession_velocity_rad_s",
         "rk4_field": "max_abs_precession_velocity_rad_s",
-        "status": "missing_mabd_precession_velocity_samples"
+        "status": "diagnostic_available"
       }
     },
     "rk4_sample_count": 11,
@@ -253,7 +251,7 @@
   },
   "scene_id": "single_body_heavy_top",
   "solver_mode": "heavy_top_multilane_comparison_development",
-  "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+  "source_commit": "ef53522077c53b4842f5198938dd5c24190e7863",
   "status": "incomplete",
   "threshold": {
     "max_sample_time_delta_s": 1e-12

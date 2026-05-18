@@ -676,6 +676,23 @@
   rendered output, runtime performance, generated videos or raw simulation
   logs, a comparison pass gate, a full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 52 heavy-top MABD diagnostic metric evidence
+  after the Phase 52 record is created.
+- Phase 52 verifies that the heavy-top `mabd_newton` diagnostic report records
+  finite per-sample `precession_velocity_rad_s`, point-mass `energy_initial`,
+  `energy_final`, and `relative_energy_drift`, and that the heavy-top
+  comparison protocol consumes those MABD-side diagnostics. The comparison
+  report no longer marks MABD precession velocity or MABD energy drift as
+  missing, retains `nutation_angle_error:paper_reference_curve_missing`,
+  `mabd_newton_report_incomplete`,
+  `heavy_top_comparison_report_incomplete`,
+  `heavy_top_timing_evidence_missing`, and `sample_time_grid_mismatch`, and
+  keeps `full_experiment_claim_passed = false`.
+- Phase 52 does not verify a passed heavy-top experiment, paper-faithful
+  heavy-top inertia or geometry, raw figure curve agreement, paper timing,
+  rendered output, runtime performance, generated videos or raw simulation
+  logs, a comparison pass gate, a full paper reproduction, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -785,6 +802,11 @@
   curve agreement, not a comparison pass gate, not a paper timing result, not
   rendered-output evidence, not a full paper reproduction, and not any passed
   `experiment.*` claim.
+- Phase 52 heavy-top MABD metrics are not a passed heavy-top experiment, not
+  paper-faithful heavy-top inertia or geometry reconstruction, not raw curve
+  agreement, not a comparison pass gate, not a paper timing result, not
+  rendered-output evidence, not generated-video evidence, not a full paper
+  reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

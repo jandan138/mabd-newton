@@ -1,12 +1,13 @@
-# Phase 51 Heavy-Top Comparison Protocol
+# Phase 52 Heavy-Top MABD Metrics
 
 ## Status
 
-passed_for_heavy_top_comparison_protocol
+passed_for_heavy_top_mabd_metric_diagnostics
 
 ## Scope
 
-- worktree: `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase51-heavy-top-comparison-protocol`
+- worktree:
+  `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase52-heavy-top-mabd-metrics`
 - source commit used for regenerated reports:
   `ef53522077c53b4842f5198938dd5c24190e7863`
 - vendored Newton upstream commit: `96713fa965463b69c229a4d30582c733ff3526bb`
@@ -21,6 +22,17 @@ passed_for_heavy_top_comparison_protocol
 - claim: `experiment.single_body.heavy_top`
 - config: `configs/experiments/single_body_heavy_top.yaml`
 - matrix: `configs/experiments/paper_experiment_matrix.yaml`
+- `reports/experiment_matrix/single_body_heavy_top_mabd_newton.json`
+  - sha256:
+    `9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324`
+  - solver mode: `mabd_cpu_oracle_heavy_top_newton_lane`
+  - baseline lane: `mabd_newton`
+  - backend: `cpu_numpy_newton_only`
+  - top-level evidence status: `incomplete`
+  - diagnostic energy initial: `8.562042497067562`
+  - diagnostic energy final: `8.550026757953814`
+  - diagnostic relative energy drift: `-0.0014033729823068706`
+  - per-sample field: `precession_velocity_rad_s`
 - `reports/experiment_matrix/single_body_heavy_top_comparison.json`
   - sha256:
     `522d0dbea2eacbe1f334400dbcba4bd885ba26cecd50d239463048f7e24ec8de`
@@ -28,12 +40,12 @@ passed_for_heavy_top_comparison_protocol
   - baseline lane: `heavy_top_comparison_protocol`
   - backend: `report_protocol`
   - top-level evidence status: `incomplete`
+  - missing paper metric: `nutation_angle_error:paper_reference_curve_missing`
+  - MABD precession velocity status: `diagnostic_available`
+  - MABD energy drift status: `diagnostic_available`
 - `reports/experiment_matrix/single_body_heavy_top_rk4_reference.json`
   - input report sha256:
     `41418e964dd9e7fba1516f420fa97ced8cfaf9157d552d9072f85fcbb08f564c`
-- `reports/experiment_matrix/single_body_heavy_top_mabd_newton.json`
-  - input report sha256:
-    `9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324`
 - retained blocker: `mabd_newton_report_incomplete`
 - retained blocker: `heavy_top_comparison_report_incomplete`
 - retained blocker: `exact_heavy_top_inertia_unknown`
@@ -42,24 +54,22 @@ passed_for_heavy_top_comparison_protocol
 - retained blocker: `heavy_top_timing_evidence_missing`
 - retained blocker: `heavy_top_comparison_pass_gate_not_enabled`
 - retained blocker: `sample_time_grid_mismatch`
-- missing paper metric:
-  `nutation_angle_error:paper_reference_curve_missing`
-- MABD precession velocity status: `diagnostic_available`
-- MABD energy drift status: `diagnostic_available`
 
 ## Result Boundary
 
 No `experiment.*` claim is passed.
 
-`experiment.single_body.heavy_top` remains intended. Phase 51 records an
-executable comparison protocol and current input-report provenance only. It
+`experiment.single_body.heavy_top` remains intended. Phase 52 records
+MABD-side diagnostic precession-velocity and point-mass energy metrics only. It
 does not prove paper-faithful heavy-top inertia or geometry, raw curve
-agreement, M-ABD energy/precession metric agreement, ABD-vs-RBD pass-gate
-agreement, rendered output, paper timing, or a full paper reproduction.
+agreement, ABD-vs-RBD pass-gate agreement, rendered output, paper timing,
+runtime performance, generated video evidence, or a full paper reproduction.
 
 ## Commands
 
-- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_heavy_top_comparison_reports tests.test_experiment_runner`
+- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_heavy_top_mabd tests.test_heavy_top_comparison_reports`
+- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py`
-- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py`
+- `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"`
+- `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .`
 - `git diff --check`

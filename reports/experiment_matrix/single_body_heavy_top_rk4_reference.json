@@ -166,7 +166,7 @@
   "raw_outputs": {},
   "scene_id": "single_body_heavy_top",
   "solver_mode": "heavy_top_rk4_reference_diagnostic",
-  "source_commit": "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+  "source_commit": "ef53522077c53b4842f5198938dd5c24190e7863",
   "status": "incomplete",
   "threshold": {
     "max_relative_energy_drift": 1e-07,

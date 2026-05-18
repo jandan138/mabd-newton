@@ -9,7 +9,7 @@ passed_for_heavy_top_mabd_newton_diagnostic_lane
 - worktree: `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase50-heavy-top-mabd-lane`
 - source commit: `45bef31db663b2d13d9385ef64a8445cbac9b613`
 - current artifact regeneration source commit:
-  `6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a`
+  `ef53522077c53b4842f5198938dd5c24190e7863`
 - vendored Newton upstream commit: `96713fa965463b69c229a4d30582c733ff3526bb`
 - paper source version: `2603.08079v2`
 - Python: `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python`
@@ -23,7 +23,7 @@ passed_for_heavy_top_mabd_newton_diagnostic_lane
 - matrix: `configs/experiments/paper_experiment_matrix.yaml`
 - `reports/experiment_matrix/single_body_heavy_top_mabd_newton.json`
 - lane report sha256:
-  `b71b71fdd06d5daed97efae29eb6428dd1a9e000662329e7b05b4c004512f149`
+  `9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324`
 - solver mode: `mabd_cpu_oracle_heavy_top_newton_lane`
 - baseline lane: `mabd_newton`
 - backend: `cpu_numpy_newton_only`
@@ -31,6 +31,9 @@ passed_for_heavy_top_mabd_newton_diagnostic_lane
 - custom frequencies: `mabd:body`, `mabd:world_constraint`, `mabd:gravity`
 - lane status: `incomplete_diagnostic_generated`
 - top-level evidence status: `incomplete`
+- diagnostic energy initial: `8.562042497067562`
+- diagnostic energy final: `8.550026757953814`
+- diagnostic relative energy drift: `-0.0014033729823068706`
 - retained blocker: `mabd_newton_report_incomplete`
 - retained blocker: `exact_heavy_top_inertia_unknown`
 - retained blocker: `exact_heavy_top_geometry_unknown`

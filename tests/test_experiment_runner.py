@@ -829,11 +829,15 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         self.assertEqual(
             loaded.observed["missing_paper_metrics"],
-            [
-                "precession_velocity_error:mabd_precession_velocity_samples_missing",
-                "nutation_angle_error:paper_reference_curve_missing",
-                "energy_drift:mabd_energy_drift_missing",
-            ],
+            ["nutation_angle_error:paper_reference_curve_missing"],
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["precession_velocity_error"]["status"],
+            "diagnostic_available",
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["energy_drift"]["status"],
+            "diagnostic_available",
         )
 
     def test_run_experiment_cli_writes_report_and_summary(self) -> None:

@@ -3330,16 +3330,16 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Status\n\npassed_for_heavy_top_comparison_protocol",
             "phase51-heavy-top-comparison-protocol",
             "reports/experiment_matrix/single_body_heavy_top_comparison.json",
-            "4525c71a24f841cfee98332c1bfb68d3365065df82dedc54a31713f0a9438ec9",
+            "522d0dbea2eacbe1f334400dbcba4bd885ba26cecd50d239463048f7e24ec8de",
             "heavy_top_multilane_comparison_development",
             "heavy_top_comparison_protocol",
             "report_protocol",
             "mabd_newton_report_incomplete",
             "heavy_top_comparison_report_incomplete",
             "sample_time_grid_mismatch",
-            "precession_velocity_error:mabd_precession_velocity_samples_missing",
             "nutation_angle_error:paper_reference_curve_missing",
-            "energy_drift:mabd_energy_drift_missing",
+            "MABD precession velocity status: `diagnostic_available`",
+            "MABD energy drift status: `diagnostic_available`",
             "No `experiment.*` claim is passed.",
             "`experiment.single_body.heavy_top` remains intended",
             "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_heavy_top_comparison_reports tests.test_experiment_runner",
@@ -3928,7 +3928,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

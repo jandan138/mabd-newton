@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-51 docs and provenance contracts."""
+"""Validate Phase 0-52 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -110,6 +110,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase49-heavy-top-rk4-reference.md",
     "docs/records/2026-05-18-phase50-heavy-top-mabd-newton-lane.md",
     "docs/records/2026-05-18-phase51-heavy-top-comparison-protocol.md",
+    "docs/records/2026-05-18-phase52-heavy-top-mabd-metrics.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -150,6 +151,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase50-heavy-top-mabd-newton-lane.md",
     "docs/superpowers/specs/2026-05-18-phase51-heavy-top-comparison-protocol-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase51-heavy-top-comparison-protocol.md",
+    "docs/superpowers/specs/2026-05-18-phase52-heavy-top-mabd-metrics-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase52-heavy-top-mabd-metrics.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -218,6 +221,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "TO_BE_BACKFILLED_PHASE49",
     "TO_BE_BACKFILLED_PHASE51",
     "phase51-working-tree",
+    "TO_BE_BACKFILLED_PHASE52",
+    "phase52-working-tree",
 }
 
 
@@ -6854,7 +6859,7 @@ def validate_phase49_record() -> None:
         "## Repository",
         "phase49-heavy-top-reference",
         "6d90ccf7d3faf9e79b84b01da815dd8c861df341",
-        "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+        "ef53522077c53b4842f5198938dd5c24190e7863",
         VENDORED_NEWTON_COMMIT,
         "## Paper Source",
         "experiment.tex:65-75",
@@ -7146,10 +7151,10 @@ def validate_phase50_record() -> None:
         "## Status\n\npassed_for_heavy_top_mabd_newton_diagnostic_lane",
         "phase50-heavy-top-mabd-lane",
         "45bef31db663b2d13d9385ef64a8445cbac9b613",
-        "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+        "ef53522077c53b4842f5198938dd5c24190e7863",
         VENDORED_NEWTON_COMMIT,
         "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
-        "b71b71fdd06d5daed97efae29eb6428dd1a9e000662329e7b05b4c004512f149",
+        "9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324",
         "mabd_cpu_oracle_heavy_top_newton_lane",
         "mabd_newton",
         "cpu_numpy_newton_only",
@@ -7164,6 +7169,7 @@ def validate_phase50_record() -> None:
         "raw_heavy_top_reference_curve_data_missing",
         "heavy_top_comparison_report_incomplete",
         "heavy_top_timing_evidence_missing",
+        "diagnostic relative energy drift",
         "No `experiment.*` claim is passed.",
         "`experiment.single_body.heavy_top` remains intended",
         "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_heavy_top_mabd tests.test_experiment_run_configs tests.test_experiment_runner tests.test_phase0_bootstrap",
@@ -7302,6 +7308,9 @@ def validate_phase50_record() -> None:
         ("step_count", rollout.step_count, 0.0),
         ("sample_count", rollout.sample_count, 0.0),
         ("time_step_s", rollout.time_step_s, 0.0),
+        ("energy_initial", rollout.energy_initial, 1.0e-12),
+        ("energy_final", rollout.energy_final, 1.0e-12),
+        ("relative_energy_drift", rollout.relative_energy_drift, 1.0e-14),
         ("min_nutation_angle_deg", rollout.min_nutation_angle_deg, 1.0e-12),
         ("max_nutation_angle_deg", rollout.max_nutation_angle_deg, 1.0e-12),
         ("max_abs_precession_velocity_rad_s", rollout.max_abs_precession_velocity_rad_s, 1.0e-12),
@@ -7373,6 +7382,7 @@ def validate_phase50_record() -> None:
             ("time_s", expected_sample.time_s),
             ("nutation_angle_deg", expected_sample.nutation_angle_deg),
             ("precession_angle_rad", expected_sample.precession_angle_rad),
+            ("precession_velocity_rad_s", expected_sample.precession_velocity_rad_s),
             ("pivot_residual_m", expected_sample.pivot_residual_m),
             ("constraint_residual_norm", expected_sample.constraint_residual_norm),
             ("affine_shape_spread_m", expected_sample.affine_shape_spread_m),
@@ -7437,14 +7447,14 @@ def validate_phase51_record() -> None:
     required_snippets = (
         "## Status\n\npassed_for_heavy_top_comparison_protocol",
         "phase51-heavy-top-comparison-protocol",
-        "6c4eab14b2cc4b96ab150b3bbab818c539d6aa6a",
+        "ef53522077c53b4842f5198938dd5c24190e7863",
         VENDORED_NEWTON_COMMIT,
         "reports/experiment_matrix/single_body_heavy_top_comparison.json",
-        "4525c71a24f841cfee98332c1bfb68d3365065df82dedc54a31713f0a9438ec9",
+        "522d0dbea2eacbe1f334400dbcba4bd885ba26cecd50d239463048f7e24ec8de",
         "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
-        "2359c0108d10bccbeaeac9ba99896c5d02ac8e0b392c6145597e63f2b3a07156",
+        "41418e964dd9e7fba1516f420fa97ced8cfaf9157d552d9072f85fcbb08f564c",
         "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
-        "b71b71fdd06d5daed97efae29eb6428dd1a9e000662329e7b05b4c004512f149",
+        "9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324",
         "heavy_top_multilane_comparison_development",
         "heavy_top_comparison_protocol",
         "report_protocol",
@@ -7452,9 +7462,9 @@ def validate_phase51_record() -> None:
         "heavy_top_comparison_report_incomplete",
         "heavy_top_comparison_pass_gate_not_enabled",
         "sample_time_grid_mismatch",
-        "precession_velocity_error:mabd_precession_velocity_samples_missing",
         "nutation_angle_error:paper_reference_curve_missing",
-        "energy_drift:mabd_energy_drift_missing",
+        "MABD precession velocity status: `diagnostic_available`",
+        "MABD energy drift status: `diagnostic_available`",
         "No `experiment.*` claim is passed.",
         "`experiment.single_body.heavy_top` remains intended",
         "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_heavy_top_comparison_reports tests.test_experiment_runner",
@@ -7539,13 +7549,19 @@ def validate_phase51_record() -> None:
         fail("Phase 51 heavy-top comparison must not pass full experiment claim")
     if observed.get("missing_required_lanes") != []:
         fail("Phase 51 heavy-top comparison missing lanes changed")
-    expected_missing_metrics = [
-        "precession_velocity_error:mabd_precession_velocity_samples_missing",
-        "nutation_angle_error:paper_reference_curve_missing",
-        "energy_drift:mabd_energy_drift_missing",
-    ]
+    expected_missing_metrics = ["nutation_angle_error:paper_reference_curve_missing"]
     if observed.get("missing_paper_metrics") != expected_missing_metrics:
         fail("Phase 51 heavy-top comparison missing paper metrics changed")
+    paper_metric_statuses = observed.get("paper_metric_statuses")
+    if not isinstance(paper_metric_statuses, dict):
+        fail("Phase 51 heavy-top paper_metric_statuses must be a mapping")
+    if (
+        paper_metric_statuses.get("precession_velocity_error", {}).get("status")
+        != "diagnostic_available"
+    ):
+        fail("Phase 51 heavy-top precession metric status must be diagnostic_available")
+    if paper_metric_statuses.get("energy_drift", {}).get("status") != "diagnostic_available":
+        fail("Phase 51 heavy-top energy metric status must be diagnostic_available")
     blockers = observed.get("blocking_reasons")
     if not isinstance(blockers, list):
         fail("Phase 51 heavy-top comparison blockers must be a list")
@@ -7614,6 +7630,220 @@ def validate_phase51_record() -> None:
                 fail("Phase 51 heavy-top conflict_note must not keep missing comparison blocker")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 51 must not pass experiment.* claims")
+
+
+def validate_phase52_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase52-heavy-top-mabd-metrics.md"
+    ).read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\npassed_for_heavy_top_mabd_metric_diagnostics",
+        "phase52-heavy-top-mabd-metrics",
+        "ef53522077c53b4842f5198938dd5c24190e7863",
+        VENDORED_NEWTON_COMMIT,
+        "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+        "9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324",
+        "reports/experiment_matrix/single_body_heavy_top_comparison.json",
+        "522d0dbea2eacbe1f334400dbcba4bd885ba26cecd50d239463048f7e24ec8de",
+        "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
+        "41418e964dd9e7fba1516f420fa97ced8cfaf9157d552d9072f85fcbb08f564c",
+        "mabd_cpu_oracle_heavy_top_newton_lane",
+        "heavy_top_multilane_comparison_development",
+        "precession_velocity_rad_s",
+        "diagnostic relative energy drift: `-0.0014033729823068706`",
+        "MABD precession velocity status: `diagnostic_available`",
+        "MABD energy drift status: `diagnostic_available`",
+        "nutation_angle_error:paper_reference_curve_missing",
+        "sample_time_grid_mismatch",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.heavy_top` remains intended",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_heavy_top_mabd tests.test_heavy_top_comparison_reports",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c \"import newton; print(newton.__file__)\"",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 52 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE52",
+        "phase52-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 52 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "passed heavy-top experiment",
+        "heavy-top experiment passed",
+        "paper-faithful heavy-top inertia is verified",
+        "raw curve agreement passed",
+        "abd-vs-rbd comparison passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 52 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary_text = " ".join(boundary_text.split())
+    for snippet in (
+        "This repository contains Phase 52 heavy-top MABD diagnostic metric evidence",
+        "Phase 52 verifies that the heavy-top `mabd_newton` diagnostic report records",
+        "finite per-sample `precession_velocity_rad_s`",
+        "`energy_initial`, `energy_final`, and `relative_energy_drift`",
+        "no longer marks MABD precession velocity or MABD energy drift as missing",
+        "`nutation_angle_error:paper_reference_curve_missing`",
+        "Phase 52 does not verify a passed heavy-top experiment",
+        "Phase 52 heavy-top MABD metrics",
+    ):
+        if snippet not in normalized_boundary_text:
+            fail(f"Phase 52 claim boundary missing: {snippet}")
+
+    try:
+        config = load_heavy_top_config(ROOT / "configs/experiments/single_body_heavy_top.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_heavy_top_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 52 heavy-top config validation failed: {exc}")
+
+    mabd_path = "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json"
+    comparison_path = "reports/experiment_matrix/single_body_heavy_top_comparison.json"
+    rk4_path = "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json"
+    mabd_report = load_claim_report(ROOT / mabd_path)
+    comparison_report = load_claim_report(ROOT / comparison_path)
+    rk4_report = load_claim_report(ROOT / rk4_path)
+
+    for label, path, report in (
+        ("MABD", mabd_path, mabd_report),
+        ("comparison", comparison_path, comparison_report),
+        ("RK4", rk4_path, rk4_report),
+    ):
+        if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+            fail(f"Phase 52 {label} report source_commit must not be a placeholder")
+        if report.source_commit not in text:
+            fail(f"Phase 52 record must list {label} report source_commit")
+        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 52 {label} report vendored Newton commit changed")
+        if report.status.value != "incomplete":
+            fail(f"Phase 52 {label} report must remain incomplete")
+        if _record_sha256_for_artifact(text, path) != sha256_file(ROOT / path):
+            fail(f"Phase 52 {label} report sha256 mismatch")
+        if report.observed.get("full_experiment_claim_passed") is not False:
+            fail(f"Phase 52 {label} report must not pass full experiment claim")
+
+    if mabd_report.claim_id != config.claim_id or mabd_report.scene_id != config.scene_id:
+        fail("Phase 52 MABD report identity does not match config")
+    if comparison_report.claim_id != config.claim_id or comparison_report.scene_id != config.scene_id:
+        fail("Phase 52 comparison report identity does not match config")
+    if mabd_report.baseline_lane != "mabd_newton":
+        fail("Phase 52 MABD baseline lane changed")
+    if comparison_report.baseline_lane != "heavy_top_comparison_protocol":
+        fail("Phase 52 comparison baseline lane changed")
+    if mabd_report.solver_mode != "mabd_cpu_oracle_heavy_top_newton_lane":
+        fail("Phase 52 MABD solver mode changed")
+    if comparison_report.solver_mode != "heavy_top_multilane_comparison_development":
+        fail("Phase 52 comparison solver mode changed")
+
+    rollout = roll_out_heavy_top_mabd_model_derived(config)
+    observed = mabd_report.observed
+    for key, expected, atol in (
+        ("energy_initial", rollout.energy_initial, 1.0e-12),
+        ("energy_final", rollout.energy_final, 1.0e-12),
+        ("relative_energy_drift", rollout.relative_energy_drift, 1.0e-14),
+        ("max_abs_precession_velocity_rad_s", rollout.max_abs_precession_velocity_rad_s, 1.0e-12),
+    ):
+        actual = _require_finite_scalar(observed.get(key), f"Phase 52 MABD {key}")
+        if not np.isclose(actual, float(expected), rtol=0.0, atol=atol):
+            fail(f"Phase 52 MABD {key} does not match recomputed rollout")
+    if observed.get("threshold_violations") != []:
+        fail("Phase 52 MABD threshold_violations changed")
+
+    samples = observed.get("precession_nutation_samples")
+    if not isinstance(samples, list) or len(samples) != config.mabd_newton.sample_count:
+        fail("Phase 52 MABD samples changed")
+    for index, sample in enumerate(samples):
+        if not isinstance(sample, dict):
+            fail("Phase 52 MABD sample must be a mapping")
+        expected_sample = rollout.samples[index]
+        actual_velocity = _require_finite_scalar(
+            sample.get("precession_velocity_rad_s"),
+            f"Phase 52 sample {index} precession_velocity_rad_s",
+        )
+        if not np.isclose(
+            actual_velocity,
+            expected_sample.precession_velocity_rad_s,
+            rtol=0.0,
+            atol=1.0e-12,
+        ):
+            fail(f"Phase 52 MABD sample {index} precession velocity changed")
+
+    comparison_observed = comparison_report.observed
+    if comparison_observed.get("missing_paper_metrics") != [
+        "nutation_angle_error:paper_reference_curve_missing"
+    ]:
+        fail("Phase 52 comparison missing_paper_metrics changed")
+    metric_statuses = comparison_observed.get("paper_metric_statuses")
+    if not isinstance(metric_statuses, dict):
+        fail("Phase 52 comparison paper_metric_statuses must be a mapping")
+    if metric_statuses.get("precession_velocity_error", {}).get("status") != "diagnostic_available":
+        fail("Phase 52 comparison precession velocity status changed")
+    if metric_statuses.get("energy_drift", {}).get("status") != "diagnostic_available":
+        fail("Phase 52 comparison energy status changed")
+    lane_metrics = comparison_observed.get("lane_metrics")
+    if not isinstance(lane_metrics, dict):
+        fail("Phase 52 comparison lane_metrics must be a mapping")
+    if _require_finite_scalar(
+        lane_metrics.get("mabd_newton", {}).get("energy_drift"),
+        "Phase 52 comparison MABD energy_drift",
+    ) != _require_finite_scalar(
+        observed.get("relative_energy_drift"),
+        "Phase 52 MABD relative_energy_drift",
+    ):
+        fail("Phase 52 comparison MABD energy_drift does not mirror MABD report")
+    for blocker in (
+        "exact_heavy_top_inertia_unknown",
+        "exact_heavy_top_geometry_unknown",
+        "raw_heavy_top_reference_curve_data_missing",
+        "mabd_newton_report_incomplete",
+        "heavy_top_comparison_report_incomplete",
+        "heavy_top_timing_evidence_missing",
+        "heavy_top_comparison_pass_gate_not_enabled",
+        "sample_time_grid_mismatch",
+    ):
+        if blocker not in comparison_observed.get("blocking_reasons", []):
+            fail(f"Phase 52 comparison blocker missing: {blocker}")
+
+    provenance = comparison_observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 52 comparison input_report_provenance must be a mapping")
+    for lane, path, report in (
+        ("rbd_rk4_reference", rk4_path, rk4_report),
+        ("mabd_newton", mabd_path, mabd_report),
+    ):
+        lane_provenance = provenance.get(lane)
+        if not isinstance(lane_provenance, dict):
+            fail(f"Phase 52 comparison missing {lane} provenance")
+        if lane_provenance.get("sha256") != sha256_file(ROOT / path):
+            fail(f"Phase 52 comparison {lane} provenance sha256 mismatch")
+        if lane_provenance.get("source_commit") != report.source_commit:
+            fail(f"Phase 52 comparison {lane} provenance source_commit mismatch")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.heavy_top":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 52 must keep heavy-top experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 52 must not pass experiment.* claims")
 
 
 def validate_paper_claims() -> None:
@@ -7896,13 +8126,14 @@ def main() -> int:
     validate_phase49_record()
     validate_phase50_record()
     validate_phase51_record()
+    validate_phase52_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52 "
         "docs/provenance validation passed"
     )
     return 0
