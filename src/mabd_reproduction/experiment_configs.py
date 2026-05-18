@@ -28,6 +28,7 @@ class SpinningBoxPaperHorizonConfig:
     contact_response_output_report: str
     normal_constraint_output_report: str
     decoupled_twist_output_report: str
+    figure_curve_output_report: str
     figure_pdf_sha256: str
     figure_text_source: str
     thresholds: dict[str, float]
@@ -662,6 +663,7 @@ def _require_paper_horizon(data: dict[str, Any]) -> SpinningBoxPaperHorizonConfi
         contact_response_output_report=_require_str(horizon, "contact_response_output_report"),
         normal_constraint_output_report=_require_str(horizon, "normal_constraint_output_report"),
         decoupled_twist_output_report=_require_str(horizon, "decoupled_twist_output_report"),
+        figure_curve_output_report=_require_str(horizon, "figure_curve_output_report"),
         figure_pdf_sha256=_require_str(horizon, "figure_pdf_sha256"),
         figure_text_source=_require_str(horizon, "figure_text_source"),
         thresholds=thresholds,
@@ -1241,6 +1243,24 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
         raise ExperimentRunConfigError("matrix reproduction_status must remain blocked_by_baselines")
     if "energy_drift" not in entry.metrics or "energy_drift" not in config.thresholds:
         raise ExperimentRunConfigError("energy_drift metric must be present in matrix and thresholds")
+    expected_prefix = Path(entry.output_report).with_suffix("").as_posix() + "_"
+    if (
+        not config.paper_horizon.figure_curve_output_report.startswith(expected_prefix)
+        or not config.paper_horizon.figure_curve_output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "paper_horizon.figure_curve_output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.paper_horizon.figure_curve_output_report in (
+        config.output_report,
+        config.paper_horizon.output_report,
+        config.paper_horizon.contact_response_output_report,
+        config.paper_horizon.normal_constraint_output_report,
+        config.paper_horizon.decoupled_twist_output_report,
+    ):
+        raise ExperimentRunConfigError(
+            "paper_horizon.figure_curve_output_report must be separate from lane reports"
+        )
 
 
 def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig:

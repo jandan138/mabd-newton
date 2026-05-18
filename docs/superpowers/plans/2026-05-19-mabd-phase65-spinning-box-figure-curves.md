@@ -73,18 +73,25 @@ class SpinningBoxDigitizationTests(unittest.TestCase):
         self.assertEqual(curves.source_pdf_sha256, SPINNING_BOX_FIGURE_PDF_SHA256)
         self.assertEqual(curves.render_dpi, RENDER_DPI)
         self.assertEqual(curves.rendered_size_px, EXPECTED_RENDERED_SIZE_PX)
+        self.assertRegex(curves.rendered_image_sha256, r"^[0-9a-f]{64}$")
         self.assertEqual(curves.renderer_version, "pdftocairo 22.02.0")
         self.assertEqual(curves.sample_count, 31)
         self.assertEqual(curves.figure_curve_scope, "paper_roll_cube_color_family_digitization")
+        self.assertEqual(curves.color_assignment_policy, "nearest_color_family_within_threshold")
         self.assertEqual(curves.curve_identity_status, "color_family_not_legend_entry")
         self.assertEqual(curves.curve_agreement_status, "not_evaluated")
-        self.assertTrue(curves.reference_curve_available)
+        self.assertTrue(curves.color_family_curve_available)
+        self.assertFalse(curves.paper_reference_legend_identity_available)
         self.assertEqual(set(curves.angular_momentum_curves), {"blue", "orange", "green", "gray", "brown"})
         self.assertEqual(set(curves.linear_momentum_curves), {"blue", "orange", "green", "gray", "brown"})
 
         for curve in (*curves.angular_momentum_curves.values(), *curves.linear_momentum_curves.values()):
             self.assertTrue(curve.extraction_success)
             self.assertGreaterEqual(curve.sample_coverage, 0.80)
+            self.assertGreaterEqual(curve.matched_sample_count, 25)
+            self.assertLessEqual(curve.interpolated_sample_count, 6)
+            self.assertLessEqual(curve.longest_missing_run, 5)
+            self.assertGreater(curve.source_pixel_count, 0)
             self.assertEqual(curve.curve_identity_status, "color_family_not_legend_entry")
             self.assertEqual(curve.axis_range, (95.0, 100.0))
             self.assertAlmostEqual(curve.samples[0]["time_s"], 0.0)
@@ -121,17 +128,23 @@ class SpinningBoxDigitizationTests(unittest.TestCase):
         self.assertEqual(loaded.observed["figure_curve_scope"], "paper_roll_cube_color_family_digitization")
         self.assertEqual(loaded.observed["source_pdf_sha256"], SPINNING_BOX_FIGURE_PDF_SHA256)
         self.assertEqual(loaded.observed["rendered_size_px"], list(EXPECTED_RENDERED_SIZE_PX))
-        self.assertTrue(loaded.observed["reference_curve_available"])
+        self.assertRegex(loaded.observed["rendered_image_sha256"], r"^[0-9a-f]{64}$")
+        self.assertTrue(loaded.observed["color_family_curve_available"])
+        self.assertFalse(loaded.observed["paper_reference_legend_identity_available"])
+        self.assertEqual(loaded.observed["color_assignment_policy"], "nearest_color_family_within_threshold")
         self.assertEqual(loaded.observed["curve_identity_status"], "color_family_not_legend_entry")
         self.assertEqual(loaded.observed["curve_agreement_status"], "not_evaluated")
         self.assertEqual(
             loaded.observed["blocking_reasons"],
             [
                 "spinning_box_figure_curve_agreement_not_evaluated",
+                "spinning_box_reference_legend_identity_not_evaluated",
+                "spinning_box_line_style_split_not_evaluated",
                 "mabd_newton_report_incomplete",
                 "spinning_box_comparison_pass_gate_not_enabled",
             ],
         )
+        self.assertNotIn("reference_curve_available", loaded.observed)
         self.assertNotIn("lane_gate_status", loaded.observed)
         self.assertNotIn(".png", str(loaded.raw_outputs))
         self.assertNotIn(".pdf", str(loaded.raw_outputs))
@@ -192,6 +205,10 @@ class SpinningBoxDigitizedCurve:
     plot_box_px: tuple[int, int, int, int]
     extraction_success: bool
     sample_coverage: float
+    matched_sample_count: int
+    interpolated_sample_count: int
+    longest_missing_run: int
+    source_pixel_count: int
     curve_identity_status: str
     samples: tuple[dict[str, float], ...]
 
@@ -204,9 +221,12 @@ class SpinningBoxFigureCurves:
     renderer_version: str
     render_dpi: int
     rendered_size_px: tuple[int, int]
+    rendered_image_sha256: str
     sample_count: int
     figure_curve_scope: str
-    reference_curve_available: bool
+    color_family_curve_available: bool
+    paper_reference_legend_identity_available: bool
+    color_assignment_policy: str
     curve_identity_status: str
     curve_agreement_status: str
     angular_momentum_curves: dict[str, SpinningBoxDigitizedCurve]
@@ -243,10 +263,13 @@ Implement `digitize_spinning_box_figure_curves(sample_count=101)` by:
 - checking the PDF SHA256 before rendering;
 - rendering with `pdftocairo -png -singlefile -r 300`;
 - checking the output image size equals `(3570, 2187)`;
-- sampling each color family in both plot boxes;
+- recording the rendered PNG SHA256 before deleting the temporary raster;
+- assigning pixels to the nearest configured color family within `RGB_DISTANCE_THRESHOLD`;
+- sampling each assigned color family in both plot boxes;
 - mapping x to `time_s` over `0..10`;
 - mapping y to `value` over `95..100`;
 - linearly interpolating missing sample columns when at least one source column was detected;
+- recording matched sample count, interpolated sample count, longest missing run, and source pixel count;
 - marking extraction successful only when sample coverage is at least `0.80`.
 
 Use the existing heavy-top/T-handle helper style: `subprocess.run(..., check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)`, `PIL.Image.open(...).convert("RGB")`, NumPy RGB distance masks, and compact `dict[str, float]` samples.
@@ -268,6 +291,8 @@ The `observed` payload must include the fields required by the spec, compact ser
 ```python
 [
     "spinning_box_figure_curve_agreement_not_evaluated",
+    "spinning_box_reference_legend_identity_not_evaluated",
+    "spinning_box_line_style_split_not_evaluated",
     "mabd_newton_report_incomplete",
     "spinning_box_comparison_pass_gate_not_enabled",
 ]
@@ -309,16 +334,18 @@ def test_run_spinning_box_figure_curves_writes_report(self) -> None:
 
     with TemporaryDirectory() as tmpdir:
         output = Path(tmpdir) / "spinning_box_figure_curves.json"
-        summary = run_spinning_box_figure_curves(
+        result = run_spinning_box_figure_curves(
             config_path=SPINNING_BOX_CONFIG_PATH,
+            matrix_path=MATRIX_PATH,
             output_path=output,
             source_commit="test-source",
             vendored_newton_commit="test-newton",
         )
         loaded = load_claim_report(output)
 
-    self.assertEqual(summary["claim_id"], "experiment.single_body.spinning_box")
-    self.assertEqual(summary["status"], "incomplete")
+    self.assertEqual(result.claim_id, "experiment.single_body.spinning_box")
+    self.assertEqual(result.status.value, "incomplete")
+    self.assertEqual(result.report_path, output)
     self.assertEqual(loaded.baseline_lane, "paper_figure_digitization")
     self.assertEqual(loaded.solver_mode, "spinning_box_paper_figure_curve_digitization")
 
@@ -342,7 +369,7 @@ def test_run_experiment_cli_dispatches_spinning_box_figure_curves(self) -> None:
                 "test-newton",
             ],
             cwd=ROOT,
-            env=_test_env(),
+            env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -354,6 +381,18 @@ def test_run_experiment_cli_dispatches_spinning_box_figure_curves(self) -> None:
     self.assertEqual(summary["claim_id"], "experiment.single_body.spinning_box")
     self.assertEqual(summary["status"], "incomplete")
     self.assertEqual(loaded.backend, "paper_pdf_digitization")
+
+
+def test_run_spinning_box_figure_curves_requires_explicit_output(self) -> None:
+    from mabd_reproduction.experiment_runner import run_spinning_box_figure_curves
+
+    with self.assertRaisesRegex(ValueError, "spinning_box_figure_curves requires --output"):
+        run_spinning_box_figure_curves(
+            config_path=SPINNING_BOX_CONFIG_PATH,
+            matrix_path=MATRIX_PATH,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
 ```
 
 - [ ] **Step 2: Run RED**
@@ -368,7 +407,7 @@ Expected: fail because the runner function and CLI lane do not exist.
 
 - [ ] **Step 3: Implement runner**
 
-Add `run_spinning_box_figure_curves(...)` in `src/mabd_reproduction/experiment_runner.py`. It must load the spinning-box config, require an explicit `output_path`, call `write_spinning_box_figure_curve_report`, and return `report.to_summary()`.
+Add `run_spinning_box_figure_curves(...)` in `src/mabd_reproduction/experiment_runner.py`. It must load the spinning-box config, load the experiment matrix, validate the config against the matrix, require an explicit `output_path`, reject `output_root`, call `write_spinning_box_figure_curve_report`, and return `ExperimentRunResult`.
 
 - [ ] **Step 4: Implement CLI lane**
 
@@ -448,7 +487,17 @@ color-family momentum curves from the paper figure only.
 - Plan: `docs/superpowers/plans/2026-05-19-mabd-phase65-spinning-box-figure-curves.md`
 - Report: `reports/experiment_matrix/single_body_spinning_box_figure_curves.json`
 - Report SHA256: the exact `sha256sum` output from Step 2
+- Source commit: the `source_commit` recorded in the report
+- Vendored Newton commit: the `vendored_newton_commit` recorded in the report
+- Paper source version: `2603.08079v2`
+- Config: `configs/experiments/single_body_spinning_box.yaml`
+- Backend: `paper_pdf_digitization`
 - Paper PDF SHA256: `7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80`
+- Rendered image SHA256: the `rendered_image_sha256` recorded in the report
+- Render command starts with `pdftocairo -png -singlefile -r 300 /tmp/mabd-paper/source/images/cube/roll_cube.pdf` and ends with a temporary output prefix.
+- Report status: `incomplete`
+- Curve identity status: `color_family_not_legend_entry`
+- Curve agreement status: `not_evaluated`
 
 ## Claim Boundary
 
@@ -479,9 +528,17 @@ Update `scripts/validate_docs.py` and `tests/test_phase0_bootstrap.py` so valida
 - report `status == "incomplete"`;
 - solver mode `spinning_box_paper_figure_curve_digitization`;
 - backend `paper_pdf_digitization`;
+- exact source PDF path and SHA256;
+- exact render command prefix, render DPI, renderer version, rendered size, and rendered image SHA256 shape;
+- `color_family_curve_available == true`;
+- `paper_reference_legend_identity_available == false`;
+- `color_assignment_policy == "nearest_color_family_within_threshold"`;
+- `curve_identity_status == "color_family_not_legend_entry"`;
+- `curve_agreement_status == "not_evaluated"`;
 - no `lane_gate_status`;
 - exact blocker list;
-- `paper-claims.yaml` still has `experiment.single_body.spinning_box.status: intended`.
+- every curve has finite samples, nonzero source pixel count, matched/interpolated/gap statistics, and coverage at or above `0.80`;
+- `paper-claims.yaml` still has `experiment.single_body.spinning_box.reproduction_status: intended`.
 
 - [ ] **Step 6: Run focused provenance tests**
 

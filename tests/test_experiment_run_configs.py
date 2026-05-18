@@ -115,6 +115,10 @@ class ExperimentRunConfigTests(unittest.TestCase):
             "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json",
         )
         self.assertEqual(
+            config.paper_horizon.figure_curve_output_report,
+            "reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
+        )
+        self.assertEqual(
             config.paper_horizon.figure_pdf_sha256,
             "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
         )
@@ -916,6 +920,32 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ExperimentRunConfigError, "paper_values"):
             validate_spinning_box_config_against_matrix(drifted, matrix)
+
+    def test_spinning_box_config_matrix_check_rejects_bad_figure_curve_output(self) -> None:
+        source = self._config_mapping()
+        source["paper_horizon"]["figure_curve_output_report"] = (
+            "reports/experiment_matrix/unrelated_spinning_box_figure_curves.json"
+        )
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, source)
+            config = load_spinning_box_config(path)
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "figure_curve_output_report"):
+                validate_spinning_box_config_against_matrix(config, matrix)
+
+    def test_spinning_box_config_matrix_check_rejects_figure_curve_output_reuse(self) -> None:
+        source = self._config_mapping()
+        source["paper_horizon"]["figure_curve_output_report"] = source["paper_horizon"][
+            "decoupled_twist_output_report"
+        ]
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, source)
+            config = load_spinning_box_config(path)
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "separate"):
+                validate_spinning_box_config_against_matrix(config, matrix)
 
     def test_spinning_box_config_rejects_passed_experiment_status(self) -> None:
         with TemporaryDirectory() as tmpdir:

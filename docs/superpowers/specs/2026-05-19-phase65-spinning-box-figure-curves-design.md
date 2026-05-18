@@ -46,9 +46,11 @@ the existing figure digitizers:
 - momentum axis range: `95..100`;
 - color families: blue, orange, green, gray, and brown.
 
-The digitizer samples each color family at a configurable sample count. Missing
-columns are linearly interpolated if there is at least one detected source
-pixel, as in the existing digitizers. Every curve records:
+The digitizer samples each color family at a configurable sample count. Pixels
+are assigned to the nearest configured color family within the threshold so
+nearby gray and brown centers cannot both consume the same source pixel.
+Missing columns are linearly interpolated if there is at least one detected
+source pixel, as in the existing digitizers. Every curve records:
 
 - metric name;
 - color family;
@@ -57,6 +59,10 @@ pixel, as in the existing digitizers. Every curve records:
 - axis range;
 - extraction success;
 - sample coverage;
+- matched sample count;
+- interpolated sample count;
+- longest missing sample run;
+- source pixel count;
 - curve identity status;
 - samples.
 
@@ -96,14 +102,19 @@ Observed payload requirements:
 - `renderer_version`;
 - `render_dpi`;
 - `rendered_size_px`;
+- `rendered_image_sha256`;
 - `sample_count`;
-- `reference_curve_available = true` when both panels meet coverage;
+- `color_family_curve_available = true` when both panels meet coverage;
+- `paper_reference_legend_identity_available = false`;
+- `color_assignment_policy = "nearest_color_family_within_threshold"`;
 - `curve_identity_status = "color_family_not_legend_entry"`;
 - `curve_agreement_status = "not_evaluated"`;
 - `angular_momentum_curves`;
 - `linear_momentum_curves`;
 - `blocking_reasons` must include:
   - `spinning_box_figure_curve_agreement_not_evaluated`;
+  - `spinning_box_reference_legend_identity_not_evaluated`;
+  - `spinning_box_line_style_split_not_evaluated`;
   - `mabd_newton_report_incomplete`;
   - `spinning_box_comparison_pass_gate_not_enabled`.
 
