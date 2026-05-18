@@ -20,6 +20,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 
 <ProblemCard title="它解决的问题">
@@ -34,6 +38,18 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>区分状态词：</strong>读懂 conceptual、passed、incomplete 和 intended 之间的证据差别。</li>
+  <li><strong>按证据查证：</strong>用 claim map、claim boundaries 和 dated records 检查一个仓库说法。</li>
+  <li><strong>守住边界：</strong>避免把学习页、局部记录或计划目标升级成完整复现结论。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>已读 start-here，知道本学习站点同时包含概念解释和仓库证据提示。</li>
+  <li>知道仓库中 `docs/reference/` 和 `docs/records/` 分别保存边界、映射和记录。</li>
+  <li>接受 incomplete 是诚实边界，不是可以忽略的措辞。</li>
+</PrereqBox>
 
 ## 先看边界，再看证据
 
@@ -74,6 +90,17 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
     return "passed within the recorded scope"`}
 </PseudoCode>
 
+<CheckpointQuiz>
+  <details>
+    <summary>没有 records 时，`claimStatus` 应该怎么读？</summary>
+    <p>应把它读成概念说明、未验证或计划方向，而不是仓库已经证明的结论。能否升级必须回到 claim map、records 和验证结果。</p>
+  </details>
+  <details>
+    <summary>`passed` 是否等于完整论文复现？</summary>
+    <p>不等于。`passed` 只表示对应记录范围内通过；是否构成完整论文复现，还要看所有必要 paper claims、实验配置、对照和报告是否齐备。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="Claim boundaries" status="source-of-truth boundary document" href="https://github.com/jandan138/mabd-newton/blob/main/docs/reference/claim-boundaries.md" />
 
 <RepoEvidenceCard title="Paper claim mapping" status="machine-checkable claim map" href="https://github.com/jandan138/mabd-newton/blob/main/docs/reference/paper-claims.yaml" />
@@ -83,6 +110,10 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 <PitfallCard title="incomplete 不是失败遮羞布">
 把报告标成 incomplete 是诚实进展：它告诉读者已经做了什么、还缺什么、为什么不能升级声明。相比模糊地说“差不多完成”，明确 incomplete 更有利于复现和后续审计。
 </PitfallCard>
+
+<PracticePrompt title="动手练习">
+打开 `docs/reference/claim-boundaries.md`，摘录一条 forbidden claim，并把它改写成只陈述记录已支持范围的安全说法。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>

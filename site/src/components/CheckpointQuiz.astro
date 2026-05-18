@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = "检查理解" } = Astro.props;
+---
+
+<section class="tutorial-card tutorial-card--checkpoint">
+  <h3>{title}</h3>
+  <div class="checkpoint-list">
+    <slot />
+  </div>
+</section>

@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = "开始前确认" } = Astro.props;
+---
+
+<section class="tutorial-card tutorial-card--prereq">
+  <h3>{title}</h3>
+  <ul>
+    <slot />
+  </ul>
+</section>

@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import rigidVsAffineDof from "../../assets/diagrams/rigid-vs-affine-dof.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ import rigidVsAffineDof from "../../assets/diagrams/rigid-vs-affine-dof.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>解释自由度：</strong>说明三维刚体为什么是 6 DOF。</li>
+  <li><strong>区分速度：</strong>把质心位置速度和角速度分开理解。</li>
+  <li><strong>建立参照：</strong>说出刚体模型如何帮助理解 ABD 多出的自由度。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>知道位置和速度分别描述“在哪里”和“怎样变化”。</li>
+  <li>见过旋转的基本概念，能接受朝向不是普通位置坐标。</li>
+  <li>已经读过 `affine-state` 会更容易对比刚体与仿射体。</li>
+</PrereqBox>
 
 ## 6 DOF：三个位置，加三个姿态
 
@@ -71,7 +87,22 @@ angular_momentum = inertia_world @ omega`}
 四元数用 4 个数字，旋转矩阵用 9 个数字，但三维旋转本身只有 3 个自由度。额外数字通常带有约束，例如单位四元数或正交矩阵。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>为什么 3D 刚体的旋转不是 9 DOF？</summary>
+    <p>旋转矩阵虽然有 9 个数字，但它的列向量必须保持单位长度且彼此正交，这些约束把独立旋转自由度限制为 3 个。</p>
+  </details>
+  <details>
+    <summary>ABD 相比刚体多表达了什么？</summary>
+    <p>刚体只表达平移和旋转；仿射体的 `A` 还可以表达拉伸、缩放和剪切，因此能用少量自由度描述更丰富的整体形变。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="本页只提供物理参照" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+列出一个刚体状态至少需要存的变量，再列出一个仿射体状态 `q = [A, t]` 需要存的变量，对比哪些变量负责位置、哪些变量负责形状或朝向。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>

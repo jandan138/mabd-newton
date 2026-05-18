@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import polarDecomposition from "../../assets/diagrams/polar-decomposition.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ import polarDecomposition from "../../assets/diagrams/polar-decomposition.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>解释动机：</strong>说清楚为什么仿射变形里需要单独提取旋转。</li>
+  <li><strong>区分角色：</strong>把 polar decomposition 中的 `R` 和 `S` 分别对应到整体旋转与拉伸/剪切。</li>
+  <li><strong>判断响应：</strong>说明整体旋转不应被当作弹性拉伸来惩罚。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>已经读过 `affine-state`，知道 `A` 和 `t` 如何描述仿射状态。</li>
+  <li>知道矩阵既可以表达旋转，也可以表达拉伸和剪切。</li>
+  <li>接受本课只是数学工具解释，不是仓库实现或复现实验的证据。</li>
+</PrereqBox>
 
 ## 变形里混着什么
 
@@ -69,7 +85,22 @@ stretch = Vt.T @ diag(sigma) @ Vt`}
 机器学习里常把 SVD 和低秩压缩联系起来；本课语境下，它主要是几何分离工具，用来把仿射变形拆成方向、尺度和旋转，而不是为了压缩数据。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>纯旋转为什么不该产生弹性力？</summary>
+    <p>因为纯旋转只改变物体朝向，不改变局部长度和角度。如果弹性模型惩罚纯旋转，就会把整体刚性运动误记成材料被拉伸。</p>
+  </details>
+  <details>
+    <summary>`A = R S` 中的 `S` 表示什么？</summary>
+    <p>`S` 表示去掉整体旋转后剩下的对称拉伸部分，可用来理解长度变化、压缩和剪切相关的真实形变。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="本页解释数学工具" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+在纸上画一个只旋转的正方形和一个被剪切的正方形，标出哪一个只是改变朝向、哪一个需要弹性响应，并用一句话说明理由。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>

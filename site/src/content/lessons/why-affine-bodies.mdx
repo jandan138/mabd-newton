@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import modelingSpectrum from "../../assets/diagrams/modeling-spectrum.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ import modelingSpectrum from "../../assets/diagrams/modeling-spectrum.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>区分模型：</strong>说清粒子、刚体、仿射体和 FEM 各自保留了什么形状信息。</li>
+  <li><strong>定位 ABD：</strong>解释 ABD 为什么位于刚体和细网格 FEM 之间。</li>
+  <li><strong>判断适用性：</strong>在需要整体形变但不需要局部细节时，识别少量自由度的价值。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>理解位置和形状是两件相关但不同的事。</li>
+  <li>见过矩阵乘法，知道一个矩阵可以作用到一个点或向量上。</li>
+  <li>已经读过 start-here，知道本页只建立概念位置，不提升仓库实现声明。</li>
+</PrereqBox>
 
 ## 从一个立方体开始
 
@@ -66,7 +82,22 @@ import modelingSpectrum from "../../assets/diagrams/modeling-spectrum.png";
 ABD 的优势是用较少自由度表达整体形变；它并不自动拥有 FEM 的局部细节，也不等于本仓库已经完成 M-ABD 方法实现。具体能力必须看实现、测试和记录。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>ABD 为什么不是 FEM？</summary>
+    <p>ABD 用一个整体仿射变换描述物体的大尺度形变；FEM 通常把物体切成许多单元，让局部形变有更多自由度。两者状态规模和能表达的细节不同。</p>
+  </details>
+  <details>
+    <summary>仿射体相比刚体多出了哪些自由度？</summary>
+    <p>刚体只允许整体平移和旋转；仿射体的矩阵还可以表达整体拉伸、缩放和剪切，所以形状不再完全锁死。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="本页只建立建模位置" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+设想一个软橡胶块被轻轻压扁、但不需要模拟表面每一道细小皱褶。判断粒子、刚体、仿射体、FEM 哪个表示最合适，并用两三句话说明你的理由。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>

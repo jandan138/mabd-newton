@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import matrixGridTransform from "../../assets/diagrams/matrix-grid-transform.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ ABD 里的位置、速度、力、旋转和形变都会变成向量或矩阵。�
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>连接两种视角：</strong>把向量同时看成几何箭头和程序数组。</li>
+  <li><strong>读懂矩阵列：</strong>用基向量解释矩阵每一列为什么描述一个方向的去处。</li>
+  <li><strong>追踪数据流：</strong>把坐标变换翻译成输入数组、矩阵乘法和输出数组。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>会读二维坐标，例如 `[3, 1]` 表示横向和纵向两个分量。</li>
+  <li>知道数组索引和数组里的数字顺序会影响程序含义。</li>
+  <li>可以接受几何图像和代码数组是同一对象的两种视角。</li>
+</PrereqBox>
 
 ## 向量：箭头，也是数字列表
 
@@ -74,7 +90,22 @@ A @ e_y  # -> [0, 1], y 方向不变`}
 矩阵乘法的行列规则很重要，但只背规则会丢掉几何意义。读 ABD 公式时，优先问“这个乘法把哪个空间里的箭头变到哪个空间”。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>为什么矩阵的列可以像基向量一样读？</summary>
+    <p>因为矩阵乘以单位 x、y、z 方向时，输出正好是对应列。每一列都告诉你原来的一个基方向被送到了哪里。</p>
+  </details>
+  <details>
+    <summary>`x_prime = A @ x` 在代码里至少需要哪些输入？</summary>
+    <p>需要矩阵 `A`、输入向量 `x`，以及两者一致的维度约定。程序还要知道它们代表哪个坐标系中的量，才能正确解释输出 `x_prime`。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="数学基础页不等于实现证据" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+手写一个 2x2 剪切矩阵，例如 `[[1, 0.5], [0, 1]]`，分别作用到点 `[1, 0]` 和 `[0, 1]`。算出结果后，用一句话说明网格发生了什么变化。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>
