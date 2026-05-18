@@ -117,18 +117,18 @@ delta_q, lambda = solve_kkt_system(H, residual, constraints)`}
 <RepoEvidenceCard title="本页解释 M-ABD 多体概念" status="本课为 conceptual" />
 
 <PracticePrompt title="动手练习">
-画三个仿射体组成三角闭环，给三条 joint 编号，并列出每条 joint 会触碰哪两个 body block。
+画三个仿射体组成三角闭环，给三条关节编号，并列出每条关节会触碰哪两个物体块。
 </PracticePrompt>
 
-<WorkedExercise title="带答案的练习：三角 loop 的 block 触碰关系">
-  <p>画三块 toy stamps `B1`、`B2`、`B3` 成三角形，用 `J12`、`J23`、`J31` 连接相邻 marked points，并列出每条 joint 的两个 body blocks。</p>
+<WorkedExercise title="带答案的练习：三角闭环的块触碰关系">
+  <p>画三块软橡胶印章 `B1`、`B2`、`B3` 成三角形，用 `J12`、`J23`、`J31` 连接相邻标记点，并列出每条关节对应的两个物体块。</p>
   <details>
     <summary>提示</summary>
-    <p>每条边只看它两端的 stamps；闭环来自三条边合起来，不是单条 joint 触碰所有 body。</p>
+    <p>每条边只看它两端的印章；闭环来自三条边合起来，不是单条关节触碰所有物体。</p>
   </details>
   <details>
     <summary>参考答案</summary>
-    <p>`J12` 触碰 `B1` 和 `B2` 的 `q` blocks，`J23` 触碰 `B2` 和 `B3`，`J31` 触碰 `B3` 和 `B1`。因此对应的 `G` 行在这两个相关 body blocks 上有非零块，在第三个 body block 上为零。这个练习只说明 loop 拓扑和稀疏 block 直觉，不声称仓库已经完成完整 M-ABD 拓扑求解器。</p>
+    <p>`J12` 触碰 `B1` 和 `B2` 的 `q` 块，`J23` 触碰 `B2` 和 `B3`，`J31` 触碰 `B3` 和 `B1`。因此对应的 `G` 行在这两个相关物体块上有非零块，在第三个物体块上为零。这个练习只说明闭环拓扑和稀疏块直觉，不声称仓库已经完成完整 M-ABD 拓扑求解器。</p>
   </details>
 </WorkedExercise>
 
