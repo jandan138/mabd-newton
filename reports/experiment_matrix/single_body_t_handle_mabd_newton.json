@@ -189,9 +189,7 @@
       3.0
     ],
     "relative_energy_drift": -2.2352228624317797e-12,
-    "required_missing_lanes": [
-      "mabd_newton"
-    ],
+    "required_missing_lanes": [],
     "rest_points_m": [
       [
         1.4142135623730951,
@@ -229,7 +227,7 @@
   "raw_outputs": {},
   "scene_id": "single_body_t_handle",
   "solver_mode": "mabd_cpu_oracle_t_handle_newton_lane",
-  "source_commit": "7d6de189599a199c5df570cbad31ded5facc90a7",
+  "source_commit": "51745677bd115a0b98294dd8bbf9132e94fc4f3a",
   "status": "incomplete",
   "threshold": {
     "max_affine_shape_spread_m": 10.0,
