@@ -3268,11 +3268,19 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         self.assertEqual(
             metric_statuses["intermediate_axis_angular_velocity_waveform"]["status"],
-            "diagnostic_available_not_paper_curve",
+            (
+                "paper_figure_digitized_color_family_available_not_curve_agreement"
+                if report.observed.get("digitized_figure_reference_available") is True
+                else "diagnostic_available_not_paper_curve"
+            ),
         )
         self.assertEqual(
             metric_statuses["energy_loss"]["status"],
-            "signed_energy_drift_diagnostic_not_paper_loss",
+            (
+                "paper_figure_digitized_color_family_available_not_energy_agreement"
+                if report.observed.get("digitized_figure_reference_available") is True
+                else "signed_energy_drift_diagnostic_not_paper_loss"
+            ),
         )
 
         record_text = (
@@ -3315,6 +3323,82 @@ class Phase0BootstrapTests(unittest.TestCase):
                 validate_docs.validate_phase57_record()
 
         self.assertIn("must not pass full experiment claim", str(context.exception))
+
+    def test_phase58_t_handle_figure_curve_digitization_is_bounded(self) -> None:
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        t_handle_claim = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.t_handle"
+        )
+        self.assertEqual(t_handle_claim["reproduction_status"], "intended")
+        self.assertIn("raw_t_handle_reference_curve_data_missing", t_handle_claim["conflict_note"])
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 58")
+        verified = claim_boundary_bullet(text, "Phase 58 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 58 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 58 T-handle paper-figure digitization")
+
+        self.assertIn("paper-figure color-family digitization", current)
+        self.assertIn("pdftocairo 22.02.0", verified)
+        self.assertIn("T-handle.pdf", verified)
+        self.assertIn("blue/orange/green color-family samples", verified)
+        self.assertIn("paper_figure_curves", verified)
+        self.assertIn("without any curve or energy-loss agreement pass", verified)
+        self.assertIn("authors' raw simulation data", non_claim)
+        self.assertIn("solid/dashed line-style separation", non_claim)
+        self.assertIn("specific legend-entry curve identity", non_claim)
+        self.assertIn("must not be described as", forbidden)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+        figure_report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_figure_curves.json"
+        )
+        self.assertEqual(figure_report.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(figure_report.baseline_lane, "paper_figure_digitization")
+        self.assertEqual(figure_report.solver_mode, "t_handle_paper_figure_digitization")
+        self.assertEqual(figure_report.backend, "pdftocairo_pillow")
+        self.assertEqual(figure_report.observed["lane_status"], "figure_color_families_digitized")
+        self.assertEqual(figure_report.observed["figure_curve_scope"], "color_family_digitization_only")
+        self.assertTrue(figure_report.observed["reference_curve_available"])
+        self.assertFalse(figure_report.observed["full_experiment_claim_passed"])
+        self.assertEqual(figure_report.raw_outputs, {"figure_samples": "compact_numeric_samples_only"})
+
+        comparison_report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_comparison.json"
+        )
+        self.assertTrue(comparison_report.observed["digitized_figure_reference_available"])
+        self.assertIn("paper_figure_curves", comparison_report.observed["input_report_provenance"])
+        self.assertEqual(
+            comparison_report.observed["paper_metric_statuses"][
+                "intermediate_axis_angular_velocity_waveform"
+            ]["status"],
+            "paper_figure_digitized_color_family_available_not_curve_agreement",
+        )
+        self.assertEqual(
+            comparison_report.observed["paper_metric_statuses"]["energy_loss"]["status"],
+            "paper_figure_digitized_color_family_available_not_energy_agreement",
+        )
+        self.assertIn(
+            "t_handle_digitized_figure_curve_agreement_not_passed",
+            comparison_report.observed["blocking_reasons"],
+        )
+        self.assertFalse(comparison_report.observed["full_experiment_claim_passed"])
+
+        record_text = (
+            ROOT / "docs/records/2026-05-18-phase58-t-handle-figure-curves.md"
+        ).read_text()
+        for snippet in (
+            "passed_for_t_handle_figure_curve_digitization_lane",
+            "reports/experiment_matrix/single_body_t_handle_figure_curves.json",
+            "975f1e1fc27d76073145a6981a9f8e87907fac908333d8303a4386f5a5e743c6",
+            "reports/experiment_matrix/single_body_t_handle_comparison.json",
+            "80b5ac9bc0782f3ad51314945a35a7f6cc0505f2e916abbc2898bbf3c00ab6d2",
+            "t_handle_paper_figure_digitization",
+            "paper_figure_digitized_color_family_available_not_curve_agreement",
+            "paper_figure_digitized_color_family_available_not_energy_agreement",
+            "No `experiment.*` claim is passed.",
+        ):
+            self.assertIn(snippet, record_text)
 
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
@@ -4162,7 +4246,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

@@ -606,6 +606,29 @@
   geometry or inertia reconstruction, raw curve agreement, paper energy-loss
   agreement, comparison pass gate, paper timing result, full paper
   reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 58 T-handle paper-figure color-family
+  digitization evidence after the Phase 58 record is created.
+- Phase 58 verifies deterministic `pdftocairo 22.02.0` rendering of the
+  recorded public `T-handle.pdf`, the pinned PDF sha256 and `3861 x 1541`
+  rendered image size, compact numeric blue/orange/green color-family samples
+  for intermediate-axis angular velocity and relative energy loss, a
+  `paper_figure_digitization` report, `t_handle_figure_curves` runner/CLI
+  dispatch, comparison-report `paper_figure_curves` provenance, and paper
+  metric statuses that only say digitized figure color-family data is available
+  without any curve or energy-loss agreement pass.
+- Phase 58 does not verify a passed T-handle experiment, authors' raw
+  simulation data, solid/dashed line-style separation, specific legend-entry
+  curve identity, paper-faithful T-handle geometry or inertia, raw waveform
+  agreement, paper energy-loss agreement, paper timing, runtime performance,
+  comparison pass gate, rendered-output evidence, generated videos, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 58 T-handle paper-figure digitization evidence must not be described as
+  a passed T-handle experiment, passed M-ABD lane, authors' raw simulation data
+  or authors' raw curve data, paper-faithful T-handle geometry or inertia
+  reconstruction, solid/dashed line-style separation, specific legend-entry
+  curve identity, raw curve agreement or raw waveform agreement, paper
+  energy-loss agreement, comparison pass gate, paper timing result, full paper
+  reproduction, runtime performance, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -926,6 +949,14 @@
   a comparison pass gate, not a paper timing result, not rendered-output
   evidence, not generated-video evidence, not a full paper reproduction, and
   not any passed `experiment.*` claim.
+- Phase 58 T-handle paper-figure digitization is not a passed T-handle
+  experiment, not a passed M-ABD lane, not authors' raw simulation data, not
+  solid/dashed line-style separation, not legend-entry curve identity, not
+  paper-faithful T-handle geometry or inertia reconstruction, not raw curve
+  agreement, not paper energy-loss agreement, not a comparison pass gate, not a
+  paper timing result, not rendered-output evidence, not generated-video
+  evidence, not a full paper reproduction, and not any passed `experiment.*`
+  claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
