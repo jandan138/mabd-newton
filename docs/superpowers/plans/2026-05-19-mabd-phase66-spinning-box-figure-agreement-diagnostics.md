@@ -779,6 +779,8 @@ errors.
 `experiment.*` claim. The diagnostics compare lane scalar momentum errors with
 digitized paper-figure color-family endpoint values, but the color families are
 not paper legend-entry identities and the curve agreement gate is not passed.
+
+No `experiment.*` claim is passed.
 ```
 
 - [ ] **Step 5: Run focused docs tests**

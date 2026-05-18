@@ -4438,6 +4438,155 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("reference legend identity", str(context.exception))
 
+    def test_phase66_spinning_box_figure_agreement_diagnostics_are_bounded(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 66")
+        verified = claim_boundary_bullet(text, "Phase 66 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 66 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 66 spinning-box figure agreement diagnostics",
+        )
+
+        self.assertIn("paper-figure agreement diagnostic evidence", current)
+        self.assertIn("Phase 65 paper-figure color-family digitization report", verified)
+        self.assertIn("digitized_figure_reference_available = true", verified)
+        self.assertIn("digitized_figure_curve_agreement_available = true", verified)
+        self.assertIn("digitized_figure_curve_agreement_passed = false", verified)
+        self.assertIn("endpoint best-fit diagnostics", verified)
+        self.assertIn("paper_figure_curves", verified)
+        self.assertIn("spinning_box_digitized_figure_curve_agreement_not_passed", verified)
+        for snippet in (
+            "passed spinning-box experiment",
+            "M-ABD lane pass",
+            "paper reference legend-entry identity",
+            "solid/dashed line-style split",
+            "Newton-vs-paper curve agreement",
+            "comparison pass gate",
+            "rendered output inspection",
+            "runtime performance",
+            "full paper reproduction",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+            self.assertIn(snippet, forbidden)
+
+        report = load_claim_report(ROOT / validate_docs.SPINNING_BOX_COMPARISON_REPORT_PATH)
+        self.assertEqual(report.source_commit, validate_docs.PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT)
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(report.scene_id, "single_body_spinning_box")
+        self.assertEqual(report.baseline_lane, "spinning_box_comparison_protocol")
+        self.assertEqual(report.solver_mode, "spinning_box_multilane_comparison_development")
+        self.assertEqual(report.backend, "report_protocol")
+        self.assertEqual(report.status.value, "incomplete")
+
+        observed = report.observed
+        self.assertFalse(observed["full_experiment_claim_passed"])
+        self.assertTrue(observed["digitized_figure_reference_available"])
+        self.assertTrue(observed["digitized_figure_curve_agreement_available"])
+        self.assertFalse(observed["digitized_figure_curve_agreement_passed"])
+        self.assertEqual(
+            report.raw_outputs["figure_curve_report"],
+            validate_docs.SPINNING_BOX_FIGURE_CURVES_REPORT_PATH,
+        )
+        self.assertIn("paper_figure_curves", observed["input_report_provenance"])
+        self.assertEqual(
+            observed["input_report_provenance"]["paper_figure_curves"]["sha256"],
+            validate_docs.PHASE65_SPINNING_BOX_FIGURE_CURVES_SHA256,
+        )
+        self.assertIn(
+            "spinning_box_digitized_figure_curve_agreement_not_passed",
+            observed["blocking_reasons"],
+        )
+        diagnostics = observed["digitized_figure_curve_agreement_diagnostics"]
+        self.assertEqual(
+            diagnostics["linear_momentum"]["mabd_newton"]["status"],
+            "diagnostic_available_not_pass_gate",
+        )
+        self.assertEqual(
+            diagnostics["linear_momentum"]["mabd_newton"]["lane_value_source"],
+            "linear_momentum_error",
+        )
+        self.assertEqual(
+            diagnostics["linear_momentum"]["mabd_newton"]["agreement_claim_status"],
+            "diagnostic_only_not_curve_agreement",
+        )
+        self.assertEqual(
+            observed["digitized_figure_reference_samples"]["linear_momentum_color_families"]["blue"],
+            101,
+        )
+        actual_sha = validate_docs.sha256_file(ROOT / validate_docs.SPINNING_BOX_COMPARISON_REPORT_PATH)
+        self.assertEqual(actual_sha, validate_docs.PHASE66_SPINNING_BOX_COMPARISON_SHA256)
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        spinning_box = next(
+            claim
+            for claim in data["claims"]
+            if claim["claim_id"] == "experiment.single_body.spinning_box"
+        )
+        self.assertEqual(spinning_box["reproduction_status"], "intended")
+        self.assertFalse(
+            any(
+                claim["claim_id"].startswith("experiment.")
+                and claim["reproduction_status"] == "passed"
+                for claim in data["claims"]
+            )
+        )
+        validate_docs.validate_phase66_record()
+
+    def test_phase66_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT / "docs/records/2026-05-19-phase66-spinning-box-figure-agreement-diagnostics.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_spinning_box_figure_agreement_diagnostics_slice",
+            "phase66-spinning-box-figure-agreement",
+            validate_docs.PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "reports/experiment_matrix/single_body_spinning_box_comparison.json",
+            validate_docs.PHASE66_SPINNING_BOX_COMPARISON_SHA256,
+            "reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
+            validate_docs.PHASE65_SPINNING_BOX_FIGURE_CURVES_SHA256,
+            "digitized_figure_reference_available=true",
+            "digitized_figure_curve_agreement_available=true",
+            "digitized_figure_curve_agreement_passed=false",
+            "spinning_box_digitized_figure_curve_agreement_not_passed",
+            "experiment.single_body.spinning_box remains intended",
+            "No `experiment.*` claim is passed.",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE66", text)
+        self.assertNotIn("phase66-working-tree", text)
+
+    def test_phase66_validator_rejects_passed_digitized_figure_agreement(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(ROOT / validate_docs.SPINNING_BOX_COMPARISON_REPORT_PATH)
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "digitized_figure_curve_agreement_passed": True,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_COMPARISON_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase66_record()
+
+        self.assertIn("agreement", str(context.exception))
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -5284,7 +5433,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
