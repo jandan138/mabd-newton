@@ -1,0 +1,298 @@
+schema_version: 1
+audit_id: phase60_reproduction_gap_audit
+audit_date: "2026-05-18"
+source_commit: "6f4b4b1fb8a66c11f92f8c59a2cfdb26b56a0fec"
+vendored_newton_commit: "96713fa965463b69c229a4d30582c733ff3526bb"
+paper:
+  arxiv_id: "2603.08079"
+  arxiv_version: "v2"
+  pdf_sha256: "a594e79093673c60fc59ad14f9b71f29a8f7f8e7b1c3d9c73efe6f5814cc6ec0"
+  tex_source_sha256: "73ec398956c606dec2f8f40f0d38b9d5370e11b27830775e1b3765fe0efc563f"
+environment:
+  canonical_python: "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python"
+  reference_python: "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
+  cloned_from_reference: true
+  mutates_reference_environment: false
+  uses_reference_python: false
+  uses_ambient_python: false
+global_status:
+  method_claims_passed: 19
+  experiment_claims_passed: 0
+  remaining_experiment_claims: 15
+  full_reproduction_complete: false
+completion_gates:
+  - gate: paper_source_provenance
+    status: passed
+    evidence: "docs/reference/paper-claims.yaml records arXiv v2 PDF and TeX source checksums."
+  - gate: isolated_newton_environment
+    status: passed
+    evidence: "Phase 54 clone contract and readiness checks keep reference and ambient Python unmodified."
+  - gate: newton_only_solver_path
+    status: partial
+    evidence: "Current M-ABD lanes use vendored Newton SolverMABD CPU oracle paths."
+    blocker: "contact, collision, GPU/Warp production path, and several scene lanes remain incomplete."
+  - gate: all_paper_experiments_passed
+    status: failed
+    blocker: "All 15 experiment.* claims remain intended and no experiment claim is passed."
+  - gate: comparative_baselines_recorded
+    status: failed
+    blocker: "External MuJoCo, Bullet, PhysX, VQ, and several RBD/RK4 comparative adapters are missing or incomplete."
+  - gate: paper_assets_or_equivalent_procedural_sources
+    status: failed
+    blocker: "Several scenes require missing assets, geometry, raw curves, or motion plans."
+  - gate: contact_and_collision_lanes
+    status: failed
+    blocker: "Current contact evidence is point-plane force mapping and diagnostics, not a paper-faithful contact solve."
+  - gate: runtime_timing_reproduction
+    status: failed
+    blocker: "Timing claims are not run through recorded comparative benchmark protocols."
+remaining_experiment_claims:
+  - claim_id: experiment.single_body.rolling_spinning
+    scene_id: single_body_rolling_spinning
+    claim_status: intended
+    matrix_status: blocked_by_baselines
+    matrix_blocking_reasons:
+      - rbd_baseline_adapter_missing
+      - benchmark_protocol_not_recorded
+    matrix_output_report: reports/experiment_matrix/single_body_rolling_spinning.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Define Newton-only rolling/spinning benchmark protocol and add required RBD baselines."
+  - claim_id: experiment.single_body.spinning_box
+    scene_id: single_body_spinning_box
+    claim_status: intended
+    matrix_status: blocked_by_baselines
+    matrix_blocking_reasons:
+      - mabd_newton_report_incomplete
+      - spinning_box_comparison_report_incomplete
+    matrix_output_report: reports/experiment_matrix/single_body_spinning_box.json
+    committed_report_status: incomplete
+    committed_report_sha256: "fa487e5b2d5141d32e24764f52788d247ffe84a433e65196aae4a3b084b0f87c"
+    related_reports:
+      - reports/experiment_matrix/single_body_spinning_box_paper_horizon.json
+      - reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json
+      - reports/experiment_matrix/single_body_spinning_box_comparison.json
+    next_action: "Investigate the Newton-only contact/MABD lane gap and produce a pass-gate design before any claim pass."
+  - claim_id: experiment.single_body.t_handle
+    scene_id: single_body_t_handle
+    claim_status: intended
+    matrix_status: planned
+    matrix_blocking_reasons:
+      - exact_t_handle_geometry_unknown
+      - raw_t_handle_reference_curve_data_missing
+      - mabd_newton_report_incomplete
+      - t_handle_comparison_report_incomplete
+    matrix_output_report: reports/experiment_matrix/single_body_t_handle.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    related_reports:
+      - reports/experiment_matrix/single_body_t_handle_rk4_reference.json
+      - reports/experiment_matrix/single_body_t_handle_mabd_newton.json
+      - reports/experiment_matrix/single_body_t_handle_figure_curves.json
+      - reports/experiment_matrix/single_body_t_handle_comparison.json
+    next_action: "Resolve geometry/raw-curve provenance or keep digitized-figure diagnostics explicitly non-passing."
+  - claim_id: experiment.single_body.heavy_top
+    scene_id: single_body_heavy_top
+    claim_status: intended
+    matrix_status: planned
+    matrix_blocking_reasons:
+      - exact_heavy_top_inertia_unknown
+      - exact_heavy_top_geometry_unknown
+      - raw_heavy_top_reference_curve_data_missing
+      - mabd_newton_report_incomplete
+      - heavy_top_comparison_report_incomplete
+    matrix_output_report: reports/experiment_matrix/single_body_heavy_top.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    related_reports:
+      - reports/experiment_matrix/single_body_heavy_top_rk4_reference.json
+      - reports/experiment_matrix/single_body_heavy_top_mabd_newton.json
+      - reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json
+      - reports/experiment_matrix/single_body_heavy_top_figure_curves.json
+      - reports/experiment_matrix/single_body_heavy_top_comparison.json
+    next_action: "Resolve inertia/geometry/raw-curve provenance before enabling any heavy-top comparison pass gate."
+  - claim_id: experiment.single_body.physical_pendulum
+    scene_id: single_body_physical_pendulum
+    claim_status: intended
+    matrix_status: planned
+    matrix_blocking_reasons:
+      - pendulum_geometry_unknown
+    matrix_output_report: reports/experiment_matrix/single_body_physical_pendulum.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    related_reports:
+      - reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json
+      - reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json
+      - reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json
+      - reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json
+      - reports/experiment_matrix/single_body_physical_pendulum_comparison.json
+    next_action: "Find paper-faithful pendulum geometry or keep analytic and Newton diagnostics non-passing."
+  - claim_id: experiment.joints.heavy_end_chain
+    scene_id: joints_heavy_end_chain
+    claim_status: intended
+    matrix_status: blocked_by_baselines
+    matrix_blocking_reasons:
+      - external_baseline_adapters_missing
+      - exact_chain_geometry_unknown
+    matrix_output_report: reports/experiment_matrix/joints_heavy_end_chain.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Source chain geometry and add MuJoCo/Bullet/PhysX comparison adapters."
+  - claim_id: experiment.joints.ball_joint_nets
+    scene_id: joints_ball_joint_nets
+    claim_status: intended
+    matrix_status: blocked_by_baselines
+    matrix_blocking_reasons:
+      - external_baseline_adapters_missing
+      - contact_lane_missing
+    matrix_output_report: reports/experiment_matrix/joints_ball_joint_nets.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Implement scalable net scene generation, contact lane, and external baselines."
+  - claim_id: experiment.joints.pulley
+    scene_id: joints_pulley
+    claim_status: intended
+    matrix_status: blocked_by_baselines
+    matrix_blocking_reasons:
+      - external_baseline_adapters_missing
+      - exact_pulley_drive_cycle_unknown
+    matrix_output_report: reports/experiment_matrix/joints_pulley.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Source pulley drive cycle and add required baseline adapters."
+  - claim_id: experiment.hierarchy.trees
+    scene_id: hierarchy_trees
+    claim_status: intended
+    matrix_status: blocked_by_assets
+    matrix_blocking_reasons:
+      - tree_geometry_and_skeleton_source_missing
+    matrix_output_report: reports/experiment_matrix/hierarchy_trees.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Prove tree geometry/skeleton asset availability or define a bounded reconstruction."
+  - claim_id: experiment.cloak
+    scene_id: cloak_net
+    claim_status: intended
+    matrix_status: blocked_by_assets
+    matrix_blocking_reasons:
+      - avatar_motion_and_cloak_asset_missing
+      - contact_lane_missing
+      - external_baseline_adapters_missing
+    matrix_output_report: reports/experiment_matrix/cloak_net.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Source avatar motion/cloak assets, contact lane, and comparison adapters."
+  - claim_id: experiment.armadillo_coupling
+    scene_id: armadillo_coupling
+    claim_status: intended
+    matrix_status: blocked_by_assets
+    matrix_blocking_reasons:
+      - armadillo_mesh_and_fem_discretization_missing
+      - fem_coupling_lane_missing
+    matrix_output_report: reports/experiment_matrix/armadillo_coupling.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Source armadillo mesh/FEM discretization and implement the coupling lane."
+  - claim_id: experiment.ragdoll_on_net
+    scene_id: ragdoll_on_net
+    claim_status: intended
+    matrix_status: planned
+    matrix_blocking_reasons:
+      - contact_lane_missing
+      - table_text_timing_conflict_requires_separate_report
+    matrix_output_report: reports/experiment_matrix/ragdoll_on_net.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Implement contact lane and split dynamics evidence from conflicting Table 1 timing evidence."
+  - claim_id: experiment.mixed_joints.falling
+    scene_id: mixed_joints_falling
+    claim_status: intended
+    matrix_status: planned
+    matrix_blocking_reasons:
+      - contact_lane_missing
+    matrix_output_report: reports/experiment_matrix/mixed_joints_falling.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Add falling mixed-joint contact lane and paper metric report."
+  - claim_id: experiment.robot.franka
+    scene_id: robot_franka_pick_place
+    claim_status: intended
+    matrix_status: blocked_by_assets
+    matrix_blocking_reasons:
+      - franka_asset_and_motion_plan_missing
+      - actuation_mapping_missing
+      - contact_lane_missing
+    matrix_output_report: reports/experiment_matrix/robot_franka_pick_place.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Source Franka assets/motion plan and connect actuation plus contact evidence."
+  - claim_id: experiment.protein_chain
+    scene_id: protein_chain_reconstruction
+    claim_status: intended
+    matrix_status: blocked_by_assets
+    matrix_blocking_reasons:
+      - exact_marker_sequence_missing
+      - ik_keyframe_lane_missing
+    matrix_output_report: reports/experiment_matrix/protein_chain_reconstruction.json
+    committed_report_status: missing
+    committed_report_sha256: null
+    next_action: "Source marker sequence and add IK keyframe reconstruction lane."
+current_evidence_reports:
+  - path: reports/experiment_matrix/single_body_heavy_top_comparison.json
+    status: incomplete
+    sha256: "b7b006f8a86cf7a259ac641395e1011e7a08e10db41e7a42137221e5c5e705d9"
+  - path: reports/experiment_matrix/single_body_heavy_top_figure_curves.json
+    status: incomplete
+    sha256: "1fc15336ba81146554bd26e7be6b33a13f84b36bd0ae3d0b672b46e72742ced1"
+  - path: reports/experiment_matrix/single_body_heavy_top_mabd_newton.json
+    status: incomplete
+    sha256: "9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324"
+  - path: reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json
+    status: incomplete
+    sha256: "605f7056cabd29869ce4074ee880839ff26c3d7a6b8f16bb95f18be0afdf076c"
+  - path: reports/experiment_matrix/single_body_heavy_top_rk4_reference.json
+    status: incomplete
+    sha256: "41418e964dd9e7fba1516f420fa97ced8cfaf9157d552d9072f85fcbb08f564c"
+  - path: reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json
+    status: incomplete
+    sha256: "8581cca298dd7b8c349177c516f42a6c88cd90a6364675ca7e896eb7b138b2c8"
+  - path: reports/experiment_matrix/single_body_physical_pendulum_comparison.json
+    status: incomplete
+    sha256: "1c9f7ef97e45977beef9682c296130e23d51e537619a8d7fcd2da8ec10545875"
+  - path: reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json
+    status: incomplete
+    sha256: "be30d8c47b0904fbb9f6a9f45c62cd73d6cb02b232b7d541e3d167b963f0a9b8"
+  - path: reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json
+    status: incomplete
+    sha256: "e99b5b0bd3ed727494ab9a4b4af0e4e94900202c8537c16df153dfddc728cbf1"
+  - path: reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json
+    status: incomplete
+    sha256: "4336f893d3eca7aed4a083b084f06c84c25fa2e0f63d9229ff2bbcbff296ea99"
+  - path: reports/experiment_matrix/single_body_spinning_box.json
+    status: incomplete
+    sha256: "fa487e5b2d5141d32e24764f52788d247ffe84a433e65196aae4a3b084b0f87c"
+  - path: reports/experiment_matrix/single_body_spinning_box_comparison.json
+    status: incomplete
+    sha256: "357676246e8d9fb1297966f2a698d6031610bb3fab9e814e51ddb671a04ad5b9"
+  - path: reports/experiment_matrix/single_body_spinning_box_paper_horizon.json
+    status: incomplete
+    sha256: "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
+  - path: reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json
+    status: incomplete
+    sha256: "64e7fda65ed0a25f2e9e2d4fbcbddaed1a75c7f0aba5aa56f79517db6e507836"
+  - path: reports/experiment_matrix/single_body_t_handle_comparison.json
+    status: incomplete
+    sha256: "a3b0a8acb993d99d842027fab7c10a8df7deffd903d1507b2851fbcd35fd3766"
+  - path: reports/experiment_matrix/single_body_t_handle_figure_curves.json
+    status: incomplete
+    sha256: "975f1e1fc27d76073145a6981a9f8e87907fac908333d8303a4386f5a5e743c6"
+  - path: reports/experiment_matrix/single_body_t_handle_mabd_newton.json
+    status: incomplete
+    sha256: "a04556cdf375fa63d9a9a927ac3fa9732351a07be3aa26c82e617a492f198199"
+  - path: reports/experiment_matrix/single_body_t_handle_rk4_reference.json
+    status: incomplete
+    sha256: "0a0f1be3ffbfced0dd4ef463ee3419c119775a46ddde17807748d1b957c5b1b3"
+next_recommended_phase:
+  phase_id: phase61-spinning-box-contact-mabd-lane
+  claim_id: experiment.single_body.spinning_box
+  rationale: "Newton-only contact/MABD lane work is the shortest path to converting current diagnostics into a real pass-gate candidate without introducing non-Newton solver dependencies."

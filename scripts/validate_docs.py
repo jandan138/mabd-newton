@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-59 docs and provenance contracts."""
+"""Validate Phase 0-60 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -78,6 +78,7 @@ REQUIRED_PATHS = (
     "docs/reference/claim-boundaries.md",
     "docs/reference/official-artifact-sources.yaml",
     "docs/reference/paper-claims.yaml",
+    "docs/reference/reproduction-gap-audit.yaml",
     "docs/records/README.md",
     "docs/records/2026-05-16-phase1-single-body-abd.md",
     "docs/records/2026-05-16-phase2-joints-kkt.md",
@@ -137,6 +138,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase57-t-handle-comparison-protocol.md",
     "docs/records/2026-05-18-phase58-t-handle-figure-curves.md",
     "docs/records/2026-05-18-phase59-t-handle-figure-agreement-diagnostics.md",
+    "docs/records/2026-05-18-phase60-reproduction-gap-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -193,6 +195,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase58-t-handle-figure-curves.md",
     "docs/superpowers/specs/2026-05-18-phase59-t-handle-figure-agreement-diagnostics-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase59-t-handle-figure-agreement-diagnostics.md",
+    "docs/superpowers/specs/2026-05-18-phase60-reproduction-gap-audit-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase60-reproduction-gap-audit.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -241,6 +245,7 @@ STATUS_VALUES = {
 }
 VENDORED_NEWTON_COMMIT = "96713fa965463b69c229a4d30582c733ff3526bb"
 PHASE59_T_HANDLE_AGREEMENT_COMMIT = "5d8a0079876d17568464a87c320c53be2d898089"
+PHASE60_REPRODUCTION_GAP_AUDIT_COMMIT = "6f4b4b1fb8a66c11f92f8c59a2cfdb26b56a0fec"
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
 )
@@ -280,6 +285,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase58-working-tree",
     "TO_BE_BACKFILLED_PHASE59",
     "phase59-working-tree",
+    "TO_BE_BACKFILLED_PHASE60",
+    "phase60-working-tree",
 }
 
 
@@ -10007,6 +10014,302 @@ def validate_phase59_record() -> None:
         fail("paper-claims.yaml missing T-handle claim")
 
 
+def validate_phase60_record() -> None:
+    audit_path = ROOT / "docs/reference/reproduction-gap-audit.yaml"
+    record_path = ROOT / "docs/records/2026-05-18-phase60-reproduction-gap-audit.md"
+    audit = read_yaml(audit_path)
+    text = record_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_reproduction_gap_audit",
+        "docs/reference/reproduction-gap-audit.yaml",
+        PHASE60_REPRODUCTION_GAP_AUDIT_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        "2603.08079v2",
+        "remaining_experiment_claims: `15`",
+        "experiment_claims_passed: `0`",
+        "full_reproduction_complete: `false`",
+        "method_claims_passed: `19`",
+        "No `experiment.*` claim is passed.",
+        "single_body_spinning_box",
+        "contact/MABD lane",
+        "mutates_reference_environment`: `false`",
+        "uses_ambient_python`: `false`",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 60 record missing required evidence field: {snippet}")
+
+    for placeholder in ("TO_BE_BACKFILLED_PHASE60", "phase60-working-tree", "<implementation-commit>"):
+        if placeholder in text:
+            fail("Phase 60 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "paper experiment passed",
+        "solver fix verified",
+        "contact implementation verified",
+        "collision implementation verified",
+        "comparative baseline passed",
+        "runtime timing reproduced",
+        "rendered-output agreement passed",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 60 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 60")
+    verified = claim_boundary_bullet(boundary_text, "Phase 60 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 60 does not verify")
+    forbidden = claim_boundary_bullet(boundary_text, "Phase 60 reproduction gap audit")
+    for snippet in (
+        "machine-checkable reproduction gap audit",
+        "Phase 60 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 60 current boundary missing: {snippet}")
+    for snippet in (
+        "all 15 remaining `experiment.*` paper claims",
+        "docs/reference/reproduction-gap-audit.yaml",
+        "full_reproduction_complete = false",
+        "experiment_claims_passed = 0",
+        "Newton-only continuation path",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 60 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed paper experiment",
+        "solver fix",
+        "contact or collision implementation",
+        "comparative baseline result",
+        "runtime timing result",
+        "rendered-output agreement",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 60 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 60 forbidden boundary missing: {snippet}")
+
+    if audit.get("schema_version") != 1:
+        fail("Phase 60 audit schema_version changed")
+    if audit.get("audit_id") != "phase60_reproduction_gap_audit":
+        fail("Phase 60 audit_id changed")
+    if audit.get("source_commit") != PHASE60_REPRODUCTION_GAP_AUDIT_COMMIT:
+        fail("Phase 60 audit source_commit changed")
+    if PHASE60_REPRODUCTION_GAP_AUDIT_COMMIT not in text:
+        fail("Phase 60 record must list implementation commit")
+    if audit.get("vendored_newton_commit") != VENDORED_NEWTON_COMMIT:
+        fail("Phase 60 audit vendored Newton commit changed")
+
+    paper = audit.get("paper")
+    if not isinstance(paper, dict):
+        fail("Phase 60 audit missing paper mapping")
+    if paper.get("arxiv_id") != "2603.08079" or paper.get("arxiv_version") != "v2":
+        fail("Phase 60 audit paper identity changed")
+    if (
+        paper.get("pdf_sha256")
+        != "a594e79093673c60fc59ad14f9b71f29a8f7f8e7b1c3d9c73efe6f5814cc6ec0"
+    ):
+        fail("Phase 60 audit paper PDF checksum changed")
+    if (
+        paper.get("tex_source_sha256")
+        != "73ec398956c606dec2f8f40f0d38b9d5370e11b27830775e1b3765fe0efc563f"
+    ):
+        fail("Phase 60 audit paper TeX checksum changed")
+
+    environment = audit.get("environment")
+    if not isinstance(environment, dict):
+        fail("Phase 60 audit missing environment mapping")
+    if environment.get("canonical_python") != str(MABD_PYTHON):
+        fail("Phase 60 audit canonical python changed")
+    if environment.get("reference_python") != str(PHASE44_REFERENCE_PYTHON):
+        fail("Phase 60 audit reference python changed")
+    for key in ("mutates_reference_environment", "uses_reference_python", "uses_ambient_python"):
+        if environment.get(key) is not False:
+            fail(f"Phase 60 audit environment {key} must be false")
+    if environment.get("cloned_from_reference") is not True:
+        fail("Phase 60 audit must record cloned_from_reference=true")
+
+    claims_data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
+    claims = claims_data.get("claims")
+    if not isinstance(claims, list):
+        fail("Phase 60 audit cannot read paper claims")
+    experiment_claims = {
+        str(claim["claim_id"]): claim
+        for claim in claims
+        if isinstance(claim, dict) and str(claim.get("claim_id", "")).startswith("experiment.")
+    }
+    remaining_claims = {
+        claim_id: claim
+        for claim_id, claim in experiment_claims.items()
+        if claim.get("reproduction_status") != "passed"
+    }
+    passed_experiment_claims = [
+        claim_id
+        for claim_id, claim in experiment_claims.items()
+        if claim.get("reproduction_status") == "passed"
+    ]
+    method_claims_passed = sum(
+        1
+        for claim in claims
+        if isinstance(claim, dict)
+        and not str(claim.get("claim_id", "")).startswith("experiment.")
+        and claim.get("reproduction_status") == "passed"
+    )
+
+    global_status = audit.get("global_status")
+    if not isinstance(global_status, dict):
+        fail("Phase 60 audit missing global_status mapping")
+    if global_status.get("full_reproduction_complete") is not False:
+        fail("Phase 60 audit must record full_reproduction_complete=false")
+    if global_status.get("experiment_claims_passed") != len(passed_experiment_claims):
+        fail("Phase 60 audit experiment_claims_passed count changed")
+    if global_status.get("remaining_experiment_claims") != len(remaining_claims):
+        fail("Phase 60 audit remaining_experiment_claims count changed")
+    if global_status.get("method_claims_passed") != method_claims_passed:
+        fail("Phase 60 audit method_claims_passed count changed")
+    if passed_experiment_claims:
+        fail("Phase 60 audit must not coexist with passed experiment claims")
+
+    matrix = read_yaml(ROOT / "configs/experiments/paper_experiment_matrix.yaml").get("experiments")
+    if not isinstance(matrix, list):
+        fail("Phase 60 audit cannot read experiment matrix")
+    matrix_by_claim = {
+        str(entry["claim_id"]): entry
+        for entry in matrix
+        if isinstance(entry, dict) and str(entry.get("claim_id", "")).startswith("experiment.")
+    }
+
+    entries = audit.get("remaining_experiment_claims")
+    if not isinstance(entries, list):
+        fail("Phase 60 audit remaining_experiment_claims must be a list")
+    entries_by_claim: dict[str, dict[str, Any]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            fail("Phase 60 audit remaining claim entry must be a mapping")
+        claim_id = str(entry.get("claim_id", ""))
+        if claim_id in entries_by_claim:
+            fail(f"Phase 60 audit duplicate remaining claim: {claim_id}")
+        entries_by_claim[claim_id] = entry
+
+    if set(entries_by_claim) != set(remaining_claims):
+        fail("Phase 60 audit remaining claim IDs do not match paper-claims.yaml")
+    if set(entries_by_claim) != set(matrix_by_claim):
+        fail("Phase 60 audit remaining claim IDs do not match experiment matrix")
+
+    for claim_id, entry in entries_by_claim.items():
+        claim = remaining_claims[claim_id]
+        matrix_entry = matrix_by_claim[claim_id]
+        if entry.get("scene_id") != matrix_entry.get("scene_id"):
+            fail(f"Phase 60 audit scene_id mismatch for {claim_id}")
+        if entry.get("claim_status") != claim.get("reproduction_status"):
+            fail(f"Phase 60 audit claim_status mismatch for {claim_id}")
+        if entry.get("matrix_status") != matrix_entry.get("reproduction_status"):
+            fail(f"Phase 60 audit matrix_status mismatch for {claim_id}")
+        if entry.get("matrix_blocking_reasons") != matrix_entry.get("blocking_reasons"):
+            fail(f"Phase 60 audit blockers mismatch for {claim_id}")
+        output_report = matrix_entry.get("output_report")
+        if entry.get("matrix_output_report") != output_report:
+            fail(f"Phase 60 audit output report mismatch for {claim_id}")
+        if not isinstance(entry.get("next_action"), str) or not entry["next_action"]:
+            fail(f"Phase 60 audit next_action missing for {claim_id}")
+
+        report_path = ROOT / str(output_report)
+        if report_path.exists():
+            report = load_claim_report(report_path)
+            if entry.get("committed_report_status") != report.status.value:
+                fail(f"Phase 60 audit committed report status mismatch for {claim_id}")
+            if entry.get("committed_report_sha256") != sha256_file(report_path):
+                fail(f"Phase 60 audit committed report hash mismatch for {claim_id}")
+            if report.status.value == "passed":
+                fail(f"Phase 60 audit found passed report for {claim_id}")
+            if report.observed.get("full_experiment_claim_passed") is True:
+                fail(f"Phase 60 audit found full experiment pass for {claim_id}")
+        else:
+            if entry.get("committed_report_status") != "missing":
+                fail(f"Phase 60 audit missing report status mismatch for {claim_id}")
+            if entry.get("committed_report_sha256") is not None:
+                fail(f"Phase 60 audit missing report hash must be null for {claim_id}")
+
+        related_reports = entry.get("related_reports", [])
+        if related_reports is None:
+            related_reports = []
+        if not isinstance(related_reports, list):
+            fail(f"Phase 60 audit related_reports must be a list for {claim_id}")
+        for related in related_reports:
+            related_path = ROOT / str(related)
+            if not related_path.exists():
+                fail(f"Phase 60 audit related report missing for {claim_id}: {related}")
+            related_report = load_claim_report(related_path)
+            if related_report.status.value == "passed":
+                fail(f"Phase 60 audit related report is passed for {claim_id}: {related}")
+            if related_report.observed.get("full_experiment_claim_passed") is True:
+                fail(f"Phase 60 audit related report claims full pass for {claim_id}: {related}")
+
+    reports = audit.get("current_evidence_reports")
+    if not isinstance(reports, list):
+        fail("Phase 60 audit current_evidence_reports must be a list")
+    report_entries: dict[str, dict[str, Any]] = {}
+    for entry in reports:
+        if not isinstance(entry, dict):
+            fail("Phase 60 audit report entry must be a mapping")
+        path = str(entry.get("path", ""))
+        if path in report_entries:
+            fail(f"Phase 60 audit duplicate report entry: {path}")
+        report_entries[path] = entry
+
+    expected_report_paths = sorted(
+        path.relative_to(ROOT).as_posix()
+        for path in (ROOT / "reports/experiment_matrix").glob("*.json")
+    )
+    if sorted(report_entries) != expected_report_paths:
+        fail("Phase 60 audit current_evidence_reports set changed")
+    for path in expected_report_paths:
+        report_path = ROOT / path
+        report = load_claim_report(report_path)
+        entry = report_entries[path]
+        if entry.get("status") != report.status.value:
+            fail(f"Phase 60 audit report status mismatch for {path}")
+        if entry.get("sha256") != sha256_file(report_path):
+            fail(f"Phase 60 audit report hash mismatch for {path}")
+        if report.status.value == "passed":
+            fail(f"Phase 60 audit current report is passed: {path}")
+        if report.observed.get("full_experiment_claim_passed") is True:
+            fail(f"Phase 60 audit current report claims full pass: {path}")
+
+    gates = audit.get("completion_gates")
+    if not isinstance(gates, list):
+        fail("Phase 60 audit completion_gates must be a list")
+    gate_names = {str(gate.get("gate")) for gate in gates if isinstance(gate, dict)}
+    for gate in (
+        "paper_source_provenance",
+        "isolated_newton_environment",
+        "newton_only_solver_path",
+        "all_paper_experiments_passed",
+        "comparative_baselines_recorded",
+        "paper_assets_or_equivalent_procedural_sources",
+        "contact_and_collision_lanes",
+        "runtime_timing_reproduction",
+    ):
+        if gate not in gate_names:
+            fail(f"Phase 60 audit missing completion gate: {gate}")
+
+    recommendation = audit.get("next_recommended_phase")
+    if not isinstance(recommendation, dict):
+        fail("Phase 60 audit missing next_recommended_phase")
+    if recommendation.get("phase_id") != "phase61-spinning-box-contact-mabd-lane":
+        fail("Phase 60 audit next phase id changed")
+    if recommendation.get("claim_id") != "experiment.single_body.spinning_box":
+        fail("Phase 60 audit next phase claim changed")
+    if "Newton-only" not in str(recommendation.get("rationale", "")):
+        fail("Phase 60 audit next phase rationale must preserve Newton-only scope")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -10308,13 +10611,14 @@ def main() -> int:
     validate_phase57_record()
     validate_phase58_record()
     validate_phase59_record()
+    validate_phase60_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60 "
         "docs/provenance validation passed"
     )
     return 0

@@ -654,6 +654,22 @@
   raw waveform agreement, paper energy-loss agreement, comparison pass gate,
   paper timing result, full paper reproduction, runtime performance, or any
   passed `experiment.*` claim.
+- This repository contains Phase 60 machine-checkable reproduction gap audit
+  evidence after the Phase 60 record is created.
+- Phase 60 verifies all 15 remaining `experiment.*` paper claims are covered
+  by `docs/reference/reproduction-gap-audit.yaml`, that the audit matches the
+  paper claim manifest and experiment matrix blockers, that committed compact
+  report hashes remain non-passing, that `full_reproduction_complete = false`,
+  that `experiment_claims_passed = 0`, and that the Newton-only continuation
+  path is recorded as the next scoped technical direction.
+- Phase 60 does not verify a passed paper experiment, solver fix, contact or
+  collision implementation, comparative baseline result, runtime timing
+  result, rendered-output agreement, full paper reproduction, or any passed
+  `experiment.*` claim.
+- Phase 60 reproduction gap audit evidence must not be described as a passed
+  paper experiment, solver fix, contact or collision implementation,
+  comparative baseline result, runtime timing result, rendered-output
+  agreement, full paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

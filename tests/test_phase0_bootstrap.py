@@ -3593,6 +3593,93 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE59", record_text)
         self.assertNotIn("phase59-working-tree", record_text)
 
+    def test_phase60_reproduction_gap_audit_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 60")
+        verified = claim_boundary_bullet(text, "Phase 60 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 60 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 60 reproduction gap audit")
+
+        self.assertIn("machine-checkable reproduction gap audit", current)
+        self.assertIn("all 15 remaining `experiment.*` paper claims", verified)
+        self.assertIn("full_reproduction_complete = false", verified)
+        self.assertIn("experiment_claims_passed = 0", verified)
+        self.assertIn("Newton-only continuation path", verified)
+        self.assertIn("passed paper experiment", non_claim)
+        self.assertIn("solver fix", non_claim)
+        self.assertIn("comparative baseline result", forbidden)
+        self.assertIn("full paper reproduction", forbidden)
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        claims = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())["claims"]
+        matrix = yaml.safe_load(
+            (ROOT / "configs/experiments/paper_experiment_matrix.yaml").read_text()
+        )["experiments"]
+        experiment_claims = {
+            claim["claim_id"]: claim
+            for claim in claims
+            if str(claim["claim_id"]).startswith("experiment.")
+        }
+        incomplete_claim_ids = [
+            claim_id
+            for claim_id, claim in experiment_claims.items()
+            if claim["reproduction_status"] != "passed"
+        ]
+        matrix_by_claim = {entry["claim_id"]: entry for entry in matrix}
+        entries = {entry["claim_id"]: entry for entry in audit["remaining_experiment_claims"]}
+
+        self.assertEqual(audit["schema_version"], 1)
+        self.assertEqual(audit["audit_id"], "phase60_reproduction_gap_audit")
+        self.assertFalse(audit["global_status"]["full_reproduction_complete"])
+        self.assertEqual(audit["global_status"]["experiment_claims_passed"], 0)
+        self.assertEqual(audit["global_status"]["remaining_experiment_claims"], 15)
+        self.assertEqual(set(entries), set(incomplete_claim_ids))
+        self.assertEqual(set(entries), set(matrix_by_claim))
+        self.assertEqual(
+            audit["environment"]["canonical_python"],
+            "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+        )
+        self.assertFalse(audit["environment"]["mutates_reference_environment"])
+        self.assertFalse(audit["environment"]["uses_ambient_python"])
+
+        for claim_id, entry in entries.items():
+            matrix_entry = matrix_by_claim[claim_id]
+            self.assertEqual(entry["claim_status"], experiment_claims[claim_id]["reproduction_status"])
+            self.assertEqual(entry["matrix_status"], matrix_entry["reproduction_status"])
+            self.assertEqual(entry["matrix_blocking_reasons"], matrix_entry["blocking_reasons"])
+            self.assertEqual(entry["matrix_output_report"], matrix_entry["output_report"])
+            report_path = ROOT / entry["matrix_output_report"]
+            if report_path.exists():
+                report = load_claim_report(report_path)
+                self.assertEqual(entry["committed_report_status"], report.status.value)
+                self.assertNotEqual(entry["committed_report_status"], "passed")
+                if "full_experiment_claim_passed" in report.observed:
+                    self.assertFalse(report.observed["full_experiment_claim_passed"])
+            else:
+                self.assertEqual(entry["committed_report_status"], "missing")
+
+        recommended = audit["next_recommended_phase"]
+        self.assertEqual(recommended["claim_id"], "experiment.single_body.spinning_box")
+        self.assertIn("contact", recommended["phase_id"])
+        self.assertIn("Newton-only", recommended["rationale"])
+
+        record_text = (
+            ROOT / "docs/records/2026-05-18-phase60-reproduction-gap-audit.md"
+        ).read_text()
+        for snippet in (
+            "passed_for_reproduction_gap_audit",
+            "docs/reference/reproduction-gap-audit.yaml",
+            "remaining_experiment_claims: `15`",
+            "experiment_claims_passed: `0`",
+            "full_reproduction_complete: `false`",
+            "single_body_spinning_box",
+            "contact/MABD lane",
+            "No `experiment.*` claim is passed.",
+        ):
+            self.assertIn(snippet, record_text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE60", record_text)
+        self.assertNotIn("full reproduction complete", record_text.lower())
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
