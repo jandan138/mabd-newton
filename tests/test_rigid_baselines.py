@@ -89,6 +89,82 @@ class RigidBaselineTests(unittest.TestCase):
             "qd_next=(q_next-q_n)/h",
         )
 
+    def test_spinning_box_so3_exponential_preserves_rotation_shape(self) -> None:
+        from mabd_reproduction.spinning_box_physics import (
+            spinning_box_so3_exp_from_angular_velocity,
+        )
+
+        rotation = spinning_box_so3_exp_from_angular_velocity(
+            np.array([0.0, 60000.0, 0.0]),
+            0.01,
+        )
+
+        np.testing.assert_allclose(rotation.T @ rotation, np.eye(3), atol=1.0e-12)
+        self.assertAlmostEqual(float(np.linalg.det(rotation)), 1.0, places=12)
+        self.assertTrue(np.all(np.isfinite(rotation)))
+
+    def test_spinning_box_decoupled_twist_state_preserves_paper_momentum(self) -> None:
+        from mabd_reproduction.spinning_box_physics import (
+            mabd_momentum_diagnostics,
+            spinning_box_affine_shape_diagnostics,
+            spinning_box_decoupled_twist_state,
+            spinning_box_physical_properties,
+        )
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        q, qd = spinning_box_decoupled_twist_state(config, 0.01, 3)
+        diagnostics = mabd_momentum_diagnostics(config, q, qd)
+        shape = spinning_box_affine_shape_diagnostics(q)
+        properties = spinning_box_physical_properties(config)
+
+        np.testing.assert_allclose(
+            diagnostics.linear_momentum_kg_m_s,
+            properties.linear_momentum_kg_m_s,
+            atol=1.0e-10,
+        )
+        np.testing.assert_allclose(
+            diagnostics.angular_momentum_kg_m2_s,
+            properties.angular_momentum_kg_m2_s,
+            atol=1.0e-10,
+        )
+        self.assertAlmostEqual(shape.determinant, 1.0, places=12)
+        np.testing.assert_allclose(shape.singular_values, np.ones(3), atol=1.0e-12)
+        self.assertLess(shape.orthogonality_error, 1.0e-12)
+        self.assertTrue(np.all(np.isfinite(q)))
+        self.assertTrue(np.all(np.isfinite(qd)))
+
+    def test_spinning_box_decoupled_twist_state_respects_initial_orientation(self) -> None:
+        from newton.solvers import mabd
+
+        from mabd_reproduction.spinning_box_physics import (
+            spinning_box_decoupled_twist_state,
+            spinning_box_physical_properties,
+            spinning_box_so3_exp_from_angular_velocity,
+        )
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        initial_rotation = spinning_box_so3_exp_from_angular_velocity(
+            np.array([1.0, 2.0, 3.0]),
+            0.125,
+        )
+        _A0, t0 = mabd.unpack_q(config.initial_q)
+        rotated_config = replace(config, initial_q=mabd.pack_q(initial_rotation, t0))
+        q, _qd = spinning_box_decoupled_twist_state(rotated_config, 0.01, 2)
+        A, _t = mabd.unpack_q(q)
+        paper = spinning_box_physical_properties(rotated_config)
+        expected = (
+            np.linalg.matrix_power(
+                spinning_box_so3_exp_from_angular_velocity(
+                    paper.angular_velocity_rad_s,
+                    0.01,
+                ),
+                2,
+            )
+            @ initial_rotation
+        )
+
+        np.testing.assert_allclose(A, expected, atol=1.0e-12)
+
     def test_run_spinning_box_rbd_baseline_is_deterministic_and_incomplete(self) -> None:
         from mabd_reproduction.rigid_baselines import run_spinning_box_rbd_baseline
 

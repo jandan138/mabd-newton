@@ -117,6 +117,18 @@ def _paper_vector(value: Any, name: str) -> np.ndarray:
     return vector
 
 
+def _skew(vector: np.ndarray) -> np.ndarray:
+    x, y, z = np.asarray(vector, dtype=float)
+    return np.array(
+        [
+            [0.0, -z, y],
+            [z, 0.0, -x],
+            [-y, x, 0.0],
+        ],
+        dtype=float,
+    )
+
+
 def spinning_box_physical_properties(config: SpinningBoxRunConfig) -> SpinningBoxPhysicalProperties:
     cube_size_m = _paper_float(config.paper_values.get("cube_size_m"), "cube_size_m", positive=True)
     density_kg_m3 = _paper_float(config.paper_values.get("density"), "density", positive=True)
@@ -172,6 +184,41 @@ def spinning_box_kinematic_feasibility(
 def paper_spatial_twist_from_momenta(config: SpinningBoxRunConfig) -> np.ndarray:
     properties = spinning_box_physical_properties(config)
     return np.concatenate([properties.angular_velocity_rad_s, properties.linear_velocity_m_s])
+
+
+def spinning_box_so3_exp_from_angular_velocity(
+    angular_velocity: np.ndarray,
+    time_step_s: float,
+) -> np.ndarray:
+    omega = _paper_vector(angular_velocity, "angular_velocity")
+    dt = _paper_float(time_step_s, "time_step_s", positive=True)
+    speed = float(np.linalg.norm(omega))
+    if speed == 0.0:
+        return np.eye(3)
+    theta = speed * dt
+    axis_cross = _skew(omega / speed)
+    return np.eye(3) + np.sin(theta) * axis_cross + (1.0 - np.cos(theta)) * (axis_cross @ axis_cross)
+
+
+def spinning_box_decoupled_twist_state(
+    config: SpinningBoxRunConfig,
+    time_step_s: float,
+    step_index: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    if step_index < 0:
+        raise ValueError("step_index must be nonnegative")
+    step_count = int(step_index)
+    properties = spinning_box_physical_properties(config)
+    rotation_step = spinning_box_so3_exp_from_angular_velocity(
+        properties.angular_velocity_rad_s,
+        time_step_s,
+    )
+    A0, t0 = mabd.unpack_q(config.initial_q)
+    A = np.linalg.matrix_power(rotation_step, step_count) @ A0
+    t = t0 + properties.linear_velocity_m_s * float(time_step_s) * step_count
+    q = mabd.pack_q(A, t)
+    qd = abd_generalized_velocity_from_paper_momenta(config, A=A)
+    return q, qd
 
 
 def spinning_box_mabd_mass_diagonal(config: SpinningBoxRunConfig) -> np.ndarray:
@@ -307,6 +354,7 @@ __all__ = [
     "SpinningBoxMaterialProperties",
     "SpinningBoxPhysicalProperties",
     "abd_generalized_velocity_from_paper_momenta",
+    "spinning_box_decoupled_twist_state",
     "spinning_box_affine_shape_diagnostics",
     "spinning_box_kinematic_feasibility",
     "mabd_momentum_diagnostics",
@@ -317,4 +365,5 @@ __all__ = [
     "spinning_box_mabd_material_stiffness",
     "spinning_box_mabd_mass_diagonal",
     "spinning_box_physical_properties",
+    "spinning_box_so3_exp_from_angular_velocity",
 ]
