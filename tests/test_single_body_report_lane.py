@@ -634,6 +634,10 @@ class SingleBodyReportLaneTests(unittest.TestCase):
                 entry["model_plane_constraint_config_source"],
                 "mabd:plane_constraint_custom_rows",
             )
+            self.assertNotEqual(
+                entry["contact_diagnostic_status"],
+                "contact_penetration_observed_without_response",
+            )
             self.assertIn("max_model_plane_constraint_residual_norm", entry)
             self.assertTrue(np.isfinite(entry["max_model_plane_constraint_residual_norm"]))
             self.assertLessEqual(

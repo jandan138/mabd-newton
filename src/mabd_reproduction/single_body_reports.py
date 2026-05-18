@@ -769,6 +769,7 @@ def _run_spinning_box_paper_horizon_step_size(
         "contact_penetration_observed_without_response"
         if contact_response_policy is None
         and normal_constraint_policy is None
+        and model_plane_constraint_policy is None
         and summary["max_contact_active_count"] > 0
         else "contact_penetration_observed_after_explicit_response"
         if summary["max_contact_active_count"] > 0
