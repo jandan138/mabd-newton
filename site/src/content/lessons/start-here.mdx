@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import learningRoadmap from "../../assets/diagrams/learning-roadmap.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ import learningRoadmap from "../../assets/diagrams/learning-roadmap.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>说出阅读框架：</strong>用概念、公式、代码、证据四层来拆解一节课或一段论文文字。</li>
+  <li><strong>判断声明类型：</strong>区分一段内容是在解释概念，还是在声称仓库已有可检查证据。</li>
+  <li><strong>选择学习路线：</strong>根据自己缺的基础，决定下一节该先补数学、状态表示还是证据阅读。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>能读懂基础代码，至少知道变量、数组和函数调用如何传递数据。</li>
+  <li>知道矩阵可以看成数字表，不需要一开始就熟练推导矩阵公式。</li>
+  <li>接受仓库声明必须回到记录、测试和报告中查证，不能只看教程语气。</li>
+</PrereqBox>
 
 ## 这门课的范围
 
@@ -68,7 +84,22 @@ import learningRoadmap from "../../assets/diagrams/learning-roadmap.png";
 这个学习站点解释基础概念和阅读路线；它不是“完整 M-ABD 已实现”或“论文已完全复现”的证明。仓库的正式边界以 claim-boundary 文档、paper-claims 映射、记录和测试结果为准。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>为什么概念页不能直接算作复现证据？</summary>
+    <p>概念页只帮助你理解对象、公式和数据流；复现证据还需要源码、测试、记录或报告说明某个主张已经被实现并验证。</p>
+  </details>
+  <details>
+    <summary>四层阅读法缺哪一层时，不能把解释升级成仓库声明？</summary>
+    <p>缺少证据层时不能升级声明。即使概念、公式和代码思路都讲清楚了，也只能说这是理解材料，不能说仓库已经完成对应实现或论文复现。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="证据入口要看仓库记录" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+选择一个后续课程标题，例如“仿射状态”或“Newton、Hessian 与 KKT”。分别写下一个概念问题、一个公式问题、一个代码问题和一个证据问题，作为你读那一课前的检查清单。
+</PracticePrompt>
 
 <RememberBox title="记住三件事">
   <ul>

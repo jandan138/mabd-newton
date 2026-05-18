@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import kktBlockSystem from "../../assets/diagrams/kkt-block-system.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ import kktBlockSystem from "../../assets/diagrams/kkt-block-system.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>串起求解链：</strong>把 residual、Jacobian、Hessian 和 KKT 理解成从非线性方程走到线性修正的连续步骤。</li>
+  <li><strong>解释约束乘子：</strong>说明 `lambda` 表示满足约束所需的对偶变量，而不是任意补丁。</li>
+  <li><strong>读懂块矩阵：</strong>辨认 KKT 系统中运动块、约束 Jacobian、增量和约束残差各自的角色。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>已读隐式时间积分课程，知道一步更新可以被写成残差方程。</li>
+  <li>知道矩阵乘法和线性系统的基本含义。</li>
+  <li>知道约束 `C(q)=0` 表示状态必须满足的一条规则。</li>
+</PrereqBox>
 
 ## 残差就是“还差多少”
 
@@ -90,7 +106,22 @@ KKT 系统像把“物体想怎么动”和“约束不允许怎么动”放到�
 `lambda` 是和约束方程一起求出的对偶变量。它的符号、单位和物理解释依赖约束写法；只看数值大小而不看约束 Jacobian，容易误读约束力。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>为什么 KKT 要同时求 `dq` 和 `lambda`？</summary>
+    <p>`dq` 修正运动未知量，`lambda` 给出约束为了成立所需的对偶变量。二者耦合在同一个线性化系统里，才能同时让运动方程和约束方程趋向满足。</p>
+  </details>
+  <details>
+    <summary>`H` 和 `G` 分别来自哪里？</summary>
+    <p>`H` 通常来自能量、惯性或残差线性化后的运动块；`G` 来自约束 `C(q)` 对广义坐标的 Jacobian，描述状态变化会怎样改变约束残差。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="本页解释数值求解基础" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+写出一个两行 KKT 块矩阵，把第一行标成运动方程，把第二行标成约束方程，并在旁边标出 `dq`、`lambda`、`H`、`G` 的含义。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>

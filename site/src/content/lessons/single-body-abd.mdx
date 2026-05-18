@@ -22,6 +22,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import singleAbdPipeline from "../../assets/diagrams/single-abd-pipeline.png";
 
 <ProblemCard title="它解决的问题">
@@ -36,6 +40,18 @@ import singleAbdPipeline from "../../assets/diagrams/single-abd-pipeline.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>说明单体状态：</strong>把 `q in R12` 读成仿射矩阵 `A` 与平移 `t` 的打包状态。</li>
+  <li><strong>理解材料响应：</strong>说明质量、刚度和共旋转力如何在单体 ABD 概念中配合。</li>
+  <li><strong>读清证据范围：</strong>区分 scoped CPU oracle 与完整求解器或完整论文复现主张。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>已读仿射状态、polar 旋转提取和 KKT 相关课程。</li>
+  <li>理解 `q in R12` 表示 9 个矩阵自由度加 3 个平移自由度。</li>
+  <li>尊重记录边界：本页只解释有范围的证据，不把它升级为完整实现声明。</li>
+</PrereqBox>
 
 ## 一个物体，一组仿射自由度
 
@@ -76,6 +92,17 @@ delta_q = dense_cpu_solve(linearize(residual))`}
   <li>最后检查记录是否明确保留了未完成边界。</li>
 </StepFlow>
 
+<CheckpointQuiz>
+  <details>
+    <summary>CPU oracle 能证明什么、不能证明什么？</summary>
+    <p>它能支持记录中限定的小规模参考路径、局部公式或开发 lane；不能自动证明完整 GPU 路径、多体拓扑、碰撞处理或论文全部实验已经复现。</p>
+  </details>
+  <details>
+    <summary>`q=[A,t]` 中材料力主要看哪部分形变？</summary>
+    <p>材料响应主要看 `A` 表达的旋转、拉伸和剪切等形变；`t` 表示整体平移，通常不应该单独制造弹性拉伸。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="Phase 1 single-body ABD record" status="scoped method oracle evidence" href="https://github.com/jandan138/mabd-newton/blob/main/docs/records/2026-05-16-phase1-single-body-abd.md" />
 
 <RepoEvidenceCard title="Phase 4 configured CPU step record" status="scoped CPU step oracle evidence" href="https://github.com/jandan138/mabd-newton/blob/main/docs/records/2026-05-16-phase4-configured-cpu-step.md" />
@@ -89,6 +116,10 @@ delta_q = dense_cpu_solve(linearize(residual))`}
 <PitfallCard title="oracle 不是生产级完整求解器">
 稠密 CPU oracle 的价值在于可读、可测、可对照。它能支持记录中限定的方法主张，但不能自动推出 GPU 路径、完整多体拓扑、碰撞处理或论文全部实验已经完成。
 </PitfallCard>
+
+<PracticePrompt title="动手练习">
+从本页任选一个 RepoEvidenceCard，写两句话：它支持的范围是什么，以及它明确不能支持哪些更大的结论。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>

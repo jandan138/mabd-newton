@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import implicitResidualLoop from "../../assets/diagrams/implicit-residual-loop.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ import implicitResidualLoop from "../../assets/diagrams/implicit-residual-loop.p
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>区分更新：</strong>说明显式和隐式时间积分分别在什么状态上计算力。</li>
+  <li><strong>解释循环：</strong>把隐式步长理解为猜测、评估残差、修正、接受的过程。</li>
+  <li><strong>理解取舍：</strong>说明硬系统为什么常常更偏好隐式方法。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>知道速度和位置更新的基本关系。</li>
+  <li>读过广义力课程会更容易理解 `M qdd = tau` 的离散形式。</li>
+  <li>知道求解器通常会反复修正猜测，而不是一次直接得到答案。</li>
+</PrereqBox>
 
 ## 硬弹簧为什么麻烦
 
@@ -83,7 +99,22 @@ q_next, v_next = solve_equations(residual, initial_guess=(q, v))`}
 隐式积分改善的是数值稳定性，不等于物理模型、碰撞、约束和求解精度都正确。残差、收敛阈值、线性化和步长选择仍然需要证据支持。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>隐式方法为什么要在 `q_next` 上算力？</summary>
+    <p>隐式方法要求下一时刻状态本身满足离散方程，所以力要按候选的下一状态计算。这样能检查“走到那里以后”惯性和力是否一致。</p>
+  </details>
+  <details>
+    <summary>residual 小意味着什么？</summary>
+    <p>residual 小表示当前猜测已经较好地满足离散后的运动方程和更新关系，但它不自动证明模型、碰撞或完整复现实验都正确。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="本页解释时间积分基础" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+写出一个四步循环的伪代码骨架：`guess` 下一状态，`evaluate` 残差，`solve` 修正量，最后 `update` 或接受新状态。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>
