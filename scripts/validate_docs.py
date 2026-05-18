@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-58 docs and provenance contracts."""
+"""Validate Phase 0-59 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -136,6 +136,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase56-t-handle-mabd-newton.md",
     "docs/records/2026-05-18-phase57-t-handle-comparison-protocol.md",
     "docs/records/2026-05-18-phase58-t-handle-figure-curves.md",
+    "docs/records/2026-05-18-phase59-t-handle-figure-agreement-diagnostics.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -190,6 +191,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase57-t-handle-comparison-protocol.md",
     "docs/superpowers/specs/2026-05-18-phase58-t-handle-figure-curve-digitization-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase58-t-handle-figure-curves.md",
+    "docs/superpowers/specs/2026-05-18-phase59-t-handle-figure-agreement-diagnostics-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase59-t-handle-figure-agreement-diagnostics.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -237,6 +240,7 @@ STATUS_VALUES = {
     "qualitative_reconstruction",
 }
 VENDORED_NEWTON_COMMIT = "96713fa965463b69c229a4d30582c733ff3526bb"
+PHASE59_T_HANDLE_AGREEMENT_COMMIT = "5d8a0079876d17568464a87c320c53be2d898089"
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
 )
@@ -274,6 +278,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase57-working-tree",
     "TO_BE_BACKFILLED_PHASE58",
     "phase58-working-tree",
+    "TO_BE_BACKFILLED_PHASE59",
+    "phase59-working-tree",
 }
 
 
@@ -5073,6 +5079,39 @@ def _record_sha256_for_artifact(text: str, artifact_path: str) -> str:
     fail(f"Phase 42 record missing artifact path: {artifact_path}")
 
 
+def _has_relative_energy_loss_samples(report: Any) -> bool:
+    samples = report.observed.get("angular_velocity_samples")
+    if not isinstance(samples, list) or not samples:
+        return False
+    for sample in samples:
+        if not isinstance(sample, dict) or "relative_energy_loss" not in sample:
+            return False
+        try:
+            value = float(sample["relative_energy_loss"])
+        except (TypeError, ValueError):
+            return False
+        if not np.isfinite(value):
+            return False
+    return True
+
+
+def _is_phase59_t_handle_lane_report(report: Any) -> bool:
+    return (
+        report.source_commit == PHASE59_T_HANDLE_AGREEMENT_COMMIT
+        and _has_relative_energy_loss_samples(report)
+    )
+
+
+def _is_phase59_t_handle_comparison_report(report: Any) -> bool:
+    diagnostics = report.observed.get("digitized_figure_curve_agreement_diagnostics")
+    return (
+        report.source_commit == PHASE59_T_HANDLE_AGREEMENT_COMMIT
+        and report.observed.get("digitized_figure_curve_agreement_available") is True
+        and report.observed.get("digitized_figure_curve_agreement_passed") is False
+        and isinstance(diagnostics, dict)
+    )
+
+
 def validate_phase42_record() -> None:
     text = (
         ROOT / "docs/records/2026-05-17-phase42-spinning-box-report-artifacts.md"
@@ -5485,9 +5524,10 @@ def validate_phase43_record() -> None:
 
     report_path = "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
     report = load_claim_report(ROOT / report_path)
+    phase59_lane_report = _is_phase59_t_handle_lane_report(report)
     if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
         fail("Phase 43 report source_commit must not be a placeholder")
-    if report.source_commit not in text:
+    if report.source_commit not in text and not phase59_lane_report:
         fail("Phase 43 record must list the report source_commit")
     if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
         fail("Phase 43 report vendored Newton commit changed")
@@ -5501,7 +5541,7 @@ def validate_phase43_record() -> None:
         fail("Phase 43 T-handle report must remain incomplete")
     actual_hash = sha256_file(ROOT / report_path)
     record_hash = _record_sha256_for_artifact(text, report_path)
-    if record_hash != actual_hash:
+    if record_hash != actual_hash and not phase59_lane_report:
         fail("Phase 43 T-handle report sha256 mismatch")
 
     if report.baseline_lane != "rbd_rk4_reference":
@@ -5526,13 +5566,23 @@ def validate_phase43_record() -> None:
     for blocker in (
         "exact_t_handle_geometry_unknown",
         "raw_t_handle_reference_curve_data_missing",
-        "mabd_newton_report_missing",
-        "t_handle_comparison_report_missing",
         "t_handle_timing_evidence_missing",
     ):
         if blocker not in blockers:
             fail(f"Phase 43 T-handle blocker missing: {blocker}")
-    if observed.get("required_missing_lanes") != ["mabd_newton"]:
+    mabd_blocker = (
+        "mabd_newton_report_incomplete" if phase59_lane_report else "mabd_newton_report_missing"
+    )
+    comparison_blocker = (
+        "t_handle_comparison_report_incomplete"
+        if phase59_lane_report
+        else "t_handle_comparison_report_missing"
+    )
+    for blocker in (mabd_blocker, comparison_blocker):
+        if blocker not in blockers:
+            fail(f"Phase 43 T-handle blocker missing: {blocker}")
+    expected_required_missing = [] if phase59_lane_report else ["mabd_newton"]
+    if observed.get("required_missing_lanes") != expected_required_missing:
         fail("Phase 43 T-handle required_missing_lanes changed")
     if _require_finite_scalar(observed.get("time_step_s"), "Phase 43 T-handle time_step_s") != 1.0e-4:
         fail("Phase 43 T-handle RK4 step changed")
@@ -8839,9 +8889,10 @@ def validate_phase56_record() -> None:
         fail(f"Phase 56 T-handle config validation failed: {exc}")
 
     report = load_claim_report(ROOT / report_path)
-    if report.source_commit != implementation_commit:
+    phase59_lane_report = _is_phase59_t_handle_lane_report(report)
+    if report.source_commit != implementation_commit and not phase59_lane_report:
         fail("Phase 56 report source_commit changed")
-    if report.source_commit not in text:
+    if report.source_commit not in text and not phase59_lane_report:
         fail("Phase 56 record must list report source_commit")
     if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
         fail("Phase 56 report vendored Newton commit changed")
@@ -8855,7 +8906,10 @@ def validate_phase56_record() -> None:
         fail("Phase 56 report backend changed")
     if report.observed.get("full_experiment_claim_passed") is not False:
         fail("Phase 56 report must not pass full experiment claim")
-    if _record_sha256_for_artifact(text, report_path) != sha256_file(ROOT / report_path):
+    if (
+        _record_sha256_for_artifact(text, report_path) != sha256_file(ROOT / report_path)
+        and not phase59_lane_report
+    ):
         fail("Phase 56 report sha256 mismatch")
 
     observed = report.observed
@@ -8909,11 +8963,17 @@ def validate_phase56_record() -> None:
         "exact_t_handle_geometry_unknown",
         "raw_t_handle_reference_curve_data_missing",
         "mabd_newton_report_incomplete",
-        "t_handle_comparison_report_missing",
         "t_handle_timing_evidence_missing",
     ):
         if blocker not in blockers:
             fail(f"Phase 56 blocker missing: {blocker}")
+    comparison_blocker = (
+        "t_handle_comparison_report_incomplete"
+        if phase59_lane_report
+        else "t_handle_comparison_report_missing"
+    )
+    if comparison_blocker not in blockers:
+        fail(f"Phase 56 blocker missing: {comparison_blocker}")
     if "mabd_newton_report_missing" in blockers:
         fail("Phase 56 report must not retain mabd_newton_report_missing")
     if observed.get("required_missing_lanes") != []:
@@ -9086,6 +9146,7 @@ def validate_phase57_record() -> None:
     mabd_report = load_claim_report(ROOT / mabd_path)
     observed = report.observed
     digitized_figure_available = observed.get("digitized_figure_reference_available") is True
+    phase59_comparison_report = _is_phase59_t_handle_comparison_report(report)
     if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
         fail("Phase 57 report source_commit must not be a placeholder")
     if report.source_commit != implementation_commit and not digitized_figure_available:
@@ -9154,21 +9215,32 @@ def validate_phase57_record() -> None:
     if not isinstance(paper_metric_statuses, dict):
         fail("Phase 57 paper_metric_statuses must be a mapping")
     expected_statuses = {
-        "flip_timing_error": "sample_grid_flip_delta_unavailable_not_paper_timing",
-        "intermediate_axis_angular_velocity_waveform": (
-            "paper_figure_digitized_color_family_available_not_curve_agreement"
-            if digitized_figure_available
-            else "diagnostic_available_not_paper_curve"
-        ),
-        "energy_loss": (
-            "paper_figure_digitized_color_family_available_not_energy_agreement"
-            if digitized_figure_available
-            else "signed_energy_drift_diagnostic_not_paper_loss"
-        ),
+        "flip_timing_error": {"sample_grid_flip_delta_unavailable_not_paper_timing"},
+        "intermediate_axis_angular_velocity_waveform": {
+            (
+                "paper_figure_digitized_color_family_available_not_curve_agreement"
+                if digitized_figure_available
+                else "diagnostic_available_not_paper_curve"
+            )
+        },
+        "energy_loss": {
+            (
+                "paper_figure_digitized_color_family_available_not_energy_agreement"
+                if digitized_figure_available
+                else "signed_energy_drift_diagnostic_not_paper_loss"
+            )
+        },
     }
-    for metric, expected_status in expected_statuses.items():
+    if phase59_comparison_report:
+        expected_statuses["intermediate_axis_angular_velocity_waveform"].add(
+            "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement"
+        )
+        expected_statuses["energy_loss"].add(
+            "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement"
+        )
+    for metric, allowed_statuses in expected_statuses.items():
         status = paper_metric_statuses.get(metric, {}).get("status")
-        if status != expected_status:
+        if status not in allowed_statuses:
             fail(f"Phase 57 {metric} paper metric status changed")
 
     blockers = observed.get("blocking_reasons")
@@ -9409,22 +9481,33 @@ def validate_phase58_record() -> None:
     comparison_report = load_claim_report(ROOT / comparison_path)
     rk4_report = load_claim_report(ROOT / rk4_path)
     mabd_report = load_claim_report(ROOT / mabd_path)
-    for label, path, report in (
-        ("figure", figure_path, figure_report),
-        ("comparison", comparison_path, comparison_report),
-    ):
-        if report.source_commit != implementation_commit:
-            fail(f"Phase 58 {label} report source_commit changed")
-        if report.source_commit not in text:
-            fail(f"Phase 58 record must list {label} report source_commit")
-        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
-            fail(f"Phase 58 {label} report vendored Newton commit changed")
-        if report.status.value != "incomplete":
-            fail(f"Phase 58 {label} report must remain incomplete")
-        if report.observed.get("full_experiment_claim_passed") is not False:
-            fail(f"Phase 58 {label} report must not pass full experiment claim")
-        if _record_sha256_for_artifact(text, path) != sha256_file(ROOT / path):
-            fail(f"Phase 58 {label} report sha256 mismatch")
+    if figure_report.source_commit != implementation_commit:
+        fail("Phase 58 figure report source_commit changed")
+    if figure_report.source_commit not in text:
+        fail("Phase 58 record must list figure report source_commit")
+    if figure_report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 58 figure report vendored Newton commit changed")
+    if figure_report.status.value != "incomplete":
+        fail("Phase 58 figure report must remain incomplete")
+    if figure_report.observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 58 figure report must not pass full experiment claim")
+    if _record_sha256_for_artifact(text, figure_path) != sha256_file(ROOT / figure_path):
+        fail("Phase 58 figure report sha256 mismatch")
+
+    phase59_comparison = (
+        comparison_report.observed.get("digitized_figure_curve_agreement_available") is True
+    )
+    if not phase59_comparison:
+        if comparison_report.source_commit != implementation_commit:
+            fail("Phase 58 comparison report source_commit changed")
+        if _record_sha256_for_artifact(text, comparison_path) != sha256_file(ROOT / comparison_path):
+            fail("Phase 58 comparison report sha256 mismatch")
+    if comparison_report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 58 comparison report vendored Newton commit changed")
+    if comparison_report.status.value != "incomplete":
+        fail("Phase 58 comparison report must remain incomplete")
+    if comparison_report.observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 58 comparison report must not pass full experiment claim")
 
     if figure_report.claim_id != config.claim_id or figure_report.scene_id != config.scene_id:
         fail("Phase 58 figure report identity does not match config")
@@ -9519,13 +9602,17 @@ def validate_phase58_record() -> None:
     if not isinstance(metric_statuses, dict):
         fail("Phase 58 comparison paper_metric_statuses must be a mapping")
     expected_statuses = {
-        "intermediate_axis_angular_velocity_waveform": (
-            "paper_figure_digitized_color_family_available_not_curve_agreement"
-        ),
-        "energy_loss": "paper_figure_digitized_color_family_available_not_energy_agreement",
+        "intermediate_axis_angular_velocity_waveform": {
+            "paper_figure_digitized_color_family_available_not_curve_agreement",
+            "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement",
+        },
+        "energy_loss": {
+            "paper_figure_digitized_color_family_available_not_energy_agreement",
+            "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement",
+        },
     }
     for metric, expected_status in expected_statuses.items():
-        if metric_statuses.get(metric, {}).get("status") != expected_status:
+        if metric_statuses.get(metric, {}).get("status") not in expected_status:
             fail(f"Phase 58 comparison {metric} status changed")
     blockers = comparison_observed.get("blocking_reasons")
     if not isinstance(blockers, list):
@@ -9581,6 +9668,341 @@ def validate_phase58_record() -> None:
                 fail("Phase 58 T-handle conflict_note missing raw-data blocker")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 58 must not pass experiment.* claims")
+    if not found_t_handle:
+        fail("paper-claims.yaml missing T-handle claim")
+
+
+def validate_phase59_record() -> None:
+    text = (
+        ROOT
+        / "docs/records/2026-05-18-phase59-t-handle-figure-agreement-diagnostics.md"
+    ).read_text(encoding="utf-8")
+    rk4_path = "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
+    mabd_path = "reports/experiment_matrix/single_body_t_handle_mabd_newton.json"
+    comparison_path = "reports/experiment_matrix/single_body_t_handle_comparison.json"
+    figure_path = "reports/experiment_matrix/single_body_t_handle_figure_curves.json"
+    required_snippets = (
+        "## Status\n\npassed_for_t_handle_digitized_figure_agreement_diagnostic_lane",
+        "phase59-t-handle-figure-agreement",
+        PHASE59_T_HANDLE_AGREEMENT_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        "2603.08079v2",
+        "configs/experiments/single_body_t_handle.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        "`digitized_figure_curve_agreement_available`: `true`",
+        "`digitized_figure_curve_agreement_passed`: `false`",
+        "lane_time_s / diagnostic_duration_s * 100",
+        "normalized_figure_time_not_paper_raw_time",
+        "numeric_best_fit_not_legend_identity",
+        "diagnostic_only_not_curve_agreement",
+        "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement",
+        "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement",
+        rk4_path,
+        "0a0f1be3ffbfced0dd4ef463ee3419c119775a46ddde17807748d1b957c5b1b3",
+        mabd_path,
+        "a04556cdf375fa63d9a9a927ac3fa9732351a07be3aa26c82e617a492f198199",
+        comparison_path,
+        "a3b0a8acb993d99d842027fab7c10a8df7deffd903d1507b2851fbcd35fd3766",
+        figure_path,
+        "975f1e1fc27d76073145a6981a9f8e87907fac908333d8303a4386f5a5e743c6",
+        "sample field added: `relative_energy_loss`",
+        "input provenance includes `paper_figure_curves`",
+        "intermediate_axis_angular_velocity_waveform.rbd_rk4_reference",
+        "energy_loss.mabd_newton",
+        "sample_grid_flip_delta_unavailable",
+        "t_handle_digitized_figure_curve_agreement_not_passed",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.t_handle` remains",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_t_handle_reference tests.test_t_handle_comparison_reports tests.test_t_handle_digitization tests.test_experiment_runner",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane t_handle_rk4_reference",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane t_handle_mabd_newton",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane t_handle_comparison",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 59 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE59",
+        "phase59-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 59 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "t-handle experiment passed",
+        "t-handle comparison passed",
+        "t-handle mabd lane passed",
+        "authors' raw simulation data is available",
+        "authors' raw curve data is available",
+        "solid/dashed line styles are separated",
+        "legend-entry curve identity is known",
+        "paper raw-time alignment passed",
+        "paper-faithful t-handle geometry reconstructed",
+        "raw waveform agreement passed",
+        "energy-loss agreement passed",
+        "comparison pass gate passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 59 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 59")
+    verified = claim_boundary_bullet(boundary_text, "Phase 59 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 59 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text,
+        "Phase 59 T-handle digitized-figure agreement",
+    )
+    for snippet in (
+        "digitized-figure agreement diagnostic evidence",
+        "Phase 59 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 59 current boundary missing: {snippet}")
+    for snippet in (
+        "normalized-time numeric error diagnostics",
+        "relative-energy-loss RMSE/max-error diagnostics",
+        "normalized_figure_time_not_paper_raw_time",
+        "numeric_best_fit_not_legend_identity",
+        "diagnostic_only_not_curve_agreement",
+        "digitized_figure_curve_agreement_passed = false",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 59 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed T-handle experiment",
+        "authors' raw simulation data",
+        "authors' raw curve data",
+        "solid/dashed line-style separation",
+        "specific legend-entry curve identity",
+        "paper raw-time alignment",
+        "paper-faithful T-handle geometry or inertia",
+        "raw waveform agreement",
+        "paper energy-loss agreement",
+        "paper timing",
+        "runtime performance",
+        "comparison pass gate",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 59 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 59 forbidden boundary missing: {snippet}")
+    if "passed T-handle MABD lane" not in non_claim:
+        fail("Phase 59 non-claim boundary missing: passed T-handle MABD lane")
+    if "passed M-ABD lane" not in forbidden:
+        fail("Phase 59 forbidden boundary missing: passed M-ABD lane")
+
+    try:
+        config = load_t_handle_config(ROOT / "configs/experiments/single_body_t_handle.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_t_handle_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 59 T-handle config validation failed: {exc}")
+    if config.reference.output_report != rk4_path:
+        fail("Phase 59 RK4 output report binding changed")
+    if config.mabd_newton.output_report != mabd_path:
+        fail("Phase 59 MABD output report binding changed")
+    if config.comparison.output_report != comparison_path:
+        fail("Phase 59 comparison output report binding changed")
+    if config.figure_curves.output_report != figure_path:
+        fail("Phase 59 figure output report binding changed")
+
+    rk4_report = load_claim_report(ROOT / rk4_path)
+    mabd_report = load_claim_report(ROOT / mabd_path)
+    comparison_report = load_claim_report(ROOT / comparison_path)
+    figure_report = load_claim_report(ROOT / figure_path)
+
+    expected_hashes = {
+        rk4_path: "0a0f1be3ffbfced0dd4ef463ee3419c119775a46ddde17807748d1b957c5b1b3",
+        mabd_path: "a04556cdf375fa63d9a9a927ac3fa9732351a07be3aa26c82e617a492f198199",
+        comparison_path: "a3b0a8acb993d99d842027fab7c10a8df7deffd903d1507b2851fbcd35fd3766",
+        figure_path: "975f1e1fc27d76073145a6981a9f8e87907fac908333d8303a4386f5a5e743c6",
+    }
+    for path, expected_hash in expected_hashes.items():
+        if _record_sha256_for_artifact(text, path) != expected_hash:
+            fail(f"Phase 59 record hash for {path} changed")
+        if sha256_file(ROOT / path) != expected_hash:
+            fail(f"Phase 59 artifact hash mismatch for {path}")
+
+    for label, report in (
+        ("rk4", rk4_report),
+        ("mabd", mabd_report),
+        ("comparison", comparison_report),
+    ):
+        if report.source_commit != PHASE59_T_HANDLE_AGREEMENT_COMMIT:
+            fail(f"Phase 59 {label} report source_commit changed")
+        if report.source_commit not in text:
+            fail(f"Phase 59 record must list {label} source_commit")
+        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 59 {label} report vendored Newton commit changed")
+        if report.status.value != "incomplete":
+            fail(f"Phase 59 {label} report must remain incomplete")
+        if report.observed.get("full_experiment_claim_passed") is not False:
+            fail(f"Phase 59 {label} report must not pass full experiment claim")
+    if figure_report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 59 figure report vendored Newton commit changed")
+    if figure_report.status.value != "incomplete":
+        fail("Phase 59 figure report must remain incomplete")
+    if figure_report.observed.get("reference_curve_available") is not True:
+        fail("Phase 59 figure report must expose digitized curves")
+
+    for label, report in (("rk4", rk4_report), ("mabd", mabd_report)):
+        if not _has_relative_energy_loss_samples(report):
+            fail(f"Phase 59 {label} report missing relative_energy_loss samples")
+        samples = report.observed.get("angular_velocity_samples")
+        if not isinstance(samples, list) or len(samples) != config.reference.sample_count:
+            fail(f"Phase 59 {label} report sample count changed")
+        first_loss = _require_finite_scalar(
+            samples[0].get("relative_energy_loss"),
+            f"Phase 59 {label} first relative_energy_loss",
+        )
+        if first_loss != 0.0:
+            fail(f"Phase 59 {label} first relative_energy_loss must be zero")
+
+    observed = comparison_report.observed
+    if observed.get("digitized_figure_reference_available") is not True:
+        fail("Phase 59 comparison must record digitized figure availability")
+    if observed.get("digitized_figure_curve_agreement_available") is not True:
+        fail("Phase 59 comparison must expose figure agreement diagnostics")
+    if observed.get("digitized_figure_curve_agreement_passed") is not False:
+        fail("Phase 59 comparison must not pass figure agreement")
+    metric_statuses = observed.get("paper_metric_statuses")
+    if not isinstance(metric_statuses, dict):
+        fail("Phase 59 comparison paper_metric_statuses must be a mapping")
+    expected_statuses = {
+        "intermediate_axis_angular_velocity_waveform": (
+            "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement"
+        ),
+        "energy_loss": "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement",
+        "flip_timing_error": "sample_grid_flip_delta_unavailable_not_paper_timing",
+    }
+    for metric, expected_status in expected_statuses.items():
+        if metric_statuses.get(metric, {}).get("status") != expected_status:
+            fail(f"Phase 59 comparison {metric} status changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 59 comparison blockers must be a list")
+    for blocker in (
+        "exact_t_handle_geometry_unknown",
+        "raw_t_handle_reference_curve_data_missing",
+        "mabd_newton_report_incomplete",
+        "t_handle_comparison_report_incomplete",
+        "t_handle_timing_evidence_missing",
+        "t_handle_comparison_pass_gate_not_enabled",
+        "sample_grid_flip_delta_unavailable",
+        "t_handle_digitized_figure_curve_agreement_not_passed",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 59 comparison blocker missing: {blocker}")
+    provenance = observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 59 comparison input_report_provenance must be a mapping")
+    for lane, path, report in (
+        ("paper_figure_curves", figure_path, figure_report),
+        ("rbd_rk4_reference", rk4_path, rk4_report),
+        ("mabd_newton", mabd_path, mabd_report),
+    ):
+        lane_provenance = provenance.get(lane)
+        if not isinstance(lane_provenance, dict):
+            fail(f"Phase 59 comparison missing {lane} provenance")
+        if lane_provenance.get("path") != path:
+            fail(f"Phase 59 comparison {lane} provenance path changed")
+        if lane_provenance.get("sha256") != sha256_file(ROOT / path):
+            fail(f"Phase 59 comparison {lane} provenance sha256 mismatch")
+        if lane_provenance.get("source_commit") != report.source_commit:
+            fail(f"Phase 59 comparison {lane} provenance source_commit mismatch")
+
+    diagnostics = observed.get("digitized_figure_curve_agreement_diagnostics")
+    if not isinstance(diagnostics, dict):
+        fail("Phase 59 comparison diagnostics must be a mapping")
+    if set(diagnostics) != {"intermediate_axis_angular_velocity_waveform", "energy_loss"}:
+        fail("Phase 59 comparison diagnostic metric set changed")
+    expected_best_colors = {
+        ("intermediate_axis_angular_velocity_waveform", "rbd_rk4_reference"): "blue",
+        ("intermediate_axis_angular_velocity_waveform", "mabd_newton"): "blue",
+        ("energy_loss", "rbd_rk4_reference"): "orange",
+        ("energy_loss", "mabd_newton"): "orange",
+    }
+    for metric, lanes in diagnostics.items():
+        if not isinstance(lanes, dict) or set(lanes) != {"rbd_rk4_reference", "mabd_newton"}:
+            fail(f"Phase 59 {metric} diagnostic lanes changed")
+        for lane, diagnostic in lanes.items():
+            if not isinstance(diagnostic, dict):
+                fail(f"Phase 59 {metric} {lane} diagnostic must be a mapping")
+            if diagnostic.get("metric") != metric or diagnostic.get("lane") != lane:
+                fail(f"Phase 59 {metric} {lane} diagnostic identity changed")
+            if diagnostic.get("status") != "diagnostic_available_not_pass_gate":
+                fail(f"Phase 59 {metric} {lane} diagnostic status changed")
+            if diagnostic.get("best_color_family") != expected_best_colors[(metric, lane)]:
+                fail(f"Phase 59 {metric} {lane} best color family changed")
+            if diagnostic.get("matched_sample_count") != config.reference.sample_count:
+                fail(f"Phase 59 {metric} {lane} matched sample count changed")
+            _require_finite_scalar(diagnostic.get("best_rmse"), f"Phase 59 {metric} {lane} rmse")
+            _require_finite_scalar(
+                diagnostic.get("best_max_abs_error"),
+                f"Phase 59 {metric} {lane} max error",
+            )
+            if diagnostic.get("best_color_family_claim_status") != (
+                "numeric_best_fit_not_legend_identity"
+            ):
+                fail(f"Phase 59 {metric} {lane} best-color claim status changed")
+            if diagnostic.get("agreement_claim_status") != "diagnostic_only_not_curve_agreement":
+                fail(f"Phase 59 {metric} {lane} agreement claim status changed")
+            normalization = diagnostic.get("time_normalization")
+            if not isinstance(normalization, dict):
+                fail(f"Phase 59 {metric} {lane} normalization must be a mapping")
+            if normalization.get("claim_status") != "normalized_figure_time_not_paper_raw_time":
+                fail(f"Phase 59 {metric} {lane} normalization status changed")
+            if normalization.get("duration_source") != "lane_report_observed_duration_s":
+                fail(f"Phase 59 {metric} {lane} duration source changed")
+            if normalization.get("mapping") != "lane_time_s / diagnostic_duration_s * 100":
+                fail(f"Phase 59 {metric} {lane} normalization mapping changed")
+            if normalization.get("figure_time_range") != [0.0, 100.0]:
+                fail(f"Phase 59 {metric} {lane} figure time range changed")
+            duration = _require_finite_scalar(
+                normalization.get("diagnostic_duration_s"),
+                f"Phase 59 {metric} {lane} diagnostic duration",
+            )
+            if not np.isclose(duration, config.reference.duration_s, rtol=0.0, atol=1.0e-12):
+                fail(f"Phase 59 {metric} {lane} diagnostic duration changed")
+            color_errors = diagnostic.get("all_color_family_errors")
+            if not isinstance(color_errors, dict) or set(color_errors) != {"blue", "orange", "green"}:
+                fail(f"Phase 59 {metric} {lane} color-family errors changed")
+            for color_family, errors in color_errors.items():
+                if not isinstance(errors, dict):
+                    fail(f"Phase 59 {metric} {lane} {color_family} errors must be a mapping")
+                if errors.get("matched_sample_count") != config.reference.sample_count:
+                    fail(f"Phase 59 {metric} {lane} {color_family} sample count changed")
+                for key in ("rmse", "max_abs_error", "mean_error"):
+                    _require_finite_scalar(
+                        errors.get(key),
+                        f"Phase 59 {metric} {lane} {color_family} {key}",
+                    )
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_t_handle = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.t_handle":
+            found_t_handle = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 59 must keep T-handle experiment status intended")
+            conflict_note = str(claim.get("conflict_note", ""))
+            if "raw_t_handle_reference_curve_data_missing" not in conflict_note:
+                fail("Phase 59 T-handle conflict_note missing raw-data blocker")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 59 must not pass experiment.* claims")
     if not found_t_handle:
         fail("paper-claims.yaml missing T-handle claim")
 
@@ -9885,13 +10307,14 @@ def main() -> int:
     validate_phase56_record()
     validate_phase57_record()
     validate_phase58_record()
+    validate_phase59_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59 "
         "docs/provenance validation passed"
     )
     return 0

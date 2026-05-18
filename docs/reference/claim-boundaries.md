@@ -629,6 +629,31 @@
   curve identity, raw curve agreement or raw waveform agreement, paper
   energy-loss agreement, comparison pass gate, paper timing result, full paper
   reproduction, runtime performance, or any passed `experiment.*` claim.
+- This repository contains Phase 59 T-handle digitized-figure agreement
+  diagnostic evidence after the Phase 59 record is created.
+- Phase 59 verifies normalized-time numeric error diagnostics between the
+  current T-handle RK4/M-ABD diagnostic lanes and the Phase 58 digitized
+  blue/orange/green paper-figure color-family curves. It records per-lane
+  angular-velocity and relative-energy-loss RMSE/max-error diagnostics,
+  `normalized_figure_time_not_paper_raw_time`,
+  `numeric_best_fit_not_legend_identity`, and
+  `diagnostic_only_not_curve_agreement` disclaimers, and keeps
+  `digitized_figure_curve_agreement_passed = false`.
+- Phase 59 does not verify a passed T-handle experiment, passed T-handle MABD
+  lane, authors' raw simulation data, authors' raw curve data, solid/dashed
+  line-style separation, specific legend-entry curve identity, paper raw-time
+  alignment, paper-faithful T-handle geometry or inertia, raw waveform
+  agreement, paper energy-loss agreement, paper timing, runtime performance,
+  comparison pass gate, rendered-output evidence, generated videos, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 59 T-handle digitized-figure agreement diagnostic evidence must not be
+  described as a passed T-handle experiment, passed M-ABD lane, authors' raw
+  simulation data or authors' raw curve data, paper-faithful T-handle geometry
+  or inertia reconstruction, solid/dashed line-style separation, specific
+  legend-entry curve identity, paper raw-time alignment, raw curve agreement or
+  raw waveform agreement, paper energy-loss agreement, comparison pass gate,
+  paper timing result, full paper reproduction, runtime performance, or any
+  passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

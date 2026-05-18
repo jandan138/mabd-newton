@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import math
 import subprocess
 import sys
 import unittest
@@ -3189,6 +3190,35 @@ class Phase0BootstrapTests(unittest.TestCase):
         import scripts.validate_docs as validate_docs
 
         actual_sha256_file = validate_docs.sha256_file
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
+        )
+        legacy_report = replace(
+            actual,
+            source_commit="d741e6f5b1d85f7c02afb520f55b8bb273947604",
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_t_handle_rk4_reference.json"):
+                return legacy_report
+            return load_claim_report(path)
+
+        def fake_sha256_file(path):
+            if str(path).endswith("single_body_t_handle_rk4_reference.json"):
+                return "0" * 64
+            return actual_sha256_file(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with patch.object(validate_docs, "sha256_file", side_effect=fake_sha256_file):
+                with self.assertRaises(SystemExit) as context:
+                    validate_docs.validate_phase43_record()
+
+        self.assertIn("sha256 mismatch", str(context.exception))
+
+    def test_phase43_validator_accepts_phase59_relative_energy_loss_report_upgrade(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual_sha256_file = validate_docs.sha256_file
 
         def fake_sha256_file(path):
             if str(path).endswith("single_body_t_handle_rk4_reference.json"):
@@ -3196,10 +3226,33 @@ class Phase0BootstrapTests(unittest.TestCase):
             return actual_sha256_file(path)
 
         with patch.object(validate_docs, "sha256_file", side_effect=fake_sha256_file):
+            validate_docs.validate_phase43_record()
+
+    def test_phase43_validator_rejects_phase59_upgrade_without_relative_energy_loss(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
+        )
+        samples = [
+            {key: value for key, value in sample.items() if key != "relative_energy_loss"}
+            for sample in actual.observed["angular_velocity_samples"]
+        ]
+        without_energy_loss = replace(
+            actual,
+            observed={**actual.observed, "angular_velocity_samples": samples},
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith("single_body_t_handle_rk4_reference.json"):
+                return without_energy_loss
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
             with self.assertRaises(SystemExit) as context:
                 validate_docs.validate_phase43_record()
 
-        self.assertIn("sha256 mismatch", str(context.exception))
+        self.assertIn("must list the report source_commit", str(context.exception))
 
     def test_phase57_t_handle_comparison_protocol_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
@@ -3268,7 +3321,9 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         self.assertEqual(
             metric_statuses["intermediate_axis_angular_velocity_waveform"]["status"],
-            (
+            "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement"
+            if report.observed.get("digitized_figure_curve_agreement_available") is True
+            else (
                 "paper_figure_digitized_color_family_available_not_curve_agreement"
                 if report.observed.get("digitized_figure_reference_available") is True
                 else "diagnostic_available_not_paper_curve"
@@ -3276,7 +3331,9 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         self.assertEqual(
             metric_statuses["energy_loss"]["status"],
-            (
+            "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement"
+            if report.observed.get("digitized_figure_curve_agreement_available") is True
+            else (
                 "paper_figure_digitized_color_family_available_not_energy_agreement"
                 if report.observed.get("digitized_figure_reference_available") is True
                 else "signed_energy_drift_diagnostic_not_paper_loss"
@@ -3372,11 +3429,11 @@ class Phase0BootstrapTests(unittest.TestCase):
             comparison_report.observed["paper_metric_statuses"][
                 "intermediate_axis_angular_velocity_waveform"
             ]["status"],
-            "paper_figure_digitized_color_family_available_not_curve_agreement",
+            "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement",
         )
         self.assertEqual(
             comparison_report.observed["paper_metric_statuses"]["energy_loss"]["status"],
-            "paper_figure_digitized_color_family_available_not_energy_agreement",
+            "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement",
         )
         self.assertIn(
             "t_handle_digitized_figure_curve_agreement_not_passed",
@@ -3399,6 +3456,142 @@ class Phase0BootstrapTests(unittest.TestCase):
             "No `experiment.*` claim is passed.",
         ):
             self.assertIn(snippet, record_text)
+
+    def test_phase59_t_handle_figure_agreement_diagnostics_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 59")
+        verified = claim_boundary_bullet(text, "Phase 59 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 59 does not verify")
+        forbidden = claim_boundary_bullet(
+            text, "Phase 59 T-handle digitized-figure agreement"
+        )
+
+        self.assertIn("digitized-figure agreement diagnostic evidence", current)
+        self.assertIn("normalized-time numeric error diagnostics", verified)
+        self.assertIn("relative-energy-loss RMSE/max-error diagnostics", verified)
+        self.assertIn("normalized_figure_time_not_paper_raw_time", verified)
+        self.assertIn("numeric_best_fit_not_legend_identity", verified)
+        self.assertIn("diagnostic_only_not_curve_agreement", verified)
+        self.assertIn("digitized_figure_curve_agreement_passed = false", verified)
+        self.assertIn("authors' raw simulation data", non_claim)
+        self.assertIn("paper raw-time alignment", non_claim)
+        self.assertIn("paper energy-loss agreement", non_claim)
+        self.assertIn("comparison pass gate", forbidden)
+        self.assertIn("any passed `experiment.*` claim", forbidden)
+
+        rk4_report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
+        )
+        mabd_report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_mabd_newton.json"
+        )
+        for report in (rk4_report, mabd_report):
+            self.assertEqual(report.source_commit, "5d8a0079876d17568464a87c320c53be2d898089")
+            self.assertEqual(report.status, EvidenceStatus.INCOMPLETE)
+            samples = report.observed["angular_velocity_samples"]
+            self.assertEqual(len(samples), 9)
+            self.assertEqual(samples[0]["relative_energy_loss"], 0.0)
+            for sample in samples:
+                self.assertTrue(math.isfinite(float(sample["relative_energy_loss"])))
+
+        comparison_report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_t_handle_comparison.json"
+        )
+        self.assertEqual(
+            comparison_report.source_commit,
+            "5d8a0079876d17568464a87c320c53be2d898089",
+        )
+        self.assertEqual(comparison_report.status, EvidenceStatus.INCOMPLETE)
+        observed = comparison_report.observed
+        self.assertTrue(observed["digitized_figure_reference_available"])
+        self.assertTrue(observed["digitized_figure_curve_agreement_available"])
+        self.assertFalse(observed["digitized_figure_curve_agreement_passed"])
+        self.assertIn("paper_figure_curves", observed["input_report_provenance"])
+        self.assertEqual(
+            observed["paper_metric_statuses"]["intermediate_axis_angular_velocity_waveform"][
+                "status"
+            ],
+            "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement",
+        )
+        self.assertEqual(
+            observed["paper_metric_statuses"]["energy_loss"]["status"],
+            "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement",
+        )
+        for blocker in (
+            "exact_t_handle_geometry_unknown",
+            "raw_t_handle_reference_curve_data_missing",
+            "mabd_newton_report_incomplete",
+            "t_handle_comparison_report_incomplete",
+            "t_handle_timing_evidence_missing",
+            "t_handle_comparison_pass_gate_not_enabled",
+            "sample_grid_flip_delta_unavailable",
+            "t_handle_digitized_figure_curve_agreement_not_passed",
+        ):
+            self.assertIn(blocker, observed["blocking_reasons"])
+
+        diagnostics = observed["digitized_figure_curve_agreement_diagnostics"]
+        self.assertEqual(
+            set(diagnostics),
+            {"intermediate_axis_angular_velocity_waveform", "energy_loss"},
+        )
+        for metric, lanes in diagnostics.items():
+            self.assertEqual(set(lanes), {"rbd_rk4_reference", "mabd_newton"})
+            for lane, diagnostic in lanes.items():
+                self.assertEqual(diagnostic["metric"], metric)
+                self.assertEqual(diagnostic["lane"], lane)
+                self.assertEqual(diagnostic["status"], "diagnostic_available_not_pass_gate")
+                self.assertGreater(diagnostic["matched_sample_count"], 0)
+                self.assertIn(diagnostic["best_color_family"], {"blue", "orange", "green"})
+                self.assertTrue(math.isfinite(float(diagnostic["best_rmse"])))
+                self.assertTrue(math.isfinite(float(diagnostic["best_max_abs_error"])))
+                self.assertEqual(
+                    diagnostic["best_color_family_claim_status"],
+                    "numeric_best_fit_not_legend_identity",
+                )
+                self.assertEqual(
+                    diagnostic["agreement_claim_status"],
+                    "diagnostic_only_not_curve_agreement",
+                )
+                normalization = diagnostic["time_normalization"]
+                self.assertEqual(
+                    normalization["claim_status"],
+                    "normalized_figure_time_not_paper_raw_time",
+                )
+                self.assertEqual(
+                    normalization["mapping"],
+                    "lane_time_s / diagnostic_duration_s * 100",
+                )
+                self.assertEqual(normalization["duration_source"], "lane_report_observed_duration_s")
+                self.assertEqual(normalization["figure_time_range"], [0.0, 100.0])
+                self.assertEqual(set(diagnostic["all_color_family_errors"]), {"blue", "orange", "green"})
+                for errors in diagnostic["all_color_family_errors"].values():
+                    self.assertGreater(errors["matched_sample_count"], 0)
+                    self.assertTrue(math.isfinite(float(errors["rmse"])))
+                    self.assertTrue(math.isfinite(float(errors["max_abs_error"])))
+                    self.assertTrue(math.isfinite(float(errors["mean_error"])))
+
+        record_text = (
+            ROOT
+            / "docs/records/2026-05-18-phase59-t-handle-figure-agreement-diagnostics.md"
+        ).read_text()
+        for snippet in (
+            "passed_for_t_handle_digitized_figure_agreement_diagnostic_lane",
+            "5d8a0079876d17568464a87c320c53be2d898089",
+            "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+            "0a0f1be3ffbfced0dd4ef463ee3419c119775a46ddde17807748d1b957c5b1b3",
+            "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
+            "a04556cdf375fa63d9a9a927ac3fa9732351a07be3aa26c82e617a492f198199",
+            "reports/experiment_matrix/single_body_t_handle_comparison.json",
+            "a3b0a8acb993d99d842027fab7c10a8df7deffd903d1507b2851fbcd35fd3766",
+            "normalized_figure_time_not_paper_raw_time",
+            "numeric_best_fit_not_legend_identity",
+            "diagnostic_only_not_curve_agreement",
+            "sample_grid_flip_delta_unavailable",
+            "No `experiment.*` claim is passed.",
+        ):
+            self.assertIn(snippet, record_text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE59", record_text)
+        self.assertNotIn("phase59-working-tree", record_text)
 
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
@@ -4246,7 +4439,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

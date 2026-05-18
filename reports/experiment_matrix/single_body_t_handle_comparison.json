@@ -44,6 +44,178 @@
       "sample_grid_flip_delta_unavailable",
       "t_handle_digitized_figure_curve_agreement_not_passed"
     ],
+    "digitized_figure_curve_agreement_available": true,
+    "digitized_figure_curve_agreement_diagnostics": {
+      "energy_loss": {
+        "mabd_newton": {
+          "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+          "all_color_family_errors": {
+            "blue": {
+              "matched_sample_count": 9,
+              "max_abs_error": 0.10020539905879762,
+              "mean_error": -0.05251532342002669,
+              "rmse": 0.06252391674404921
+            },
+            "green": {
+              "matched_sample_count": 9,
+              "max_abs_error": 0.1880868544578587,
+              "mean_error": -0.10899191444767406,
+              "rmse": 0.1259716358079661
+            },
+            "orange": {
+              "matched_sample_count": 9,
+              "max_abs_error": 0.07218309858931408,
+              "mean_error": -0.020205725089301612,
+              "rmse": 0.029111399488363488
+            }
+          },
+          "best_color_family": "orange",
+          "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+          "best_max_abs_error": 0.07218309858931408,
+          "best_rmse": 0.029111399488363488,
+          "lane": "mabd_newton",
+          "matched_sample_count": 9,
+          "metric": "energy_loss",
+          "status": "diagnostic_available_not_pass_gate",
+          "time_normalization": {
+            "claim_status": "normalized_figure_time_not_paper_raw_time",
+            "diagnostic_duration_s": 4.0,
+            "duration_source": "lane_report_observed_duration_s",
+            "figure_time_range": [
+              0.0,
+              100.0
+            ],
+            "mapping": "lane_time_s / diagnostic_duration_s * 100"
+          }
+        },
+        "rbd_rk4_reference": {
+          "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+          "all_color_family_errors": {
+            "blue": {
+              "matched_sample_count": 9,
+              "max_abs_error": 0.1002053990610147,
+              "mean_error": -0.05251532342200173,
+              "rmse": 0.06252391674591258
+            },
+            "green": {
+              "matched_sample_count": 9,
+              "max_abs_error": 0.1880868544600799,
+              "mean_error": -0.10899191444964909,
+              "rmse": 0.125971635809887
+            },
+            "orange": {
+              "matched_sample_count": 9,
+              "max_abs_error": 0.07218309859153116,
+              "mean_error": -0.020205725091276633,
+              "rmse": 0.029111399489891207
+            }
+          },
+          "best_color_family": "orange",
+          "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+          "best_max_abs_error": 0.07218309859153116,
+          "best_rmse": 0.029111399489891207,
+          "lane": "rbd_rk4_reference",
+          "matched_sample_count": 9,
+          "metric": "energy_loss",
+          "status": "diagnostic_available_not_pass_gate",
+          "time_normalization": {
+            "claim_status": "normalized_figure_time_not_paper_raw_time",
+            "diagnostic_duration_s": 4.0,
+            "duration_source": "lane_report_observed_duration_s",
+            "figure_time_range": [
+              0.0,
+              100.0
+            ],
+            "mapping": "lane_time_s / diagnostic_duration_s * 100"
+          }
+        }
+      },
+      "intermediate_axis_angular_velocity_waveform": {
+        "mabd_newton": {
+          "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+          "all_color_family_errors": {
+            "blue": {
+              "matched_sample_count": 9,
+              "max_abs_error": 4.896470588235294,
+              "mean_error": -0.16123215261418788,
+              "rmse": 2.049181746364472
+            },
+            "green": {
+              "matched_sample_count": 9,
+              "max_abs_error": 4.948235294117647,
+              "mean_error": -0.19417332908477608,
+              "rmse": 2.6597059202132893
+            },
+            "orange": {
+              "matched_sample_count": 9,
+              "max_abs_error": 4.9811764705882355,
+              "mean_error": 0.11092471013091029,
+              "rmse": 2.9057961712666143
+            }
+          },
+          "best_color_family": "blue",
+          "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+          "best_max_abs_error": 4.896470588235294,
+          "best_rmse": 2.049181746364472,
+          "lane": "mabd_newton",
+          "matched_sample_count": 9,
+          "metric": "intermediate_axis_angular_velocity_waveform",
+          "status": "diagnostic_available_not_pass_gate",
+          "time_normalization": {
+            "claim_status": "normalized_figure_time_not_paper_raw_time",
+            "diagnostic_duration_s": 4.0,
+            "duration_source": "lane_report_observed_duration_s",
+            "figure_time_range": [
+              0.0,
+              100.0
+            ],
+            "mapping": "lane_time_s / diagnostic_duration_s * 100"
+          }
+        },
+        "rbd_rk4_reference": {
+          "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+          "all_color_family_errors": {
+            "blue": {
+              "matched_sample_count": 9,
+              "max_abs_error": 4.896470588235294,
+              "mean_error": 1.2536523482341586,
+              "rmse": 2.825187073627759
+            },
+            "green": {
+              "matched_sample_count": 9,
+              "max_abs_error": 4.948235294117647,
+              "mean_error": 1.2207111717635704,
+              "rmse": 3.3333936670371678
+            },
+            "orange": {
+              "matched_sample_count": 9,
+              "max_abs_error": 4.9811764705882355,
+              "mean_error": 1.525809210979257,
+              "rmse": 3.320261045714379
+            }
+          },
+          "best_color_family": "blue",
+          "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+          "best_max_abs_error": 4.896470588235294,
+          "best_rmse": 2.825187073627759,
+          "lane": "rbd_rk4_reference",
+          "matched_sample_count": 9,
+          "metric": "intermediate_axis_angular_velocity_waveform",
+          "status": "diagnostic_available_not_pass_gate",
+          "time_normalization": {
+            "claim_status": "normalized_figure_time_not_paper_raw_time",
+            "diagnostic_duration_s": 4.0,
+            "duration_source": "lane_report_observed_duration_s",
+            "figure_time_range": [
+              0.0,
+              100.0
+            ],
+            "mapping": "lane_time_s / diagnostic_duration_s * 100"
+          }
+        }
+      }
+    },
+    "digitized_figure_curve_agreement_passed": false,
     "digitized_figure_reference_available": true,
     "digitized_figure_reference_samples": {
       "angular_velocity_color_families": {
@@ -86,10 +258,10 @@
         "mabd_diagnostic_scope": "t_handle_model_derived_proxy",
         "path": "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
         "reference_not_paper_geometry": true,
-        "sha256": "969e8aa66516af3b846bf64699cc2339df66dfaa6a22c851fee4a9957744e55b",
+        "sha256": "a04556cdf375fa63d9a9a927ac3fa9732351a07be3aa26c82e617a492f198199",
         "solver_mode": "mabd_cpu_oracle_t_handle_newton_lane",
         "solver_model_config_source": "newton_model_derived",
-        "source_commit": "51745677bd115a0b98294dd8bbf9132e94fc4f3a",
+        "source_commit": "5d8a0079876d17568464a87c320c53be2d898089",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       },
@@ -109,9 +281,9 @@
         "path": "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
         "reference_not_paper_geometry": true,
         "reference_scope": "torque_free_principal_axis_rk4_diagnostic",
-        "sha256": "a0153e2bd4f0e20aa5271ecbaaec726661e352b6b4baebe96dcfc76dddd25b67",
+        "sha256": "0a0f1be3ffbfced0dd4ef463ee3419c119775a46ddde17807748d1b957c5b1b3",
         "solver_mode": "t_handle_torque_free_rk4_reference",
-        "source_commit": "d741e6f5b1d85f7c02afb520f55b8bb273947604",
+        "source_commit": "5d8a0079876d17568464a87c320c53be2d898089",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       }
@@ -158,8 +330,8 @@
     "paper_metric_statuses": {
       "energy_loss": {
         "diagnostic_field": "energy_drift_diagnostics",
-        "limitation": "paper figure color-family digitization is available, but no energy-loss agreement gate has passed",
-        "status": "paper_figure_digitized_color_family_available_not_energy_agreement"
+        "limitation": "paper figure energy-loss color-family error diagnostics are available, but no energy-loss agreement gate has passed",
+        "status": "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement"
       },
       "flip_timing_error": {
         "diagnostic_field": "flip_timing_diagnostics",
@@ -168,8 +340,8 @@
       },
       "intermediate_axis_angular_velocity_waveform": {
         "diagnostic_field": "intermediate_axis_waveform_rmse_rad_s",
-        "limitation": "paper figure color-family digitization is available, but no curve agreement gate has passed",
-        "status": "paper_figure_digitized_color_family_available_not_curve_agreement"
+        "limitation": "paper figure color-family error diagnostics are available, but no curve agreement gate has passed",
+        "status": "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement"
       }
     },
     "rk4_sample_count": 9,
@@ -362,7 +534,7 @@
   },
   "scene_id": "single_body_t_handle",
   "solver_mode": "t_handle_multilane_comparison_development",
-  "source_commit": "892896b330ecd380656c01638bccf742accc4b28",
+  "source_commit": "5d8a0079876d17568464a87c320c53be2d898089",
   "status": "incomplete",
   "threshold": {
     "max_sample_time_delta_s": 1e-12

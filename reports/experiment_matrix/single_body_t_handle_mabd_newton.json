@@ -10,7 +10,7 @@
       "exact_t_handle_geometry_unknown",
       "raw_t_handle_reference_curve_data_missing",
       "mabd_newton_report_incomplete",
-      "t_handle_comparison_report_missing",
+      "t_handle_comparison_report_incomplete",
       "t_handle_timing_evidence_missing"
     ],
     "figure_pdf_sha256": "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c",
@@ -48,6 +48,7 @@
         "omega_x_rad_s": 0.03,
         "omega_y_rad_s": 3.0,
         "omega_z_rad_s": 0.0,
+        "relative_energy_loss": 0.0,
         "sample_index": 0,
         "step": 0,
         "time_s": 0.0
@@ -59,6 +60,7 @@
         "omega_x_rad_s": 0.009230138434737571,
         "omega_y_rad_s": 0.9230075375178732,
         "omega_z_rad_s": -4.217284650925163e-08,
+        "relative_energy_loss": 2.2352228624317797e-12,
         "sample_index": 1,
         "step": 500,
         "time_s": 0.5
@@ -70,6 +72,7 @@
         "omega_x_rad_s": 0.0029998410358905896,
         "omega_y_rad_s": 0.2999699548583498,
         "omega_z_rad_s": -4.7179801070280913e-08,
+        "relative_energy_loss": 2.2352228624317797e-12,
         "sample_index": 2,
         "step": 1000,
         "time_s": 1.0
@@ -81,6 +84,7 @@
         "omega_x_rad_s": 0.0014116813109432587,
         "omega_y_rad_s": 0.1411637594561954,
         "omega_z_rad_s": -9.720817869401932e-09,
+        "relative_energy_loss": 2.2352228624317797e-12,
         "sample_index": 3,
         "step": 1500,
         "time_s": 1.5
@@ -92,6 +96,7 @@
         "omega_x_rad_s": 0.0008105615911666616,
         "omega_y_rad_s": 0.0810763794254895,
         "omega_z_rad_s": 3.369480497481675e-08,
+        "relative_energy_loss": 2.2352228624317797e-12,
         "sample_index": 4,
         "step": 2000,
         "time_s": 2.0
@@ -103,6 +108,7 @@
         "omega_x_rad_s": 0.0005233385756837572,
         "omega_y_rad_s": 0.05239976013036987,
         "omega_z_rad_s": 8.786242705529496e-08,
+        "relative_energy_loss": 2.2352228624317797e-12,
         "sample_index": 5,
         "step": 2500,
         "time_s": 2.5
@@ -114,6 +120,7 @@
         "omega_x_rad_s": 0.0003650758924939667,
         "omega_y_rad_s": 0.03658319925646472,
         "omega_z_rad_s": 8.400348313762802e-08,
+        "relative_energy_loss": 2.2352228624317797e-12,
         "sample_index": 6,
         "step": 3000,
         "time_s": 3.0
@@ -125,6 +132,7 @@
         "omega_x_rad_s": 0.0002689252784797902,
         "omega_y_rad_s": 0.026963879296832832,
         "omega_z_rad_s": 6.794671266342062e-08,
+        "relative_energy_loss": 2.2352228624317797e-12,
         "sample_index": 7,
         "step": 3500,
         "time_s": 3.5
@@ -136,6 +144,7 @@
         "omega_x_rad_s": 0.00020619215930312522,
         "omega_y_rad_s": 0.020687333001322653,
         "omega_z_rad_s": 5.675778543879663e-08,
+        "relative_energy_loss": 2.2352228624317797e-12,
         "sample_index": 8,
         "step": 4000,
         "time_s": 4.0
@@ -145,7 +154,7 @@
       "exact_t_handle_geometry_unknown",
       "raw_t_handle_reference_curve_data_missing",
       "mabd_newton_report_incomplete",
-      "t_handle_comparison_report_missing",
+      "t_handle_comparison_report_incomplete",
       "t_handle_timing_evidence_missing"
     ],
     "duration_s": 4.0,
@@ -227,7 +236,7 @@
   "raw_outputs": {},
   "scene_id": "single_body_t_handle",
   "solver_mode": "mabd_cpu_oracle_t_handle_newton_lane",
-  "source_commit": "51745677bd115a0b98294dd8bbf9132e94fc4f3a",
+  "source_commit": "5d8a0079876d17568464a87c320c53be2d898089",
   "status": "incomplete",
   "threshold": {
     "max_affine_shape_spread_m": 10.0,

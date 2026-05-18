@@ -9,8 +9,8 @@
     "blocking_reasons": [
       "exact_t_handle_geometry_unknown",
       "raw_t_handle_reference_curve_data_missing",
-      "mabd_newton_report_missing",
-      "t_handle_comparison_report_missing",
+      "mabd_newton_report_incomplete",
+      "t_handle_comparison_report_incomplete",
       "t_handle_timing_evidence_missing"
     ],
     "figure_pdf_sha256": "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c",
@@ -35,72 +35,90 @@
       "/tmp/mabd-paper/source/sections/experiment.tex:57-75"
     ]
   },
-  "failure_reason": "rbd_rk4_reference diagnostic only; exact_t_handle_geometry_unknown, raw_t_handle_reference_curve_data_missing, mabd_newton_report_missing, t_handle_comparison_report_missing, and t_handle_timing_evidence_missing remain incomplete",
+  "failure_reason": "rbd_rk4_reference diagnostic only; exact_t_handle_geometry_unknown, raw_t_handle_reference_curve_data_missing, mabd_newton_report_incomplete, t_handle_comparison_report_incomplete, and t_handle_timing_evidence_missing remain incomplete",
   "observed": {
     "angular_momentum_norm_drift": -5.329003906068249e-15,
     "angular_momentum_norm_final": 6.000074999531224,
     "angular_momentum_norm_initial": 6.000074999531256,
     "angular_velocity_samples": [
       {
+        "energy": 9.00045,
         "omega_x_rad_s": 0.03,
         "omega_y_rad_s": 3.0,
         "omega_z_rad_s": 0.0,
+        "relative_energy_loss": 0.0,
         "sample_index": 0,
         "time_s": 0.0
       },
       {
+        "energy": 9.000449999999935,
         "omega_x_rad_s": 0.04197057156412415,
         "omega_y_rad_s": 2.9998564084173287,
         "omega_z_rad_s": -0.016946276655156196,
+        "relative_energy_loss": 0.0,
         "sample_index": 1,
         "time_s": 0.5
       },
       {
+        "energy": 9.000449999999875,
         "omega_x_rad_s": 0.08742449846731871,
         "omega_y_rad_s": 2.9988759489294674,
         "omega_z_rad_s": -0.04740971395632697,
+        "relative_energy_loss": 1.401278109399172e-14,
         "sample_index": 2,
         "time_s": 1.0
       },
       {
+        "energy": 9.000449999999837,
         "omega_x_rad_s": 0.20247119257397975,
         "omega_y_rad_s": 2.993310110258793,
         "omega_z_rad_s": -0.11560649321776867,
+        "relative_energy_loss": 1.815740648798927e-14,
         "sample_index": 3,
         "time_s": 1.5
       },
       {
+        "energy": 9.000449999999878,
         "omega_x_rad_s": 0.47669192552545375,
         "omega_y_rad_s": 2.9620372732527716,
         "omega_z_rad_s": -0.27467264871792685,
+        "relative_energy_loss": 1.3618054865991954e-14,
         "sample_index": 4,
         "time_s": 2.0
       },
       {
+        "energy": 9.000449999999892,
         "omega_x_rad_s": 1.099976668688822,
         "omega_y_rad_s": 2.791227566562808,
         "omega_z_rad_s": -0.6348355880750431,
+        "relative_energy_loss": 1.2039149953992886e-14,
         "sample_index": 5,
         "time_s": 2.5
       },
       {
+        "energy": 9.000449999999834,
         "omega_x_rad_s": 2.2503917330026195,
         "omega_y_rad_s": 1.9840960279263973,
         "omega_z_rad_s": -1.2991488177478,
+        "relative_energy_loss": 1.8552132715989038e-14,
         "sample_index": 6,
         "time_s": 3.0
       },
       {
+        "energy": 9.000449999999844,
         "omega_x_rad_s": 2.9926382818422628,
         "omega_y_rad_s": -0.21217001214121756,
         "omega_z_rad_s": -1.727713699849975,
+        "relative_energy_loss": 1.7367954031989738e-14,
         "sample_index": 7,
         "time_s": 3.5
       },
       {
+        "energy": 9.000449999999885,
         "omega_x_rad_s": 2.038294759145079,
         "omega_y_rad_s": -2.2014210126283325,
         "omega_z_rad_s": -1.176682557752709,
+        "relative_energy_loss": 1.2828602409992419e-14,
         "sample_index": 8,
         "time_s": 4.0
       }
@@ -108,8 +126,8 @@
     "blocking_reasons": [
       "exact_t_handle_geometry_unknown",
       "raw_t_handle_reference_curve_data_missing",
-      "mabd_newton_report_missing",
-      "t_handle_comparison_report_missing",
+      "mabd_newton_report_incomplete",
+      "t_handle_comparison_report_incomplete",
       "t_handle_timing_evidence_missing"
     ],
     "duration_s": 4.0,
@@ -137,9 +155,7 @@
     "reference_not_paper_geometry": true,
     "reference_scope": "torque_free_principal_axis_rk4_diagnostic",
     "relative_energy_drift": -1.2828602409992419e-14,
-    "required_missing_lanes": [
-      "mabd_newton"
-    ],
+    "required_missing_lanes": [],
     "sample_count": 9,
     "threshold_violations": [],
     "time_step_s": 0.0001
@@ -149,7 +165,7 @@
   "raw_outputs": {},
   "scene_id": "single_body_t_handle",
   "solver_mode": "t_handle_torque_free_rk4_reference",
-  "source_commit": "d741e6f5b1d85f7c02afb520f55b8bb273947604",
+  "source_commit": "5d8a0079876d17568464a87c320c53be2d898089",
   "status": "incomplete",
   "threshold": {
     "max_angular_momentum_norm_drift": 1e-08,
