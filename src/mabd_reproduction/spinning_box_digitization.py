@@ -124,7 +124,8 @@ def _render_pdf(pdf_path: Path, output_prefix: Path) -> tuple[Image.Image, tuple
     png_path = output_prefix.with_suffix(".png")
     rendered_hash = _sha256_file(png_path)
     image = Image.open(png_path).convert("RGB")
-    return image, command, rendered_hash
+    recorded_command = (*command[:-1], "temporary_output_prefix")
+    return image, recorded_command, rendered_hash
 
 
 def _color_family_masks(crop: np.ndarray) -> dict[str, np.ndarray]:

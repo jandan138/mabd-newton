@@ -445,7 +445,7 @@ Run:
 
 ```bash
 SOURCE_COMMIT=$(git rev-parse HEAD)
-VENDORED_NEWTON_COMMIT=$(git -C vendor/newton rev-parse HEAD)
+VENDORED_NEWTON_COMMIT=96713fa965463b69c229a4d30582c733ff3526bb
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py \
   --lane spinning_box_figure_curves \
   --config configs/experiments/single_body_spinning_box.yaml \
