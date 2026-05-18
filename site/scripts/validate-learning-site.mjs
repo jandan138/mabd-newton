@@ -34,6 +34,28 @@ const forbiddenClaimPatterns = [
 ];
 const requiredFrontmatterKeys = ["title", "description", "module", "order", "status", "claimStatus"];
 const requiredLessonComponents = ["<ProblemCard", "<ConceptCard", "<RememberBox"];
+const requiredTutorialComponents = [
+  {
+    marker: "<LearningGoals",
+    importPattern: /^\s*import\s+LearningGoals\s+from\s+["']\.\.\/\.\.\/components\/LearningGoals\.astro["'];?\s*$/m,
+    importName: "LearningGoals",
+  },
+  {
+    marker: "<PrereqBox",
+    importPattern: /^\s*import\s+PrereqBox\s+from\s+["']\.\.\/\.\.\/components\/PrereqBox\.astro["'];?\s*$/m,
+    importName: "PrereqBox",
+  },
+  {
+    marker: "<CheckpointQuiz",
+    importPattern: /^\s*import\s+CheckpointQuiz\s+from\s+["']\.\.\/\.\.\/components\/CheckpointQuiz\.astro["'];?\s*$/m,
+    importName: "CheckpointQuiz",
+  },
+  {
+    marker: "<PracticePrompt",
+    importPattern: /^\s*import\s+PracticePrompt\s+from\s+["']\.\.\/\.\.\/components\/PracticePrompt\.astro["'];?\s*$/m,
+    importName: "PracticePrompt",
+  },
+];
 const requiredFigureProps = ["alt", "caption", "kind", "provenance", "claimStatus"];
 const allowedFigureAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/[^/]+\.(?:png|webp)$/;
 const rasterDiagramAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/([^/]+\.(?:png|webp))$/;
@@ -116,6 +138,12 @@ function stripExamplesAndComments(text) {
 
 function figureCalls(text) {
   return [...stripExamplesAndComments(text).matchAll(/^[ \t]*<Figure\b[\s\S]*?(?:\/>|<\/Figure>)/gm)].map((match) => match[0]);
+}
+
+function checkpointDetailsCount(text) {
+  const cleaned = stripExamplesAndComments(text);
+  return [...cleaned.matchAll(/^[ \t]*<CheckpointQuiz\b[\s\S]*?<\/CheckpointQuiz>/gm)]
+    .reduce((count, checkpoint) => count + [...checkpoint[0].matchAll(/<details\b/g)].length, 0);
 }
 
 function assetImports(text) {
@@ -288,6 +316,18 @@ for (const file of checkedFiles) {
       if (!text.includes(marker)) {
         issues.push(`${relative}: missing learning component ${marker}`);
       }
+    }
+    const cleanedLessonText = stripExamplesAndComments(text);
+    for (const component of requiredTutorialComponents) {
+      if (!component.importPattern.test(cleanedLessonText)) {
+        issues.push(`${relative}: missing ${component.importName} component import`);
+      }
+      if (!cleanedLessonText.includes(component.marker)) {
+        issues.push(`${relative}: missing tutorial component ${component.marker}`);
+      }
+    }
+    if (checkpointDetailsCount(text) < 2) {
+      issues.push(`${relative}: CheckpointQuiz must include at least two <details> questions`);
     }
     const figures = figureCalls(text);
     if (figures.length === 0) {

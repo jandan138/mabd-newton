@@ -377,6 +377,62 @@ pre,
   padding: 12px 16px;
 }
 
+.tutorial-card {
+  border: 1px solid #ead5bc;
+  border-radius: 1.1rem;
+  background: #fffaf3;
+  box-shadow: 0 0.8rem 2rem rgba(73, 42, 23, 0.07);
+  padding: 1rem;
+}
+
+.tutorial-card h3 {
+  margin: 0 0 0.55rem;
+  color: #2a1910;
+  line-height: 1.2;
+}
+
+.tutorial-card ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.tutorial-card--goals {
+  border-color: #c9d9ee;
+  background: #f6fbff;
+}
+
+.tutorial-card--prereq {
+  border-color: #dfcfef;
+  background: #fbf7ff;
+}
+
+.tutorial-card--checkpoint {
+  border-color: #d9c49d;
+  background: #fff8e8;
+}
+
+.tutorial-card--practice {
+  border-color: #b9d4b0;
+  background: #f4fbef;
+}
+
+.checkpoint-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.checkpoint-list details {
+  border: 1px solid rgba(107, 64, 40, 0.18);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 0.75rem 0.9rem;
+}
+
+.checkpoint-list summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .learn-footer {
   margin-top: 3rem;
   border-top: 1px solid #ead5bc;

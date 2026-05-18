@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import affineStateMap from "../../assets/diagrams/affine-state-map.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ import affineStateMap from "../../assets/diagrams/affine-state-map.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>解释角色：</strong>说清 `A` 负责线性形变，`t` 负责整体平移。</li>
+  <li><strong>拆成步骤：</strong>把 `x_world = A @ x_rest + t` 翻译成先乘矩阵、再加平移的程序流程。</li>
+  <li><strong>理解打包：</strong>说明 `q in R12` 为什么方便求解器统一处理一个仿射体的状态。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>已经读过矩阵变换课，知道矩阵可以改变向量方向和长度。</li>
+  <li>知道 3x3 矩阵有 9 个数字，3D 向量有 3 个数字。</li>
+  <li>记得教程解释的是表示方法，不是完整实现或论文复现证据。</li>
+</PrereqBox>
 
 ## 一个仿射体的状态
 
@@ -67,7 +83,22 @@ def pack_q(A, t):
 虽然 `q` 是一个 12 维数组，但前 9 个数字组成同一个矩阵 `A`。改变其中一个数字会改变整个物体的一个方向分量，而不是只移动某个单独顶点。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>`t` 能表达剪切吗？</summary>
+    <p>不能。`t` 只把整个物体平移到新的世界位置；剪切属于线性变换，需要由 `A` 的列方向和分量来表达。</p>
+  </details>
+  <details>
+    <summary>`A` 和 `t` 为什么能打包成 12 个数？</summary>
+    <p>`A` 是 3x3 矩阵，有 9 个数字；`t` 是 3D 平移向量，有 3 个数字。按固定顺序排成数组后，求解器就能把它们当作一个 12 维广义坐标处理。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="本页解释状态表示" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+用伪代码写两个函数：`pack(A, t)` 按列打包 `A` 后接上 `t`，`apply(A, t, x_rest)` 返回 `A @ x_rest + t`。标注每个输入和输出的维度。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>

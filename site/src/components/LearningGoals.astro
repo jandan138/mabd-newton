@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = "学完你应该能" } = Astro.props;
+---
+
+<section class="tutorial-card tutorial-card--goals">
+  <h3>{title}</h3>
+  <ul>
+    <slot />
+  </ul>
+</section>

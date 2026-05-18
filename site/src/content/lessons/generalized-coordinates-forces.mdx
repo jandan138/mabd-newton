@@ -17,6 +17,10 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
+import LearningGoals from "../../components/LearningGoals.astro";
+import PrereqBox from "../../components/PrereqBox.astro";
+import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
+import PracticePrompt from "../../components/PracticePrompt.astro";
 import jacobianForceMap from "../../assets/diagrams/jacobian-force-map.png";
 
 <ProblemCard title="它解决的问题">
@@ -31,6 +35,18 @@ import jacobianForceMap from "../../assets/diagrams/jacobian-force-map.png";
   provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
+
+<LearningGoals>
+  <li><strong>连接速度：</strong>解释 `q`、`qd` 与点速度之间的关系。</li>
+  <li><strong>追踪力源：</strong>使用 `J^T f` 说出广义力来自哪里。</li>
+  <li><strong>检查方向：</strong>用虚功关系判断速度映射和力映射的方向是否一致。</li>
+</LearningGoals>
+
+<PrereqBox>
+  <li>已经读过矩阵变换和刚体基础，知道状态变量可以控制点的位置。</li>
+  <li>知道力是带方向和大小的向量。</li>
+  <li>能接受 Jacobian 是在当前状态附近描述变化关系的局部线性映射。</li>
+</PrereqBox>
 
 ## 从点到旋钮
 
@@ -71,7 +87,22 @@ xd = J @ qd`}
 转置来自虚功守恒，不是记忆技巧。如果 `J` 描述“旋钮怎么移动点”，那么 `J^T` 描述“点上的力如何反馈到旋钮”。形状和单位对不上时，通常说明点位置函数或坐标打包顺序没理清。
 </PitfallCard>
 
+<CheckpointQuiz>
+  <details>
+    <summary>`J qd` 和 `J^T f` 的方向为什么相反？</summary>
+    <p>`J qd` 从广义速度推到点速度；`J^T f` 从点力拉回到广义力。两者方向相反，但通过虚功 `f dot dx = tau dot dq` 保持同一件物理作用的功一致。</p>
+  </details>
+  <details>
+    <summary>为什么点力不能直接加到 `q` 上？</summary>
+    <p>点力生活在世界空间，而 `q` 的分量可能是平移、旋转或仿射矩阵条目。必须先用 Jacobian 转换，才能知道这个点力会推动哪些广义坐标。</p>
+  </details>
+</CheckpointQuiz>
+
 <RepoEvidenceCard title="本页解释通用模拟概念" status="本课为 conceptual" />
+
+<PracticePrompt title="动手练习">
+写两行伪代码：第一行表示 `point_velocity = J @ qd`，第二行表示 `generalized_force = J.T @ f`，并在旁边标注每一行的输入和输出空间。
+</PracticePrompt>
 
 <RememberBox title="核心记忆">
   <ul>
