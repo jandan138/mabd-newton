@@ -19,8 +19,10 @@ import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
 import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
+import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
+import WorkedExercise from "../../components/WorkedExercise.astro";
 import rigidVsAffineDof from "../../assets/diagrams/rigid-vs-affine-dof.png";
 
 <ProblemCard title="它解决的问题">
@@ -47,6 +49,10 @@ import rigidVsAffineDof from "../../assets/diagrams/rigid-vs-affine-dof.png";
   <li>见过旋转的基本概念，能接受朝向不是普通位置坐标。</li>
   <li>已经读过 `affine-state` 会更容易对比刚体与仿射体。</li>
 </PrereqBox>
+
+<GuidedProjectStep step="贯穿小项目 6/12" title="让印章先通过刚体版本">
+把同一枚软橡胶印章暂时换成 rigid-only 版本：它可以平移、转动，但标记点之间的距离和角度永远不能变。这样能看清 6 DOF 刚体能表达整体运动，却不能表达印章被压扁、拉长或剪切。
+</GuidedProjectStep>
 
 ## 6 DOF：三个位置，加三个姿态
 
@@ -103,6 +109,20 @@ angular_momentum = inertia_world @ omega`}
 <PracticePrompt title="动手练习">
 列出一个刚体状态至少需要存的变量，再列出一个仿射体状态 `q = [A, t]` 需要存的变量，对比哪些变量负责位置、哪些变量负责形状或朝向。
 </PracticePrompt>
+
+<WorkedExercise title="带答案的练习：刚体状态和 q=[A,t]">
+对同一枚印章，写出 rigid-only 状态和仿射状态 `q = [A, t]` 各自需要表达什么。请特别区分“独立运动自由度”和“程序里可能用多少个数字存储”。
+
+<details>
+  <summary>提示</summary>
+  <p>刚体的独立运动是 3 个平移加 3 个旋转；旋转可以用四元数或旋转矩阵存，但这些存储有单位长度或正交约束。仿射状态则直接让 `A` 的 9 个数字表达更多线性变化。</p>
+</details>
+
+<details>
+  <summary>参考答案</summary>
+  <p>rigid-only 印章需要质心或参考点位置 `x` 加整体朝向 `R`，独立运动自由度是 6 个：3 个平移和 3 个旋转。即使代码用 4 个四元数数字或 9 个旋转矩阵数字存朝向，合法旋转仍只有 3 个独立自由度。仿射状态 `q = [A, t]` 存 `A` 的 9 个数字和 `t` 的 3 个数字；`t` 负责整体位置，`A` 可以包含旋转，也可以包含拉伸、缩放和剪切，所以它能表达刚体 6 DOF 不能表达的印章压扁或斜切。</p>
+</details>
+</WorkedExercise>
 
 <RememberBox title="核心记忆">
   <ul>
