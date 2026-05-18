@@ -550,7 +550,7 @@
       {
         "contact_constraint_policy": "free_predict_then_active_point_plane_normal_constraints",
         "contact_diagnostic_policy": "evaluated_from_current_mabd_states_for_next_step_external_force",
-        "contact_diagnostic_status": "contact_penetration_observed_without_response",
+        "contact_diagnostic_status": "contact_penetration_observed_after_normal_constraint",
         "diagnostic_status": "development_gap_observed",
         "duration_s": 10.0,
         "elastic_energy_final_j": 88316956.6617187,
@@ -1068,7 +1068,7 @@
   },
   "scene_id": "single_body_spinning_box",
   "solver_mode": "solver_mabd_model_plane_constraint_diagnostic",
-  "source_commit": "c2088d012e51d2b901c075c6b88790c347915089",
+  "source_commit": "e2dc01ac9b4dd7184ddea9743b27fbf6c66f2e4a",
   "status": "incomplete",
   "threshold": {
     "max_abs_det_minus_one": 0.1,

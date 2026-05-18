@@ -296,7 +296,7 @@ PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT = "8c00873c9e85ca8a85d518f02f7bbf415
 PHASE65_SPINNING_BOX_FIGURE_CURVES_COMMIT = "8cfbb4647742cdf032706c03e16bcb37d8dbbc28"
 PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT = "27650c74cadb5008fdb3d69f1a3faed069da2757"
 PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT = "6252693a584e9a4cd5f1640440060c39c840fd33"
-PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT = "c2088d012e51d2b901c075c6b88790c347915089"
+PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT = "e2dc01ac9b4dd7184ddea9743b27fbf6c66f2e4a"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -340,7 +340,7 @@ PHASE66_SPINNING_BOX_COMPARISON_SHA256 = (
     "e8dfb25537d8a6dafd22d89ac9d7339e8f89b720c8d0b574b7b9168e34b7e5a6"
 )
 PHASE68_SPINNING_BOX_MODEL_PLANE_CONSTRAINT_SHA256 = (
-    "0dcaef75c93437c95fbb7bd39d126a6f25f18ad4e30ee6c46002d81ea3d346b8"
+    "5520f5f9e07c70591fe524e9aacf16afbeee560e7fb58a6a18112a2a92af8d30"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -12792,6 +12792,34 @@ def validate_phase68_record() -> None:
         fail("Phase 68 report failure reason must stay diagnostic-only")
     if report.raw_outputs.get("time_series") != "compact_samples_only":
         fail("Phase 68 report raw output policy changed")
+    config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    validate_spinning_box_config_against_matrix(config, matrix)
+    if config.paper_horizon.model_plane_constraint_output_report != (
+        SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH
+    ):
+        fail("Phase 68 config output report changed")
+    expected_step_grid = [float(value) for value in config.paper_horizon.time_step_grid_s]
+    report_step_grid = report.expected.get("paper_step_sizes_s")
+    if not isinstance(report_step_grid, list):
+        fail("Phase 68 timestep grid must be recorded in report expected payload")
+    report_step_grid_values = [
+        _require_finite_scalar(value, f"Phase 68 timestep grid[{index}]")
+        for index, value in enumerate(report_step_grid)
+    ]
+    if len(report_step_grid_values) != len(expected_step_grid) or not np.allclose(
+        report_step_grid_values,
+        expected_step_grid,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        fail("Phase 68 timestep grid does not match config")
+    report_duration = _require_finite_scalar(
+        report.expected.get("paper_horizon_duration_s"),
+        "Phase 68 paper_horizon_duration_s",
+    )
+    if not np.isclose(report_duration, config.paper_horizon.duration_s, rtol=0.0, atol=1.0e-15):
+        fail("Phase 68 report duration does not match config")
 
     observed = report.observed
     if "lane_gate_status" in observed:
@@ -12820,11 +12848,14 @@ def validate_phase68_record() -> None:
         fail("Phase 68 constrained penetration must be below free prediction")
     if observed.get("model_plane_constraint_reduced_free_predicted_penetration") is not True:
         fail("Phase 68 report must record reduced free-predicted penetration")
-    if observed.get("max_requested_plane_constraint_count") != 4:
+    top_requested_count = observed.get("max_requested_plane_constraint_count")
+    top_accepted_count = observed.get("max_accepted_plane_constraint_count")
+    top_skipped_count = observed.get("max_skipped_plane_constraint_count")
+    if top_requested_count != 4:
         fail("Phase 68 requested plane count changed")
-    if observed.get("max_accepted_plane_constraint_count") != 3:
+    if top_accepted_count != 3:
         fail("Phase 68 accepted plane count changed")
-    if observed.get("max_skipped_plane_constraint_count") != 1:
+    if top_skipped_count != 1:
         fail("Phase 68 skipped plane count changed")
     residual = _require_finite_scalar(
         observed.get("max_model_plane_constraint_residual_norm"),
@@ -12833,14 +12864,43 @@ def validate_phase68_record() -> None:
     if residual > 1.0e-12:
         fail("Phase 68 model plane residual exceeded tolerance")
     results = observed.get("model_plane_constraint_results")
-    if not isinstance(results, list) or len(results) != 2:
-        fail("Phase 68 report must contain two timestep results")
-    for index, result in enumerate(results):
+    if not isinstance(results, list) or len(results) != len(expected_step_grid):
+        fail("Phase 68 timestep grid result count changed")
+    result_counts = {
+        "max_requested_plane_constraint_count": [],
+        "max_accepted_plane_constraint_count": [],
+        "max_skipped_plane_constraint_count": [],
+    }
+    for index, (result, expected_time_step_s) in enumerate(zip(results, expected_step_grid, strict=True)):
         if not isinstance(result, dict):
             fail("Phase 68 result entry must be a mapping")
+        result_time_step_s = _require_finite_scalar(
+            result.get("time_step_s"),
+            f"Phase 68 result {index} time_step_s",
+        )
+        if not np.isclose(result_time_step_s, expected_time_step_s, rtol=0.0, atol=1.0e-15):
+            fail("Phase 68 timestep grid result time_step_s mismatch")
+        result_duration = _require_finite_scalar(
+            result.get("duration_s"),
+            f"Phase 68 result {index} duration_s",
+        )
+        if not np.isclose(result_duration, config.paper_horizon.duration_s, rtol=0.0, atol=1.0e-15):
+            fail("Phase 68 result duration does not match config")
+        expected_steps = int(round(config.paper_horizon.duration_s / expected_time_step_s))
+        if result.get("steps_attempted") != expected_steps:
+            fail("Phase 68 result steps_attempted does not match config")
+        if result.get("steps_completed") != expected_steps:
+            fail("Phase 68 result steps_completed does not match config")
         for key, expected in expected_strings.items():
             if result.get(key) != expected:
                 fail(f"Phase 68 result {index} string changed: {key}")
+        if result.get("contact_diagnostic_status") == "contact_penetration_observed_without_response":
+            fail("Phase 68 model-plane result must not be labeled without response")
+        for key in result_counts:
+            value = result.get(key)
+            if isinstance(value, bool) or not isinstance(value, int):
+                fail(f"Phase 68 result {index} {key} must be an integer")
+            result_counts[key].append(value)
         if result.get("max_requested_plane_constraint_count") < 1:
             fail("Phase 68 result must request at least one plane row")
         if result.get("max_accepted_plane_constraint_count") < 1:
@@ -12859,6 +12919,12 @@ def validate_phase68_record() -> None:
         )
         if result_constrained > result_free:
             fail("Phase 68 result constrained penetration must not exceed free prediction")
+    if top_requested_count != max(result_counts["max_requested_plane_constraint_count"]):
+        fail("Phase 68 requested plane aggregate count mismatch")
+    if top_accepted_count != max(result_counts["max_accepted_plane_constraint_count"]):
+        fail("Phase 68 accepted plane aggregate count mismatch")
+    if top_skipped_count != max(result_counts["max_skipped_plane_constraint_count"]):
+        fail("Phase 68 skipped plane aggregate count mismatch")
 
     blockers = observed.get("blocking_reasons")
     if not isinstance(blockers, list):
@@ -12873,13 +12939,6 @@ def validate_phase68_record() -> None:
         if blocker not in blockers:
             fail(f"Phase 68 blocker missing: {blocker}")
 
-    config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
-    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
-    validate_spinning_box_config_against_matrix(config, matrix)
-    if config.paper_horizon.model_plane_constraint_output_report != (
-        SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH
-    ):
-        fail("Phase 68 config output report changed")
     _validate_phase67_paper_claim_statuses()
 
 

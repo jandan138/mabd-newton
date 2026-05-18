@@ -255,6 +255,11 @@ class SpinningBoxReportArtifactTests(unittest.TestCase):
             1.0e-12,
         )
         self.assertEqual(len(observed["model_plane_constraint_results"]), 2)
+        for result in observed["model_plane_constraint_results"]:
+            self.assertNotEqual(
+                result["contact_diagnostic_status"],
+                "contact_penetration_observed_without_response",
+            )
         blockers = observed["blocking_reasons"]
         self.assertIn("mabd_newton_report_incomplete", blockers)
         self.assertIn("mabd_paper_horizon_diagnostic_thresholds_violated", blockers)

@@ -8,14 +8,14 @@ passed_for_solver_mabd_model_plane_report_diagnostic
 
 - branch: `phase68-model-plane-report-lane`
 - implementation source_commit =
-  `c2088d012e51d2b901c075c6b88790c347915089`
+  `e2dc01ac9b4dd7184ddea9743b27fbf6c66f2e4a`
 - vendored Newton upstream commit:
   `96713fa965463b69c229a4d30582c733ff3526bb`
 - paper source version: `2603.08079v2`
 - report artifact:
   `reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json`
 - report sha256:
-  `0dcaef75c93437c95fbb7bd39d126a6f25f18ad4e30ee6c46002d81ea3d346b8`
+  `5520f5f9e07c70591fe524e9aacf16afbeee560e7fb58a6a18112a2a92af8d30`
 - Python:
   `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python`
 - reference environment:
@@ -65,6 +65,9 @@ The committed report records:
 - `max_skipped_plane_constraint_count = 1`
 - `max_model_plane_constraint_residual_norm =
   1.3877787807814457e-17`
+- constrained active model-plane samples use
+  `contact_penetration_observed_after_normal_constraint`, not
+  `contact_penetration_observed_without_response`
 - blocking reasons include `mabd_newton_report_incomplete`,
   `mabd_paper_horizon_diagnostic_thresholds_violated`,
   `spinning_box_model_plane_constraint_not_paper_faithful`,
@@ -98,7 +101,7 @@ No `experiment.*` claim is passed. `paper-claims.yaml` is unchanged.
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_single_body_report_lane`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_runner`
-- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane spinning_box_model_plane_constraint --config configs/experiments/single_body_spinning_box.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --output reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json --source-commit c2088d012e51d2b901c075c6b88790c347915089 --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb`
+- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane spinning_box_model_plane_constraint --config configs/experiments/single_body_spinning_box.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --output reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json --source-commit e2dc01ac9b4dd7184ddea9743b27fbf6c66f2e4a --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/clone_from_reference.py --dry-run`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/env/readiness_check.py`
 - `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"`

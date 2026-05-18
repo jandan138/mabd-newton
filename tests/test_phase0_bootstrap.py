@@ -4859,6 +4859,11 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(observed["max_skipped_plane_constraint_count"], 1)
         self.assertLess(observed["max_model_plane_constraint_residual_norm"], 1.0e-12)
         self.assertEqual(len(observed["model_plane_constraint_results"]), 2)
+        for result in observed["model_plane_constraint_results"]:
+            self.assertNotEqual(
+                result["contact_diagnostic_status"],
+                "contact_penetration_observed_without_response",
+            )
         self.assertEqual(
             validate_docs.sha256_file(ROOT / validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH),
             validate_docs.PHASE68_SPINNING_BOX_MODEL_PLANE_CONSTRAINT_SHA256,
@@ -4900,6 +4905,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "max_requested_plane_constraint_count = 4",
             "max_accepted_plane_constraint_count = 3",
             "max_skipped_plane_constraint_count = 1",
+            "contact_penetration_observed_after_normal_constraint",
             "spinning_box_model_plane_constraint_not_paper_faithful",
             "target_exists",
             "smoke_passed",
@@ -4941,6 +4947,61 @@ class Phase0BootstrapTests(unittest.TestCase):
                 validate_docs.validate_phase68_record()
 
         self.assertIn("lane_gate_status", str(context.exception))
+
+    def test_phase68_validator_rejects_timestep_grid_mismatch(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(ROOT / validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH)
+        corrupted = replace(
+            actual,
+            expected={
+                **actual.expected,
+                "paper_step_sizes_s": [0.01, 0.01],
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase68_record()
+
+        self.assertIn("timestep grid", str(context.exception))
+
+    def test_phase68_validator_rejects_stale_plane_count_aggregates(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(ROOT / validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH)
+        corrupted_results = [
+            {
+                **result,
+                "max_requested_plane_constraint_count": 1,
+                "max_accepted_plane_constraint_count": 1,
+                "max_skipped_plane_constraint_count": 0,
+            }
+            for result in actual.observed["model_plane_constraint_results"]
+        ]
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "model_plane_constraint_results": corrupted_results,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase68_record()
+
+        self.assertIn("aggregate", str(context.exception))
 
     def test_phase68_validator_rejects_passed_experiment_claim(self) -> None:
         import scripts.validate_docs as validate_docs

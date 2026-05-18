@@ -467,6 +467,8 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
         self.assertEqual(result.report.baseline_lane, "mabd_newton")
         self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.source_commit, "test-source")
+        self.assertEqual(loaded.vendored_newton_commit, "test-newton")
         self.assertEqual(loaded.solver_mode, "solver_mabd_model_plane_constraint_diagnostic")
         self.assertEqual(loaded.backend, "cpu_numpy_newton_solver_mabd_model_rows")
         self.assertEqual(
@@ -1616,6 +1618,8 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["status"], "incomplete")
         self.assertEqual(summary["baseline_lane"], "mabd_newton")
         self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(loaded.vendored_newton_commit, "cli-newton")
         self.assertEqual(loaded.solver_mode, "solver_mabd_model_plane_constraint_diagnostic")
         self.assertEqual(loaded.backend, "cpu_numpy_newton_solver_mabd_model_rows")
         self.assertNotIn("lane_gate_status", loaded.observed)
