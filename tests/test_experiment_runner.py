@@ -3,10 +3,11 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 import yaml
 
-from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
+from mabd_reproduction.reporting import ClaimReport, EvidenceStatus, load_claim_report
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,6 +127,34 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(payload["status"], "not_a_physical_pendulum_paper_metric")
         self.assertFalse(payload["runtime_timing_claim_present"])
         self.assertFalse(payload["required_metric"])
+
+    def _fake_heavy_top_paper_horizon_report(self) -> ClaimReport:
+        return ClaimReport(
+            claim_id="experiment.single_body.heavy_top",
+            scene_id="single_body_heavy_top",
+            asset_hashes={"heavy_top_procedural": "not_applicable_procedural"},
+            solver_mode="mabd_cpu_oracle_heavy_top_newton_lane",
+            backend="cpu_numpy_newton_only",
+            baseline_lane="mabd_newton",
+            expected={"full_experiment_claim_passed": False},
+            observed={
+                "full_experiment_claim_passed": False,
+                "lane_status": "incomplete_diagnostic_failed",
+                "mabd_diagnostic_scope": "paper_horizon_sample_grid",
+                "step_count": 10000,
+                "sample_count": 11,
+            },
+            threshold={},
+            unit="angle_deg",
+            status=EvidenceStatus.INCOMPLETE,
+            failure_reason="test fake incomplete heavy-top paper-horizon report",
+            timing_distribution={"status": "not_measured"},
+            raw_outputs={},
+            plot_paths={},
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+            paper_source_version="2603.08079v2",
+        )
 
     def test_run_spinning_box_experiment_writes_override_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_experiment
@@ -795,6 +824,37 @@ class ExperimentRunnerTests(unittest.TestCase):
             0.0,
         )
 
+    def test_run_heavy_top_mabd_paper_horizon_dispatches_configured_report(self) -> None:
+        from mabd_reproduction import experiment_runner
+
+        fake_report = self._fake_heavy_top_paper_horizon_report()
+        with TemporaryDirectory() as tmpdir:
+            with patch.object(
+                experiment_runner,
+                "write_heavy_top_mabd_paper_horizon_report",
+                return_value=fake_report,
+            ) as writer:
+                result = experiment_runner.run_heavy_top_mabd_paper_horizon(
+                    config_path=HEAVY_TOP_CONFIG_PATH,
+                    matrix_path=MATRIX_PATH,
+                    output_root=tmpdir,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+
+        self.assertEqual(
+            result.report_path,
+            Path(tmpdir)
+            / "reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json",
+        )
+        self.assertEqual(result.claim_id, "experiment.single_body.heavy_top")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.observed["mabd_diagnostic_scope"], "paper_horizon_sample_grid")
+        writer.assert_called_once()
+        called_config = writer.call_args.kwargs["config"]
+        self.assertEqual(called_config.mabd_paper_horizon.step_count, 10000)
+        self.assertEqual(called_config.mabd_paper_horizon.sample_count, 11)
+
     def test_run_heavy_top_figure_curves_writes_digitized_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_heavy_top_figure_curves
 
@@ -1311,6 +1371,65 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.solver_mode, "heavy_top_rk4_reference_diagnostic")
         self.assertEqual(loaded.observed["lane_status"], "diagnostic_generated")
+
+    def test_run_experiment_main_dispatches_heavy_top_mabd_paper_horizon_lane(self) -> None:
+        import importlib.util
+        import io
+        import json
+        from contextlib import redirect_stdout
+
+        class FakeResult:
+            def to_summary(self) -> dict[str, str]:
+                return {
+                    "claim_id": "experiment.single_body.heavy_top",
+                    "scene_id": "single_body_heavy_top",
+                    "status": "incomplete",
+                    "output_report": "fake.json",
+                    "baseline_lane": "mabd_newton",
+                }
+
+        script_path = ROOT / "scripts/run_experiment.py"
+        spec = importlib.util.spec_from_file_location(
+            "run_experiment_phase55_test",
+            script_path,
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with patch.object(
+            module,
+            "run_heavy_top_mabd_paper_horizon",
+            return_value=FakeResult(),
+        ) as runner:
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                code = module.main(
+                    [
+                        "--lane",
+                        "heavy_top_mabd_paper_horizon",
+                        "--config",
+                        str(HEAVY_TOP_CONFIG_PATH),
+                        "--matrix",
+                        str(MATRIX_PATH),
+                        "--output-root",
+                        "unused-root",
+                        "--source-commit",
+                        "cli-source",
+                        "--vendored-newton-commit",
+                        "cli-newton",
+                    ]
+                )
+
+        self.assertEqual(code, 0)
+        summary = json.loads(stdout.getvalue())
+        self.assertEqual(summary["claim_id"], "experiment.single_body.heavy_top")
+        self.assertEqual(summary["baseline_lane"], "mabd_newton")
+        runner.assert_called_once()
+        self.assertEqual(
+            runner.call_args.kwargs["output_root"],
+            Path("unused-root"),
+        )
 
     def test_run_experiment_cli_writes_heavy_top_figure_curve_report(self) -> None:
         import json

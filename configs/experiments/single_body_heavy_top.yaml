@@ -49,6 +49,27 @@ mabd_newton:
     max_constraint_residual_norm: 1.0e-5
     min_nutation_angle_range_deg: 1.0e-8
     max_affine_shape_spread_m: 1.1
+mabd_paper_horizon:
+  time_step_s: 0.001
+  step_count: 10000
+  sample_count: 11
+  rest_points_m:
+    - [0.0, 0.0, 0.0]
+    - [0.35, 0.0, 0.25025025025]
+    - [-0.175, 0.3031088913245535, 0.25025025025]
+    - [-0.175, -0.3031088913245535, 0.25025025025]
+  point_masses_kg: [0.001, 0.333, 0.333, 0.333]
+  pivot_rest_point_m: [0.0, 0.0, 0.0]
+  pivot_world_point_m: [0.0, 0.0, 0.0]
+  angle_probe_rest_point_m: [0.0, 0.0, 0.25025025025]
+  gravity_m_s2: [0.0, -9.81, 0.0]
+  rotation_mode: polar
+  output_report: reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json
+  thresholds:
+    max_pivot_residual_m: 1.0e-5
+    max_constraint_residual_norm: 1.0e-5
+    min_nutation_angle_range_deg: 1.0e-8
+    max_affine_shape_spread_m: 1.1
 comparison:
   output_report: reports/experiment_matrix/single_body_heavy_top_comparison.json
   required_lanes:

@@ -340,6 +340,46 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("max_pivot_residual_m", config.mabd_newton.thresholds)
         self.assertIn("max_constraint_residual_norm", config.mabd_newton.thresholds)
         self.assertIn("min_nutation_angle_range_deg", config.mabd_newton.thresholds)
+        self.assertEqual(config.mabd_paper_horizon.rotation_mode, "polar")
+        self.assertEqual(
+            config.mabd_paper_horizon.output_report,
+            "reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json",
+        )
+        self.assertEqual(config.mabd_paper_horizon.sample_count, config.reference.sample_count)
+        self.assertEqual(config.mabd_paper_horizon.step_count, 10000)
+        self.assertEqual(config.mabd_paper_horizon.time_step_s, 0.001)
+        self.assertAlmostEqual(
+            config.mabd_paper_horizon.step_count * config.mabd_paper_horizon.time_step_s,
+            config.reference.duration_s,
+        )
+        np.testing.assert_allclose(
+            config.mabd_paper_horizon.rest_points_m,
+            config.mabd_newton.rest_points_m,
+        )
+        np.testing.assert_allclose(
+            config.mabd_paper_horizon.point_masses_kg,
+            config.mabd_newton.point_masses_kg,
+        )
+        np.testing.assert_allclose(
+            config.mabd_paper_horizon.pivot_rest_point_m,
+            config.mabd_newton.pivot_rest_point_m,
+        )
+        np.testing.assert_allclose(
+            config.mabd_paper_horizon.pivot_world_point_m,
+            config.mabd_newton.pivot_world_point_m,
+        )
+        np.testing.assert_allclose(
+            config.mabd_paper_horizon.angle_probe_rest_point_m,
+            config.mabd_newton.angle_probe_rest_point_m,
+        )
+        np.testing.assert_allclose(
+            config.mabd_paper_horizon.gravity_m_s2,
+            config.reference.gravity_m_s2,
+        )
+        self.assertEqual(
+            config.mabd_paper_horizon.thresholds,
+            config.mabd_newton.thresholds,
+        )
         self.assertEqual(
             config.comparison.output_report,
             "reports/experiment_matrix/single_body_heavy_top_comparison.json",
@@ -408,6 +448,40 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(source), encoding="utf-8")
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.thresholds"):
+                load_heavy_top_config(path)
+
+    def test_heavy_top_config_rejects_bad_paper_horizon_duration(self) -> None:
+        source = yaml.safe_load(HEAVY_TOP_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_paper_horizon"] = deepcopy(source["mabd_newton"])
+        source["mabd_paper_horizon"]["output_report"] = (
+            "reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json"
+        )
+        source["mabd_paper_horizon"]["sample_count"] = source["reference"]["sample_count"]
+        source["mabd_paper_horizon"]["step_count"] = 9999
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_heavy_top.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                ExperimentRunConfigError,
+                "mabd_paper_horizon.*reference.duration_s",
+            ):
+                load_heavy_top_config(path)
+
+    def test_heavy_top_config_rejects_paper_horizon_output_reuse(self) -> None:
+        source = yaml.safe_load(HEAVY_TOP_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_paper_horizon"] = deepcopy(source["mabd_newton"])
+        source["mabd_paper_horizon"]["step_count"] = 10000
+        source["mabd_paper_horizon"]["sample_count"] = source["reference"]["sample_count"]
+        source["mabd_paper_horizon"]["output_report"] = source["mabd_newton"]["output_report"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_heavy_top.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                ExperimentRunConfigError,
+                "mabd_paper_horizon.output_report",
+            ):
                 load_heavy_top_config(path)
 
     def test_heavy_top_config_rejects_passed_status(self) -> None:
