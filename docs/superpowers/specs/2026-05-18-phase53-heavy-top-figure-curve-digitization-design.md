@@ -4,15 +4,15 @@
 
 Phase53 adds a machine-checkable paper-figure digitization lane for the
 heavy-top experiment in Fig. `spinning_top.pdf`. The lane converts the local
-paper figure into calibrated reference-curve samples for:
+paper figure into calibrated digitized paper-figure reference-family samples for:
 
 - precession velocity over time;
 - nutation angle over time;
 - reference-family identity from the paper legend.
 
-This phase turns `raw_heavy_top_reference_curve_data_missing` into explicit
-paper-derived curve evidence. It does not make the current Newton-backed M-ABD
-lane match those curves.
+This phase converts the missing figure-reference input into auditable digitized
+paper-figure samples. Authors' raw simulation/curve data remains unavailable,
+and the current Newton-backed M-ABD lane is not made to match those curves.
 
 ## Current Evidence
 
@@ -23,8 +23,10 @@ path `/tmp/mabd-paper/source/`. The heavy-top figure source is:
 - sha256 `c8f5e206415b9feb3578ee32aa3b7284e2695bdd84eeb0200f3b4aa01cf3422d`
 - `pdftotext` exposes the visible labels, legend, and axis tick labels.
 - `pdfinfo` identifies an Adobe Illustrator PDF with one page.
-- `pdftocairo -png -singlefile -r 300` produces a deterministic raster that
-  exposes clear colored curve families.
+- Poppler `pdftocairo`/`pdfinfo`/`pdftotext` version `22.02.0` is available
+  in the local environment.
+- `pdftocairo -png -singlefile -r 300` produces a deterministic `3179 x 1924`
+  RGB raster that exposes clear colored curve families.
 
 The visible plot axes are:
 
@@ -53,7 +55,8 @@ Create a focused module `src/mabd_reproduction/heavy_top_digitization.py`.
 It will:
 
 - render the source PDF to a temporary PNG with `pdftocairo`;
-- assert the rendered image dimensions match the expected 300 DPI geometry;
+- assert the rendered image dimensions are exactly `3179 x 1924` pixels for
+  the pinned 300 DPI Poppler render;
 - use fixed plot boxes calibrated from the rendered figure:
   - top precession plot box;
   - bottom nutation plot box;
@@ -73,21 +76,25 @@ The report writer will create:
 
 The report must include:
 
-- source PDF path, sha256, renderer command, rendered image size;
+- source PDF path, sha256, renderer command, renderer version, rendered image
+  size;
 - plot calibration boxes and axis ranges;
 - per-plot reference sample arrays;
 - extraction status for each reference curve;
 - visible non-reference color-family counts for audit only;
 - explicit limitations and non-claims.
 
-No rendered PNG, PDF, SVG, or raw paper asset is committed.
+No rendered PNG, PDF, SVG, or raw paper asset is committed. The JSON contains
+only compact numeric samples and provenance; it must not contain raster pixels,
+base64 image payloads, SVG/PDF dumps, or raw paper assets.
 
 ## Comparison Integration
 
-The heavy-top comparison report will read the figure-curve report when present.
-It will change the nutation metric status from `paper_reference_curve_missing`
-to `paper_digitized_curve_available` only when the figure report has finite
-reference samples for the nutation plot.
+The heavy-top comparison report will read an explicitly supplied
+`figure_curve_report_path`. It will change the nutation metric status from
+`paper_reference_curve_missing` to
+`paper_figure_digitized_reference_available` only when the figure report has
+finite digitized paper-figure reference-family samples for the nutation plot.
 
 The comparison report will retain:
 
@@ -97,20 +104,22 @@ The comparison report will retain:
 - `heavy_top_comparison_report_incomplete`;
 - `heavy_top_comparison_pass_gate_not_enabled`;
 - `sample_time_grid_mismatch` while the current M-ABD lane remains shorter than
-  the paper plot horizon.
+  the paper plot horizon;
+- `raw_author_heavy_top_curve_data_missing`, or the existing
+  `raw_heavy_top_reference_curve_data_missing` if the blocker is not renamed.
 
-It may replace `raw_heavy_top_reference_curve_data_missing` with a more precise
-blocker such as `heavy_top_digitized_curve_agreement_not_passed`, because
-digitized data exists but the current Newton-backed diagnostic lane is not a
-passed paper comparison.
+The comparison may add `digitized_figure_reference_available` and
+`heavy_top_digitized_figure_curve_agreement_not_passed`, but it must retain or
+rename the raw-data blocker as `raw_author_heavy_top_curve_data_missing`.
+Digitized figure samples are not authors' raw simulation data.
 
 ## Claim Boundaries
 
 Phase53 may claim:
 
-- heavy-top paper figure reference curves are digitized from the recorded
-  source PDF;
-- digitized reference samples are finite and calibrated to visible axes;
+- heavy-top digitized paper-figure reference-family samples are extracted from
+  the recorded source PDF;
+- digitized paper-figure samples are finite and calibrated to visible axes;
 - the comparison report can identify paper figure data availability.
 
 Phase53 must not claim:
@@ -131,6 +140,11 @@ Required checks:
 - targeted RED/GREEN tests for the digitizer;
 - targeted RED/GREEN tests for heavy-top comparison report consumption;
 - report regeneration for the new figure-curve report and heavy-top comparison;
+- `docs/reference/claim-boundaries.md` update documenting Phase53 non-claims;
+- `docs/reference/paper-claims.yaml` update only if blocker names change;
+- `docs/records/2026-05-18-phase53-heavy-top-figure-curves.md` with source
+  commit, source PDF sha256, Poppler/Pillow versions, commands, environment,
+  report sha256, and incomplete status;
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests`;
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py`;
 - `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"`;
