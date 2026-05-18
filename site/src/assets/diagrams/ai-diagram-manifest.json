@@ -1,0 +1,100 @@
+{
+  "entries": [
+    {
+      "file": "learning-roadmap.png",
+      "lesson": "start-here",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: a left-to-right learning roadmap with four large labeled stations: \"Concept\", \"Formula\", \"Code\", \"Evidence\". Connect them with arrows. Add a blue checkpoint labeled \"Claim boundary\" after Evidence. Include small icons: lightbulb, equation sheet, code brackets, archive record. Keep all labels exact and short.",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "modeling-spectrum.png",
+      "lesson": "why-affine-bodies",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: a modeling spectrum axis from left to right labeled exactly \"few states\" to \"many states\". Show five clean icons labeled exactly: \"Particle\", \"Rigid\", \"Affine\", \"Multi-affine\", \"FEM\". Particle is a point, Rigid is a cube with rotate arrow, Affine is a sheared cube, Multi-affine is linked sheared blocks, FEM is a fine mesh cube. Add a subtle highlight around \"Affine\" as the middle representation. Ensure all text is spelled exactly as requested.",
+      "reviewNotes": "Regenerated after review to correct the spectrum endpoint label to few states; final review approved."
+    },
+    {
+      "file": "matrix-grid-transform.png",
+      "lesson": "vectors-matrices-transforms",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: left panel shows a square grid with basis arrows labeled \"e1\" and \"e2\". Center shows a matrix block labeled \"A\" with arrow. Right panel shows a sheared/scaled grid with transformed basis arrows labeled \"A e1\" and \"A e2\". Add formula \"x' = A x\" at the top. Keep labels exact.",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "affine-state-map.png",
+      "lesson": "affine-state",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: show a rest-space shape on the left labeled \"x_rest\". Show a 3x3 matrix block labeled \"A\" applying rotation, stretch, and shear, then an orange translation arrow labeled \"t\" to a world-space sheared shape labeled \"x_world\". Include formula exactly: \"x_world = A x_rest + t\". Add a small packing strip labeled \"q in R^12 = [A, t]\".",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "polar-decomposition.png",
+      "lesson": "svd-polar-rotation",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: show an affine transform block labeled \"A\" splitting into two branches labeled \"R\" and \"S\". The R branch shows a pure rotated square/cube labeled \"rotation\". The S branch shows stretch/shear grid labeled \"stretch + shear\". Include formula exactly: \"A = R S\". Keep labels exact and short.",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "rigid-vs-affine-dof.png",
+      "lesson": "rigid-body-basics",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: split into two panels. Left panel labeled \"Rigid: 6 DOF\" with cube, three translation arrows, three rotation arcs. Right panel labeled \"Affine: 12 numbers\" with sheared cube, matrix block \"A: 9\" and vector \"t: 3\". Include small labels \"translate\", \"rotate\", \"stretch\", \"shear\".",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "jacobian-force-map.png",
+      "lesson": "generalized-coordinates-forces",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: show generalized coordinates \"q\" as control knobs on the left, a Jacobian block \"J\" in the center, and a world point with force arrow \"f\" on the right. Include formulas exactly: \"dx = J dq\", \"v = J qdot\", \"tau = J^T f\". Show the reverse mapping from point force back to generalized force with an orange arrow labeled \"virtual work\".",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "implicit-residual-loop.png",
+      "lesson": "implicit-time-stepping",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: show a loop with four nodes labeled exactly \"guess q_next\", \"evaluate forces\", \"residual r(q_next)\", \"correction delta q\". Arrows form a loop back to guess. Add final arrow to \"accept step\" when \"|r| small\". Use purple for residual/correction and orange for iteration arrows.",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "kkt-block-system.png",
+      "lesson": "newton-hessian-kkt",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: central KKT block matrix with exact labels \"H\", \"G^T\", \"G\", \"0\". Unknown vector labeled \"delta q\" and \"lambda\". Right-hand side labeled \"-r\" and \"-C\". Add side callouts \"motion\" near H and \"constraints\" near G. Make the matrix readable and precise.",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "single-abd-pipeline.png",
+      "lesson": "single-body-abd",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: a single affine-body pipeline with blocks labeled exactly \"q in R^12 = [A,t]\", \"M in R^{12x12}\", \"material force\", \"dense CPU oracle\", \"scoped evidence\". Show an affine block/cube above the pipeline. Keep the mass/inertia label consistent with the full 12-number q state; do not write 9x9 anywhere. Add a small blue boundary label \"conceptual only\". Do not depict a completed production solver.",
+      "reviewNotes": "Regenerated after review to keep mass/inertia dimensions consistent with q in R^12; final review approved."
+    },
+    {
+      "file": "mabd-topology-solver-map.png",
+      "lesson": "multi-body-mabd",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: four topology sketches labeled exactly \"chain\", \"tree\", \"loop\", \"graph\". The loop must be a closed cycle of at least three bodies. The graph must show multiple connected bodies. Below them show a small block-sparse matrix pattern and arrow labeled \"solver path\". Add caption-like text inside image: \"topology -> sparsity\". Keep it conceptual.",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    },
+    {
+      "file": "evidence-funnel.png",
+      "lesson": "repo-evidence-map",
+      "provenance": "ai-generated-raster",
+      "claimStatus": "conceptual",
+      "prompt": "Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.\n\nDiagram content: evidence funnel from top to bottom with stages labeled exactly \"claim map\", \"dated record\", \"test/report\", \"boundary gate\", \"allowed claim\". On the side show a red blocked path labeled \"forbidden claim\" with an X. Use blue for valid evidence path and red only for forbidden path.",
+      "reviewNotes": "Final visual and claim-boundary review approved for conceptual lesson use."
+    }
+  ]
+}
