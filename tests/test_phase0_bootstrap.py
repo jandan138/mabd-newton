@@ -3350,6 +3350,87 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE51", text)
         self.assertNotIn("phase51-working-tree", text)
 
+    def test_phase53_heavy_top_figure_curve_digitization_is_bounded(self) -> None:
+        figure_report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_heavy_top_figure_curves.json"
+        )
+        comparison_report = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_heavy_top_comparison.json"
+        )
+
+        self.assertEqual(figure_report.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(figure_report.baseline_lane, "paper_figure_digitization")
+        self.assertEqual(figure_report.solver_mode, "heavy_top_paper_figure_digitization")
+        self.assertEqual(figure_report.backend, "pdftocairo_pillow")
+        self.assertFalse(figure_report.observed["full_experiment_claim_passed"])
+        self.assertEqual(figure_report.observed["lane_status"], "reference_curves_digitized")
+        self.assertTrue(figure_report.observed["reference_curve_available"])
+        self.assertEqual(figure_report.observed["renderer_version"], "pdftocairo 22.02.0")
+        self.assertEqual(figure_report.observed["rendered_size_px"], [3179, 1924])
+        self.assertIn("not_authors_raw_data", figure_report.observed["limitations"])
+        self.assertIn(
+            "no_blue_orange_line_style_split",
+            figure_report.observed["limitations"],
+        )
+        self.assertEqual(
+            comparison_report.observed["paper_metric_statuses"]["nutation_angle_error"]["status"],
+            "paper_figure_digitized_reference_available",
+        )
+        self.assertEqual(
+            comparison_report.observed["missing_paper_metrics"],
+            ["nutation_angle_error:paper_figure_digitized_curve_agreement_not_passed"],
+        )
+        self.assertIn(
+            "raw_heavy_top_reference_curve_data_missing",
+            comparison_report.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "heavy_top_digitized_figure_curve_agreement_not_passed",
+            comparison_report.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_figure_curves",
+            comparison_report.observed["input_report_provenance"],
+        )
+
+        claims = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        heavy_top_claim = next(
+            claim for claim in claims["claims"] if claim["claim_id"] == "experiment.single_body.heavy_top"
+        )
+        self.assertEqual(heavy_top_claim["reproduction_status"], "intended")
+        self.assertIn(
+            "raw_heavy_top_reference_curve_data_missing",
+            heavy_top_claim["conflict_note"],
+        )
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(boundary_text, "This repository contains Phase 53")
+        verified = claim_boundary_bullet(boundary_text, "Phase 53 verifies")
+        non_claim = claim_boundary_bullet(boundary_text, "Phase 53 does not verify")
+        self.assertIn("heavy-top paper-figure digitization evidence", current)
+        self.assertIn("digitized paper-figure reference-family samples", verified)
+        self.assertIn("raw author curve data remains unavailable", verified)
+        self.assertIn("passed heavy-top experiment", non_claim)
+        self.assertIn("authors' raw simulation data", non_claim)
+        self.assertIn("blue/orange solid and dashed paper curves", non_claim)
+
+        record_text = (
+            ROOT / "docs/records/2026-05-18-phase53-heavy-top-figure-curves.md"
+        ).read_text()
+        for snippet in (
+            "## Status\n\npassed_for_heavy_top_figure_curve_digitization_lane",
+            "reports/experiment_matrix/single_body_heavy_top_figure_curves.json",
+            "pdftocairo 22.02.0",
+            "3179 x 1924",
+            "not_authors_raw_data",
+            "paper_figure_digitized_reference_available",
+            "raw_heavy_top_reference_curve_data_missing",
+            "No `experiment.*` claim is passed.",
+            "`experiment.single_body.heavy_top` remains intended",
+        ):
+            self.assertIn(snippet, record_text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE53", record_text)
+
     def test_phase44_solver_model_config_is_bounded(self) -> None:
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
         current = claim_boundary_bullet(text, "This repository contains Phase 44")
@@ -3928,7 +4009,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

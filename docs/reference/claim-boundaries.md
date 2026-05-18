@@ -693,6 +693,21 @@
   rendered output, runtime performance, generated videos or raw simulation
   logs, a comparison pass gate, a full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 53 heavy-top paper-figure digitization evidence
+  after the Phase 53 record is created.
+- Phase 53 verifies digitized paper-figure reference-family samples from the
+  recorded `spinning_top.pdf` source PDF, Poppler `pdftocairo 22.02.0`,
+  deterministic `3179 x 1924` 300 DPI rendering, compact numeric JSON samples,
+  explicit `figure_curve_report_path` comparison-report consumption,
+  `paper_figure_digitized_reference_available` metric status, and that raw
+  author curve data remains unavailable while the
+  `raw_heavy_top_reference_curve_data_missing` blocker is retained.
+- Phase 53 does not verify a passed heavy-top experiment, authors' raw
+  simulation data, blue/orange solid and dashed paper curves, heavy-top curve
+  agreement, paper-faithful heavy-top inertia or geometry, paper timing,
+  rendered output, runtime performance, generated videos or raw simulation
+  logs, a comparison pass gate, a full paper reproduction, or any passed
+  `experiment.*` claim.
 
 ## Forbidden Claims
 
@@ -807,6 +822,13 @@
   agreement, not a comparison pass gate, not a paper timing result, not
   rendered-output evidence, not generated-video evidence, not a full paper
   reproduction, and not any passed `experiment.*` claim.
+- Phase 53 heavy-top paper-figure digitization is not a passed heavy-top
+  experiment, not authors' raw simulation data, not blue/orange solid and
+  dashed paper curves, not heavy-top curve agreement, not
+  paper-faithful heavy-top inertia or geometry reconstruction, not a comparison
+  pass gate, not a paper timing result, not rendered output evidence, not
+  generated-video evidence, not a full paper reproduction, and not any passed
+  `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

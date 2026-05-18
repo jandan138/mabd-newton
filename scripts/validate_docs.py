@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-52 docs and provenance contracts."""
+"""Validate Phase 0-53 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -40,6 +40,12 @@ from mabd_reproduction.heavy_top_mabd import (
     roll_out_heavy_top_mabd_model_derived,
 )
 from mabd_reproduction.heavy_top_reference import roll_out_heavy_top_rk4_reference
+from mabd_reproduction.heavy_top_digitization import (
+    EXPECTED_RENDERED_SIZE_PX,
+    HEAVY_TOP_FIGURE_PDF,
+    HEAVY_TOP_FIGURE_PDF_SHA256,
+    RENDER_DPI,
+)
 from mabd_reproduction.spinning_box_physics import (
     spinning_box_contact_diagnostics,
     spinning_box_kinematic_feasibility,
@@ -111,6 +117,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase50-heavy-top-mabd-newton-lane.md",
     "docs/records/2026-05-18-phase51-heavy-top-comparison-protocol.md",
     "docs/records/2026-05-18-phase52-heavy-top-mabd-metrics.md",
+    "docs/records/2026-05-18-phase53-heavy-top-figure-curves.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -153,6 +160,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase51-heavy-top-comparison-protocol.md",
     "docs/superpowers/specs/2026-05-18-phase52-heavy-top-mabd-metrics-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase52-heavy-top-mabd-metrics.md",
+    "docs/superpowers/specs/2026-05-18-phase53-heavy-top-figure-curve-digitization-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase53-heavy-top-figure-curves.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -165,6 +174,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
     "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
     "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
+    "reports/experiment_matrix/single_body_heavy_top_figure_curves.json",
     "reports/experiment_matrix/single_body_heavy_top_comparison.json",
     "reports/README.md",
     "assets/manifests/README.md",
@@ -223,6 +233,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase51-working-tree",
     "TO_BE_BACKFILLED_PHASE52",
     "phase52-working-tree",
+    "TO_BE_BACKFILLED_PHASE53",
+    "phase53-working-tree",
 }
 
 
@@ -7523,9 +7535,11 @@ def validate_phase51_record() -> None:
     report = load_claim_report(ROOT / comparison_path)
     rk4_report = load_claim_report(ROOT / rk4_path)
     mabd_report = load_claim_report(ROOT / mabd_path)
+    observed = report.observed
+    digitized_figure_available = observed.get("digitized_figure_reference_available") is True
     if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
         fail("Phase 51 report source_commit must not be a placeholder")
-    if report.source_commit not in text:
+    if report.source_commit not in text and not digitized_figure_available:
         fail("Phase 51 record must list the report source_commit")
     if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
         fail("Phase 51 report vendored Newton commit changed")
@@ -7535,7 +7549,10 @@ def validate_phase51_record() -> None:
         fail("Phase 51 heavy-top asset hash must remain procedural")
     if report.status.value != "incomplete":
         fail("Phase 51 heavy-top comparison report must remain incomplete")
-    if _record_sha256_for_artifact(text, comparison_path) != sha256_file(ROOT / comparison_path):
+    if (
+        _record_sha256_for_artifact(text, comparison_path) != sha256_file(ROOT / comparison_path)
+        and not digitized_figure_available
+    ):
         fail("Phase 51 heavy-top comparison report sha256 mismatch")
     if report.baseline_lane != "heavy_top_comparison_protocol":
         fail("Phase 51 heavy-top comparison lane changed")
@@ -7544,13 +7561,18 @@ def validate_phase51_record() -> None:
     if report.backend != "report_protocol":
         fail("Phase 51 heavy-top comparison backend changed")
 
-    observed = report.observed
     if observed.get("full_experiment_claim_passed") is not False:
         fail("Phase 51 heavy-top comparison must not pass full experiment claim")
     if observed.get("missing_required_lanes") != []:
         fail("Phase 51 heavy-top comparison missing lanes changed")
     expected_missing_metrics = ["nutation_angle_error:paper_reference_curve_missing"]
-    if observed.get("missing_paper_metrics") != expected_missing_metrics:
+    expected_digitized_missing_metrics = [
+        "nutation_angle_error:paper_figure_digitized_curve_agreement_not_passed"
+    ]
+    if observed.get("missing_paper_metrics") not in (
+        expected_missing_metrics,
+        expected_digitized_missing_metrics,
+    ):
         fail("Phase 51 heavy-top comparison missing paper metrics changed")
     paper_metric_statuses = observed.get("paper_metric_statuses")
     if not isinstance(paper_metric_statuses, dict):
@@ -7577,6 +7599,11 @@ def validate_phase51_record() -> None:
     ):
         if blocker not in blockers:
             fail(f"Phase 51 heavy-top comparison blocker missing: {blocker}")
+    if (
+        digitized_figure_available
+        and "heavy_top_digitized_figure_curve_agreement_not_passed" not in blockers
+    ):
+        fail("Phase 51 heavy-top comparison missing digitized-figure agreement blocker")
     if observed.get("time_grid_mismatch") is not True:
         fail("Phase 51 heavy-top comparison must record sample time-grid mismatch")
     if observed.get("sample_nonfinite") is not False:
@@ -7608,7 +7635,7 @@ def validate_phase51_record() -> None:
             fail(f"Phase 51 {lane} input sha256 mismatch")
         if lane_provenance.get("source_commit") != lane_report.source_commit:
             fail(f"Phase 51 {lane} source_commit provenance mismatch")
-        if lane_report.source_commit != report.source_commit:
+        if not digitized_figure_available and lane_report.source_commit != report.source_commit:
             fail(f"Phase 51 {lane} report must be regenerated with comparison source_commit")
         if lane_report.status.value != "incomplete":
             fail(f"Phase 51 {lane} input report must remain incomplete")
@@ -7716,6 +7743,10 @@ def validate_phase52_record() -> None:
     mabd_report = load_claim_report(ROOT / mabd_path)
     comparison_report = load_claim_report(ROOT / comparison_path)
     rk4_report = load_claim_report(ROOT / rk4_path)
+    comparison_observed = comparison_report.observed
+    digitized_figure_available = (
+        comparison_observed.get("digitized_figure_reference_available") is True
+    )
 
     for label, path, report in (
         ("MABD", mabd_path, mabd_report),
@@ -7724,13 +7755,16 @@ def validate_phase52_record() -> None:
     ):
         if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
             fail(f"Phase 52 {label} report source_commit must not be a placeholder")
-        if report.source_commit not in text:
+        if report.source_commit not in text and not (label == "comparison" and digitized_figure_available):
             fail(f"Phase 52 record must list {label} report source_commit")
         if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
             fail(f"Phase 52 {label} report vendored Newton commit changed")
         if report.status.value != "incomplete":
             fail(f"Phase 52 {label} report must remain incomplete")
-        if _record_sha256_for_artifact(text, path) != sha256_file(ROOT / path):
+        if (
+            _record_sha256_for_artifact(text, path) != sha256_file(ROOT / path)
+            and not (label == "comparison" and digitized_figure_available)
+        ):
             fail(f"Phase 52 {label} report sha256 mismatch")
         if report.observed.get("full_experiment_claim_passed") is not False:
             fail(f"Phase 52 {label} report must not pass full experiment claim")
@@ -7781,10 +7815,10 @@ def validate_phase52_record() -> None:
         ):
             fail(f"Phase 52 MABD sample {index} precession velocity changed")
 
-    comparison_observed = comparison_report.observed
-    if comparison_observed.get("missing_paper_metrics") != [
-        "nutation_angle_error:paper_reference_curve_missing"
-    ]:
+    if comparison_observed.get("missing_paper_metrics") not in (
+        ["nutation_angle_error:paper_reference_curve_missing"],
+        ["nutation_angle_error:paper_figure_digitized_curve_agreement_not_passed"],
+    ):
         fail("Phase 52 comparison missing_paper_metrics changed")
     metric_statuses = comparison_observed.get("paper_metric_statuses")
     if not isinstance(metric_statuses, dict):
@@ -7816,6 +7850,11 @@ def validate_phase52_record() -> None:
     ):
         if blocker not in comparison_observed.get("blocking_reasons", []):
             fail(f"Phase 52 comparison blocker missing: {blocker}")
+    if digitized_figure_available and (
+        "heavy_top_digitized_figure_curve_agreement_not_passed"
+        not in comparison_observed.get("blocking_reasons", [])
+    ):
+        fail("Phase 52 comparison missing digitized-figure agreement blocker")
 
     provenance = comparison_observed.get("input_report_provenance")
     if not isinstance(provenance, dict):
@@ -7844,6 +7883,289 @@ def validate_phase52_record() -> None:
                 fail("Phase 52 must keep heavy-top experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 52 must not pass experiment.* claims")
+
+
+def validate_phase53_record() -> None:
+    text = (
+        ROOT / "docs/records/2026-05-18-phase53-heavy-top-figure-curves.md"
+    ).read_text(encoding="utf-8")
+    figure_path = "reports/experiment_matrix/single_body_heavy_top_figure_curves.json"
+    comparison_path = "reports/experiment_matrix/single_body_heavy_top_comparison.json"
+    rk4_path = "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json"
+    mabd_path = "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json"
+    required_snippets = (
+        "## Status\n\npassed_for_heavy_top_figure_curve_digitization_lane",
+        "phase53-heavy-top-figure-curves",
+        "24d3858a8b1d7eca346aec80c13e68652099b600",
+        VENDORED_NEWTON_COMMIT,
+        str(HEAVY_TOP_FIGURE_PDF),
+        HEAVY_TOP_FIGURE_PDF_SHA256,
+        "pdftocairo 22.02.0",
+        "3179 x 1924",
+        "paper_figure_reference_family_only",
+        "not_authors_raw_data",
+        "no_blue_orange_line_style_split",
+        figure_path,
+        "1fc15336ba81146554bd26e7be6b33a13f84b36bd0ae3d0b672b46e72742ced1",
+        comparison_path,
+        "ef8c3fd21ac1159798f8102c18834e0b75655e6d0e396f69e8d4fdd738f7d87f",
+        "paper_figure_digitization",
+        "heavy_top_paper_figure_digitization",
+        "pdftocairo_pillow",
+        "paper_figure_digitized_reference_available",
+        "nutation_angle_error:paper_figure_digitized_curve_agreement_not_passed",
+        "raw_heavy_top_reference_curve_data_missing",
+        "heavy_top_digitized_figure_curve_agreement_not_passed",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.heavy_top` remains intended",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c \"import newton; print(newton.__file__)\"",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 53 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE53",
+        "phase53-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 53 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "passed heavy-top experiment",
+        "heavy-top experiment passed",
+        "authors' raw simulation data is available",
+        "blue/orange solid and dashed paper curves separated",
+        "heavy-top curve agreement passed",
+        "paper-faithful heavy-top inertia is verified",
+        "abd-vs-rbd comparison passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 53 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 53")
+    verified = claim_boundary_bullet(boundary_text, "Phase 53 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 53 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text, "Phase 53 heavy-top paper-figure digitization"
+    )
+    for snippet in (
+        "heavy-top paper-figure digitization evidence",
+        "Phase 53 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 53 current boundary missing: {snippet}")
+    for snippet in (
+        "digitized paper-figure reference-family samples",
+        "recorded `spinning_top.pdf`",
+        "pdftocairo 22.02.0",
+        "3179 x 1924",
+        "compact numeric JSON samples",
+        "figure_curve_report_path",
+        "paper_figure_digitized_reference_available",
+        "raw author curve data remains unavailable",
+        "raw_heavy_top_reference_curve_data_missing",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 53 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed heavy-top experiment",
+        "authors' raw simulation data",
+        "blue/orange solid and dashed paper curves",
+        "heavy-top curve agreement",
+        "paper-faithful heavy-top inertia or geometry",
+        "paper timing",
+        "rendered output",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 53 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 53 forbidden boundary missing: {snippet}")
+
+    try:
+        config = load_heavy_top_config(ROOT / "configs/experiments/single_body_heavy_top.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_heavy_top_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 53 heavy-top config validation failed: {exc}")
+
+    figure_report = load_claim_report(ROOT / figure_path)
+    comparison_report = load_claim_report(ROOT / comparison_path)
+    rk4_report = load_claim_report(ROOT / rk4_path)
+    mabd_report = load_claim_report(ROOT / mabd_path)
+
+    for label, path, report in (
+        ("figure", figure_path, figure_report),
+        ("comparison", comparison_path, comparison_report),
+        ("RK4", rk4_path, rk4_report),
+        ("MABD", mabd_path, mabd_report),
+    ):
+        if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+            fail(f"Phase 53 {label} report source_commit must not be a placeholder")
+        if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+            fail(f"Phase 53 {label} report vendored Newton commit changed")
+        if report.status.value != "incomplete":
+            fail(f"Phase 53 {label} report must remain incomplete")
+        if report.observed.get("full_experiment_claim_passed") is not False:
+            fail(f"Phase 53 {label} report must not pass full experiment claim")
+        if label in {"figure", "comparison"} and report.source_commit not in text:
+            fail(f"Phase 53 record must list {label} report source_commit")
+        if label in {"figure", "comparison"}:
+            if _record_sha256_for_artifact(text, path) != sha256_file(ROOT / path):
+                fail(f"Phase 53 {label} report sha256 mismatch")
+
+    if figure_report.claim_id != config.claim_id or figure_report.scene_id != config.scene_id:
+        fail("Phase 53 figure report identity does not match config")
+    if (
+        comparison_report.claim_id != config.claim_id
+        or comparison_report.scene_id != config.scene_id
+    ):
+        fail("Phase 53 comparison report identity does not match config")
+    if figure_report.asset_hashes.get("spinning_top_pdf") != HEAVY_TOP_FIGURE_PDF_SHA256:
+        fail("Phase 53 figure report source PDF asset hash changed")
+    if figure_report.baseline_lane != "paper_figure_digitization":
+        fail("Phase 53 figure report baseline lane changed")
+    if figure_report.solver_mode != "heavy_top_paper_figure_digitization":
+        fail("Phase 53 figure report solver mode changed")
+    if figure_report.backend != "pdftocairo_pillow":
+        fail("Phase 53 figure report backend changed")
+
+    observed = figure_report.observed
+    if observed.get("lane_status") != "reference_curves_digitized":
+        fail("Phase 53 figure lane status changed")
+    if observed.get("reference_curve_available") is not True:
+        fail("Phase 53 figure report must expose available reference curves")
+    if observed.get("source_pdf_path") != str(HEAVY_TOP_FIGURE_PDF):
+        fail("Phase 53 figure report source PDF path changed")
+    if observed.get("source_pdf_sha256") != HEAVY_TOP_FIGURE_PDF_SHA256:
+        fail("Phase 53 figure report source PDF sha256 changed")
+    if observed.get("renderer_version") != "pdftocairo 22.02.0":
+        fail("Phase 53 figure report renderer version changed")
+    if observed.get("render_dpi") != RENDER_DPI:
+        fail("Phase 53 figure report render DPI changed")
+    if observed.get("rendered_size_px") != list(EXPECTED_RENDERED_SIZE_PX):
+        fail("Phase 53 figure report rendered size changed")
+    limitations = observed.get("limitations")
+    if not isinstance(limitations, list):
+        fail("Phase 53 figure limitations must be a list")
+    for limitation in (
+        "not_authors_raw_data",
+        "no_blue_orange_line_style_split",
+        "no_curve_agreement_gate",
+        "no_runtime_timing_evidence",
+    ):
+        if limitation not in limitations:
+            fail(f"Phase 53 figure limitation missing: {limitation}")
+    raw_outputs_text = str(figure_report.raw_outputs).lower()
+    for forbidden_payload in (".png", ".svg", ".pdf", "base64"):
+        if forbidden_payload in raw_outputs_text:
+            fail(f"Phase 53 figure raw_outputs must not vendor {forbidden_payload} payloads")
+    if figure_report.raw_outputs != {"reference_samples": "compact_numeric_samples_only"}:
+        fail("Phase 53 figure raw_outputs changed")
+
+    reference_curves = observed.get("reference_curves")
+    if not isinstance(reference_curves, dict):
+        fail("Phase 53 figure report missing reference_curves")
+    for curve_name in ("reference_precession", "reference_nutation"):
+        curve = reference_curves.get(curve_name)
+        if not isinstance(curve, dict):
+            fail(f"Phase 53 figure report missing {curve_name}")
+        if curve.get("extraction_success") is not True:
+            fail(f"Phase 53 {curve_name} extraction must succeed")
+        if _require_finite_scalar(curve.get("sample_coverage"), curve_name) <= 0.80:
+            fail(f"Phase 53 {curve_name} coverage below threshold")
+        samples = curve.get("samples")
+        if not isinstance(samples, list) or len(samples) < 51:
+            fail(f"Phase 53 {curve_name} samples changed")
+        for index, sample in enumerate(samples):
+            if not isinstance(sample, dict):
+                fail(f"Phase 53 {curve_name} sample must be a mapping")
+            _require_finite_scalar(sample.get("time_s"), f"Phase 53 {curve_name} time {index}")
+            _require_finite_scalar(sample.get("value"), f"Phase 53 {curve_name} value {index}")
+
+    comparison_observed = comparison_report.observed
+    metric_statuses = comparison_observed.get("paper_metric_statuses")
+    if not isinstance(metric_statuses, dict):
+        fail("Phase 53 comparison paper_metric_statuses must be a mapping")
+    if (
+        metric_statuses.get("nutation_angle_error", {}).get("status")
+        != "paper_figure_digitized_reference_available"
+    ):
+        fail("Phase 53 comparison nutation metric status changed")
+    if comparison_observed.get("missing_paper_metrics") != [
+        "nutation_angle_error:paper_figure_digitized_curve_agreement_not_passed"
+    ]:
+        fail("Phase 53 comparison missing_paper_metrics changed")
+    if comparison_observed.get("digitized_figure_reference_available") is not True:
+        fail("Phase 53 comparison must record digitized figure availability")
+    blockers = comparison_observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 53 comparison blockers must be a list")
+    for blocker in (
+        "exact_heavy_top_inertia_unknown",
+        "exact_heavy_top_geometry_unknown",
+        "raw_heavy_top_reference_curve_data_missing",
+        "mabd_newton_report_incomplete",
+        "heavy_top_comparison_report_incomplete",
+        "heavy_top_timing_evidence_missing",
+        "heavy_top_comparison_pass_gate_not_enabled",
+        "heavy_top_digitized_figure_curve_agreement_not_passed",
+        "sample_time_grid_mismatch",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 53 comparison blocker missing: {blocker}")
+    provenance = comparison_observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 53 comparison input_report_provenance must be a mapping")
+    expected_provenance = (
+        ("paper_figure_curves", figure_path, figure_report),
+        ("rbd_rk4_reference", rk4_path, rk4_report),
+        ("mabd_newton", mabd_path, mabd_report),
+    )
+    for lane, path, report in expected_provenance:
+        lane_provenance = provenance.get(lane)
+        if not isinstance(lane_provenance, dict):
+            fail(f"Phase 53 comparison missing {lane} provenance")
+        if lane_provenance.get("path") != path:
+            fail(f"Phase 53 comparison {lane} provenance path changed")
+        if lane_provenance.get("sha256") != sha256_file(ROOT / path):
+            fail(f"Phase 53 comparison {lane} provenance sha256 mismatch")
+        if lane_provenance.get("source_commit") != report.source_commit:
+            fail(f"Phase 53 comparison {lane} provenance source_commit mismatch")
+        if lane_provenance.get("status") != report.status.value:
+            fail(f"Phase 53 comparison {lane} provenance status mismatch")
+    if comparison_report.raw_outputs.get("figure_curve_report") != figure_path:
+        fail("Phase 53 comparison raw_outputs missing figure report binding")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    found_heavy_top = False
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.heavy_top":
+            found_heavy_top = True
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 53 must keep heavy-top experiment status intended")
+            conflict_note = str(claim.get("conflict_note", ""))
+            if "raw_heavy_top_reference_curve_data_missing" not in conflict_note:
+                fail("Phase 53 heavy-top conflict_note missing raw-data blocker")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 53 must not pass experiment.* claims")
+    if not found_heavy_top:
+        fail("paper-claims.yaml missing heavy-top claim")
 
 
 def validate_paper_claims() -> None:
@@ -8127,13 +8449,14 @@ def main() -> int:
     validate_phase50_record()
     validate_phase51_record()
     validate_phase52_record()
+    validate_phase53_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53 "
         "docs/provenance validation passed"
     )
     return 0

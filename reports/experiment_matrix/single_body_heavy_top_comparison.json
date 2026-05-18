@@ -41,8 +41,14 @@
       "heavy_top_comparison_report_incomplete",
       "heavy_top_timing_evidence_missing",
       "heavy_top_comparison_pass_gate_not_enabled",
+      "heavy_top_digitized_figure_curve_agreement_not_passed",
       "sample_time_grid_mismatch"
     ],
+    "digitized_figure_reference_available": true,
+    "digitized_figure_reference_samples": {
+      "nutation": 101,
+      "precession": 101
+    },
     "full_experiment_claim_passed": false,
     "input_report_provenance": {
       "mabd_newton": {
@@ -52,6 +58,16 @@
         "sha256": "9342374ffde72071308b6aa5c117815392f71f4db1e07d9817ac61e4847bf324",
         "solver_mode": "mabd_cpu_oracle_heavy_top_newton_lane",
         "source_commit": "ef53522077c53b4842f5198938dd5c24190e7863",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      },
+      "paper_figure_curves": {
+        "backend": "pdftocairo_pillow",
+        "baseline_lane": "paper_figure_digitization",
+        "path": "reports/experiment_matrix/single_body_heavy_top_figure_curves.json",
+        "sha256": "1fc15336ba81146554bd26e7be6b33a13f84b36bd0ae3d0b672b46e72742ced1",
+        "solver_mode": "heavy_top_paper_figure_digitization",
+        "source_commit": "24d3858a8b1d7eca346aec80c13e68652099b600",
         "status": "incomplete",
         "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
       },
@@ -104,7 +120,7 @@
     "max_abs_precession_delta_rad": 3.618025997274943,
     "max_sample_time_delta_s": 4.75,
     "missing_paper_metrics": [
-      "nutation_angle_error:paper_reference_curve_missing"
+      "nutation_angle_error:paper_figure_digitized_curve_agreement_not_passed"
     ],
     "missing_required_lanes": [],
     "paper_metric_statuses": {
@@ -115,8 +131,9 @@
       },
       "nutation_angle_error": {
         "mabd_field": "precession_nutation_samples.nutation_angle_deg",
+        "paper_figure_field": "reference_curves.reference_nutation.samples",
         "rk4_field": "precession_nutation_samples.nutation_angle_deg",
-        "status": "paper_reference_curve_missing"
+        "status": "paper_figure_digitized_reference_available"
       },
       "precession_velocity_error": {
         "mabd_field": "precession_nutation_samples.precession_velocity_rad_s",
@@ -246,12 +263,13 @@
   "paper_source_version": "2603.08079v2",
   "plot_paths": {},
   "raw_outputs": {
+    "figure_curve_report": "reports/experiment_matrix/single_body_heavy_top_figure_curves.json",
     "mabd_report": "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
     "rk4_report": "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json"
   },
   "scene_id": "single_body_heavy_top",
   "solver_mode": "heavy_top_multilane_comparison_development",
-  "source_commit": "ef53522077c53b4842f5198938dd5c24190e7863",
+  "source_commit": "24d3858a8b1d7eca346aec80c13e68652099b600",
   "status": "incomplete",
   "threshold": {
     "max_sample_time_delta_s": 1e-12
