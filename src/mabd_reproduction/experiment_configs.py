@@ -841,6 +841,9 @@ def _require_t_handle_mabd_newton(data: dict[str, Any]) -> THandleMABDNewtonConf
     rest_points = _require_points(mabd_newton, "rest_points_m")
     if rest_points.shape != (4, 3):
         raise ExperimentRunConfigError("mabd_newton.rest_points_m must contain exactly 4 3D points")
+    rank = np.linalg.matrix_rank(rest_points[1:] - rest_points[0], tol=1.0e-12)
+    if rank != 3:
+        raise ExperimentRunConfigError("mabd_newton.rest_points_m must be nondegenerate")
     masses = _require_positive_mass_vector(mabd_newton, "point_masses_kg", 4)
     step_count = _require_positive_int(mabd_newton, "step_count")
     sample_count = _require_positive_int(mabd_newton, "sample_count")
@@ -861,6 +864,12 @@ def _require_t_handle_mabd_newton(data: dict[str, Any]) -> THandleMABDNewtonConf
         gravity_m_s2 = _require_zero_vec3_array(mabd_newton, "gravity_m_s2")
     except ExperimentRunConfigError as exc:
         raise ExperimentRunConfigError("mabd_newton.gravity_m_s2 must be zero gravity") from exc
+    initial_angular_velocity = _require_vec3_array(
+        mabd_newton,
+        "initial_angular_velocity_rad_s",
+    )
+    if np.linalg.norm(initial_angular_velocity) <= 1.0e-15:
+        raise ExperimentRunConfigError("mabd_newton.initial_angular_velocity_rad_s must be nonzero")
     return THandleMABDNewtonConfig(
         time_step_s=_require_positive_float(mabd_newton, "time_step_s"),
         step_count=step_count,
@@ -869,10 +878,7 @@ def _require_t_handle_mabd_newton(data: dict[str, Any]) -> THandleMABDNewtonConf
         point_masses_kg=masses,
         volume_m3=_require_positive_float(mabd_newton, "volume_m3"),
         rotation_mode=rotation_mode,
-        initial_angular_velocity_rad_s=_require_vec3_array(
-            mabd_newton,
-            "initial_angular_velocity_rad_s",
-        ),
+        initial_angular_velocity_rad_s=initial_angular_velocity,
         gravity_m_s2=gravity_m_s2,
         output_report=_require_str(mabd_newton, "output_report"),
         thresholds=thresholds,

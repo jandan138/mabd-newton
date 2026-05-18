@@ -743,7 +743,38 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
         self.assertNotIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
         self.assertIn("t_handle_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertEqual(loaded.observed["required_missing_lanes"], [])
         self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_t_handle_mabd_report_rejects_nonfinite_rollout(self) -> None:
+        from dataclasses import replace
+
+        from mabd_reproduction.experiment_configs import load_t_handle_config
+        from mabd_reproduction.t_handle_mabd import roll_out_t_handle_mabd_model_derived
+        from mabd_reproduction.t_handle_reports import write_t_handle_mabd_newton_report
+
+        config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
+        finite_rollout = roll_out_t_handle_mabd_model_derived(config)
+        nonfinite_rollout = replace(
+            finite_rollout,
+            finite=False,
+            relative_energy_drift=float("nan"),
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "t_handle_mabd_newton.json"
+            with patch(
+                "mabd_reproduction.t_handle_reports.roll_out_t_handle_mabd_model_derived",
+                return_value=nonfinite_rollout,
+            ):
+                with self.assertRaisesRegex(ValueError, "finite"):
+                    write_t_handle_mabd_newton_report(
+                        output_path,
+                        config=config,
+                        source_commit="test-source",
+                        vendored_newton_commit="test-newton",
+                    )
+            self.assertFalse(output_path.exists())
 
     def test_run_t_handle_rk4_reference_requires_incomplete_status(self) -> None:
         from mabd_reproduction.experiment_runner import run_t_handle_rk4_reference

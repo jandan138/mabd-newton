@@ -8893,6 +8893,8 @@ def validate_phase56_record() -> None:
             fail(f"Phase 56 blocker missing: {blocker}")
     if "mabd_newton_report_missing" in blockers:
         fail("Phase 56 report must not retain mabd_newton_report_missing")
+    if observed.get("required_missing_lanes") != []:
+        fail("Phase 56 MABD report required_missing_lanes must be empty")
 
     claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
     if not isinstance(claims, list):

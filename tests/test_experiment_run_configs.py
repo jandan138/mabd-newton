@@ -347,6 +347,30 @@ class ExperimentRunConfigTests(unittest.TestCase):
             with self.assertRaisesRegex(ExperimentRunConfigError, "point_masses_kg"):
                 load_t_handle_config(path)
 
+    def test_t_handle_config_rejects_zero_mabd_initial_angular_velocity(self) -> None:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["reference"]["initial_angular_velocity_rad_s"] = [0.0, 0.0, 0.0]
+        source["mabd_newton"]["initial_angular_velocity_rad_s"] = [0.0, 0.0, 0.0]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                ExperimentRunConfigError,
+                "mabd_newton.initial_angular_velocity_rad_s",
+            ):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_degenerate_mabd_rest_points(self) -> None:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_newton"]["rest_points_m"][3] = source["mabd_newton"]["rest_points_m"][2]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.rest_points_m"):
+                load_t_handle_config(path)
+
     def test_t_handle_config_rejects_figure_hash_drift(self) -> None:
         config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
+
 from .experiment_configs import THandleRunConfig
 from .reporting import ClaimReport, EvidenceStatus, write_claim_report
 from .t_handle_mabd import THandleMABDRollout, roll_out_t_handle_mabd_model_derived
@@ -160,6 +162,23 @@ def write_t_handle_mabd_newton_report(
     paper_source_version: str = "2603.08079v2",
 ) -> ClaimReport:
     rollout = roll_out_t_handle_mabd_model_derived(config)
+    finite_values = (
+        rollout.energy_initial,
+        rollout.energy_final,
+        rollout.relative_energy_drift,
+        rollout.angular_momentum_norm_initial,
+        rollout.angular_momentum_norm_final,
+        rollout.angular_momentum_norm_drift,
+        rollout.max_proxy_inertia_relative_error,
+        rollout.max_affine_shape_spread_m,
+    )
+    if (
+        not rollout.finite
+        or not all(np.isfinite(value) for value in finite_values)
+        or not np.all(np.isfinite(rollout.proxy_inertia_kg_m2))
+        or not np.all(np.isfinite(rollout.reference_inertia_kg_m2))
+    ):
+        raise ValueError("T-handle MABD Newton rollout must be finite before writing a report")
     thresholds = config.mabd_newton.thresholds
     threshold_violations: list[str] = []
     if abs(rollout.relative_energy_drift) > thresholds["max_relative_energy_drift"]:
@@ -216,7 +235,7 @@ def write_t_handle_mabd_newton_report(
         "angular_velocity_samples": _mabd_sample_rows(rollout),
         "threshold_violations": threshold_violations,
         "blocking_reasons": list(T_HANDLE_MABD_REPORT_BLOCKERS),
-        "required_missing_lanes": list(config.required_missing_lanes),
+        "required_missing_lanes": [],
     }
     report = ClaimReport(
         claim_id=config.claim_id,
