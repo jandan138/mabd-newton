@@ -43,6 +43,7 @@ from .single_body_reports import (
     write_spinning_box_normal_constraint_report,
     write_spinning_box_paper_horizon_report,
 )
+from .spinning_box_digitization import write_spinning_box_figure_curve_report
 from .t_handle_reports import (
     write_t_handle_mabd_newton_report,
     write_t_handle_rk4_reference_report,
@@ -339,6 +340,44 @@ def run_spinning_box_decoupled_twist(
 
     report_path = Path(output_path)
     report = write_spinning_box_decoupled_twist_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
+def run_spinning_box_figure_curves(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    if output_path is None:
+        raise ValueError("spinning_box_figure_curves requires --output")
+    if output_root is not None:
+        raise ValueError("spinning_box_figure_curves uses --output, not --output-root")
+
+    config = load_spinning_box_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_spinning_box_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError("Phase 65 figure-curve runner requires incomplete report status")
+
+    report_path = Path(output_path)
+    report = write_spinning_box_figure_curve_report(
         report_path,
         config=config,
         source_commit=source_commit,

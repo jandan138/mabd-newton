@@ -481,6 +481,44 @@ class ExperimentRunnerTests(unittest.TestCase):
                     vendored_newton_commit="test-newton",
                 )
 
+    def test_run_spinning_box_figure_curves_writes_explicit_output_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_figure_curves
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "figure_curves.json"
+            result = run_spinning_box_figure_curves(
+                config_path=CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "paper_figure_digitization")
+        self.assertEqual(loaded.baseline_lane, "paper_figure_digitization")
+        self.assertEqual(loaded.solver_mode, "spinning_box_paper_figure_curve_digitization")
+        self.assertEqual(loaded.backend, "paper_pdf_digitization")
+        self.assertTrue(loaded.observed["color_family_curve_available"])
+        self.assertFalse(loaded.observed["paper_reference_legend_identity_available"])
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_spinning_box_figure_curves_requires_explicit_output(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_figure_curves
+
+        with TemporaryDirectory() as tmpdir:
+            with self.assertRaisesRegex(ValueError, "spinning_box_figure_curves requires --output"):
+                run_spinning_box_figure_curves(
+                    config_path=CONFIG_PATH,
+                    matrix_path=MATRIX_PATH,
+                    output_root=Path(tmpdir),
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+
     def test_run_physical_pendulum_analytic_reference_writes_report(self) -> None:
         from mabd_reproduction.experiment_runner import (
             run_physical_pendulum_analytic_reference,
@@ -1517,6 +1555,50 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.observed["velocity_semantics_policy"],
             "decoupled_spatial_twist_with_exponential_rigid_update",
         )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_experiment_cli_writes_spinning_box_figure_curve_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "figure_curves_cli_report.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "spinning_box_figure_curves",
+                    "--config",
+                    str(CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.spinning_box")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "paper_figure_digitization")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.solver_mode, "spinning_box_paper_figure_curve_digitization")
+        self.assertEqual(loaded.backend, "paper_pdf_digitization")
         self.assertNotIn("lane_gate_status", loaded.observed)
 
     def test_run_experiment_cli_writes_physical_pendulum_analytic_reference_report(self) -> None:
