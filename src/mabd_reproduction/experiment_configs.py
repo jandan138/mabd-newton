@@ -207,6 +207,11 @@ class HeavyTopComparisonConfig:
 
 
 @dataclass(frozen=True)
+class HeavyTopFigureCurvesConfig:
+    output_report: str
+
+
+@dataclass(frozen=True)
 class HeavyTopRunConfig:
     schema_version: int
     claim_id: str
@@ -219,6 +224,7 @@ class HeavyTopRunConfig:
     reference: HeavyTopReferenceConfig
     mabd_newton: HeavyTopMABDNewtonConfig
     comparison: HeavyTopComparisonConfig
+    figure_curves: HeavyTopFigureCurvesConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -928,6 +934,13 @@ def _require_heavy_top_comparison(data: dict[str, Any]) -> HeavyTopComparisonCon
     )
 
 
+def _require_heavy_top_figure_curves(data: dict[str, Any]) -> HeavyTopFigureCurvesConfig:
+    figure_curves = _require_mapping(data, "figure_curves")
+    return HeavyTopFigureCurvesConfig(
+        output_report=_require_str(figure_curves, "output_report"),
+    )
+
+
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
     config_path = Path(path)
     data = _read_mapping(config_path)
@@ -1311,6 +1324,7 @@ def load_heavy_top_config(path: str | Path) -> HeavyTopRunConfig:
         reference=_require_heavy_top_reference(data),
         mabd_newton=_require_heavy_top_mabd_newton(data),
         comparison=_require_heavy_top_comparison(data),
+        figure_curves=_require_heavy_top_figure_curves(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1417,6 +1431,19 @@ def validate_heavy_top_config_against_matrix(
         config.mabd_newton.output_report,
     ):
         raise ExperimentRunConfigError("comparison.output_report must be separate from lane reports")
+    if (
+        not config.figure_curves.output_report.startswith(expected_prefix)
+        or not config.figure_curves.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "figure_curves.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.figure_curves.output_report in (
+        config.reference.output_report,
+        config.mabd_newton.output_report,
+        config.comparison.output_report,
+    ):
+        raise ExperimentRunConfigError("figure_curves.output_report must be separate from lane reports")
     if not np.isclose(
         float(np.sum(config.mabd_newton.point_masses_kg)),
         config.reference.mass_kg,

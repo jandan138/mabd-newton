@@ -60,6 +60,8 @@ comparison:
     - energy_drift
   thresholds:
     max_sample_time_delta_s: 1.0e-12
+figure_curves:
+  output_report: reports/experiment_matrix/single_body_heavy_top_figure_curves.json
 report:
   status: incomplete
   failure_reason: >-
