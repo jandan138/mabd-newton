@@ -4662,6 +4662,10 @@ class Phase0BootstrapTests(unittest.TestCase):
             "phase67-model-plane-constraints",
             validate_docs.PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT,
             "96713fa965463b69c229a4d30582c733ff3526bb",
+            "local patch files:",
+            "vendor/newton/newton/_src/solvers/mabd/solver_mabd.py",
+            "tests/test_mabd_phase4_solver_step.py",
+            "vendor/newton/newton/tests/test_mabd_phase4_solver_step.py",
             "Phase67 modifies vendored Newton inside this repository; unmodified Newton support is not claimed.",
             "mutates_reference_environment=false",
             "uses_ambient_python=false",
@@ -4690,6 +4694,48 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE67", text)
         self.assertNotIn("phase67-working-tree", text)
+
+    def test_phase67_validator_rejects_missing_local_patch_provenance(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        record_path = validate_docs.ROOT / "docs/records/2026-05-19-phase67-model-plane-constraints.md"
+        original_read_text = Path.read_text
+
+        def fake_read_text(path, *args, **kwargs):
+            text = original_read_text(path, *args, **kwargs)
+            if Path(path) == record_path:
+                text = text.replace(
+                    "- local patch files:\n"
+                    "  - `vendor/newton/newton/_src/solvers/mabd/solver_mabd.py`\n"
+                    "  - `tests/test_mabd_phase4_solver_step.py`\n"
+                    "  - `vendor/newton/newton/tests/test_mabd_phase4_solver_step.py`\n",
+                    "",
+                )
+            return text
+
+        with patch.object(Path, "read_text", fake_read_text):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase67_record()
+
+        self.assertIn("local patch files", str(context.exception))
+
+    def test_phase67_validator_rejects_record_overclaims(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        record_path = validate_docs.ROOT / "docs/records/2026-05-19-phase67-model-plane-constraints.md"
+        original_read_text = Path.read_text
+
+        def fake_read_text(path, *args, **kwargs):
+            text = original_read_text(path, *args, **kwargs)
+            if Path(path) == record_path:
+                return f"{text}\ncontact solver implemented\n"
+            return text
+
+        with patch.object(Path, "read_text", fake_read_text):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase67_record()
+
+        self.assertIn("overclaims unsupported evidence", str(context.exception))
 
     def test_phase67_validator_rejects_passed_experiment_claim(self) -> None:
         import scripts.validate_docs as validate_docs
