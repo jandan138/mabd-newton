@@ -59,17 +59,33 @@ The report writer will:
 - strictly validate input report identity: claim id, scene id, baseline lane,
   solver mode, backend, status, procedural asset hash, and
   `full_experiment_claim_passed = false`;
+- strictly validate the semantic scope fields that keep the comparison bounded:
+  RK4 `reference_not_paper_geometry = true`,
+  RK4 `reference_scope = torque_free_principal_axis_rk4_diagnostic`,
+  MABD `reference_not_paper_geometry = true`,
+  MABD `mabd_diagnostic_scope = t_handle_model_derived_proxy`, and
+  MABD `solver_model_config_source = newton_model_derived`;
 - record SHA256 provenance for both input reports;
 - match `angular_velocity_samples` by `sample_index`;
 - record unmatched rows and nonfinite input diagnostics without writing bare
   `NaN` or `Infinity`;
 - compute per-sample `mabd_minus_rk4` angular velocity component deltas;
-- compute max absolute angular velocity delta and waveform RMSE over matched
-  finite samples;
-- compute first sign-flip time along the configured intermediate axis for each
-  lane when available, and the MABD-minus-RK4 flip timing delta when both exist;
-- snapshot relative energy drift for each lane and the MABD-minus-RK4 drift
-  delta when both are finite;
+- compute max absolute angular velocity delta across all three components;
+- compute `intermediate_axis_waveform_rmse_rad_s` only over matched samples
+  that are finite and whose time difference is at or below
+  `max_sample_time_delta_s`; when no such aligned sample set exists, record
+  `null` and add a time-alignment blocker;
+- compute first sign-flip time along the configured intermediate axis using
+  only sample-grid linear interpolation. Exact zero is treated as a crossing at
+  that sample time. If no crossing exists, record `null` plus an unavailable
+  status. This is not the RK4 step-resolution flip count and not paper timing;
+- snapshot signed `relative_energy_drift` for each lane and the MABD-minus-RK4
+  signed drift delta when both are finite. The paper metric remains
+  `energy_loss`; signed drift is recorded only as a diagnostic, not a paper loss
+  value;
+- record explicit `paper_metric_statuses` for `flip_timing_error`,
+  `intermediate_axis_angular_velocity_waveform`, and `energy_loss`, each marked
+  diagnostic-only or unavailable rather than passed;
 - keep the output report status `incomplete`;
 - keep `full_experiment_claim_passed = false`;
 - emit blockers including `exact_t_handle_geometry_unknown`,

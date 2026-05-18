@@ -39,6 +39,23 @@ class ExperimentRunConfigTests(unittest.TestCase):
         path.write_text(yaml.safe_dump(mapping), encoding="utf-8")
         return path
 
+    def _t_handle_mapping_with_comparison(self) -> dict:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source.setdefault(
+            "comparison",
+            {
+                "output_report": "reports/experiment_matrix/single_body_t_handle_comparison.json",
+                "required_lanes": ["mabd_newton", "rbd_rk4_reference"],
+                "required_metrics": [
+                    "flip_timing_error",
+                    "intermediate_axis_angular_velocity_waveform",
+                    "energy_loss",
+                ],
+                "thresholds": {"max_sample_time_delta_s": 1.0e-12},
+            },
+        )
+        return source
+
     def test_spinning_box_config_is_machine_checkable(self) -> None:
         from newton.solvers import mabd
 
@@ -269,10 +286,26 @@ class ExperimentRunConfigTests(unittest.TestCase):
         np.testing.assert_allclose(config.mabd_newton.gravity_m_s2, [0.0, 0.0, 0.0])
         self.assertIn("max_affine_shape_spread_m", config.mabd_newton.thresholds)
         self.assertIn("max_proxy_inertia_relative_error", config.mabd_newton.thresholds)
+        self.assertEqual(
+            config.comparison.output_report,
+            "reports/experiment_matrix/single_body_t_handle_comparison.json",
+        )
+        self.assertEqual(config.comparison.required_lanes, ("mabd_newton", "rbd_rk4_reference"))
+        self.assertEqual(
+            config.comparison.required_metrics,
+            (
+                "flip_timing_error",
+                "intermediate_axis_angular_velocity_waveform",
+                "energy_loss",
+            ),
+        )
+        self.assertIn("max_sample_time_delta_s", config.comparison.thresholds)
         self.assertIn("exact_t_handle_geometry_unknown", config.failure_reason)
         self.assertIn("raw_t_handle_reference_curve_data_missing", config.failure_reason)
         self.assertIn("mabd_newton_report_incomplete", config.failure_reason)
+        self.assertIn("t_handle_comparison_report_incomplete", config.failure_reason)
         self.assertNotIn("mabd_newton_report_missing", config.failure_reason)
+        self.assertNotIn("t_handle_comparison_report_missing", config.failure_reason)
 
     def test_t_handle_config_matches_experiment_matrix_without_overclaiming(self) -> None:
         config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
@@ -284,6 +317,8 @@ class ExperimentRunConfigTests(unittest.TestCase):
         )
         self.assertIn("mabd_newton_report_incomplete", t_handle_entry.blocking_reasons)
         self.assertNotIn("mabd_newton_report_missing", t_handle_entry.blocking_reasons)
+        self.assertIn("t_handle_comparison_report_incomplete", t_handle_entry.blocking_reasons)
+        self.assertNotIn("t_handle_comparison_report_missing", t_handle_entry.blocking_reasons)
 
     def test_t_handle_config_rejects_passed_status(self) -> None:
         source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
@@ -370,6 +405,48 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.rest_points_m"):
                 load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_bad_comparison_lanes(self) -> None:
+        source = self._t_handle_mapping_with_comparison()
+        source["comparison"]["required_lanes"] = ["mabd_newton"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.required_lanes"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_bad_comparison_metrics(self) -> None:
+        source = self._t_handle_mapping_with_comparison()
+        source["comparison"]["required_metrics"] = ["energy_loss"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.required_metrics"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_bad_comparison_thresholds(self) -> None:
+        source = self._t_handle_mapping_with_comparison()
+        source["comparison"]["thresholds"] = {}
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.thresholds"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_comparison_report_overlap(self) -> None:
+        source = self._t_handle_mapping_with_comparison()
+        source["comparison"]["output_report"] = source["mabd_newton"]["output_report"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            config = load_t_handle_config(path)
+            matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+            with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.output_report"):
+                validate_t_handle_config_against_matrix(config, matrix)
 
     def test_t_handle_config_rejects_figure_hash_drift(self) -> None:
         config = load_t_handle_config(T_HANDLE_CONFIG_PATH)

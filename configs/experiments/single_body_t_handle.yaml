@@ -48,12 +48,23 @@ mabd_newton:
     max_angular_momentum_norm_drift: 2.0
     max_affine_shape_spread_m: 10.0
     max_proxy_inertia_relative_error: 1.0e-3
+comparison:
+  output_report: reports/experiment_matrix/single_body_t_handle_comparison.json
+  required_lanes:
+    - mabd_newton
+    - rbd_rk4_reference
+  required_metrics:
+    - flip_timing_error
+    - intermediate_axis_angular_velocity_waveform
+    - energy_loss
+  thresholds:
+    max_sample_time_delta_s: 1.0e-12
 report:
   status: incomplete
   failure_reason: >-
     rbd_rk4_reference diagnostic only; exact_t_handle_geometry_unknown,
     raw_t_handle_reference_curve_data_missing, mabd_newton_report_incomplete,
-    t_handle_comparison_report_missing, and t_handle_timing_evidence_missing
+    t_handle_comparison_report_incomplete, and t_handle_timing_evidence_missing
     remain incomplete
   output_report: reports/experiment_matrix/single_body_t_handle_rk4_reference.json
   thresholds:

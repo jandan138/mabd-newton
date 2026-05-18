@@ -164,6 +164,14 @@ class THandleMABDNewtonConfig:
 
 
 @dataclass(frozen=True)
+class THandleComparisonConfig:
+    output_report: str
+    required_lanes: tuple[str, ...]
+    required_metrics: tuple[str, ...]
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class THandleRunConfig:
     schema_version: int
     claim_id: str
@@ -175,6 +183,7 @@ class THandleRunConfig:
     paper_values: dict[str, Any]
     reference: THandleReferenceConfig
     mabd_newton: THandleMABDNewtonConfig
+    comparison: THandleComparisonConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -328,6 +337,13 @@ T_HANDLE_MABD_NEWTON_THRESHOLD_KEYS = frozenset(
 )
 T_HANDLE_MABD_NEWTON_ROTATION_MODES = frozenset({"polar"})
 T_HANDLE_REQUIRED_MISSING_LANES = ("mabd_newton",)
+T_HANDLE_COMPARISON_REQUIRED_LANES = ("mabd_newton", "rbd_rk4_reference")
+T_HANDLE_COMPARISON_REQUIRED_METRICS = (
+    "flip_timing_error",
+    "intermediate_axis_angular_velocity_waveform",
+    "energy_loss",
+)
+T_HANDLE_COMPARISON_THRESHOLD_KEYS = frozenset({"max_sample_time_delta_s"})
 T_HANDLE_EXPECTED_FIGURE_PDF_SHA256 = (
     "5ae6464fd7e7e6fd471ad56e67cdbead6014736cb731a232ce29d80630a72c1c"
 )
@@ -339,7 +355,7 @@ T_HANDLE_REQUIRED_BLOCKERS = frozenset(
         "exact_t_handle_geometry_unknown",
         "raw_t_handle_reference_curve_data_missing",
         "mabd_newton_report_incomplete",
-        "t_handle_comparison_report_missing",
+        "t_handle_comparison_report_incomplete",
     }
 )
 HEAVY_TOP_THRESHOLD_KEYS = frozenset(
@@ -885,6 +901,30 @@ def _require_t_handle_mabd_newton(data: dict[str, Any]) -> THandleMABDNewtonConf
     )
 
 
+def _require_t_handle_comparison(data: dict[str, Any]) -> THandleComparisonConfig:
+    comparison = _require_mapping(data, "comparison")
+    required_lanes = _require_str_tuple(comparison, "required_lanes")
+    if required_lanes != T_HANDLE_COMPARISON_REQUIRED_LANES:
+        raise ExperimentRunConfigError("comparison.required_lanes must match T-handle paper lanes")
+    required_metrics = _require_str_tuple(comparison, "required_metrics")
+    if required_metrics != T_HANDLE_COMPARISON_REQUIRED_METRICS:
+        raise ExperimentRunConfigError("comparison.required_metrics must match T-handle matrix metrics")
+    if not isinstance(comparison.get("thresholds"), dict) or not comparison["thresholds"]:
+        raise ExperimentRunConfigError("comparison.thresholds must be a non-empty mapping")
+    thresholds = _require_float_mapping(comparison, "thresholds")
+    missing = sorted(T_HANDLE_COMPARISON_THRESHOLD_KEYS - set(thresholds))
+    if missing:
+        raise ExperimentRunConfigError(
+            "comparison.thresholds missing required keys: " + ", ".join(missing)
+        )
+    return THandleComparisonConfig(
+        output_report=_require_str(comparison, "output_report"),
+        required_lanes=required_lanes,
+        required_metrics=required_metrics,
+        thresholds=thresholds,
+    )
+
+
 def _require_heavy_top_reference(data: dict[str, Any]) -> HeavyTopReferenceConfig:
     reference = _require_mapping(data, "reference")
     thresholds = _require_float_mapping(reference, "thresholds")
@@ -1372,6 +1412,7 @@ def load_t_handle_config(path: str | Path) -> THandleRunConfig:
         paper_values=_require_mapping(data, "paper_values"),
         reference=_require_t_handle_reference(data),
         mabd_newton=_require_t_handle_mabd_newton(data),
+        comparison=_require_t_handle_comparison(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1429,6 +1470,10 @@ def validate_t_handle_config_against_matrix(
         )
     if "mabd_newton_report_missing" in blockers:
         raise ExperimentRunConfigError("T-handle matrix must use mabd_newton_report_incomplete")
+    if "t_handle_comparison_report_missing" in blockers:
+        raise ExperimentRunConfigError(
+            "T-handle matrix must use t_handle_comparison_report_incomplete"
+        )
     if entry.reproduction_status != "planned":
         raise ExperimentRunConfigError("matrix reproduction_status must remain planned")
     for metric in (
@@ -1438,6 +1483,12 @@ def validate_t_handle_config_against_matrix(
     ):
         if metric not in entry.metrics:
             raise ExperimentRunConfigError("T-handle metrics must match the paper matrix")
+    if config.comparison.required_lanes != T_HANDLE_COMPARISON_REQUIRED_LANES:
+        raise ExperimentRunConfigError("comparison.required_lanes must match T-handle paper lanes")
+    if set(config.comparison.required_lanes) != set(entry.required_lanes):
+        raise ExperimentRunConfigError("comparison.required_lanes must match experiment matrix")
+    if config.comparison.required_metrics != entry.metrics:
+        raise ExperimentRunConfigError("comparison.required_metrics must match experiment matrix")
     if config.reference.figure_pdf_sha256 != T_HANDLE_EXPECTED_FIGURE_PDF_SHA256:
         raise ExperimentRunConfigError("reference.figure_pdf_sha256 changed")
     if config.reference.figure_text_source != T_HANDLE_EXPECTED_FIGURE_TEXT_SOURCE:
@@ -1463,6 +1514,18 @@ def validate_t_handle_config_against_matrix(
         )
     if config.mabd_newton.output_report == config.reference.output_report:
         raise ExperimentRunConfigError("mabd_newton.output_report must be separate from reference output_report")
+    if (
+        not config.comparison.output_report.startswith(expected_prefix)
+        or not config.comparison.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "comparison.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.comparison.output_report in (
+        config.reference.output_report,
+        config.mabd_newton.output_report,
+    ):
+        raise ExperimentRunConfigError("comparison.output_report must be separate from other lane reports")
     mabd_duration = config.mabd_newton.step_count * config.mabd_newton.time_step_s
     if not np.isclose(mabd_duration, config.reference.duration_s, rtol=0.0, atol=1.0e-12):
         raise ExperimentRunConfigError("mabd_newton step_count*time_step_s must match reference.duration_s")
@@ -1725,6 +1788,9 @@ __all__ = [
     "PHYSICAL_PENDULUM_THRESHOLD_KEYS",
     "T_HANDLE_EXPECTED_FIGURE_PDF_SHA256",
     "T_HANDLE_EXPECTED_FIGURE_TEXT_SOURCE",
+    "T_HANDLE_COMPARISON_REQUIRED_LANES",
+    "T_HANDLE_COMPARISON_REQUIRED_METRICS",
+    "T_HANDLE_COMPARISON_THRESHOLD_KEYS",
     "T_HANDLE_REQUIRED_BLOCKERS",
     "T_HANDLE_REQUIRED_MISSING_LANES",
     "T_HANDLE_MABD_NEWTON_ROTATION_MODES",
@@ -1742,6 +1808,7 @@ __all__ = [
     "PhysicalPendulumRunConfig",
     "SpinningBoxPaperHorizonConfig",
     "SpinningBoxRunConfig",
+    "THandleComparisonConfig",
     "THandleMABDNewtonConfig",
     "THandleReferenceConfig",
     "THandleRunConfig",

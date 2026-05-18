@@ -171,7 +171,7 @@ claims:
     source_line: "T-handle intermediate-axis instability"
     expected_value: "flip timing and angular-velocity waveform"
     unit: "scene"
-    conflict_note: "exact_t_handle_geometry_unknown; raw_t_handle_reference_curve_data_missing"
+    conflict_note: "exact_t_handle_geometry_unknown; raw_t_handle_reference_curve_data_missing; mabd_newton_report_incomplete; t_handle_comparison_report_incomplete"
     reproduction_status: intended
   - claim_id: experiment.single_body.heavy_top
     source_path: "/tmp/mabd-paper/source/sections/experiment.tex"

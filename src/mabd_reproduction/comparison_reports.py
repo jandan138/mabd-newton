@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-from math import isfinite
+from math import isfinite, sqrt
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +11,7 @@ from .experiment_configs import (
     HeavyTopRunConfig,
     PhysicalPendulumRunConfig,
     SpinningBoxRunConfig,
+    THandleRunConfig,
 )
 from .physical_pendulum_reports import physical_pendulum_timing_source_audit
 from .reporting import ClaimReport, EvidenceStatus, load_claim_report, write_claim_report
@@ -35,6 +36,11 @@ HEAVY_TOP_REQUIRED_METRICS = (
     "nutation_angle_error",
     "energy_drift",
 )
+T_HANDLE_REQUIRED_METRICS = (
+    "flip_timing_error",
+    "intermediate_axis_angular_velocity_waveform",
+    "energy_loss",
+)
 PHYSICAL_PENDULUM_INPUT_LANES = {
     "analytic_reference": {
         "solver_mode": "analytic_elliptic_reference",
@@ -56,6 +62,16 @@ HEAVY_TOP_INPUT_LANES = {
     },
     "mabd_newton": {
         "solver_mode": "mabd_cpu_oracle_heavy_top_newton_lane",
+        "backend": "cpu_numpy_newton_only",
+    },
+}
+T_HANDLE_INPUT_LANES = {
+    "rbd_rk4_reference": {
+        "solver_mode": "t_handle_torque_free_rk4_reference",
+        "backend": "cpu_numpy",
+    },
+    "mabd_newton": {
+        "solver_mode": "mabd_cpu_oracle_t_handle_newton_lane",
         "backend": "cpu_numpy_newton_only",
     },
 }
@@ -143,6 +159,50 @@ def _require_heavy_top_lane_report(
         raise ValueError(f"{lane} report must use heavy_top_procedural")
     if report.observed.get("full_experiment_claim_passed") is not False:
         raise ValueError(f"{lane} report must not claim full experiment pass")
+    return report
+
+
+def _require_t_handle_lane_report(
+    path: str | Path,
+    *,
+    config: THandleRunConfig,
+    lane: str,
+) -> ClaimReport:
+    report = load_claim_report(path)
+    if report.claim_id != config.claim_id:
+        raise ValueError(f"{lane} report claim_id must be {config.claim_id}")
+    if report.scene_id != config.scene_id:
+        raise ValueError(f"{lane} report scene_id must be {config.scene_id}")
+    if report.baseline_lane != lane:
+        raise ValueError(f"{lane} report must have baseline_lane={lane}")
+    expected_identity = T_HANDLE_INPUT_LANES[lane]
+    expected_solver_mode = expected_identity["solver_mode"]
+    if report.solver_mode != expected_solver_mode:
+        raise ValueError(f"{lane} report solver_mode must be {expected_solver_mode}")
+    expected_backend = expected_identity["backend"]
+    if report.backend != expected_backend:
+        raise ValueError(f"{lane} report backend must be {expected_backend}")
+    if report.status != EvidenceStatus.INCOMPLETE:
+        raise ValueError(f"{lane} report status must be incomplete")
+    if report.asset_hashes.get("t_handle_procedural") != "not_applicable_procedural":
+        raise ValueError(f"{lane} report must use t_handle_procedural")
+    if report.observed.get("full_experiment_claim_passed") is not False:
+        raise ValueError(f"{lane} report must not claim full experiment pass")
+    if report.observed.get("reference_not_paper_geometry") is not True:
+        raise ValueError(f"{lane} report reference_not_paper_geometry must be true")
+    if lane == "rbd_rk4_reference":
+        expected_scope = "torque_free_principal_axis_rk4_diagnostic"
+        if report.observed.get("reference_scope") != expected_scope:
+            raise ValueError(f"{lane} report reference_scope must be {expected_scope}")
+    if lane == "mabd_newton":
+        expected_scope = "t_handle_model_derived_proxy"
+        if report.observed.get("mabd_diagnostic_scope") != expected_scope:
+            raise ValueError(f"{lane} report mabd_diagnostic_scope must be {expected_scope}")
+        expected_source = "newton_model_derived"
+        if report.observed.get("solver_model_config_source") != expected_source:
+            raise ValueError(
+                f"{lane} report solver_model_config_source must be {expected_source}"
+            )
     return report
 
 
@@ -245,6 +305,28 @@ def _heavy_top_lane_provenance(path: str | Path, report: ClaimReport) -> dict[st
     diagnostic_scope = report.observed.get("mabd_diagnostic_scope")
     if isinstance(diagnostic_scope, str) and diagnostic_scope:
         provenance["mabd_diagnostic_scope"] = diagnostic_scope
+    return provenance
+
+
+def _t_handle_lane_provenance(path: str | Path, report: ClaimReport) -> dict[str, str]:
+    provenance = {
+        "path": Path(path).as_posix(),
+        "sha256": _sha256_file(path),
+        "source_commit": report.source_commit,
+        "vendored_newton_commit": report.vendored_newton_commit,
+        "solver_mode": report.solver_mode,
+        "backend": report.backend,
+        "baseline_lane": report.baseline_lane,
+        "status": report.status.value,
+    }
+    for key in (
+        "reference_scope",
+        "mabd_diagnostic_scope",
+        "solver_model_config_source",
+    ):
+        value = report.observed.get(key)
+        if isinstance(value, str) and value:
+            provenance[key] = value
     return provenance
 
 
@@ -418,6 +500,226 @@ def _heavy_top_sample_index_differences(
         "max_abs_precession_delta_rad": max_precession_delta,
         "time_grid_mismatch": time_grid_mismatch,
         "nonfinite": nonfinite,
+    }
+
+
+def _t_handle_metric_snapshot(report: ClaimReport) -> dict[str, float | None]:
+    return {
+        "relative_energy_drift": _finite_scalar(report.observed.get("relative_energy_drift")),
+        "energy_initial": _finite_scalar(report.observed.get("energy_initial")),
+        "energy_final": _finite_scalar(report.observed.get("energy_final")),
+        "angular_momentum_norm_drift": _finite_scalar(
+            report.observed.get("angular_momentum_norm_drift")
+        ),
+    }
+
+
+def _t_handle_sample_rows(report: ClaimReport) -> list[dict[str, Any]]:
+    rows = report.observed.get("angular_velocity_samples")
+    if not isinstance(rows, list):
+        return []
+    return [dict(row) for row in rows if isinstance(row, dict)]
+
+
+def _t_handle_sample_key(row: dict[str, Any]) -> int | None:
+    sample_index = _finite_scalar(row.get("sample_index"))
+    if sample_index is None:
+        return None
+    result = int(sample_index)
+    return result if float(result) == sample_index else None
+
+
+def _t_handle_sample_identity(row: dict[str, Any]) -> dict[str, float | int | None]:
+    sample_index = _finite_scalar(row.get("sample_index"))
+    time_s = _finite_scalar(row.get("time_s"))
+    return {
+        "sample_index": int(sample_index) if sample_index is not None else None,
+        "time_s": time_s,
+    }
+
+
+def _t_handle_omega(row: dict[str, Any]) -> list[float] | None:
+    result = [
+        _finite_scalar(row.get("omega_x_rad_s")),
+        _finite_scalar(row.get("omega_y_rad_s")),
+        _finite_scalar(row.get("omega_z_rad_s")),
+    ]
+    if any(component is None for component in result):
+        return None
+    return [float(component) for component in result]
+
+
+def _t_handle_axis_component(axis_index: int) -> str:
+    return ("omega_x_rad_s", "omega_y_rad_s", "omega_z_rad_s")[axis_index]
+
+
+def _t_handle_first_sample_grid_flip_time(
+    rows: list[dict[str, Any]],
+    *,
+    axis_index: int,
+) -> float | None:
+    finite_rows: list[tuple[float, float]] = []
+    for row in rows:
+        time_s = _finite_scalar(row.get("time_s"))
+        omega = _t_handle_omega(row)
+        if time_s is not None and omega is not None:
+            finite_rows.append((time_s, omega[axis_index]))
+    if not finite_rows:
+        return None
+    finite_rows.sort(key=lambda item: item[0])
+    prev_time, prev_value = finite_rows[0]
+    if prev_value == 0.0:
+        return prev_time
+    for time_s, value in finite_rows[1:]:
+        if value == 0.0:
+            return time_s
+        if prev_value * value < 0.0:
+            alpha = abs(prev_value) / (abs(prev_value) + abs(value))
+            crossing = prev_time + alpha * (time_s - prev_time)
+            return crossing if isfinite(crossing) else None
+        prev_time = time_s
+        prev_value = value
+    return None
+
+
+def _t_handle_sample_index_differences(
+    rk4_report: ClaimReport,
+    mabd_report: ClaimReport,
+    *,
+    axis_index: int,
+    max_sample_time_delta_s: float,
+) -> dict[str, Any]:
+    rk4_rows = _t_handle_sample_rows(rk4_report)
+    mabd_rows = _t_handle_sample_rows(mabd_report)
+    rk4_by_key = {
+        key: row for row in rk4_rows if (key := _t_handle_sample_key(row)) is not None
+    }
+    mabd_by_key = {
+        key: row for row in mabd_rows if (key := _t_handle_sample_key(row)) is not None
+    }
+    matched_keys = sorted(set(rk4_by_key) & set(mabd_by_key))
+    unmatched_rk4 = [
+        _t_handle_sample_identity(row)
+        for row in rk4_rows
+        if (key := _t_handle_sample_key(row)) is None or key not in mabd_by_key
+    ]
+    unmatched_mabd = [
+        _t_handle_sample_identity(row)
+        for row in mabd_rows
+        if (key := _t_handle_sample_key(row)) is None or key not in rk4_by_key
+    ]
+    differences: list[dict[str, float | int]] = []
+    nonfinite = False
+    time_grid_mismatch = False
+    aligned_axis_delta_squared = 0.0
+    time_aligned_count = 0
+    for key in matched_keys:
+        rk4_row = rk4_by_key[key]
+        mabd_row = mabd_by_key[key]
+        rk4_time = _finite_scalar(rk4_row.get("time_s"))
+        mabd_time = _finite_scalar(mabd_row.get("time_s"))
+        rk4_omega = _t_handle_omega(rk4_row)
+        mabd_omega = _t_handle_omega(mabd_row)
+        if rk4_time is None or mabd_time is None or rk4_omega is None or mabd_omega is None:
+            nonfinite = True
+            continue
+        time_delta = _finite_difference(mabd_time, rk4_time)
+        component_deltas = [
+            _finite_difference(mabd_component, rk4_component)
+            for rk4_component, mabd_component in zip(rk4_omega, mabd_omega, strict=True)
+        ]
+        if time_delta is None or any(component is None for component in component_deltas):
+            nonfinite = True
+            continue
+        deltas = [float(component) for component in component_deltas]
+        abs_time_delta = abs(time_delta)
+        if abs_time_delta > max_sample_time_delta_s:
+            time_grid_mismatch = True
+        else:
+            aligned_axis_delta_squared += deltas[axis_index] * deltas[axis_index]
+            time_aligned_count += 1
+        differences.append(
+            {
+                "sample_index": key,
+                "rk4_time_s": rk4_time,
+                "mabd_time_s": mabd_time,
+                "mabd_minus_rk4_time_s": time_delta,
+                "abs_sample_time_delta_s": abs_time_delta,
+                "rk4_omega_x_rad_s": rk4_omega[0],
+                "rk4_omega_y_rad_s": rk4_omega[1],
+                "rk4_omega_z_rad_s": rk4_omega[2],
+                "mabd_omega_x_rad_s": mabd_omega[0],
+                "mabd_omega_y_rad_s": mabd_omega[1],
+                "mabd_omega_z_rad_s": mabd_omega[2],
+                "mabd_minus_rk4_omega_x_rad_s": deltas[0],
+                "mabd_minus_rk4_omega_y_rad_s": deltas[1],
+                "mabd_minus_rk4_omega_z_rad_s": deltas[2],
+                "abs_omega_x_delta_rad_s": abs(deltas[0]),
+                "abs_omega_y_delta_rad_s": abs(deltas[1]),
+                "abs_omega_z_delta_rad_s": abs(deltas[2]),
+            }
+        )
+    max_time_delta = (
+        max(row["abs_sample_time_delta_s"] for row in differences)
+        if differences
+        else None
+    )
+    max_abs_omega_delta = (
+        max(
+            max(
+                row["abs_omega_x_delta_rad_s"],
+                row["abs_omega_y_delta_rad_s"],
+                row["abs_omega_z_delta_rad_s"],
+            )
+            for row in differences
+        )
+        if differences
+        else None
+    )
+    waveform_rmse = (
+        sqrt(aligned_axis_delta_squared / float(time_aligned_count))
+        if time_aligned_count > 0
+        else None
+    )
+    return {
+        "rk4_sample_count": len(rk4_rows),
+        "mabd_sample_count": len(mabd_rows),
+        "matched_sample_index_count": len(matched_keys),
+        "finite_matched_sample_count": len(differences),
+        "time_aligned_sample_count": time_aligned_count,
+        "unmatched_rk4_samples": unmatched_rk4,
+        "unmatched_mabd_samples": unmatched_mabd,
+        "sample_index_differences": differences,
+        "max_sample_time_delta_s": max_time_delta,
+        "max_abs_angular_velocity_delta_rad_s": max_abs_omega_delta,
+        "intermediate_axis_waveform_rmse_rad_s": waveform_rmse,
+        "time_grid_mismatch": time_grid_mismatch,
+        "nonfinite": nonfinite,
+    }
+
+
+def _t_handle_paper_metric_statuses(sample_diagnostics: dict[str, Any]) -> dict[str, dict[str, str]]:
+    waveform_status = (
+        "diagnostic_available_not_paper_curve"
+        if sample_diagnostics["time_aligned_sample_count"] > 0
+        else "diagnostic_unavailable_time_alignment_missing"
+    )
+    return {
+        "flip_timing_error": {
+            "status": "sample_grid_diagnostic_not_paper_timing",
+            "diagnostic_field": "flip_timing_diagnostics",
+            "limitation": "sample-grid interpolation only; raw paper timing unavailable",
+        },
+        "intermediate_axis_angular_velocity_waveform": {
+            "status": waveform_status,
+            "diagnostic_field": "intermediate_axis_waveform_rmse_rad_s",
+            "limitation": "compares diagnostic lanes, not raw paper waveform curves",
+        },
+        "energy_loss": {
+            "status": "signed_energy_drift_diagnostic_not_paper_loss",
+            "diagnostic_field": "energy_drift_diagnostics",
+            "limitation": "relative_energy_drift is signed diagnostic drift, not paper energy loss",
+        },
     }
 
 
@@ -979,6 +1281,207 @@ def write_physical_pendulum_comparison_report(
     return report
 
 
+def write_t_handle_comparison_report(
+    path: str | Path,
+    *,
+    config: THandleRunConfig,
+    rk4_report_path: str | Path,
+    mabd_report_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    rk4_report = _require_t_handle_lane_report(
+        rk4_report_path,
+        config=config,
+        lane="rbd_rk4_reference",
+    )
+    mabd_report = _require_t_handle_lane_report(
+        mabd_report_path,
+        config=config,
+        lane="mabd_newton",
+    )
+    axis_index = config.reference.intermediate_axis_index
+    sample_diagnostics = _t_handle_sample_index_differences(
+        rk4_report,
+        mabd_report,
+        axis_index=axis_index,
+        max_sample_time_delta_s=config.comparison.thresholds["max_sample_time_delta_s"],
+    )
+    rk4_rows = _t_handle_sample_rows(rk4_report)
+    mabd_rows = _t_handle_sample_rows(mabd_report)
+    rk4_flip_time = _t_handle_first_sample_grid_flip_time(
+        rk4_rows,
+        axis_index=axis_index,
+    )
+    mabd_flip_time = _t_handle_first_sample_grid_flip_time(
+        mabd_rows,
+        axis_index=axis_index,
+    )
+    flip_delta = (
+        _finite_difference(mabd_flip_time, rk4_flip_time)
+        if mabd_flip_time is not None and rk4_flip_time is not None
+        else None
+    )
+    rk4_energy_drift = _finite_scalar(rk4_report.observed.get("relative_energy_drift"))
+    mabd_energy_drift = _finite_scalar(mabd_report.observed.get("relative_energy_drift"))
+    energy_drift_delta = (
+        _finite_difference(mabd_energy_drift, rk4_energy_drift)
+        if mabd_energy_drift is not None and rk4_energy_drift is not None
+        else None
+    )
+    blocking_reasons = [
+        "exact_t_handle_geometry_unknown",
+        "raw_t_handle_reference_curve_data_missing",
+        "mabd_newton_report_incomplete",
+        "t_handle_comparison_report_incomplete",
+        "t_handle_timing_evidence_missing",
+        "t_handle_comparison_pass_gate_not_enabled",
+    ]
+    if sample_diagnostics["matched_sample_index_count"] == 0:
+        blocking_reasons.append("sample_index_alignment_missing")
+    if sample_diagnostics["time_grid_mismatch"]:
+        blocking_reasons.append("sample_time_grid_mismatch")
+    if sample_diagnostics["time_aligned_sample_count"] == 0:
+        blocking_reasons.append("time_aligned_waveform_samples_missing")
+    if sample_diagnostics["nonfinite"]:
+        blocking_reasons.append("nonfinite_sample_values")
+    if rk4_energy_drift is None or mabd_energy_drift is None:
+        blocking_reasons.append("energy_drift_nonfinite")
+
+    observed = {
+        "full_experiment_claim_passed": False,
+        "lane_statuses": {
+            "rbd_rk4_reference": rk4_report.status.value,
+            "mabd_newton": mabd_report.status.value,
+        },
+        "lane_observed_statuses": {
+            "rbd_rk4_reference": rk4_report.observed.get("lane_status"),
+            "mabd_newton": mabd_report.observed.get("lane_status"),
+        },
+        "lane_solver_modes": {
+            "rbd_rk4_reference": rk4_report.solver_mode,
+            "mabd_newton": mabd_report.solver_mode,
+        },
+        "input_report_provenance": {
+            "rbd_rk4_reference": _t_handle_lane_provenance(
+                rk4_report_path,
+                rk4_report,
+            ),
+            "mabd_newton": _t_handle_lane_provenance(
+                mabd_report_path,
+                mabd_report,
+            ),
+        },
+        "lane_metrics": {
+            "rbd_rk4_reference": _t_handle_metric_snapshot(rk4_report),
+            "mabd_newton": _t_handle_metric_snapshot(mabd_report),
+        },
+        "paper_metric_statuses": _t_handle_paper_metric_statuses(sample_diagnostics),
+        "missing_required_lanes": [],
+        "missing_paper_metrics": [
+            "flip_timing_error:raw_paper_timing_missing",
+            "intermediate_axis_angular_velocity_waveform:raw_paper_curve_missing",
+            "energy_loss:paper_energy_loss_metric_unavailable",
+        ],
+        "blocking_reasons": blocking_reasons,
+        "intermediate_axis_index": axis_index,
+        "intermediate_axis_component": _t_handle_axis_component(axis_index),
+        "rk4_sample_count": sample_diagnostics["rk4_sample_count"],
+        "mabd_sample_count": sample_diagnostics["mabd_sample_count"],
+        "matched_sample_index_count": sample_diagnostics["matched_sample_index_count"],
+        "finite_matched_sample_count": sample_diagnostics["finite_matched_sample_count"],
+        "time_aligned_sample_count": sample_diagnostics["time_aligned_sample_count"],
+        "unmatched_rk4_samples": sample_diagnostics["unmatched_rk4_samples"],
+        "unmatched_mabd_samples": sample_diagnostics["unmatched_mabd_samples"],
+        "sample_index_differences": sample_diagnostics["sample_index_differences"],
+        "max_sample_time_delta_s": sample_diagnostics["max_sample_time_delta_s"],
+        "max_abs_angular_velocity_delta_rad_s": sample_diagnostics[
+            "max_abs_angular_velocity_delta_rad_s"
+        ],
+        "intermediate_axis_waveform_rmse_rad_s": sample_diagnostics[
+            "intermediate_axis_waveform_rmse_rad_s"
+        ],
+        "time_grid_mismatch": sample_diagnostics["time_grid_mismatch"],
+        "sample_nonfinite": sample_diagnostics["nonfinite"],
+        "flip_timing_diagnostics": {
+            "axis_index": axis_index,
+            "axis_component": _t_handle_axis_component(axis_index),
+            "method": "sample_grid_linear_interpolation",
+            "rk4_first_sample_grid_flip_time_s": rk4_flip_time,
+            "mabd_first_sample_grid_flip_time_s": mabd_flip_time,
+            "mabd_minus_rk4_flip_time_s": flip_delta,
+            "rk4_status": (
+                "sample_grid_flip_available"
+                if rk4_flip_time is not None
+                else "sample_grid_flip_unavailable"
+            ),
+            "mabd_status": (
+                "sample_grid_flip_available"
+                if mabd_flip_time is not None
+                else "sample_grid_flip_unavailable"
+            ),
+            "comparison_status": (
+                "sample_grid_flip_delta_available"
+                if flip_delta is not None
+                else "sample_grid_flip_delta_unavailable"
+            ),
+            "limitation": "sample-grid interpolation only; not RK4 step-resolution or paper timing",
+        },
+        "energy_drift_diagnostics": {
+            "rk4_relative_energy_drift": rk4_energy_drift,
+            "mabd_relative_energy_drift": mabd_energy_drift,
+            "mabd_minus_rk4_relative_energy_drift": energy_drift_delta,
+            "limitation": "signed relative_energy_drift diagnostic, not paper energy_loss",
+        },
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={"t_handle_procedural": "not_applicable_procedural"},
+        solver_mode="t_handle_multilane_comparison_development",
+        backend="report_protocol",
+        baseline_lane="t_handle_comparison_protocol",
+        expected={
+            "paper_claim_status": (
+                "formal RK4 and M-ABD diagnostic lanes are present, but paper "
+                "geometry, raw waveform curves, timing evidence, and the "
+                "comparison pass gate remain required"
+            ),
+            "required_lanes": list(config.comparison.required_lanes),
+            "required_metrics": list(T_HANDLE_REQUIRED_METRICS),
+            "source_lines": list(config.source_lines),
+            "paper_values": config.paper_values,
+            "known_source_gaps": [
+                "exact_t_handle_geometry_unknown",
+                "raw_t_handle_reference_curve_data_missing",
+                "paper_timing_curve_unavailable",
+            ],
+            "full_experiment_claim_passed": False,
+        },
+        observed=observed,
+        threshold=config.comparison.thresholds,
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason=(
+            "T-handle comparison protocol is incomplete because exact geometry, "
+            "raw paper waveform data, paper timing evidence, the MABD lane pass, "
+            "and the comparison pass gate remain missing"
+        ),
+        timing_distribution={"scope": "not_timed", "paper_comparable": False},
+        raw_outputs={
+            "rk4_report": Path(rk4_report_path).as_posix(),
+            "mabd_report": Path(mabd_report_path).as_posix(),
+        },
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 def write_heavy_top_comparison_report(
     path: str | Path,
     *,
@@ -1205,7 +1708,9 @@ __all__ = [
     "PHYSICAL_PENDULUM_REQUIRED_METRICS",
     "SPINNING_BOX_REQUIRED_METRICS",
     "SPINNING_BOX_REQUIRED_VECTOR_METRICS",
+    "T_HANDLE_REQUIRED_METRICS",
     "write_heavy_top_comparison_report",
     "write_physical_pendulum_comparison_report",
     "write_spinning_box_comparison_report",
+    "write_t_handle_comparison_report",
 ]

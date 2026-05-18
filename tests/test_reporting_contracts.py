@@ -129,6 +129,16 @@ class ReportingContractTests(unittest.TestCase):
                 write_claim_report(report, path)
             self.assertFalse(path.exists())
 
+    def test_report_writer_rejects_nonfinite_json_constants(self) -> None:
+        report = replace(_report(), observed={"energy_drift": float("nan")})
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "report.json"
+
+            with self.assertRaisesRegex(ValueError, "JSON"):
+                write_claim_report(report, path)
+            self.assertFalse(path.exists())
+
     def test_report_validation_accepts_experiment_required_lane_gate(self) -> None:
         report = _gated_rbd_lane_report()
 

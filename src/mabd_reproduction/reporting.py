@@ -236,7 +236,7 @@ def write_claim_report(report: ClaimReport, path: str | Path) -> None:
     mapping = report.to_mapping()
     validate_claim_report_mapping(mapping)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(mapping, indent=2, sort_keys=True) + "\n"
+    payload = json.dumps(mapping, allow_nan=False, indent=2, sort_keys=True) + "\n"
     report_path.write_text(payload, encoding="utf-8")
 
 

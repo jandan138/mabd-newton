@@ -42,7 +42,30 @@ self.assertIn("t_handle_comparison_report_incomplete", config.failure_reason)
 self.assertNotIn("t_handle_comparison_report_missing", config.failure_reason)
 ```
 
-Add rejection tests that mutate the YAML and expect `ExperimentRunConfigError`:
+Add a local helper so rejection tests do not fail at test setup before the
+comparison YAML exists in the implementation:
+
+```python
+def _t_handle_mapping_with_comparison(self) -> dict:
+    source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+    source.setdefault(
+        "comparison",
+        {
+            "output_report": "reports/experiment_matrix/single_body_t_handle_comparison.json",
+            "required_lanes": ["mabd_newton", "rbd_rk4_reference"],
+            "required_metrics": [
+                "flip_timing_error",
+                "intermediate_axis_angular_velocity_waveform",
+                "energy_loss",
+            ],
+            "thresholds": {"max_sample_time_delta_s": 1.0e-12},
+        },
+    )
+    return source
+```
+
+Add rejection tests that mutate that local mapping and expect
+`ExperimentRunConfigError`:
 
 ```python
 source["comparison"]["required_lanes"] = ["mabd_newton"]
@@ -126,18 +149,32 @@ self.assertEqual(report.observed["missing_required_lanes"], [])
 self.assertIn("input_report_provenance", report.observed)
 self.assertIn("sample_index_differences", report.observed)
 self.assertGreater(report.observed["matched_sample_index_count"], 0)
+self.assertGreater(report.observed["time_aligned_sample_count"], 0)
+self.assertIsNotNone(report.observed["intermediate_axis_waveform_rmse_rad_s"])
+self.assertIsNotNone(report.observed["max_abs_angular_velocity_delta_rad_s"])
+self.assertIn("flip_timing_diagnostics", report.observed)
+self.assertIn("energy_drift_diagnostics", report.observed)
 self.assertIn("t_handle_comparison_pass_gate_not_enabled", report.observed["blocking_reasons"])
 self.assertIn("t_handle_comparison_report_incomplete", report.observed["blocking_reasons"])
 self.assertIn("mabd_newton_report_incomplete", report.observed["blocking_reasons"])
 self.assertEqual(
     report.observed["paper_metric_statuses"]["intermediate_axis_angular_velocity_waveform"]["status"],
-    "diagnostic_available",
+    "diagnostic_available_not_paper_curve",
+)
+self.assertEqual(
+    report.observed["paper_metric_statuses"]["flip_timing_error"]["status"],
+    "sample_grid_diagnostic_not_paper_timing",
+)
+self.assertEqual(
+    report.observed["paper_metric_statuses"]["energy_loss"]["status"],
+    "signed_energy_drift_diagnostic_not_paper_loss",
 )
 ```
 
 Add identity rejection tests for wrong `claim_id`, wrong `baseline_lane`, wrong
-solver mode, wrong backend, wrong status, missing procedural asset hash, and
-`full_experiment_claim_passed = true`.
+`scene_id`, wrong solver mode, wrong backend, wrong status, missing procedural
+asset hash, `full_experiment_claim_passed = true`, changed RK4
+`reference_scope`, and changed MABD `mabd_diagnostic_scope`.
 
 Add a nonfinite input test by mutating one angular velocity sample to
 `float("nan")` in memory and writing it with `json.dumps(..., allow_nan=True)`.
@@ -181,7 +218,8 @@ T_HANDLE_INPUT_LANES = {
 Implement strict lane validation, provenance hashing, finite scalar extraction,
 sample-key parsing by `sample_index`, angular velocity component extraction,
 first sign-flip interpolation along the configured intermediate axis, and
-waveform RMSE over matched finite samples.
+waveform RMSE over matched finite samples that are also time-aligned according
+to `max_sample_time_delta_s`.
 
 - [ ] **Step 4: Implement report writer**
 
@@ -264,6 +302,9 @@ self.assertIn("t_handle_comparison_report_incomplete", loaded.observed["blocking
 Add a rejection test for missing `rk4_report_path` or `mabd_report_path` with
 message `t_handle_comparison requires --mabd-report and --rbd-report`.
 
+Add a runner test that omits `output_path` and verifies the configured default
+`config.comparison.output_report` is used.
+
 - [ ] **Step 3: Write failing CLI test**
 
 Add a `scripts/run_experiment.py --lane t_handle_comparison` test that passes
@@ -315,8 +356,10 @@ Run the same unittest command. Expected: all runner tests pass.
 In `tests/test_phase0_bootstrap.py`, add a Phase57 test that loads the matrix,
 claim boundaries, Phase57 record, and comparison report. It should require
 `t_handle_comparison_report_incomplete`, reject
-`t_handle_comparison_report_missing` in current claim text and matrix blockers,
-verify `baseline_lane = t_handle_comparison_protocol`, verify
+`t_handle_comparison_report_missing` only in the Phase57 current-evidence
+section, current paper-claims T-handle note, and current matrix blockers. It
+must not reject historical Phase43 or Phase56 records/boundary bullets that
+preserve prior provenance. Verify `baseline_lane = t_handle_comparison_protocol`, verify
 `solver_mode = t_handle_multilane_comparison_development`, and verify
 `full_experiment_claim_passed = false`.
 

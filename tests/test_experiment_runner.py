@@ -122,6 +122,30 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         return rk4_path, mabd_path
 
+    def _write_t_handle_lane_inputs(self, tmpdir: str) -> tuple[Path, Path]:
+        from mabd_reproduction.experiment_configs import load_t_handle_config
+        from mabd_reproduction.t_handle_reports import (
+            write_t_handle_mabd_newton_report,
+            write_t_handle_rk4_reference_report,
+        )
+
+        config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
+        rk4_path = Path(tmpdir) / "t_handle_rk4.json"
+        mabd_path = Path(tmpdir) / "t_handle_mabd.json"
+        write_t_handle_rk4_reference_report(
+            rk4_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        write_t_handle_mabd_newton_report(
+            mabd_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        return rk4_path, mabd_path
+
     def _assert_physical_pendulum_timing_source_audit(self, payload: dict[str, object]) -> None:
         self.assertEqual(payload["source_lines"], PHYSICAL_PENDULUM_TIMING_SOURCE_LINES)
         self.assertEqual(payload["status"], "not_a_physical_pendulum_paper_metric")
@@ -704,7 +728,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             loaded.observed["blocking_reasons"],
         )
         self.assertIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
-        self.assertIn("t_handle_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("t_handle_comparison_report_incomplete", loaded.observed["blocking_reasons"])
         self.assertNotIn("lane_gate_status", loaded.observed)
 
     def test_run_t_handle_mabd_newton_writes_incomplete_newton_diagnostic_report(self) -> None:
@@ -742,9 +766,79 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
         self.assertNotIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
-        self.assertIn("t_handle_comparison_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("t_handle_comparison_report_incomplete", loaded.observed["blocking_reasons"])
         self.assertEqual(loaded.observed["required_missing_lanes"], [])
         self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_t_handle_comparison_writes_incomplete_protocol_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_t_handle_comparison
+
+        with TemporaryDirectory() as tmpdir:
+            rk4_path, mabd_path = self._write_t_handle_lane_inputs(tmpdir)
+            output_path = Path(tmpdir) / "t_handle_comparison.json"
+            result = run_t_handle_comparison(
+                config_path=T_HANDLE_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                rk4_report_path=rk4_path,
+                mabd_report_path=mabd_path,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.t_handle")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "t_handle_comparison_protocol")
+        self.assertEqual(loaded.solver_mode, "t_handle_multilane_comparison_development")
+        self.assertEqual(loaded.backend, "report_protocol")
+        self.assertIn(
+            "t_handle_comparison_report_incomplete",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+
+    def test_run_t_handle_comparison_uses_configured_output_under_output_root(self) -> None:
+        from mabd_reproduction.experiment_runner import run_t_handle_comparison
+
+        with TemporaryDirectory() as tmpdir:
+            rk4_path, mabd_path = self._write_t_handle_lane_inputs(tmpdir)
+            output_root = Path(tmpdir) / "root"
+            result = run_t_handle_comparison(
+                config_path=T_HANDLE_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                rk4_report_path=rk4_path,
+                mabd_report_path=mabd_path,
+                output_root=output_root,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(
+            result.report_path,
+            output_root / "reports/experiment_matrix/single_body_t_handle_comparison.json",
+        )
+        self.assertEqual(loaded.baseline_lane, "t_handle_comparison_protocol")
+
+    def test_run_t_handle_comparison_requires_lane_inputs(self) -> None:
+        from mabd_reproduction.experiment_runner import run_t_handle_comparison
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "t_handle_comparison.json"
+            with self.assertRaisesRegex(
+                ValueError,
+                "t_handle_comparison requires --mabd-report and --rbd-report",
+            ):
+                run_t_handle_comparison(
+                    config_path=T_HANDLE_CONFIG_PATH,
+                    matrix_path=MATRIX_PATH,
+                    output_path=output_path,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+            self.assertFalse(output_path.exists())
 
     def test_t_handle_mabd_report_rejects_nonfinite_rollout(self) -> None:
         from dataclasses import replace
@@ -1440,6 +1534,53 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["output_report"], output_path.as_posix())
         self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_t_handle_newton_lane")
         self.assertEqual(loaded.observed["solver_model_config_source"], "newton_model_derived")
+
+    def test_run_experiment_cli_writes_t_handle_comparison_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            rk4_path, mabd_path = self._write_t_handle_lane_inputs(tmpdir)
+            output_path = Path(tmpdir) / "t_handle_comparison_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "t_handle_comparison",
+                    "--config",
+                    str(T_HANDLE_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--rbd-report",
+                    str(rk4_path),
+                    "--mabd-report",
+                    str(mabd_path),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.t_handle")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "t_handle_comparison_protocol")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.solver_mode, "t_handle_multilane_comparison_development")
 
     def test_run_experiment_cli_writes_heavy_top_rk4_reference_report(self) -> None:
         import json

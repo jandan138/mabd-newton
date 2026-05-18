@@ -16,14 +16,14 @@ T_HANDLE_REPORT_BLOCKERS = (
     "exact_t_handle_geometry_unknown",
     "raw_t_handle_reference_curve_data_missing",
     "mabd_newton_report_missing",
-    "t_handle_comparison_report_missing",
+    "t_handle_comparison_report_incomplete",
     "t_handle_timing_evidence_missing",
 )
 T_HANDLE_MABD_REPORT_BLOCKERS = (
     "exact_t_handle_geometry_unknown",
     "raw_t_handle_reference_curve_data_missing",
     "mabd_newton_report_incomplete",
-    "t_handle_comparison_report_missing",
+    "t_handle_comparison_report_incomplete",
     "t_handle_timing_evidence_missing",
 )
 
