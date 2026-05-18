@@ -3229,6 +3229,8 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("input report provenance and sha256 hashes", verified)
         self.assertIn("reference_not_paper_geometry = true", verified)
         self.assertIn("finite aligned-sample RMSE", verified)
+        self.assertIn("sample_grid_flip_delta_unavailable", verified)
+        self.assertIn("duplicate sample-index guard fields", verified)
         self.assertIn("energy_loss", verified)
         self.assertIn("passed T-handle experiment", non_claim)
         self.assertIn("paper-faithful T-handle geometry", non_claim)
@@ -3249,13 +3251,20 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(report.observed["time_aligned_sample_count"], 9)
         self.assertFalse(report.observed["time_grid_mismatch"])
         self.assertFalse(report.observed["sample_nonfinite"])
+        self.assertFalse(report.observed["sample_index_duplicate"])
+        self.assertEqual(report.observed["duplicate_rk4_sample_indices"], [])
+        self.assertEqual(report.observed["duplicate_mabd_sample_indices"], [])
         self.assertIn("t_handle_comparison_report_incomplete", report.observed["blocking_reasons"])
+        self.assertIn("sample_grid_flip_delta_unavailable", report.observed["blocking_reasons"])
         self.assertNotIn("t_handle_comparison_report_missing", report.observed["blocking_reasons"])
+        provenance = report.observed["input_report_provenance"]
+        self.assertTrue(provenance["rbd_rk4_reference"]["reference_not_paper_geometry"])
+        self.assertTrue(provenance["mabd_newton"]["reference_not_paper_geometry"])
 
         metric_statuses = report.observed["paper_metric_statuses"]
         self.assertEqual(
             metric_statuses["flip_timing_error"]["status"],
-            "sample_grid_diagnostic_not_paper_timing",
+            "sample_grid_flip_delta_unavailable_not_paper_timing",
         )
         self.assertEqual(
             metric_statuses["intermediate_axis_angular_velocity_waveform"]["status"],
@@ -3272,10 +3281,10 @@ class Phase0BootstrapTests(unittest.TestCase):
         for snippet in (
             "passed_for_t_handle_comparison_protocol",
             "reports/experiment_matrix/single_body_t_handle_comparison.json",
-            "258a56e8c0530a14c86268b9a9f7e08a801b0fe026db133e579e283d2263861e",
+            "608fa8676a1849bea67c6c9c3c4de999d2662ed68f6ac346d140211ebc33c6e2",
             "t_handle_multilane_comparison_development",
             "t_handle_comparison_protocol",
-            "sample_grid_diagnostic_not_paper_timing",
+            "sample_grid_flip_delta_unavailable_not_paper_timing",
             "diagnostic_available_not_paper_curve",
             "signed_energy_drift_diagnostic_not_paper_loss",
             "No `experiment.*` claim is passed.",

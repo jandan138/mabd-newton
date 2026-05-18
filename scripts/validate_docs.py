@@ -8928,8 +8928,8 @@ def validate_phase57_record() -> None:
     comparison_path = "reports/experiment_matrix/single_body_t_handle_comparison.json"
     rk4_path = "reports/experiment_matrix/single_body_t_handle_rk4_reference.json"
     mabd_path = "reports/experiment_matrix/single_body_t_handle_mabd_newton.json"
-    implementation_commit = "5ad17151f1e70172b922fda4d96da8144cd60774"
-    comparison_sha256 = "258a56e8c0530a14c86268b9a9f7e08a801b0fe026db133e579e283d2263861e"
+    implementation_commit = "a9115f5e7142883517389a68396b22c38463d0f6"
+    comparison_sha256 = "608fa8676a1849bea67c6c9c3c4de999d2662ed68f6ac346d140211ebc33c6e2"
     required_snippets = (
         "## Status\n\npassed_for_t_handle_comparison_protocol",
         "phase57-t-handle-comparison",
@@ -8947,14 +8947,18 @@ def validate_phase57_record() -> None:
         "mabd_newton_report_incomplete",
         "t_handle_comparison_report_incomplete",
         "t_handle_comparison_pass_gate_not_enabled",
+        "sample_grid_flip_delta_unavailable",
         "flip_timing_error:raw_paper_timing_missing",
         "intermediate_axis_angular_velocity_waveform:raw_paper_curve_missing",
         "energy_loss:paper_energy_loss_metric_unavailable",
-        "sample_grid_diagnostic_not_paper_timing",
+        "sample_grid_flip_delta_unavailable_not_paper_timing",
         "diagnostic_available_not_paper_curve",
         "signed_energy_drift_diagnostic_not_paper_loss",
         "matched sample index count: `9`",
         "finite matched sample count: `9`",
+        "duplicate RK4 sample indices: `[]`",
+        "duplicate MABD sample indices: `[]`",
+        "`sample_index_duplicate`: `false`",
         "max sample time delta: `0.0`",
         "`time_grid_mismatch`: `false`",
         "`sample_nonfinite`: `false`",
@@ -9011,6 +9015,8 @@ def validate_phase57_record() -> None:
         "`newton_model_derived`",
         "finite aligned-sample RMSE",
         "sample-grid sign-flip timing diagnostic",
+        "`sample_grid_flip_delta_unavailable`",
+        "duplicate sample-index guard fields",
         "`energy_loss` remains unavailable as a paper metric",
         "`t_handle_comparison_report_incomplete`",
     ):
@@ -9052,6 +9058,8 @@ def validate_phase57_record() -> None:
         fail(f"Phase 57 T-handle config validation failed: {exc}")
     if config.comparison.output_report != comparison_path:
         fail("Phase 57 comparison output report binding changed")
+    if config.required_missing_lanes != ():
+        fail("Phase 57 T-handle required_missing_lanes must be empty")
     if config.comparison.required_lanes != ("mabd_newton", "rbd_rk4_reference"):
         fail("Phase 57 comparison required lanes changed")
     if config.comparison.required_metrics != (
@@ -9100,6 +9108,12 @@ def validate_phase57_record() -> None:
         fail("Phase 57 comparison must not record a time-grid mismatch")
     if observed.get("sample_nonfinite") is not False:
         fail("Phase 57 comparison sample_nonfinite changed")
+    if observed.get("sample_index_duplicate") is not False:
+        fail("Phase 57 comparison sample_index_duplicate changed")
+    if observed.get("duplicate_rk4_sample_indices") != []:
+        fail("Phase 57 comparison duplicate RK4 sample indices changed")
+    if observed.get("duplicate_mabd_sample_indices") != []:
+        fail("Phase 57 comparison duplicate MABD sample indices changed")
     if _require_finite_scalar(
         observed.get("max_sample_time_delta_s"),
         "Phase 57 max_sample_time_delta_s",
@@ -9122,7 +9136,7 @@ def validate_phase57_record() -> None:
     if not isinstance(paper_metric_statuses, dict):
         fail("Phase 57 paper_metric_statuses must be a mapping")
     expected_statuses = {
-        "flip_timing_error": "sample_grid_diagnostic_not_paper_timing",
+        "flip_timing_error": "sample_grid_flip_delta_unavailable_not_paper_timing",
         "intermediate_axis_angular_velocity_waveform": "diagnostic_available_not_paper_curve",
         "energy_loss": "signed_energy_drift_diagnostic_not_paper_loss",
     }
@@ -9141,6 +9155,7 @@ def validate_phase57_record() -> None:
         "t_handle_comparison_report_incomplete",
         "t_handle_timing_evidence_missing",
         "t_handle_comparison_pass_gate_not_enabled",
+        "sample_grid_flip_delta_unavailable",
     ):
         if blocker not in blockers:
             fail(f"Phase 57 comparison blocker missing: {blocker}")
@@ -9163,6 +9178,8 @@ def validate_phase57_record() -> None:
             fail(f"Phase 57 {lane} input sha256 mismatch")
         if lane_provenance.get("source_commit") != lane_report.source_commit:
             fail(f"Phase 57 {lane} source_commit provenance mismatch")
+        if lane_provenance.get("reference_not_paper_geometry") is not True:
+            fail(f"Phase 57 {lane} reference_not_paper_geometry provenance changed")
         if lane_report.status.value != "incomplete":
             fail(f"Phase 57 {lane} input report must remain incomplete")
     if provenance["rbd_rk4_reference"].get("reference_scope") != (

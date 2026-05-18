@@ -40,8 +40,11 @@
       "mabd_newton_report_incomplete",
       "t_handle_comparison_report_incomplete",
       "t_handle_timing_evidence_missing",
-      "t_handle_comparison_pass_gate_not_enabled"
+      "t_handle_comparison_pass_gate_not_enabled",
+      "sample_grid_flip_delta_unavailable"
     ],
+    "duplicate_mabd_sample_indices": [],
+    "duplicate_rk4_sample_indices": [],
     "energy_drift_diagnostics": {
       "limitation": "signed relative_energy_drift diagnostic, not paper energy_loss",
       "mabd_minus_rk4_relative_energy_drift": -2.2223942600217873e-12,
@@ -68,6 +71,7 @@
         "baseline_lane": "mabd_newton",
         "mabd_diagnostic_scope": "t_handle_model_derived_proxy",
         "path": "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
+        "reference_not_paper_geometry": true,
         "sha256": "969e8aa66516af3b846bf64699cc2339df66dfaa6a22c851fee4a9957744e55b",
         "solver_mode": "mabd_cpu_oracle_t_handle_newton_lane",
         "solver_model_config_source": "newton_model_derived",
@@ -79,6 +83,7 @@
         "backend": "cpu_numpy",
         "baseline_lane": "rbd_rk4_reference",
         "path": "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+        "reference_not_paper_geometry": true,
         "reference_scope": "torque_free_principal_axis_rk4_diagnostic",
         "sha256": "a0153e2bd4f0e20aa5271ecbaaec726661e352b6b4baebe96dcfc76dddd25b67",
         "solver_mode": "t_handle_torque_free_rk4_reference",
@@ -135,7 +140,7 @@
       "flip_timing_error": {
         "diagnostic_field": "flip_timing_diagnostics",
         "limitation": "sample-grid interpolation only; raw paper timing unavailable",
-        "status": "sample_grid_diagnostic_not_paper_timing"
+        "status": "sample_grid_flip_delta_unavailable_not_paper_timing"
       },
       "intermediate_axis_angular_velocity_waveform": {
         "diagnostic_field": "intermediate_axis_waveform_rmse_rad_s",
@@ -317,6 +322,7 @@
         "sample_index": 8
       }
     ],
+    "sample_index_duplicate": false,
     "sample_nonfinite": false,
     "time_aligned_sample_count": 9,
     "time_grid_mismatch": false,
@@ -331,7 +337,7 @@
   },
   "scene_id": "single_body_t_handle",
   "solver_mode": "t_handle_multilane_comparison_development",
-  "source_commit": "5ad17151f1e70172b922fda4d96da8144cd60774",
+  "source_commit": "a9115f5e7142883517389a68396b22c38463d0f6",
   "status": "incomplete",
   "threshold": {
     "max_sample_time_delta_s": 1e-12

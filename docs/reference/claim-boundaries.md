@@ -590,9 +590,11 @@
   requires `reference_not_paper_geometry = true`, records the MABD
   `t_handle_model_derived_proxy` scope and `newton_model_derived` config
   source, computes finite aligned-sample RMSE and max angular-velocity deltas,
-  records sample-grid sign-flip timing diagnostic limits, records that
-  `energy_loss` remains unavailable as a paper metric, and replaces the
-  current comparison blocker with `t_handle_comparison_report_incomplete`.
+  records sample-grid sign-flip timing diagnostic limits including
+  `sample_grid_flip_delta_unavailable`, records duplicate sample-index guard
+  fields, records that `energy_loss` remains unavailable as a paper metric, and
+  replaces the current comparison blocker with
+  `t_handle_comparison_report_incomplete`.
 - Phase 57 does not verify a passed T-handle experiment, passed T-handle MABD
   lane, paper-faithful T-handle geometry, paper-faithful inertia, raw waveform
   agreement, paper energy loss, ABD-vs-RBD comparison pass, paper timing,

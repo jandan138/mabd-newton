@@ -10,7 +10,7 @@ passed_for_t_handle_comparison_protocol
 - worktree:
   `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase57-t-handle-comparison`
 - source commit used for comparison report:
-  `5ad17151f1e70172b922fda4d96da8144cd60774`
+  `a9115f5e7142883517389a68396b22c38463d0f6`
 - vendored Newton upstream commit: `96713fa965463b69c229a4d30582c733ff3526bb`
 - paper source version: `2603.08079v2`
 - Python: `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python`
@@ -26,7 +26,7 @@ Phase 57 adds a T-handle multi-lane comparison protocol report:
 - matrix: `configs/experiments/paper_experiment_matrix.yaml`
 - `reports/experiment_matrix/single_body_t_handle_comparison.json`
   - sha256:
-    `258a56e8c0530a14c86268b9a9f7e08a801b0fe026db133e579e283d2263861e`
+    `608fa8676a1849bea67c6c9c3c4de999d2662ed68f6ac346d140211ebc33c6e2`
   - solver mode: `t_handle_multilane_comparison_development`
   - baseline lane: `t_handle_comparison_protocol`
   - backend: `report_protocol`
@@ -36,17 +36,22 @@ Phase 57 adds a T-handle multi-lane comparison protocol report:
     `a0153e2bd4f0e20aa5271ecbaaec726661e352b6b4baebe96dcfc76dddd25b67`
   - provenance scope:
     `torque_free_principal_axis_rk4_diagnostic`
+  - `reference_not_paper_geometry`: `true`
 - input `reports/experiment_matrix/single_body_t_handle_mabd_newton.json`
   - input report sha256:
     `969e8aa66516af3b846bf64699cc2339df66dfaa6a22c851fee4a9957744e55b`
   - provenance scope: `t_handle_model_derived_proxy`
   - solver model config source: `newton_model_derived`
+  - `reference_not_paper_geometry`: `true`
 - matched sample index count: `9`
 - finite matched sample count: `9`
 - time-aligned sample count: `9`
 - max sample time delta: `0.0`
 - `time_grid_mismatch`: `false`
 - `sample_nonfinite`: `false`
+- duplicate RK4 sample indices: `[]`
+- duplicate MABD sample indices: `[]`
+- `sample_index_duplicate`: `false`
 - intermediate-axis waveform RMSE diagnostic:
   `2.21913405945304`
 - max absolute angular-velocity delta diagnostic:
@@ -54,7 +59,7 @@ Phase 57 adds a T-handle multi-lane comparison protocol report:
 - sample-grid flip timing status:
   `sample_grid_flip_delta_unavailable`
 - paper metric status for flip timing:
-  `sample_grid_diagnostic_not_paper_timing`
+  `sample_grid_flip_delta_unavailable_not_paper_timing`
 - paper metric status for intermediate-axis waveform:
   `diagnostic_available_not_paper_curve`
 - paper metric status for energy loss:
@@ -79,6 +84,7 @@ The T-handle experiment remains incomplete. Phase 57 retains:
 - `t_handle_comparison_report_incomplete`
 - `t_handle_timing_evidence_missing`
 - `t_handle_comparison_pass_gate_not_enabled`
+- `sample_grid_flip_delta_unavailable`
 
 ## Result Boundary
 
@@ -96,7 +102,7 @@ or a full paper reproduction.
 
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_t_handle_comparison_reports tests.test_reporting_contracts tests.test_experiment_runner`
 - `/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check src/mabd_reproduction/comparison_reports.py src/mabd_reproduction/experiment_configs.py src/mabd_reproduction/experiment_runner.py scripts/run_experiment.py tests/test_t_handle_comparison_reports.py tests/test_experiment_runner.py tests/test_experiment_run_configs.py tests/test_reporting_contracts.py`
-- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane t_handle_comparison --config configs/experiments/single_body_t_handle.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --rbd-report reports/experiment_matrix/single_body_t_handle_rk4_reference.json --mabd-report reports/experiment_matrix/single_body_t_handle_mabd_newton.json --source-commit 5ad17151f1e70172b922fda4d96da8144cd60774 --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb`
+- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane t_handle_comparison --config configs/experiments/single_body_t_handle.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --rbd-report reports/experiment_matrix/single_body_t_handle_rk4_reference.json --mabd-report reports/experiment_matrix/single_body_t_handle_mabd_newton.json --source-commit a9115f5e7142883517389a68396b22c38463d0f6 --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests`
 - `PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c "import newton; print(newton.__file__)"`
