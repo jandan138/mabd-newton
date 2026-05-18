@@ -23,6 +23,11 @@ from .spinning_box_physics import (
 )
 
 
+CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY = "evaluated_from_current_mabd_states_not_applied_to_step"
+CONTACT_RESPONSE_POLICY = "explicit_current_state_penalty_force_as_external_force_next_step"
+CONTACT_RESPONSE_DIAGNOSTIC_POLICY = "evaluated_from_current_mabd_states_for_next_step_external_force"
+
+
 def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOracleBody:
     mass_matrix = np.eye(12)
     stiffness_matrix = np.zeros((12, 12), dtype=float)
@@ -111,6 +116,8 @@ def _paper_horizon_state_metrics(
     residual_norm: float,
     initial_kinetic_energy: float,
     initial_total_energy: float,
+    contact_diagnostic_policy: str = CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY,
+    contact_response_policy: str | None = None,
 ) -> dict[str, object]:
     shape = spinning_box_affine_shape_diagnostics(q)
     momentum = mabd_momentum_diagnostics(config, q, qd)
@@ -118,7 +125,7 @@ def _paper_horizon_state_metrics(
     kinetic_energy = _kinetic_energy(qd, mass_matrix)
     elastic_energy = _elastic_energy(config=config, q=q)
     total_energy = kinetic_energy + elastic_energy
-    return {
+    metrics: dict[str, object] = {
         "step_index": int(step_index),
         "time_s": float(step_index * time_step_s),
         "position_m": q[9:12].tolist(),
@@ -141,7 +148,7 @@ def _paper_horizon_state_metrics(
         "affine_min_singular_value": float(np.min(shape.singular_values)),
         "affine_max_singular_value": float(np.max(shape.singular_values)),
         "affine_orthogonality_error": shape.orthogonality_error,
-        "contact_diagnostic_policy": "evaluated_from_current_mabd_states_not_applied_to_step",
+        "contact_diagnostic_policy": contact_diagnostic_policy,
         "contact_active_count": contact.active_contact_count,
         "contact_min_signed_distance_m": contact.min_signed_distance,
         "contact_max_penetration_m": contact.max_penetration_depth,
@@ -149,6 +156,9 @@ def _paper_horizon_state_metrics(
         "contact_generalized_force_norm": float(np.linalg.norm(contact.total_generalized_force)),
         "residual_norm": float(residual_norm),
     }
+    if contact_response_policy is not None:
+        metrics["contact_response_policy"] = contact_response_policy
+    return metrics
 
 
 def _finite_metric_value(value: object) -> bool:
@@ -209,6 +219,7 @@ def _run_spinning_box_paper_horizon_step_size(
     *,
     config: SpinningBoxRunConfig,
     time_step_s: float,
+    contact_response_policy: str | None = None,
 ) -> dict[str, object]:
     duration = config.paper_horizon.duration_s
     feasibility = spinning_box_kinematic_feasibility(config, time_step_s)
@@ -244,6 +255,12 @@ def _run_spinning_box_paper_horizon_step_size(
         "max_contact_normal_force_n": (-np.inf, 0),
         "max_contact_generalized_force_norm": (-np.inf, 0),
         "max_residual_norm": (-np.inf, 0),
+    }
+    applied_contact_extrema: dict[str, tuple[float, int]] = {
+        "max_applied_contact_active_count": (-np.inf, 0),
+        "max_pre_step_contact_penetration_m": (-np.inf, 0),
+        "max_applied_contact_normal_force_n": (-np.inf, 0),
+        "max_applied_contact_generalized_force_norm": (-np.inf, 0),
     }
 
     def update(metrics: dict[str, object]) -> None:
@@ -286,6 +303,25 @@ def _run_spinning_box_paper_horizon_step_size(
             elif value > current:
                 extrema[key] = (value, step_index)
 
+    def update_applied_contact(contact: object, step_index: int) -> None:
+        candidates = {
+            "max_applied_contact_active_count": float(contact.active_contact_count),
+            "max_pre_step_contact_penetration_m": float(contact.max_penetration_depth),
+            "max_applied_contact_normal_force_n": float(np.linalg.norm(contact.total_normal_force)),
+            "max_applied_contact_generalized_force_norm": float(
+                np.linalg.norm(contact.total_generalized_force)
+            ),
+        }
+        for key, value in candidates.items():
+            current, _current_step = applied_contact_extrema[key]
+            if value > current:
+                applied_contact_extrema[key] = (value, step_index)
+
+    contact_diagnostic_policy = (
+        CONTACT_RESPONSE_DIAGNOSTIC_POLICY
+        if contact_response_policy is not None
+        else CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY
+    )
     metrics = _paper_horizon_state_metrics(
         config=config,
         q=q,
@@ -296,6 +332,8 @@ def _run_spinning_box_paper_horizon_step_size(
         residual_norm=0.0,
         initial_kinetic_energy=initial_kinetic_energy,
         initial_total_energy=initial_total_energy,
+        contact_diagnostic_policy=contact_diagnostic_policy,
+        contact_response_policy=contact_response_policy,
     )
     update(metrics)
     if 0 in sample_indices:
@@ -306,7 +344,15 @@ def _run_spinning_box_paper_horizon_step_size(
     first_nonfinite_step: int | None = None
     steps_completed = 0
     for step_index in range(1, step_count + 1):
-        result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=time_step_s, config=oracle_config)
+        step_config = oracle_config
+        if contact_response_policy is not None:
+            applied_contact = spinning_box_contact_diagnostics(config, q, qd)
+            update_applied_contact(applied_contact, step_index - 1)
+            step_config = mabd.MABDCPUOracleConfig(
+                bodies=[oracle_body],
+                external_forces=[applied_contact.total_generalized_force],
+            )
+        result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=time_step_s, config=step_config)
         q = result.q[0]
         qd = result.qd[0]
         metrics = _paper_horizon_state_metrics(
@@ -319,6 +365,8 @@ def _run_spinning_box_paper_horizon_step_size(
             residual_norm=result.residual_norm,
             initial_kinetic_energy=initial_kinetic_energy,
             initial_total_energy=initial_total_energy,
+            contact_diagnostic_policy=contact_diagnostic_policy,
+            contact_response_policy=contact_response_policy,
         )
         if not _all_state_values_finite(q, qd, metrics):
             first_nonfinite_step = step_index
@@ -347,9 +395,20 @@ def _run_spinning_box_paper_horizon_step_size(
     for key, (value, step_index) in extrema.items():
         summary[key] = int(value) if key == "max_contact_active_count" else value
         summary[f"{key}_step_index"] = step_index
-    summary["contact_diagnostic_policy"] = "evaluated_from_current_mabd_states_not_applied_to_step"
+    if contact_response_policy is not None:
+        summary["contact_response_policy"] = contact_response_policy
+        summary["contact_diagnostic_policy"] = contact_diagnostic_policy
+        for key, (value, step_index) in applied_contact_extrema.items():
+            if value == -np.inf:
+                value = 0.0
+            summary[key] = int(value) if key == "max_applied_contact_active_count" else value
+            summary[f"{key}_step_index"] = step_index
+    else:
+        summary["contact_diagnostic_policy"] = CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY
     summary["contact_diagnostic_status"] = (
         "contact_penetration_observed_without_response"
+        if contact_response_policy is None and summary["max_contact_active_count"] > 0
+        else "contact_penetration_observed_after_explicit_response"
         if summary["max_contact_active_count"] > 0
         else "no_contact_penetration_observed"
     )
@@ -363,6 +422,143 @@ def _run_spinning_box_paper_horizon_step_size(
         else "thresholds_met_no_lane_gate"
     )
     return summary
+
+
+def write_spinning_box_contact_response_report(
+    path: str | Path,
+    *,
+    config: SpinningBoxRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
+    if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
+        raise ValueError("single_body_spinning_box mass_diagonal must match paper cube ABD mass")
+
+    no_response_results = [
+        _run_spinning_box_paper_horizon_step_size(
+            config=config,
+            time_step_s=time_step_s,
+        )
+        for time_step_s in config.paper_horizon.time_step_grid_s
+    ]
+    response_results = [
+        _run_spinning_box_paper_horizon_step_size(
+            config=config,
+            time_step_s=time_step_s,
+            contact_response_policy=CONTACT_RESPONSE_POLICY,
+        )
+        for time_step_s in config.paper_horizon.time_step_grid_s
+    ]
+    all_violations = sorted(
+        {
+            violation
+            for result in response_results
+            for violation in result["threshold_violations"]
+        }
+    )
+    feasibility_statuses = sorted(
+        {
+            str(result["kinematic_feasibility"]["status"])
+            for result in response_results
+        }
+    )
+    response_max_contact_active_count = max(
+        int(result["max_contact_active_count"]) for result in response_results
+    )
+    response_max_contact_penetration = max(
+        float(result["max_contact_penetration_m"]) for result in response_results
+    )
+    response_max_contact_normal_force = max(
+        float(result["max_contact_normal_force_n"]) for result in response_results
+    )
+    response_max_contact_generalized_force = max(
+        float(result["max_contact_generalized_force_norm"]) for result in response_results
+    )
+    response_max_applied_contact_normal_force = max(
+        float(result["max_applied_contact_normal_force_n"]) for result in response_results
+    )
+    response_max_applied_contact_force = max(
+        float(result["max_applied_contact_generalized_force_norm"]) for result in response_results
+    )
+    no_response_max_contact_penetration = max(
+        float(result["max_contact_penetration_m"]) for result in no_response_results
+    )
+    penetration_delta = response_max_contact_penetration - no_response_max_contact_penetration
+    blockers = [
+        "mabd_newton_report_incomplete",
+        "spinning_box_contact_response_not_paper_faithful",
+        "spinning_box_comparison_pass_gate_not_enabled",
+    ]
+    if all_violations:
+        blockers.insert(1, "mabd_paper_horizon_diagnostic_thresholds_violated")
+    if "paper_momentum_requires_affine_stretch_under_q_delta_over_h" in feasibility_statuses:
+        blockers.append("mabd_kinematic_feasibility_blocker_recorded")
+    if penetration_delta >= 0.0:
+        blockers.append("contact_response_does_not_reduce_penetration")
+
+    observed = {
+        "paper_horizon_duration_s": config.paper_horizon.duration_s,
+        "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        "paper_source_lines": list(config.source_lines),
+        "figure_text_source": config.paper_horizon.figure_text_source,
+        "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+        "contact_response_scope": "diagnostic_only_no_lane_gate",
+        "contact_response_policy": CONTACT_RESPONSE_POLICY,
+        "contact_response_status": "explicit_response_diagnostic_incomplete",
+        "mabd_kinematic_feasibility_statuses": feasibility_statuses,
+        "threshold_violations": all_violations,
+        "no_response_max_contact_penetration_m": no_response_max_contact_penetration,
+        "response_max_contact_active_count": response_max_contact_active_count,
+        "response_max_contact_penetration_m": response_max_contact_penetration,
+        "response_max_contact_normal_force_n": response_max_contact_normal_force,
+        "response_max_contact_generalized_force_norm": response_max_contact_generalized_force,
+        "response_max_applied_contact_normal_force_n": response_max_applied_contact_normal_force,
+        "response_max_applied_contact_force_norm": response_max_applied_contact_force,
+        "penetration_delta_vs_no_response_m": penetration_delta,
+        "initial_position_m": config.initial_q[9:12].tolist(),
+        "final_position_m": response_results[0]["final_position_m"],
+        "contact_response_results": response_results,
+        "no_response_reference_results": no_response_results,
+        "blocking_reasons": blockers,
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={"primitive_cube": "not_applicable_procedural"},
+        solver_mode="mabd_cpu_oracle_contact_response_diagnostic",
+        backend="cpu_numpy",
+        baseline_lane=config.baseline_lane,
+        expected={
+            "paper_claim_status": "contact response diagnostic only; no lane gate",
+            "paper_horizon_duration_s": config.paper_horizon.duration_s,
+            "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+            "source_lines": list(config.source_lines),
+            "figure_text_source": config.paper_horizon.figure_text_source,
+            "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+            "phase62_gate_policy": "diagnostic_only_no_lane_gate",
+        },
+        observed=observed,
+        threshold=config.paper_horizon.thresholds,
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason=(
+            "explicit contact response is a diagnostic external-force lane, not a "
+            "paper-faithful contact solve or spinning-box experiment pass"
+        ),
+        timing_distribution={
+            "scope": "not_timed",
+            "step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        },
+        raw_outputs={"time_series": "compact_samples_only"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
 
 
 def write_spinning_box_development_report(
@@ -653,6 +849,7 @@ def write_spinning_box_paper_horizon_report(
 
 
 __all__ = [
+    "write_spinning_box_contact_response_report",
     "write_spinning_box_development_report",
     "write_spinning_box_paper_horizon_report",
 ]

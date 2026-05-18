@@ -8,6 +8,7 @@ import numpy as np
 
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 from mabd_reproduction.single_body_reports import (
+    write_spinning_box_contact_response_report,
     write_spinning_box_development_report,
     write_spinning_box_paper_horizon_report,
 )
@@ -289,6 +290,69 @@ class SingleBodyReportLaneTests(unittest.TestCase):
                 self.assertIn("elastic_energy_j", sample)
                 self.assertIn("affine_orthogonality_error", sample)
                 self.assertTrue(np.isfinite(sample["total_energy_j"]))
+
+    def test_spinning_box_contact_response_report_records_explicit_force_lane(self) -> None:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_spinning_box_contact_response.json"
+            report = write_spinning_box_contact_response_report(
+                path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(path)
+
+        self.assertEqual(report.scene_id, config.scene_id)
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.solver_mode, "mabd_cpu_oracle_contact_response_diagnostic")
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertEqual(
+            loaded.observed["contact_response_policy"],
+            "explicit_current_state_penalty_force_as_external_force_next_step",
+        )
+        self.assertEqual(
+            loaded.observed["contact_response_scope"],
+            "diagnostic_only_no_lane_gate",
+        )
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "spinning_box_contact_response_not_paper_faithful",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "spinning_box_comparison_pass_gate_not_enabled",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertGreaterEqual(
+            loaded.observed["response_max_contact_active_count"],
+            4,
+        )
+        self.assertGreater(loaded.observed["response_max_contact_penetration_m"], 0.0)
+        self.assertGreater(loaded.observed["response_max_applied_contact_force_norm"], 0.0)
+        self.assertGreater(loaded.observed["no_response_max_contact_penetration_m"], 0.0)
+        self.assertIn("penetration_delta_vs_no_response_m", loaded.observed)
+        self.assertEqual(
+            len(loaded.observed["contact_response_results"]),
+            len(config.paper_horizon.time_step_grid_s),
+        )
+        for entry in loaded.observed["contact_response_results"]:
+            self.assertIn(entry["time_step_s"], [0.01, 0.001])
+            self.assertEqual(
+                entry["contact_response_policy"],
+                "explicit_current_state_penalty_force_as_external_force_next_step",
+            )
+            self.assertGreater(entry["max_applied_contact_generalized_force_norm"], 0.0)
+            self.assertIn("max_contact_penetration_m", entry)
+            self.assertIn("threshold_violations", entry)
+            self.assertLessEqual(
+                len(entry["trajectory_samples"]),
+                config.paper_horizon.sample_count,
+            )
 
 
 if __name__ == "__main__":

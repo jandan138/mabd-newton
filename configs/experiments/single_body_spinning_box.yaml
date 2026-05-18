@@ -25,6 +25,7 @@ paper_horizon:
   time_step_grid_s: [0.01, 0.001]
   sample_count: 11
   output_report: reports/experiment_matrix/single_body_spinning_box_paper_horizon.json
+  contact_response_output_report: reports/experiment_matrix/single_body_spinning_box_contact_response.json
   figure_pdf_sha256: 7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80
   figure_text_source: "pdftotext /tmp/mabd-paper/source/images/cube/roll_cube.pdf -"
   thresholds:
