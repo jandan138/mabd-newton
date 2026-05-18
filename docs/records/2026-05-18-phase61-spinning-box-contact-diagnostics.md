@@ -7,7 +7,7 @@ passed_for_spinning_box_contact_diagnostic_gap_slice
 ## Scope
 
 Phase 61 records contact penetration and normal-force diagnostics for the
-current spinning-box paper-horizon M-ABD diagnostic lane. It does not implement a contact solver, does not apply contact response to the implicit step, and does not pass the spinning-box experiment.
+current spinning-box paper-horizon M-ABD diagnostic lane. It does not implement a contact solver, records the report policy that contact response is not applied to the implicit step, and does not pass the spinning-box experiment.
 
 ## Repository
 
@@ -55,9 +55,10 @@ The report now records:
 - max_contact_generalized_force_norm =
   `5776.765458377781`
 
-The diagnostic policy means contact force is evaluated from current M-ABD
-states for evidence only. It is not applied to the step, so the positive
-penetration is recorded as a missing contact-response blocker.
+The diagnostic policy records contact force evaluation from current M-ABD
+states for evidence only, with a report policy that the diagnostic is not
+applied to the step. The positive penetration is therefore recorded as a
+missing contact-response blocker.
 
 ## Claim Impact
 

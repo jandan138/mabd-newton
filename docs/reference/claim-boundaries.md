@@ -679,7 +679,8 @@
   `contact_penetration_observed_without_response`,
   `spinning_box_contact_response_missing`, positive penetration and normal
   force diagnostics, and top-level report status: `incomplete`. It also
-  verifies the contact force is not applied to the step.
+  records the report policy that contact diagnostics are not applied to the
+  step.
 - Phase 61 does not verify a passed spinning-box experiment, M-ABD lane pass,
   contact solver, collision implementation, paper-faithful affine collision,
   comparison pass gate, rendered result, runtime performance, full paper

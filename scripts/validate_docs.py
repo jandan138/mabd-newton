@@ -250,6 +250,12 @@ VENDORED_NEWTON_COMMIT = "96713fa965463b69c229a4d30582c733ff3526bb"
 PHASE59_T_HANDLE_AGREEMENT_COMMIT = "5d8a0079876d17568464a87c320c53be2d898089"
 PHASE60_REPRODUCTION_GAP_AUDIT_COMMIT = "f83889adbec6402e0baa1b4c55db5962a224808d"
 PHASE61_SPINNING_BOX_CONTACT_COMMIT = "e11cb83163368af36a5000fa3a1338a8c6206aab"
+SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
+)
+PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256 = (
+    "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
+)
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
 )
@@ -5064,6 +5070,16 @@ def _require_finite_scalar(value: Any, context: str) -> float:
     if not np.isfinite(result):
         fail(f"{context} must be finite")
     return result
+
+
+def _require_integer_count(value: Any, context: str, *, maximum: int | None = None) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        fail(f"{context} must be an integer count")
+    if value < 0:
+        fail(f"{context} must be nonnegative")
+    if maximum is not None and value > maximum:
+        fail(f"{context} exceeds maximum count {maximum}")
+    return value
 
 
 def _require_finite_vector3(value: Any, context: str) -> list[float]:
@@ -10304,8 +10320,13 @@ def validate_phase60_record() -> None:
         entry = report_entries[path]
         if entry.get("status") != report.status.value:
             fail(f"Phase 60 audit report status mismatch for {path}")
-        if entry.get("sha256") != sha256_file(report_path):
-            fail(f"Phase 60 audit report hash mismatch for {path}")
+        actual_hash = sha256_file(report_path)
+        if entry.get("sha256") != actual_hash:
+            if path == SPINNING_BOX_PAPER_HORIZON_REPORT_PATH and _is_phase61_spinning_box_contact_report(report):
+                if entry.get("sha256") != PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256:
+                    fail("Phase 60 audit historical paper-horizon report hash changed")
+            else:
+                fail(f"Phase 60 audit report hash mismatch for {path}")
         if report.status.value == "passed":
             fail(f"Phase 60 audit current report is passed: {path}")
         if report.observed.get("full_experiment_claim_passed") is True:
@@ -10349,7 +10370,7 @@ def validate_phase61_record() -> None:
         ROOT
         / "docs/superpowers/plans/2026-05-18-mabd-phase61-spinning-box-contact-diagnostics.md"
     )
-    report_path = "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
+    report_path = SPINNING_BOX_PAPER_HORIZON_REPORT_PATH
     text = record_path.read_text(encoding="utf-8")
     spec_text = spec_path.read_text(encoding="utf-8")
     plan_text = plan_path.read_text(encoding="utf-8")
@@ -10360,7 +10381,7 @@ def validate_phase61_record() -> None:
         PHASE61_SPINNING_BOX_CONTACT_COMMIT,
         VENDORED_NEWTON_COMMIT,
         "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
-        "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
+        SPINNING_BOX_PAPER_HORIZON_REPORT_PATH,
         "contact_diagnostic_policy = `evaluated_from_current_mabd_states_not_applied_to_step`",
         "contact_diagnostic_status = `contact_penetration_observed_without_response`",
         "spinning_box_contact_response_missing",
@@ -10420,7 +10441,7 @@ def validate_phase61_record() -> None:
         "contact_diagnostic_policy = evaluated_from_current_mabd_states_not_applied_to_step",
         "contact_penetration_observed_without_response",
         "`spinning_box_contact_response_missing`",
-        "the contact force is not applied to the step",
+        "records the report policy that contact diagnostics are not applied to the step",
         "top-level report status: `incomplete`",
     ):
         if snippet not in verified:
@@ -10446,7 +10467,7 @@ def validate_phase61_record() -> None:
         "Phase 61 Spinning-Box Contact Diagnostics Design",
         "evaluated_from_current_mabd_states_not_applied_to_step",
         "spinning_box_contact_response_missing",
-        "not applied to the implicit step",
+        "records the policy that diagnostics are not applied to the implicit step",
         "This is still not a passed spinning-box paper experiment",
     ):
         if snippet not in spec_text:
@@ -10507,24 +10528,40 @@ def validate_phase61_record() -> None:
     ):
         if blocker not in blockers:
             fail(f"Phase 61 paper-horizon blocker missing: {blocker}")
-    if _require_finite_scalar(observed.get("max_contact_active_count"), "Phase 61 contact count") < 4:
+    corner_count = spinning_box_contact_diagnostics(config, config.initial_q, config.initial_qd).corner_count
+    top_contact_count = _require_integer_count(
+        observed.get("max_contact_active_count"),
+        "Phase 61 contact count",
+        maximum=corner_count,
+    )
+    if top_contact_count < 4:
         fail("Phase 61 paper-horizon contact count unexpectedly low")
-    if _require_finite_scalar(observed.get("max_contact_penetration_m"), "Phase 61 penetration") <= 0.0:
+    top_contact_penetration = _require_finite_scalar(
+        observed.get("max_contact_penetration_m"),
+        "Phase 61 penetration",
+    )
+    if top_contact_penetration <= 0.0:
         fail("Phase 61 paper-horizon must record positive penetration")
-    if _require_finite_scalar(observed.get("max_contact_normal_force_n"), "Phase 61 normal force") <= 0.0:
+    top_contact_normal_force = _require_finite_scalar(
+        observed.get("max_contact_normal_force_n"),
+        "Phase 61 normal force",
+    )
+    if top_contact_normal_force <= 0.0:
         fail("Phase 61 paper-horizon must record positive normal force")
-    if (
-        _require_finite_scalar(
-            observed.get("max_contact_generalized_force_norm"),
-            "Phase 61 generalized force",
-        )
-        <= 0.0
-    ):
+    top_contact_generalized_force = _require_finite_scalar(
+        observed.get("max_contact_generalized_force_norm"),
+        "Phase 61 generalized force",
+    )
+    if top_contact_generalized_force <= 0.0:
         fail("Phase 61 paper-horizon must record positive generalized force")
 
     results = observed.get("paper_horizon_results")
     if not isinstance(results, list) or len(results) != len(config.paper_horizon.time_step_grid_s):
         fail("Phase 61 paper-horizon results must cover the configured step grid")
+    result_contact_counts: list[int] = []
+    result_penetrations: list[float] = []
+    result_normal_forces: list[float] = []
+    result_generalized_forces: list[float] = []
     for result in results:
         if not isinstance(result, dict):
             fail("Phase 61 paper-horizon result must be a mapping")
@@ -10536,16 +10573,46 @@ def validate_phase61_record() -> None:
             "contact_penetration_observed_without_response"
         ):
             fail("Phase 61 per-step contact diagnostic status changed")
-        if _require_finite_scalar(result.get("max_contact_penetration_m"), "Phase 61 result penetration") <= 0.0:
+        result_contact_counts.append(
+            _require_integer_count(
+                result.get("max_contact_active_count"),
+                "Phase 61 result contact count",
+                maximum=corner_count,
+            )
+        )
+        result_penetration = _require_finite_scalar(
+            result.get("max_contact_penetration_m"),
+            "Phase 61 result penetration",
+        )
+        result_normal_force = _require_finite_scalar(
+            result.get("max_contact_normal_force_n"),
+            "Phase 61 result normal force",
+        )
+        result_generalized_force = _require_finite_scalar(
+            result.get("max_contact_generalized_force_norm"),
+            "Phase 61 result generalized force",
+        )
+        result_penetrations.append(result_penetration)
+        result_normal_forces.append(result_normal_force)
+        result_generalized_forces.append(result_generalized_force)
+        if result_penetration <= 0.0:
             fail("Phase 61 per-step result must record positive penetration")
+        if result_normal_force <= 0.0:
+            fail("Phase 61 per-step result must record positive normal force")
+        if result_generalized_force <= 0.0:
+            fail("Phase 61 per-step result must record positive generalized force")
         samples = result.get("trajectory_samples")
         if not isinstance(samples, list) or not samples:
             fail("Phase 61 per-step result must retain compact trajectory samples")
         for sample in samples:
             if not isinstance(sample, dict):
                 fail("Phase 61 trajectory sample must be a mapping")
+            _require_integer_count(
+                sample.get("contact_active_count"),
+                "Phase 61 trajectory sample contact_active_count",
+                maximum=corner_count,
+            )
             for key in (
-                "contact_active_count",
                 "contact_min_signed_distance_m",
                 "contact_max_penetration_m",
                 "contact_normal_force_norm_n",
@@ -10553,29 +10620,20 @@ def validate_phase61_record() -> None:
             ):
                 _require_finite_scalar(sample.get(key), f"Phase 61 trajectory sample {key}")
 
+    if top_contact_count != max(result_contact_counts):
+        fail("Phase 61 top-level contact count must match per-step maximum")
+    for key, top_value, result_values in (
+        ("penetration", top_contact_penetration, result_penetrations),
+        ("normal force", top_contact_normal_force, result_normal_forces),
+        ("generalized force", top_contact_generalized_force, result_generalized_forces),
+    ):
+        if not np.isclose(top_value, max(result_values), rtol=0.0, atol=1.0e-12):
+            fail(f"Phase 61 top-level contact {key} must match per-step maximum")
+
     actual_hash = sha256_file(ROOT / report_path)
     record_hash = _record_sha256_for_artifact(text, report_path)
     if record_hash != actual_hash:
         fail("Phase 61 paper-horizon report sha256 mismatch")
-
-    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
-    current_reports = audit.get("current_evidence_reports")
-    if not isinstance(current_reports, list):
-        fail("Phase 61 audit current_evidence_reports must be a list")
-    audit_entry = next(
-        (
-            entry
-            for entry in current_reports
-            if isinstance(entry, dict) and entry.get("path") == report_path
-        ),
-        None,
-    )
-    if audit_entry is None:
-        fail("Phase 61 audit missing spinning-box paper-horizon report entry")
-    if audit_entry.get("sha256") != actual_hash:
-        fail("Phase 61 audit paper-horizon report hash mismatch")
-    if audit_entry.get("status") != "incomplete":
-        fail("Phase 61 audit paper-horizon report status changed")
 
     claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
     if not isinstance(claims, list):

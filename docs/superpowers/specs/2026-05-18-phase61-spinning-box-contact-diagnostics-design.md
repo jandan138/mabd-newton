@@ -26,9 +26,9 @@ is:
 
 - `evaluated_from_current_mabd_states_not_applied_to_step`
 
-This means the diagnostic contact force is observed after each state update and
-is not applied to the implicit step. Positive penetration therefore becomes a
-gap signal, not a solver pass.
+This records the policy that diagnostics are not applied to the implicit step:
+the diagnostic contact force is observed after each state update as a gap
+signal, not a solver pass.
 
 ## Report Contract
 

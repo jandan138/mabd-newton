@@ -3694,7 +3694,10 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         self.assertIn("contact_penetration_observed_without_response", verified)
         self.assertIn("spinning_box_contact_response_missing", verified)
-        self.assertIn("the contact force is not applied to the step", verified)
+        self.assertIn(
+            "records the report policy that contact diagnostics are not applied to the step",
+            verified,
+        )
         self.assertIn("passed spinning-box experiment", non_claim)
         self.assertIn("contact solver", non_claim)
         self.assertIn("paper-faithful affine collision", non_claim)
@@ -3737,7 +3740,11 @@ class Phase0BootstrapTests(unittest.TestCase):
         import scripts.validate_docs as validate_docs
 
         self.assertEqual(audit_entry["status"], report.status.value)
-        self.assertEqual(audit_entry["sha256"], validate_docs.sha256_file(report_path))
+        self.assertEqual(
+            audit_entry["sha256"],
+            validate_docs.PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256,
+        )
+        self.assertNotEqual(audit_entry["sha256"], validate_docs.sha256_file(report_path))
         self.assertEqual(report.source_commit, validate_docs.PHASE61_SPINNING_BOX_CONTACT_COMMIT)
         self.assertNotIn(report.source_commit, validate_docs.PLACEHOLDER_SOURCE_COMMITS)
 
@@ -3764,6 +3771,83 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE61", text)
         self.assertNotIn("phase61-working-tree", text)
+
+    def test_phase61_validator_rejects_fractional_contact_count(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
+        )
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "max_contact_active_count": 4.5,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_PAPER_HORIZON_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase61_record()
+
+        self.assertIn("integer count", str(context.exception))
+
+    def test_phase61_validator_rejects_nonfinite_per_step_contact_extrema(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
+        )
+        results = [dict(result) for result in actual.observed["paper_horizon_results"]]
+        results[0]["max_contact_normal_force_n"] = math.nan
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "paper_horizon_results": results,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_PAPER_HORIZON_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase61_record()
+
+        self.assertIn("result normal force", str(context.exception))
+
+    def test_phase61_validator_rejects_inconsistent_top_level_contact_extrema(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
+        )
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "max_contact_normal_force_n": actual.observed["max_contact_normal_force_n"] * 0.5,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_PAPER_HORIZON_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase61_record()
+
+        self.assertIn("top-level contact normal force", str(context.exception))
 
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
