@@ -96,6 +96,18 @@ for metric in ("intermediate_axis_angular_velocity_waveform", "energy_loss"):
         self.assertGreater(entry["matched_sample_count"], 0)
         self.assertTrue(isfinite(entry["best_rmse"]))
         self.assertTrue(isfinite(entry["best_max_abs_error"]))
+        self.assertEqual(
+            entry["time_normalization"]["claim_status"],
+            "normalized_figure_time_not_paper_raw_time",
+        )
+        self.assertEqual(
+            entry["best_color_family_claim_status"],
+            "numeric_best_fit_not_legend_identity",
+        )
+        self.assertEqual(
+            entry["agreement_claim_status"],
+            "diagnostic_only_not_curve_agreement",
+        )
         self.assertEqual(set(entry["all_color_family_errors"]), {"blue", "orange", "green"})
 ```
 
@@ -130,6 +142,8 @@ When a valid figure report is present, populate:
 - `digitized_figure_curve_agreement_diagnostics`
 
 Keep `t_handle_digitized_figure_curve_agreement_not_passed`.
+Also keep `sample_grid_flip_delta_unavailable` whenever the sample-grid flip
+diagnostic remains unavailable.
 
 - [ ] **Step 3: Update metric statuses**
 
@@ -170,7 +184,30 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 - [ ] **Step 2: Add Phase59 validator checks**
 
 Validate that committed reports contain finite figure-agreement diagnostics,
-retain incomplete status, and retain all required blockers.
+retain incomplete status, retain `sample_grid_flip_delta_unavailable`, retain
+all required blockers, and persist the normalized-time / best-color-family
+disclaimers:
+
+- `normalized_figure_time_not_paper_raw_time`
+- `numeric_best_fit_not_legend_identity`
+- `diagnostic_only_not_curve_agreement`
+
+Add durable Phase59 boundary bullets to `docs/reference/claim-boundaries.md`
+with the same shape as Phase58:
+
+- This repository contains Phase59 T-handle digitized-figure agreement
+  diagnostic evidence.
+- Phase59 verifies normalized-time numeric error diagnostics against digitized
+  color-family curves.
+- Phase59 does not verify raw curve agreement, legend-entry identity, paper raw
+  time alignment, energy-loss agreement, timing, rendered output, pass gates,
+  full reproduction, or any passed `experiment.*` claim.
+- Phase59 evidence must not be described as any of the forbidden claims above.
+
+Create the dated Phase59 record with command, config path, repo commit,
+vendored Newton source commit, paper source version, environment, backend, seed
+status, metrics, thresholds, raw artifacts, report hashes, retained blockers,
+and incomplete status.
 
 - [ ] **Step 3: Run focused docs/tests**
 
@@ -197,4 +234,3 @@ git diff --check
 ```
 
 Expected: all pass.
-

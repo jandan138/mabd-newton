@@ -33,17 +33,29 @@ def _clean_report_float(value: float) -> float:
     return 0.0 if abs(result) < 1.0e-14 else result
 
 
-def _sample_rows(trajectory: THandleReferenceTrajectory) -> list[dict[str, float | int]]:
-    return [
-        {
-            "sample_index": int(index),
-            "time_s": _clean_report_float(row[0]),
-            "omega_x_rad_s": _clean_report_float(row[1]),
-            "omega_y_rad_s": _clean_report_float(row[2]),
-            "omega_z_rad_s": _clean_report_float(row[3]),
-        }
-        for index, row in enumerate(trajectory.samples)
-    ]
+def _sample_rows(
+    trajectory: THandleReferenceTrajectory,
+    *,
+    inertia_kg_m2: np.ndarray,
+) -> list[dict[str, float | int]]:
+    rows: list[dict[str, float | int]] = []
+    for index, row in enumerate(trajectory.samples):
+        omega = np.asarray(row[1:4], dtype=float)
+        energy = float(0.5 * np.dot(inertia_kg_m2, omega * omega))
+        rows.append(
+            {
+                "sample_index": int(index),
+                "time_s": _clean_report_float(row[0]),
+                "omega_x_rad_s": _clean_report_float(row[1]),
+                "omega_y_rad_s": _clean_report_float(row[2]),
+                "omega_z_rad_s": _clean_report_float(row[3]),
+                "energy": _clean_report_float(energy),
+                "relative_energy_loss": _clean_report_float(
+                    (trajectory.energy_initial - energy) / trajectory.energy_initial
+                ),
+            }
+        )
+    return rows
 
 
 def _mabd_sample_rows(rollout: THandleMABDRollout) -> list[dict[str, float | int]]:
@@ -56,6 +68,9 @@ def _mabd_sample_rows(rollout: THandleMABDRollout) -> list[dict[str, float | int
             "omega_y_rad_s": _clean_report_float(sample.angular_velocity_rad_s[1]),
             "omega_z_rad_s": _clean_report_float(sample.angular_velocity_rad_s[2]),
             "energy": _clean_report_float(sample.energy),
+            "relative_energy_loss": _clean_report_float(
+                (rollout.energy_initial - sample.energy) / rollout.energy_initial
+            ),
             "angular_momentum_norm": _clean_report_float(sample.angular_momentum_norm),
             "affine_shape_spread_m": _clean_report_float(sample.affine_shape_spread_m),
         }
@@ -108,7 +123,10 @@ def write_t_handle_rk4_reference_report(
         "angular_momentum_norm_final": trajectory.angular_momentum_norm_final,
         "angular_momentum_norm_drift": trajectory.angular_momentum_norm_drift,
         "intermediate_axis_sign_flips": trajectory.intermediate_axis_sign_flips,
-        "angular_velocity_samples": _sample_rows(trajectory),
+        "angular_velocity_samples": _sample_rows(
+            trajectory,
+            inertia_kg_m2=config.reference.principal_inertia_kg_m2,
+        ),
         "threshold_violations": threshold_violations,
         "blocking_reasons": list(T_HANDLE_REPORT_BLOCKERS),
         "required_missing_lanes": list(config.required_missing_lanes),

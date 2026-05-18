@@ -62,6 +62,12 @@ For each metric family and each lane, the report records:
 The best color family is a numeric minimum over the three color families. It is
 not a legend-entry identity claim.
 
+Each diagnostic entry must persist machine-checkable caveats:
+
+- `time_normalization.claim_status = "normalized_figure_time_not_paper_raw_time"`
+- `best_color_family_claim_status = "numeric_best_fit_not_legend_identity"`
+- `agreement_claim_status = "diagnostic_only_not_curve_agreement"`
+
 ## Error Calculation
 
 For each lane sample:
@@ -92,6 +98,7 @@ Phase59 must keep these blockers:
 - `t_handle_comparison_report_incomplete`
 - `t_handle_timing_evidence_missing`
 - `t_handle_comparison_pass_gate_not_enabled`
+- `sample_grid_flip_delta_unavailable`
 - `t_handle_digitized_figure_curve_agreement_not_passed`
 
 Phase59 must not claim:
@@ -133,3 +140,7 @@ Phase59 completion requires:
 - `ruff check .`
 - `git diff --check`
 
+The dated Phase59 record must include the command, config path, repo commit,
+vendored Newton source commit, paper source version, environment, backend, seed
+status, metrics, thresholds, raw artifacts, report hashes, retained blockers,
+and incomplete status.

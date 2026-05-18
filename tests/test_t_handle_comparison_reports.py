@@ -81,6 +81,24 @@ class THandleComparisonReportTests(unittest.TestCase):
         target[keys[-1]] = value
         path.write_text(json.dumps(payload, allow_nan=True), encoding="utf-8")
 
+    def test_t_handle_lane_reports_record_relative_energy_loss_samples(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            _config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            reports = {
+                "rbd_rk4_reference": load_claim_report(rk4_path),
+                "mabd_newton": load_claim_report(mabd_path),
+            }
+
+        for lane, report in reports.items():
+            with self.subTest(lane=lane):
+                samples = report.observed["angular_velocity_samples"]
+                self.assertGreater(len(samples), 0)
+                self.assertTrue(all("relative_energy_loss" in sample for sample in samples))
+                self.assertAlmostEqual(samples[0]["relative_energy_loss"], 0.0)
+                self.assertTrue(
+                    all(isfinite(sample["relative_energy_loss"]) for sample in samples)
+                )
+
     def test_t_handle_comparison_report_records_bounded_protocol(self) -> None:
         with TemporaryDirectory() as tmpdir:
             config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
