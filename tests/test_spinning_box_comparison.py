@@ -35,6 +35,21 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         )
         return mabd_path, rbd_path
 
+    def _write_figure_report(self, tmpdir: str) -> Path:
+        from mabd_reproduction.spinning_box_digitization import (
+            write_spinning_box_figure_curve_report,
+        )
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        figure_path = Path(tmpdir) / "figure_curves.json"
+        write_spinning_box_figure_curve_report(
+            figure_path,
+            config=config,
+            source_commit="test-source",
+            vendored_newton_commit="test-newton",
+        )
+        return figure_path
+
     def test_write_spinning_box_comparison_report_records_incomplete_protocol(self) -> None:
         from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
 
@@ -264,6 +279,103 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         )
         self.assertIn(
             "mabd_newton:final_position_m_invalid",
+            loaded.observed["blocking_reasons"],
+        )
+
+    def test_spinning_box_comparison_consumes_valid_figure_curve_report(self) -> None:
+        from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        with TemporaryDirectory() as tmpdir:
+            mabd_path, rbd_path = self._write_lane_reports(tmpdir)
+            figure_path = self._write_figure_report(tmpdir)
+            output_path = Path(tmpdir) / "comparison.json"
+
+            write_spinning_box_comparison_report(
+                output_path,
+                config=config,
+                mabd_report_path=mabd_path,
+                rbd_report_path=rbd_path,
+                figure_curve_report_path=figure_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertTrue(loaded.observed["digitized_figure_reference_available"])
+        self.assertTrue(loaded.observed["digitized_figure_curve_agreement_available"])
+        self.assertFalse(loaded.observed["digitized_figure_curve_agreement_passed"])
+        self.assertIn(
+            "spinning_box_digitized_figure_curve_agreement_not_passed",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn("paper_figure_curves", loaded.observed["input_report_provenance"])
+        self.assertEqual(
+            loaded.raw_outputs["figure_curve_report"],
+            figure_path.as_posix(),
+        )
+        self.assertEqual(
+            loaded.observed["digitized_figure_reference_samples"][
+                "linear_momentum_color_families"
+            ]["blue"],
+            101,
+        )
+        diagnostics = loaded.observed["digitized_figure_curve_agreement_diagnostics"]
+        linear_mabd = diagnostics["linear_momentum"]["mabd_newton"]
+        self.assertEqual(linear_mabd["status"], "diagnostic_available_not_pass_gate")
+        self.assertEqual(linear_mabd["lane_value_source"], "linear_momentum_error")
+        self.assertEqual(linear_mabd["figure_time_s"], 10.0)
+        self.assertIn(
+            linear_mabd["best_color_family"],
+            ["blue", "brown", "gray", "green", "orange"],
+        )
+        self.assertEqual(
+            linear_mabd["best_color_family_claim_status"],
+            "numeric_best_fit_not_legend_identity",
+        )
+        self.assertEqual(
+            linear_mabd["agreement_claim_status"],
+            "diagnostic_only_not_curve_agreement",
+        )
+        self.assertIn("blue", linear_mabd["all_color_family_errors"])
+        self.assertIn("angular_momentum", diagnostics)
+        self.assertIn("rbd_implicit_baseline", diagnostics["angular_momentum"])
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+
+    def test_spinning_box_comparison_ignores_invalid_figure_curve_report(self) -> None:
+        import json
+
+        from mabd_reproduction.comparison_reports import write_spinning_box_comparison_report
+
+        config = load_spinning_box_config(CONFIG_PATH)
+        with TemporaryDirectory() as tmpdir:
+            mabd_path, rbd_path = self._write_lane_reports(tmpdir)
+            figure_path = self._write_figure_report(tmpdir)
+            figure_data = json.loads(figure_path.read_text(encoding="utf-8"))
+            figure_data["observed"]["curve_agreement_status"] = "passed"
+            figure_path.write_text(json.dumps(figure_data), encoding="utf-8")
+            output_path = Path(tmpdir) / "comparison.json"
+
+            write_spinning_box_comparison_report(
+                output_path,
+                config=config,
+                mabd_report_path=mabd_path,
+                rbd_report_path=rbd_path,
+                figure_curve_report_path=figure_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertFalse(loaded.observed["digitized_figure_reference_available"])
+        self.assertEqual(loaded.observed["digitized_figure_reference_samples"], {})
+        self.assertFalse(loaded.observed["digitized_figure_curve_agreement_available"])
+        self.assertFalse(loaded.observed["digitized_figure_curve_agreement_passed"])
+        self.assertNotIn("digitized_figure_curve_agreement_diagnostics", loaded.observed)
+        self.assertNotIn("paper_figure_curves", loaded.observed["input_report_provenance"])
+        self.assertNotIn("figure_curve_report", loaded.raw_outputs)
+        self.assertNotIn(
+            "spinning_box_digitized_figure_curve_agreement_not_passed",
             loaded.observed["blocking_reasons"],
         )
 

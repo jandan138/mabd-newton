@@ -83,6 +83,21 @@ T_HANDLE_FIGURE_BASELINE_LANE = "paper_figure_digitization"
 T_HANDLE_FIGURE_SOLVER_MODE = "t_handle_paper_figure_digitization"
 T_HANDLE_FIGURE_BACKEND = "pdftocairo_pillow"
 T_HANDLE_FIGURE_TIME_RANGE = (0.0, 100.0)
+SPINNING_BOX_FIGURE_BASELINE_LANE = "paper_figure_digitization"
+SPINNING_BOX_FIGURE_SOLVER_MODE = "spinning_box_paper_figure_curve_digitization"
+SPINNING_BOX_FIGURE_BACKEND = "paper_pdf_digitization"
+SPINNING_BOX_FIGURE_COLOR_FAMILIES = ("blue", "brown", "gray", "green", "orange")
+SPINNING_BOX_FIGURE_TIME_S = 10.0
+SPINNING_BOX_FIGURE_METRICS = {
+    "linear_momentum": {
+        "curve_group": "linear_momentum_curves",
+        "lane_metric": "linear_momentum_error",
+    },
+    "angular_momentum": {
+        "curve_group": "angular_momentum_curves",
+        "lane_metric": "angular_momentum_error",
+    },
+}
 
 
 def _require_lane_report(
@@ -319,6 +334,72 @@ def _valid_t_handle_figure_report_or_none(
     if report.observed.get("figure_curve_scope") != "color_family_digitization_only":
         return None
     if not _finite_t_handle_figure_curve_samples(report):
+        return None
+    return report
+
+
+def _finite_spinning_box_figure_curve_samples(report: ClaimReport) -> bool:
+    for metric_config in SPINNING_BOX_FIGURE_METRICS.values():
+        curves = report.observed.get(metric_config["curve_group"])
+        if not isinstance(curves, dict):
+            return False
+        for color_family in SPINNING_BOX_FIGURE_COLOR_FAMILIES:
+            curve = curves.get(color_family)
+            if not isinstance(curve, dict):
+                return False
+            if curve.get("curve_identity_status") != "color_family_not_legend_entry":
+                return False
+            samples = curve.get("samples")
+            if not isinstance(samples, list) or not samples:
+                return False
+            finite_times: list[float] = []
+            for sample in samples:
+                if not isinstance(sample, dict):
+                    return False
+                time_s = _finite_scalar(sample.get("time_s"))
+                value = _finite_scalar(sample.get("value"))
+                if time_s is None or value is None:
+                    return False
+                finite_times.append(time_s)
+            if finite_times[-1] != SPINNING_BOX_FIGURE_TIME_S:
+                return False
+            if any(rhs <= lhs for lhs, rhs in zip(finite_times, finite_times[1:])):
+                return False
+    return True
+
+
+def _valid_spinning_box_figure_report_or_none(
+    path: str | Path | None,
+    *,
+    config: SpinningBoxRunConfig,
+) -> ClaimReport | None:
+    if path is None:
+        return None
+    try:
+        report = load_claim_report(path)
+    except (OSError, ValueError):
+        return None
+    if report.claim_id != config.claim_id or report.scene_id != config.scene_id:
+        return None
+    if report.baseline_lane != SPINNING_BOX_FIGURE_BASELINE_LANE:
+        return None
+    if report.solver_mode != SPINNING_BOX_FIGURE_SOLVER_MODE:
+        return None
+    if report.backend != SPINNING_BOX_FIGURE_BACKEND:
+        return None
+    if report.status != EvidenceStatus.INCOMPLETE:
+        return None
+    if report.observed.get("full_experiment_claim_passed") is not False:
+        return None
+    if report.observed.get("color_family_curve_available") is not True:
+        return None
+    if report.observed.get("paper_reference_legend_identity_available") is not False:
+        return None
+    if report.observed.get("curve_identity_status") != "color_family_not_legend_entry":
+        return None
+    if report.observed.get("curve_agreement_status") != "not_evaluated":
+        return None
+    if not _finite_spinning_box_figure_curve_samples(report):
         return None
     return report
 
@@ -1039,6 +1120,139 @@ def _t_handle_digitized_figure_agreement_diagnostics(
     }
 
 
+def _spinning_box_figure_sample_counts(report: ClaimReport) -> dict[str, dict[str, int]]:
+    result: dict[str, dict[str, int]] = {}
+    for output_key, report_key in (
+        ("linear_momentum_color_families", "linear_momentum_curves"),
+        ("angular_momentum_color_families", "angular_momentum_curves"),
+    ):
+        curves = report.observed[report_key]
+        result[output_key] = {
+            str(color_family): len(curve["samples"])
+            for color_family, curve in curves.items()
+            if isinstance(curve, dict) and isinstance(curve.get("samples"), list)
+        }
+    return result
+
+
+def _spinning_box_figure_endpoint_value(
+    figure_report: ClaimReport,
+    *,
+    curve_group: str,
+    color_family: str,
+) -> float | None:
+    curves = figure_report.observed.get(curve_group)
+    if not isinstance(curves, dict):
+        return None
+    curve = curves.get(color_family)
+    if not isinstance(curve, dict):
+        return None
+    samples = curve.get("samples")
+    if not isinstance(samples, list):
+        return None
+    for sample in reversed(samples):
+        if not isinstance(sample, dict):
+            continue
+        time_s = _finite_scalar(sample.get("time_s"))
+        value = _finite_scalar(sample.get("value"))
+        if time_s == SPINNING_BOX_FIGURE_TIME_S and value is not None:
+            return value
+    return None
+
+
+def _spinning_box_figure_metric_diagnostic(
+    report: ClaimReport,
+    figure_report: ClaimReport,
+    *,
+    lane: str,
+    metric: str,
+) -> dict[str, Any]:
+    metric_config = SPINNING_BOX_FIGURE_METRICS[metric]
+    lane_metric = metric_config["lane_metric"]
+    lane_value = _finite_scalar(report.observed.get(lane_metric))
+    all_color_errors: dict[str, dict[str, float | None]] = {}
+    for color_family in SPINNING_BOX_FIGURE_COLOR_FAMILIES:
+        figure_value = _spinning_box_figure_endpoint_value(
+            figure_report,
+            curve_group=metric_config["curve_group"],
+            color_family=color_family,
+        )
+        signed_error = (
+            _finite_difference(lane_value, figure_value)
+            if lane_value is not None and figure_value is not None
+            else None
+        )
+        all_color_errors[color_family] = {
+            "figure_value": figure_value,
+            "signed_error": signed_error,
+            "abs_error": abs(signed_error) if signed_error is not None else None,
+        }
+    finite_color_errors = {
+        color_family: errors
+        for color_family, errors in all_color_errors.items()
+        if _finite_scalar(errors["abs_error"]) is not None
+    }
+    if lane_value is None or not finite_color_errors:
+        return {
+            "status": "missing_finite_endpoint_values",
+            "lane": lane,
+            "metric": metric,
+            "lane_value": lane_value,
+            "lane_value_source": lane_metric,
+            "figure_time_s": SPINNING_BOX_FIGURE_TIME_S,
+            "best_color_family": None,
+            "best_abs_error": None,
+            "best_signed_error": None,
+            "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+            "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+            "all_color_family_errors": all_color_errors,
+        }
+
+    best_color_family = min(
+        finite_color_errors,
+        key=lambda color_family: float(finite_color_errors[color_family]["abs_error"]),
+    )
+    best_errors = finite_color_errors[best_color_family]
+    return {
+        "status": "diagnostic_available_not_pass_gate",
+        "lane": lane,
+        "metric": metric,
+        "lane_value": lane_value,
+        "lane_value_source": lane_metric,
+        "figure_time_s": SPINNING_BOX_FIGURE_TIME_S,
+        "best_color_family": best_color_family,
+        "best_abs_error": best_errors["abs_error"],
+        "best_signed_error": best_errors["signed_error"],
+        "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+        "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+        "all_color_family_errors": all_color_errors,
+    }
+
+
+def _spinning_box_digitized_figure_agreement_diagnostics(
+    *,
+    mabd_report: ClaimReport,
+    rbd_report: ClaimReport,
+    figure_report: ClaimReport,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    reports = {
+        "mabd_newton": mabd_report,
+        "rbd_implicit_baseline": rbd_report,
+    }
+    return {
+        metric: {
+            lane: _spinning_box_figure_metric_diagnostic(
+                report,
+                figure_report,
+                lane=lane,
+                metric=metric,
+            )
+            for lane, report in reports.items()
+        }
+        for metric in SPINNING_BOX_FIGURE_METRICS
+    }
+
+
 def _t_handle_paper_metric_statuses(
     sample_diagnostics: dict[str, Any],
     *,
@@ -1385,10 +1599,16 @@ def write_spinning_box_comparison_report(
     rbd_report_path: str | Path,
     source_commit: str,
     vendored_newton_commit: str,
+    figure_curve_report_path: str | Path | None = None,
     paper_source_version: str = "2603.08079v2",
 ) -> ClaimReport:
     mabd_report = _require_lane_report(mabd_report_path, config=config, lane="mabd_newton")
     rbd_report = _require_lane_report(rbd_report_path, config=config, lane="rbd_implicit_baseline")
+    figure_report = _valid_spinning_box_figure_report_or_none(
+        figure_curve_report_path,
+        config=config,
+    )
+    figure_reference_available = figure_report is not None
     lane_statuses = {
         "mabd_newton": mabd_report.status.value,
         "rbd_implicit_baseline": rbd_report.status.value,
@@ -1431,6 +1651,64 @@ def write_spinning_box_comparison_report(
         blocking_reasons.append("rbd_implicit_baseline_not_paper_faithful")
     blocking_reasons.append("spinning_box_comparison_pass_gate_not_enabled")
 
+    input_report_provenance = {
+        "mabd_newton": _physical_lane_provenance(mabd_report_path, mabd_report),
+        "rbd_implicit_baseline": _physical_lane_provenance(rbd_report_path, rbd_report),
+    }
+    raw_outputs = {
+        "mabd_report": Path(mabd_report_path).as_posix(),
+        "rbd_report": Path(rbd_report_path).as_posix(),
+    }
+    figure_sample_counts: dict[str, dict[str, int]] = {}
+    figure_agreement_diagnostics: dict[str, dict[str, dict[str, Any]]] = {}
+    if figure_reference_available and figure_report is not None and figure_curve_report_path is not None:
+        blocking_reasons.append("spinning_box_digitized_figure_curve_agreement_not_passed")
+        input_report_provenance["paper_figure_curves"] = _physical_lane_provenance(
+            figure_curve_report_path,
+            figure_report,
+        )
+        raw_outputs["figure_curve_report"] = Path(figure_curve_report_path).as_posix()
+        figure_sample_counts = _spinning_box_figure_sample_counts(figure_report)
+        figure_agreement_diagnostics = _spinning_box_digitized_figure_agreement_diagnostics(
+            mabd_report=mabd_report,
+            rbd_report=rbd_report,
+            figure_report=figure_report,
+        )
+
+    observed = {
+        "full_experiment_claim_passed": False,
+        "digitized_figure_reference_available": figure_reference_available,
+        "digitized_figure_reference_samples": figure_sample_counts,
+        "digitized_figure_curve_agreement_available": bool(figure_agreement_diagnostics),
+        "digitized_figure_curve_agreement_passed": False,
+        "input_report_provenance": input_report_provenance,
+        "lane_statuses": lane_statuses,
+        "lane_gate_statuses": lane_gate_statuses,
+        "lane_solver_modes": {
+            "mabd_newton": mabd_report.solver_mode,
+            "rbd_implicit_baseline": rbd_report.solver_mode,
+        },
+        "lane_metrics": {
+            "mabd_newton": _lane_metric_snapshot(mabd_report),
+            "rbd_implicit_baseline": _lane_metric_snapshot(rbd_report),
+        },
+        "lane_vector_metrics": {
+            "mabd_newton": _lane_vector_metric_snapshot(mabd_report),
+            "rbd_implicit_baseline": _lane_vector_metric_snapshot(rbd_report),
+        },
+        "missing_required_metrics": missing_required_metrics,
+        "invalid_required_metrics": invalid_required_metrics,
+        "missing_required_vector_metrics": missing_required_vector_metrics,
+        "invalid_required_vector_metrics": invalid_required_vector_metrics,
+        "lane_metric_differences": metric_differences,
+        "lane_vector_metric_differences": vector_metric_differences,
+        "blocking_reasons": blocking_reasons,
+    }
+    if figure_agreement_diagnostics:
+        observed["digitized_figure_curve_agreement_diagnostics"] = (
+            figure_agreement_diagnostics
+        )
+
     report = ClaimReport(
         claim_id=config.claim_id,
         scene_id=config.scene_id,
@@ -1445,29 +1723,7 @@ def write_spinning_box_comparison_report(
             "required_vector_metrics": list(SPINNING_BOX_REQUIRED_VECTOR_METRICS),
             "source_lines": list(config.source_lines),
         },
-        observed={
-            "lane_statuses": lane_statuses,
-            "lane_gate_statuses": lane_gate_statuses,
-            "lane_solver_modes": {
-                "mabd_newton": mabd_report.solver_mode,
-                "rbd_implicit_baseline": rbd_report.solver_mode,
-            },
-            "lane_metrics": {
-                "mabd_newton": _lane_metric_snapshot(mabd_report),
-                "rbd_implicit_baseline": _lane_metric_snapshot(rbd_report),
-            },
-            "lane_vector_metrics": {
-                "mabd_newton": _lane_vector_metric_snapshot(mabd_report),
-                "rbd_implicit_baseline": _lane_vector_metric_snapshot(rbd_report),
-            },
-            "missing_required_metrics": missing_required_metrics,
-            "invalid_required_metrics": invalid_required_metrics,
-            "missing_required_vector_metrics": missing_required_vector_metrics,
-            "invalid_required_vector_metrics": invalid_required_vector_metrics,
-            "lane_metric_differences": metric_differences,
-            "lane_vector_metric_differences": vector_metric_differences,
-            "blocking_reasons": blocking_reasons,
-        },
+        observed=observed,
         threshold={
             "required_lane_status": EvidenceStatus.PASSED.value,
             "required_lane_gate_status": EvidenceStatus.PASSED.value,
@@ -1479,10 +1735,7 @@ def write_spinning_box_comparison_report(
         status=EvidenceStatus.INCOMPLETE,
         failure_reason="required lane gate statuses or comparison pass gate remain incomplete",
         timing_distribution={"scope": "not_timed"},
-        raw_outputs={
-            "mabd_report": Path(mabd_report_path).as_posix(),
-            "rbd_report": Path(rbd_report_path).as_posix(),
-        },
+        raw_outputs=raw_outputs,
         plot_paths={},
         source_commit=source_commit,
         vendored_newton_commit=vendored_newton_commit,
