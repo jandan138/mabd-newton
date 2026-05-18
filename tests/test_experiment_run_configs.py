@@ -248,15 +248,42 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("max_relative_energy_drift", config.reference.thresholds)
         self.assertIn("max_angular_momentum_norm_drift", config.reference.thresholds)
         self.assertIn("min_intermediate_axis_sign_flips", config.reference.thresholds)
+        self.assertEqual(
+            config.mabd_newton.output_report,
+            "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
+        )
+        self.assertEqual(config.mabd_newton.time_step_s, 0.001)
+        self.assertEqual(config.mabd_newton.step_count, 4000)
+        self.assertEqual(config.mabd_newton.sample_count, config.reference.sample_count)
+        self.assertEqual(config.mabd_newton.rotation_mode, "polar")
+        self.assertEqual(config.mabd_newton.rest_points_m.shape, (4, 3))
+        self.assertEqual(config.mabd_newton.point_masses_kg.shape, (4,))
+        self.assertAlmostEqual(
+            config.mabd_newton.step_count * config.mabd_newton.time_step_s,
+            config.reference.duration_s,
+        )
+        np.testing.assert_allclose(
+            config.mabd_newton.initial_angular_velocity_rad_s,
+            config.reference.initial_angular_velocity_rad_s,
+        )
+        np.testing.assert_allclose(config.mabd_newton.gravity_m_s2, [0.0, 0.0, 0.0])
+        self.assertIn("max_affine_shape_spread_m", config.mabd_newton.thresholds)
+        self.assertIn("max_proxy_inertia_relative_error", config.mabd_newton.thresholds)
         self.assertIn("exact_t_handle_geometry_unknown", config.failure_reason)
         self.assertIn("raw_t_handle_reference_curve_data_missing", config.failure_reason)
-        self.assertIn("mabd_newton_report_missing", config.failure_reason)
+        self.assertIn("mabd_newton_report_incomplete", config.failure_reason)
+        self.assertNotIn("mabd_newton_report_missing", config.failure_reason)
 
     def test_t_handle_config_matches_experiment_matrix_without_overclaiming(self) -> None:
         config = load_t_handle_config(T_HANDLE_CONFIG_PATH)
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
 
         validate_t_handle_config_against_matrix(config, matrix)
+        t_handle_entry = next(
+            entry for entry in matrix.experiments if entry.claim_id == "experiment.single_body.t_handle"
+        )
+        self.assertIn("mabd_newton_report_incomplete", t_handle_entry.blocking_reasons)
+        self.assertNotIn("mabd_newton_report_missing", t_handle_entry.blocking_reasons)
 
     def test_t_handle_config_rejects_passed_status(self) -> None:
         source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
@@ -276,6 +303,48 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(source), encoding="utf-8")
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "principal_inertia_kg_m2"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_mabd_sample_grid_mismatch(self) -> None:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_newton"]["sample_count"] = 8
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.sample_count"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_mabd_nonzero_gravity(self) -> None:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_newton"]["gravity_m_s2"] = [0.0, -9.81, 0.0]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.gravity_m_s2"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_mabd_reference_report_overlap(self) -> None:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_newton"]["output_report"] = source["reference"]["output_report"]
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            config = load_t_handle_config(path)
+            matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+            with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.output_report"):
+                validate_t_handle_config_against_matrix(config, matrix)
+
+    def test_t_handle_config_rejects_nonpositive_mabd_point_mass(self) -> None:
+        source = yaml.safe_load(T_HANDLE_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_newton"]["point_masses_kg"][0] = 0.0
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "point_masses_kg"):
                 load_t_handle_config(path)
 
     def test_t_handle_config_rejects_figure_hash_drift(self) -> None:

@@ -28,11 +28,31 @@ reference:
     max_relative_energy_drift: 1.0e-8
     max_angular_momentum_norm_drift: 1.0e-8
     min_intermediate_axis_sign_flips: 1
+mabd_newton:
+  time_step_s: 0.001
+  step_count: 4000
+  sample_count: 9
+  rest_points_m:
+    - [1.4142135623730951, 1.0, 0.01]
+    - [1.4142135623730951, -1.0, -0.01]
+    - [-1.4142135623730951, 1.0, -0.01]
+    - [-1.4142135623730951, -1.0, 0.01]
+  point_masses_kg: [0.25, 0.25, 0.25, 0.25]
+  volume_m3: 1.0
+  rotation_mode: polar
+  initial_angular_velocity_rad_s: [0.03, 3.0, 0.0]
+  gravity_m_s2: [0.0, 0.0, 0.0]
+  output_report: reports/experiment_matrix/single_body_t_handle_mabd_newton.json
+  thresholds:
+    max_relative_energy_drift: 2.0
+    max_angular_momentum_norm_drift: 2.0
+    max_affine_shape_spread_m: 10.0
+    max_proxy_inertia_relative_error: 1.0e-3
 report:
   status: incomplete
   failure_reason: >-
     rbd_rk4_reference diagnostic only; exact_t_handle_geometry_unknown,
-    raw_t_handle_reference_curve_data_missing, mabd_newton_report_missing,
+    raw_t_handle_reference_curve_data_missing, mabd_newton_report_incomplete,
     t_handle_comparison_report_missing, and t_handle_timing_evidence_missing
     remain incomplete
   output_report: reports/experiment_matrix/single_body_t_handle_rk4_reference.json

@@ -25,6 +25,7 @@ from mabd_reproduction.experiment_runner import (
     run_spinning_box_experiment,
     run_spinning_box_paper_horizon,
     run_spinning_box_rbd_baseline,
+    run_t_handle_mabd_newton,
     run_t_handle_rk4_reference,
 )
 
@@ -54,6 +55,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "physical_pendulum_mabd_newton",
             "rbd_implicit_baseline",
             "spinning_box_comparison",
+            "t_handle_mabd_newton",
             "t_handle_rk4_reference",
         ),
         default="mabd_newton",
@@ -177,6 +179,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "t_handle_rk4_reference":
             result = run_t_handle_rk4_reference(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "t_handle_mabd_newton":
+            result = run_t_handle_mabd_newton(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

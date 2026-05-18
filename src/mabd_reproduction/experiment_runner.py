@@ -39,7 +39,10 @@ from .single_body_reports import (
     write_spinning_box_development_report,
     write_spinning_box_paper_horizon_report,
 )
-from .t_handle_reports import write_t_handle_rk4_reference_report
+from .t_handle_reports import (
+    write_t_handle_mabd_newton_report,
+    write_t_handle_rk4_reference_report,
+)
 
 
 @dataclass(frozen=True)
@@ -459,6 +462,42 @@ def run_t_handle_rk4_reference(
     )
 
 
+def run_t_handle_mabd_newton(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    config = load_t_handle_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_t_handle_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError("Phase 56 T-handle MABD runner requires incomplete status")
+    report_path = _resolve_output_path(
+        config.mabd_newton.output_report,
+        output_path=output_path,
+        output_root=output_root,
+    )
+    report = write_t_handle_mabd_newton_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
 def run_heavy_top_rk4_reference(
     *,
     config_path: str | Path,
@@ -664,5 +703,6 @@ __all__ = [
     "run_spinning_box_experiment",
     "run_spinning_box_paper_horizon",
     "run_spinning_box_rbd_baseline",
+    "run_t_handle_mabd_newton",
     "run_t_handle_rk4_reference",
 ]
