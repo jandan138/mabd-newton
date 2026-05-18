@@ -78,7 +78,7 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 
 ## 对偶变量与 KKT
 
-每个约束都会贡献约束残差 `C(q)` 和约束 Jacobian `G`。KKT 中的对偶变量 `lambda` 表示为了满足约束需要的约束力强度。多个体连接后，`G` 的稀疏结构反映了“哪个约束碰到哪些体”。
+每个约束都会贡献约束残差 `C(q)` 和约束 Jacobian `G`。KKT 中的对偶变量 `lambda` 和约束方程一起求出，并通过 `G.T lambda` 反馈到相关 body block；它的物理力解释取决于约束写法和离散化尺度。多个体连接后，`G` 的稀疏结构反映了“哪个约束碰到哪些体”。
 
 <PseudoCode title="多体约束装配的概念流程">
 {`for body in bodies:
