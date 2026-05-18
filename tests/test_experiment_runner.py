@@ -828,16 +828,29 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertNotIn("paper timing", loaded.failure_reason)
 
     def test_run_spinning_box_comparison_writes_explicit_output_report(self) -> None:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
         from mabd_reproduction.experiment_runner import run_spinning_box_comparison
+        from mabd_reproduction.spinning_box_digitization import (
+            write_spinning_box_figure_curve_report,
+        )
 
         with TemporaryDirectory() as tmpdir:
             mabd_path, rbd_path = self._write_spinning_box_lane_inputs(tmpdir)
+            config = load_spinning_box_config(CONFIG_PATH)
+            figure_path = Path(tmpdir) / "figure_curves.json"
+            write_spinning_box_figure_curve_report(
+                figure_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
             output_path = Path(tmpdir) / "comparison.json"
             result = run_spinning_box_comparison(
                 config_path=CONFIG_PATH,
                 matrix_path=MATRIX_PATH,
                 mabd_report_path=mabd_path,
                 rbd_report_path=rbd_path,
+                figure_curve_report_path=figure_path,
                 output_path=output_path,
                 source_commit="test-source",
                 vendored_newton_commit="test-newton",
@@ -858,6 +871,8 @@ class ExperimentRunnerTests(unittest.TestCase):
             "rbd_implicit_baseline_report_incomplete",
             loaded.observed["blocking_reasons"],
         )
+        self.assertTrue(loaded.observed["digitized_figure_reference_available"])
+        self.assertEqual(loaded.raw_outputs["figure_curve_report"], figure_path.as_posix())
 
     def test_run_t_handle_rk4_reference_writes_bounded_diagnostic_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_t_handle_rk4_reference
@@ -2406,8 +2421,21 @@ class ExperimentRunnerTests(unittest.TestCase):
         import subprocess
         import sys
 
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+        from mabd_reproduction.spinning_box_digitization import (
+            write_spinning_box_figure_curve_report,
+        )
+
         with TemporaryDirectory() as tmpdir:
             mabd_path, rbd_path = self._write_spinning_box_lane_inputs(tmpdir)
+            config = load_spinning_box_config(CONFIG_PATH)
+            figure_path = Path(tmpdir) / "figure_curves.json"
+            write_spinning_box_figure_curve_report(
+                figure_path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
             output_path = Path(tmpdir) / "comparison_cli.json"
             result = subprocess.run(
                 [
@@ -2423,6 +2451,8 @@ class ExperimentRunnerTests(unittest.TestCase):
                     str(mabd_path),
                     "--rbd-report",
                     str(rbd_path),
+                    "--figure-report",
+                    str(figure_path),
                     "--output",
                     str(output_path),
                     "--source-commit",
@@ -2443,6 +2473,8 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(summary["baseline_lane"], "spinning_box_comparison_protocol")
         self.assertEqual(summary["status"], "incomplete")
         self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertTrue(loaded.observed["digitized_figure_reference_available"])
+        self.assertEqual(loaded.raw_outputs["figure_curve_report"], figure_path.as_posix())
 
     def test_run_experiment_cli_comparison_requires_input_reports(self) -> None:
         import os

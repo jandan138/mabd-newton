@@ -28,8 +28,227 @@
   "observed": {
     "blocking_reasons": [
       "mabd_newton_report_incomplete",
-      "spinning_box_comparison_pass_gate_not_enabled"
+      "spinning_box_comparison_pass_gate_not_enabled",
+      "spinning_box_digitized_figure_curve_agreement_not_passed"
     ],
+    "digitized_figure_curve_agreement_available": true,
+    "digitized_figure_curve_agreement_diagnostics": {
+      "angular_momentum": {
+        "mabd_newton": {
+          "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+          "all_color_family_errors": {
+            "blue": {
+              "abs_error": 97.58567931309314,
+              "figure_value": 97.58567931456548,
+              "signed_error": -97.58567931309314
+            },
+            "brown": {
+              "abs_error": 96.8115055064836,
+              "figure_value": 96.81150550795594,
+              "signed_error": -96.8115055064836
+            },
+            "gray": {
+              "abs_error": 97.71725826046156,
+              "figure_value": 97.7172582619339,
+              "signed_error": -97.71725826046156
+            },
+            "green": {
+              "abs_error": 97.50305997404786,
+              "figure_value": 97.5030599755202,
+              "signed_error": -97.50305997404786
+            },
+            "orange": {
+              "abs_error": 99.32680538408457,
+              "figure_value": 99.32680538555691,
+              "signed_error": -99.32680538408457
+            }
+          },
+          "best_abs_error": 96.8115055064836,
+          "best_color_family": "brown",
+          "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+          "best_signed_error": -96.8115055064836,
+          "figure_time_s": 10.0,
+          "lane": "mabd_newton",
+          "lane_value": 1.472344024477934e-09,
+          "lane_value_source": "angular_momentum_error",
+          "metric": "angular_momentum",
+          "status": "diagnostic_available_not_pass_gate"
+        },
+        "rbd_implicit_baseline": {
+          "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+          "all_color_family_errors": {
+            "blue": {
+              "abs_error": 97.58567931456548,
+              "figure_value": 97.58567931456548,
+              "signed_error": -97.58567931456548
+            },
+            "brown": {
+              "abs_error": 96.81150550795594,
+              "figure_value": 96.81150550795594,
+              "signed_error": -96.81150550795594
+            },
+            "gray": {
+              "abs_error": 97.7172582619339,
+              "figure_value": 97.7172582619339,
+              "signed_error": -97.7172582619339
+            },
+            "green": {
+              "abs_error": 97.5030599755202,
+              "figure_value": 97.5030599755202,
+              "signed_error": -97.5030599755202
+            },
+            "orange": {
+              "abs_error": 99.32680538555691,
+              "figure_value": 99.32680538555691,
+              "signed_error": -99.32680538555691
+            }
+          },
+          "best_abs_error": 96.81150550795594,
+          "best_color_family": "brown",
+          "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+          "best_signed_error": -96.81150550795594,
+          "figure_time_s": 10.0,
+          "lane": "rbd_implicit_baseline",
+          "lane_value": 0.0,
+          "lane_value_source": "angular_momentum_error",
+          "metric": "angular_momentum",
+          "status": "diagnostic_available_not_pass_gate"
+        }
+      },
+      "linear_momentum": {
+        "mabd_newton": {
+          "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+          "all_color_family_errors": {
+            "blue": {
+              "abs_error": 99.51652386780898,
+              "figure_value": 99.51652386780906,
+              "signed_error": -99.51652386780898
+            },
+            "brown": {
+              "abs_error": 96.82986536107704,
+              "figure_value": 96.82986536107711,
+              "signed_error": -96.82986536107704
+            },
+            "gray": {
+              "abs_error": 96.80232558139528,
+              "figure_value": 96.80232558139535,
+              "signed_error": -96.80232558139528
+            },
+            "green": {
+              "abs_error": 97.53059975520189,
+              "figure_value": 97.53059975520196,
+              "signed_error": -97.53059975520189
+            },
+            "orange": {
+              "abs_error": 99.48898408812722,
+              "figure_value": 99.4889840881273,
+              "signed_error": -99.48898408812722
+            }
+          },
+          "best_abs_error": 96.80232558139528,
+          "best_color_family": "gray",
+          "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+          "best_signed_error": -96.80232558139528,
+          "figure_time_s": 10.0,
+          "lane": "mabd_newton",
+          "lane_value": 7.679322694214913e-14,
+          "lane_value_source": "linear_momentum_error",
+          "metric": "linear_momentum",
+          "status": "diagnostic_available_not_pass_gate"
+        },
+        "rbd_implicit_baseline": {
+          "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+          "all_color_family_errors": {
+            "blue": {
+              "abs_error": 99.51652386780906,
+              "figure_value": 99.51652386780906,
+              "signed_error": -99.51652386780906
+            },
+            "brown": {
+              "abs_error": 96.82986536107711,
+              "figure_value": 96.82986536107711,
+              "signed_error": -96.82986536107711
+            },
+            "gray": {
+              "abs_error": 96.80232558139535,
+              "figure_value": 96.80232558139535,
+              "signed_error": -96.80232558139535
+            },
+            "green": {
+              "abs_error": 97.53059975520196,
+              "figure_value": 97.53059975520196,
+              "signed_error": -97.53059975520196
+            },
+            "orange": {
+              "abs_error": 99.4889840881273,
+              "figure_value": 99.4889840881273,
+              "signed_error": -99.4889840881273
+            }
+          },
+          "best_abs_error": 96.80232558139535,
+          "best_color_family": "gray",
+          "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+          "best_signed_error": -96.80232558139535,
+          "figure_time_s": 10.0,
+          "lane": "rbd_implicit_baseline",
+          "lane_value": 0.0,
+          "lane_value_source": "linear_momentum_error",
+          "metric": "linear_momentum",
+          "status": "diagnostic_available_not_pass_gate"
+        }
+      }
+    },
+    "digitized_figure_curve_agreement_passed": false,
+    "digitized_figure_reference_available": true,
+    "digitized_figure_reference_samples": {
+      "angular_momentum_color_families": {
+        "blue": 101,
+        "brown": 101,
+        "gray": 101,
+        "green": 101,
+        "orange": 101
+      },
+      "linear_momentum_color_families": {
+        "blue": 101,
+        "brown": 101,
+        "gray": 101,
+        "green": 101,
+        "orange": 101
+      }
+    },
+    "full_experiment_claim_passed": false,
+    "input_report_provenance": {
+      "mabd_newton": {
+        "backend": "cpu_numpy",
+        "baseline_lane": "mabd_newton",
+        "path": "reports/experiment_matrix/single_body_spinning_box.json",
+        "sha256": "fa487e5b2d5141d32e24764f52788d247ffe84a433e65196aae4a3b084b0f87c",
+        "solver_mode": "mabd_cpu_oracle_development",
+        "source_commit": "75a676791084ca0f77fe16fc1902814a5bb8d148",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      },
+      "paper_figure_curves": {
+        "backend": "paper_pdf_digitization",
+        "baseline_lane": "paper_figure_digitization",
+        "path": "reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
+        "sha256": "d85cc7d71f82661038727f363304742e2b76ddcee2c9ea0d94e249ed31341bdd",
+        "solver_mode": "spinning_box_paper_figure_curve_digitization",
+        "source_commit": "8cfbb4647742cdf032706c03e16bcb37d8dbbc28",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      },
+      "rbd_implicit_baseline": {
+        "backend": "cpu_numpy_newton_only",
+        "baseline_lane": "rbd_implicit_baseline",
+        "path": "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
+        "sha256": "64e7fda65ed0a25f2e9e2d4fbcbddaed1a75c7f0aba5aa56f79517db6e507836",
+        "solver_mode": "paper_faithful_implicit_rbd",
+        "source_commit": "75a676791084ca0f77fe16fc1902814a5bb8d148",
+        "status": "incomplete",
+        "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+      }
+    },
     "invalid_required_metrics": [],
     "invalid_required_vector_metrics": [],
     "lane_gate_statuses": {
@@ -109,12 +328,13 @@
   "paper_source_version": "2603.08079v2",
   "plot_paths": {},
   "raw_outputs": {
+    "figure_curve_report": "reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
     "mabd_report": "reports/experiment_matrix/single_body_spinning_box.json",
     "rbd_report": "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json"
   },
   "scene_id": "single_body_spinning_box",
   "solver_mode": "spinning_box_multilane_comparison_development",
-  "source_commit": "75a676791084ca0f77fe16fc1902814a5bb8d148",
+  "source_commit": "27650c74cadb5008fdb3d69f1a3faed069da2757",
   "status": "incomplete",
   "threshold": {
     "paper_faithful_rbd_solver_mode": "paper_faithful_implicit_rbd",

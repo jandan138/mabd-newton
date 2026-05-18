@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-65 docs and provenance contracts."""
+"""Validate Phase 0-66 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -158,6 +158,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-19-phase63-point-plane-normal-constraints.md",
     "docs/records/2026-05-19-phase64-spinning-box-decoupled-twist.md",
     "docs/records/2026-05-19-phase65-spinning-box-figure-curves.md",
+    "docs/records/2026-05-19-phase66-spinning-box-figure-agreement-diagnostics.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -226,6 +227,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-19-mabd-phase64-spinning-box-decoupled-twist.md",
     "docs/superpowers/specs/2026-05-19-phase65-spinning-box-figure-curves-design.md",
     "docs/superpowers/plans/2026-05-19-mabd-phase65-spinning-box-figure-curves.md",
+    "docs/superpowers/specs/2026-05-19-phase66-spinning-box-figure-agreement-diagnostics-design.md",
+    "docs/superpowers/plans/2026-05-19-mabd-phase66-spinning-box-figure-agreement-diagnostics.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -284,6 +287,7 @@ PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT = "98f66d7344c3bb09995d1c9187beb183
 PHASE63_POINT_PLANE_NORMAL_CONSTRAINT_COMMIT = "ea33e90cd7613212aad4440b9dcf0ac758e07c61"
 PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT = "8c00873c9e85ca8a85d518f02f7bbf415f946d91"
 PHASE65_SPINNING_BOX_FIGURE_CURVES_COMMIT = "8cfbb4647742cdf032706c03e16bcb37d8dbbc28"
+PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT = "27650c74cadb5008fdb3d69f1a3faed069da2757"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -298,6 +302,9 @@ SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH = (
 )
 SPINNING_BOX_FIGURE_CURVES_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_figure_curves.json"
+)
+SPINNING_BOX_COMPARISON_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_spinning_box_comparison.json"
 )
 PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256 = (
     "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
@@ -316,6 +323,9 @@ PHASE65_SPINNING_BOX_FIGURE_CURVES_SHA256 = (
 )
 PHASE65_SPINNING_BOX_RENDERED_IMAGE_SHA256 = (
     "936750053ee318cc3929b850673125a6160cb15e97dd5d605491cf4a0ef13376"
+)
+PHASE66_SPINNING_BOX_COMPARISON_SHA256 = (
+    "e8dfb25537d8a6dafd22d89ac9d7339e8f89b720c8d0b574b7b9168e34b7e5a6"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -5222,6 +5232,27 @@ def _is_phase61_spinning_box_contact_report(report: Any) -> bool:
     )
 
 
+def _is_phase66_spinning_box_figure_agreement_report(report: Any) -> bool:
+    diagnostics = report.observed.get("digitized_figure_curve_agreement_diagnostics")
+    provenance = report.observed.get("input_report_provenance")
+    blockers = report.observed.get("blocking_reasons")
+    return (
+        report.source_commit == PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT
+        and report.observed.get("digitized_figure_reference_available") is True
+        and report.observed.get("digitized_figure_curve_agreement_available") is True
+        and report.observed.get("digitized_figure_curve_agreement_passed") is False
+        and isinstance(diagnostics, dict)
+        and isinstance(provenance, dict)
+        and "paper_figure_curves" in provenance
+        and isinstance(blockers, list)
+        and "spinning_box_digitized_figure_curve_agreement_not_passed" in blockers
+    )
+
+
+def _is_phase66_spinning_box_comparison_report_version(report: Any) -> bool:
+    return report.source_commit == PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT
+
+
 def validate_phase42_record() -> None:
     text = (
         ROOT / "docs/records/2026-05-17-phase42-spinning-box-report-artifacts.md"
@@ -5310,10 +5341,14 @@ def validate_phase42_record() -> None:
     phase61_paper_horizon_report = _is_phase61_spinning_box_contact_report(
         reports["paper_horizon"]
     )
+    phase66_comparison_report = _is_phase66_spinning_box_comparison_report_version(
+        reports["comparison"]
+    )
     historical_reports = {
         name: report
         for name, report in reports.items()
         if not (name == "paper_horizon" and phase61_paper_horizon_report)
+        and not (name == "comparison" and phase66_comparison_report)
     }
     source_commits = {report.source_commit for report in historical_reports.values()}
     if len(source_commits) != 1:
@@ -5336,6 +5371,8 @@ def validate_phase42_record() -> None:
         record_hash = _record_sha256_for_artifact(text, report_paths[name])
         if record_hash != actual_hash and not (
             name == "paper_horizon" and phase61_paper_horizon_report
+        ) and not (
+            name == "comparison" and phase66_comparison_report
         ):
             fail(f"Phase 42 {name} report sha256 mismatch")
 
@@ -10400,6 +10437,11 @@ def validate_phase60_record() -> None:
             if path == SPINNING_BOX_PAPER_HORIZON_REPORT_PATH and _is_phase61_spinning_box_contact_report(report):
                 if entry.get("sha256") != PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256:
                     fail("Phase 60 audit historical paper-horizon report hash changed")
+            elif (
+                path == SPINNING_BOX_COMPARISON_REPORT_PATH
+                and _is_phase66_spinning_box_comparison_report_version(report)
+            ):
+                pass
             else:
                 fail(f"Phase 60 audit report hash mismatch for {path}")
         if report.status.value == "passed":
@@ -11960,6 +12002,282 @@ def validate_phase65_record() -> None:
             fail("Phase 65 must not pass experiment.* claims")
 
 
+def validate_phase66_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-19-phase66-spinning-box-figure-agreement-diagnostics.md"
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-19-phase66-spinning-box-figure-agreement-diagnostics-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/2026-05-19-mabd-phase66-spinning-box-figure-agreement-diagnostics.md"
+    )
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_spinning_box_figure_agreement_diagnostics_slice",
+        "phase66-spinning-box-figure-agreement",
+        PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        SPINNING_BOX_COMPARISON_REPORT_PATH,
+        PHASE66_SPINNING_BOX_COMPARISON_SHA256,
+        SPINNING_BOX_FIGURE_CURVES_REPORT_PATH,
+        PHASE65_SPINNING_BOX_FIGURE_CURVES_SHA256,
+        "digitized_figure_reference_available=true",
+        "digitized_figure_curve_agreement_available=true",
+        "digitized_figure_curve_agreement_passed=false",
+        "spinning_box_digitized_figure_curve_agreement_not_passed",
+        "experiment.single_body.spinning_box remains intended",
+        "No `experiment.*` claim is passed.",
+        "--lane spinning_box_comparison",
+        "--figure-report reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 66 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE66",
+        "TO_BE_BACKFILLED_PHASE66_REPORT_SHA256",
+        "phase66-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 66 record contains stale placeholder")
+    if PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 66 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "spinning-box experiment passed",
+        "passed spinning-box experiment",
+        "m-abd lane passed",
+        "paper reference legend identity verified",
+        "paper reference legend-entry identity verified",
+        "curve agreement passed",
+        "newton-vs-paper curve agreement passed",
+        "comparison pass gate enabled",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 66 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 66")
+    verified = claim_boundary_bullet(boundary_text, "Phase 66 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 66 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text,
+        "Phase 66 spinning-box figure agreement diagnostics",
+    )
+    for snippet in (
+        "paper-figure agreement diagnostic evidence",
+        "Phase 66 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 66 current boundary missing: {snippet}")
+    for snippet in (
+        "Phase 65 paper-figure color-family digitization report",
+        "`digitized_figure_reference_available = true`",
+        "`digitized_figure_curve_agreement_available = true`",
+        "`digitized_figure_curve_agreement_passed = false`",
+        "endpoint best-fit diagnostics",
+        "`paper_figure_curves` provenance",
+        "`spinning_box_digitized_figure_curve_agreement_not_passed`",
+        "top-level report status: `incomplete`",
+        "no experiment claim passed",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 66 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed spinning-box experiment",
+        "M-ABD lane pass",
+        "paper reference legend-entry identity",
+        "solid/dashed line-style split",
+        "Newton-vs-paper curve agreement",
+        "comparison pass gate",
+        "rendered output inspection",
+        "runtime performance",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 66 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 66 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 66 Spinning-Box Figure Agreement Diagnostics Design",
+        "digitized_figure_reference_available",
+        "digitized_figure_curve_agreement_available",
+        "digitized_figure_curve_agreement_passed = false",
+        "numeric_best_fit_not_legend_identity",
+        "diagnostic_only_not_curve_agreement",
+        "spinning_box_digitized_figure_curve_agreement_not_passed",
+        "no `experiment.*` claim is passed",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 66 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 66 Spinning-Box Figure Agreement Diagnostics Implementation Plan",
+        "figure_curve_report_path",
+        "write_spinning_box_comparison_report",
+        "run_spinning_box_comparison",
+        "--figure-report",
+        "digitized_figure_curve_agreement_passed",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 66 plan missing required boundary text: {snippet}")
+
+    report = load_claim_report(ROOT / SPINNING_BOX_COMPARISON_REPORT_PATH)
+    if report.source_commit != PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT:
+        fail("Phase 66 comparison report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 66 comparison report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 66 comparison report vendored Newton commit changed")
+    if report.claim_id != "experiment.single_body.spinning_box":
+        fail("Phase 66 comparison report claim_id changed")
+    if report.scene_id != "single_body_spinning_box":
+        fail("Phase 66 comparison report scene_id changed")
+    if report.baseline_lane != "spinning_box_comparison_protocol":
+        fail("Phase 66 comparison report lane changed")
+    if report.solver_mode != "spinning_box_multilane_comparison_development":
+        fail("Phase 66 comparison report solver mode changed")
+    if report.backend != "report_protocol":
+        fail("Phase 66 comparison report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 66 comparison report must remain incomplete")
+
+    observed = report.observed
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 66 comparison report must not pass the full experiment")
+    if observed.get("digitized_figure_reference_available") is not True:
+        fail("Phase 66 digitized figure reference must be available")
+    if observed.get("digitized_figure_curve_agreement_available") is not True:
+        fail("Phase 66 digitized figure diagnostics must be available")
+    if observed.get("digitized_figure_curve_agreement_passed") is not False:
+        fail("Phase 66 digitized figure agreement must remain unpassed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 66 blocking_reasons must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "spinning_box_digitized_figure_curve_agreement_not_passed",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 66 comparison blocker missing: {blocker}")
+
+    raw_outputs = report.raw_outputs
+    if raw_outputs.get("figure_curve_report") != SPINNING_BOX_FIGURE_CURVES_REPORT_PATH:
+        fail("Phase 66 comparison report must reference the Phase 65 figure report")
+    provenance = observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 66 comparison report input provenance must be a mapping")
+    paper_figure = provenance.get("paper_figure_curves")
+    if not isinstance(paper_figure, dict):
+        fail("Phase 66 comparison report missing paper figure provenance")
+    if paper_figure.get("path") != SPINNING_BOX_FIGURE_CURVES_REPORT_PATH:
+        fail("Phase 66 paper figure provenance path changed")
+    if paper_figure.get("sha256") != PHASE65_SPINNING_BOX_FIGURE_CURVES_SHA256:
+        fail("Phase 66 paper figure provenance sha changed")
+    if paper_figure.get("solver_mode") != "spinning_box_paper_figure_curve_digitization":
+        fail("Phase 66 paper figure provenance solver mode changed")
+    if paper_figure.get("baseline_lane") != "paper_figure_digitization":
+        fail("Phase 66 paper figure provenance lane changed")
+
+    samples = observed.get("digitized_figure_reference_samples")
+    if not isinstance(samples, dict):
+        fail("Phase 66 digitized figure sample counts must be a mapping")
+    expected_colors = {"blue", "brown", "gray", "green", "orange"}
+    for group_key in ("linear_momentum_color_families", "angular_momentum_color_families"):
+        group = samples.get(group_key)
+        if not isinstance(group, dict) or set(group) != expected_colors:
+            fail(f"Phase 66 sample-count group changed: {group_key}")
+        for color_family, count in group.items():
+            if _require_integer_count(count, f"Phase 66 {group_key}.{color_family}") != 101:
+                fail(f"Phase 66 sample count changed: {group_key}.{color_family}")
+
+    diagnostics = observed.get("digitized_figure_curve_agreement_diagnostics")
+    if not isinstance(diagnostics, dict):
+        fail("Phase 66 figure diagnostics must be a mapping")
+    for metric, lane_metric in (
+        ("linear_momentum", "linear_momentum_error"),
+        ("angular_momentum", "angular_momentum_error"),
+    ):
+        metric_diagnostics = diagnostics.get(metric)
+        if not isinstance(metric_diagnostics, dict):
+            fail(f"Phase 66 missing diagnostic metric: {metric}")
+        for lane in ("mabd_newton", "rbd_implicit_baseline"):
+            diagnostic = metric_diagnostics.get(lane)
+            if not isinstance(diagnostic, dict):
+                fail(f"Phase 66 missing diagnostic lane: {metric}.{lane}")
+            if diagnostic.get("status") != "diagnostic_available_not_pass_gate":
+                fail(f"Phase 66 diagnostic status changed: {metric}.{lane}")
+            if diagnostic.get("lane") != lane:
+                fail(f"Phase 66 diagnostic lane field changed: {metric}.{lane}")
+            if diagnostic.get("metric") != metric:
+                fail(f"Phase 66 diagnostic metric field changed: {metric}.{lane}")
+            if diagnostic.get("lane_value_source") != lane_metric:
+                fail(f"Phase 66 diagnostic lane value source changed: {metric}.{lane}")
+            if _require_finite_scalar(diagnostic.get("figure_time_s"), f"Phase 66 {metric}.{lane} figure_time_s") != 10.0:
+                fail(f"Phase 66 diagnostic figure time changed: {metric}.{lane}")
+            if diagnostic.get("best_color_family") not in expected_colors:
+                fail(f"Phase 66 diagnostic best color changed: {metric}.{lane}")
+            _require_finite_scalar(diagnostic.get("lane_value"), f"Phase 66 {metric}.{lane} lane value")
+            _require_finite_scalar(diagnostic.get("best_abs_error"), f"Phase 66 {metric}.{lane} best abs error")
+            _require_finite_scalar(
+                diagnostic.get("best_signed_error"),
+                f"Phase 66 {metric}.{lane} best signed error",
+            )
+            if diagnostic.get("best_color_family_claim_status") != "numeric_best_fit_not_legend_identity":
+                fail(f"Phase 66 diagnostic color-identity claim changed: {metric}.{lane}")
+            if diagnostic.get("agreement_claim_status") != "diagnostic_only_not_curve_agreement":
+                fail(f"Phase 66 diagnostic agreement claim changed: {metric}.{lane}")
+            all_errors = diagnostic.get("all_color_family_errors")
+            if not isinstance(all_errors, dict) or set(all_errors) != expected_colors:
+                fail(f"Phase 66 all-color errors changed: {metric}.{lane}")
+            for color_family, color_errors in all_errors.items():
+                if not isinstance(color_errors, dict):
+                    fail(f"Phase 66 color error entry must be a mapping: {metric}.{lane}.{color_family}")
+                _require_finite_scalar(
+                    color_errors.get("figure_value"),
+                    f"Phase 66 {metric}.{lane}.{color_family} figure value",
+                )
+                _require_finite_scalar(
+                    color_errors.get("signed_error"),
+                    f"Phase 66 {metric}.{lane}.{color_family} signed error",
+                )
+                _require_finite_scalar(
+                    color_errors.get("abs_error"),
+                    f"Phase 66 {metric}.{lane}.{color_family} abs error",
+                )
+
+    actual_hash = sha256_file(ROOT / SPINNING_BOX_COMPARISON_REPORT_PATH)
+    if actual_hash != PHASE66_SPINNING_BOX_COMPARISON_SHA256:
+        fail("Phase 66 comparison report sha256 changed")
+    record_hash = _record_sha256_for_artifact(text, SPINNING_BOX_COMPARISON_REPORT_PATH)
+    if record_hash != actual_hash:
+        fail("Phase 66 comparison report sha256 mismatch")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.spinning_box":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 66 must keep spinning-box experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 66 must not pass experiment.* claims")
+
+
 def _validate_phase65_digitized_curve(
     curve: Any,
     *,
@@ -12336,13 +12654,14 @@ def main() -> int:
     validate_phase63_record()
     validate_phase64_record()
     validate_phase65_record()
+    validate_phase66_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66 "
         "docs/provenance validation passed"
     )
     return 0

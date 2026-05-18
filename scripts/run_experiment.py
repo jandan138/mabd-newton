@@ -107,6 +107,7 @@ def main(argv: list[str] | None = None) -> int:
                 matrix_path=Path(args.matrix),
                 mabd_report_path=Path(args.mabd_report) if args.mabd_report else None,
                 rbd_report_path=Path(args.rbd_report) if args.rbd_report else None,
+                figure_curve_report_path=Path(args.figure_report) if args.figure_report else None,
                 output_path=Path(args.output) if args.output else None,
                 output_root=Path(args.output_root) if args.output_root else None,
                 source_commit=args.source_commit,
