@@ -108,6 +108,26 @@ class SpinningBoxReportArtifactTests(unittest.TestCase):
         self.assertIn("mabd_newton_report_incomplete", blockers)
         self.assertIn("mabd_paper_horizon_diagnostic_thresholds_violated", blockers)
         self.assertIn("mabd_kinematic_feasibility_blocker_recorded", blockers)
+        self.assertIn("spinning_box_contact_response_missing", blockers)
+        self.assertEqual(
+            paper_horizon.observed["contact_diagnostic_policy"],
+            "evaluated_from_current_mabd_states_not_applied_to_step",
+        )
+        self.assertEqual(
+            paper_horizon.observed["contact_diagnostic_status"],
+            "contact_penetration_observed_without_response",
+        )
+        self.assertGreaterEqual(paper_horizon.observed["max_contact_active_count"], 4)
+        self.assertGreater(paper_horizon.observed["max_contact_penetration_m"], 0.0)
+        self.assertGreater(paper_horizon.observed["max_contact_normal_force_n"], 0.0)
+        for result in paper_horizon.observed["paper_horizon_results"]:
+            self.assertEqual(
+                result["contact_diagnostic_policy"],
+                "evaluated_from_current_mabd_states_not_applied_to_step",
+            )
+            self.assertGreaterEqual(result["max_contact_active_count"], 4)
+            self.assertGreater(result["max_contact_penetration_m"], 0.0)
+            self.assertGreater(result["max_contact_normal_force_n"], 0.0)
         for violation in (
             "max_abs_det_minus_one",
             "max_affine_orthogonality_error",

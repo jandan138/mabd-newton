@@ -670,6 +670,25 @@
   paper experiment, solver fix, contact or collision implementation,
   comparative baseline result, runtime timing result, rendered-output
   agreement, full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 61 spinning-box paper-horizon contact
+  diagnostic gap evidence after the Phase 61 record is created.
+- Phase 61 verifies the current spinning-box paper-horizon `mabd_newton`
+  diagnostic report records contact diagnostics evaluated from current M-ABD
+  states with `contact_diagnostic_policy =
+  evaluated_from_current_mabd_states_not_applied_to_step`,
+  `contact_penetration_observed_without_response`,
+  `spinning_box_contact_response_missing`, positive penetration and normal
+  force diagnostics, and top-level report status: `incomplete`. It also
+  verifies the contact force is not applied to the step.
+- Phase 61 does not verify a passed spinning-box experiment, M-ABD lane pass,
+  contact solver, collision implementation, paper-faithful affine collision,
+  comparison pass gate, rendered result, runtime performance, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 61 spinning-box contact diagnostic evidence must not be described as a
+  passed spinning-box experiment, M-ABD lane pass, contact solver, collision
+  implementation, paper-faithful affine collision, comparison pass gate,
+  rendered result, runtime performance, full paper reproduction, or any passed
+  `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -998,6 +1017,11 @@
   paper timing result, not rendered-output evidence, not generated-video
   evidence, not a full paper reproduction, and not any passed `experiment.*`
   claim.
+- Phase 61 spinning-box contact diagnostics are not a passed spinning-box
+  experiment, not a passed M-ABD lane, not a contact solver, not a collision
+  implementation, not paper-faithful affine collision, not a comparison pass
+  gate, not a rendered result, not runtime performance evidence, not a full
+  paper reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

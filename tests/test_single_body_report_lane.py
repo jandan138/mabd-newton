@@ -206,6 +206,21 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             "mabd_kinematic_feasibility_blocker_recorded",
             loaded.observed["blocking_reasons"],
         )
+        self.assertIn(
+            "spinning_box_contact_response_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertEqual(
+            loaded.observed["contact_diagnostic_policy"],
+            "evaluated_from_current_mabd_states_not_applied_to_step",
+        )
+        self.assertEqual(
+            loaded.observed["contact_diagnostic_status"],
+            "contact_penetration_observed_without_response",
+        )
+        self.assertGreaterEqual(loaded.observed["max_contact_active_count"], 4)
+        self.assertGreater(loaded.observed["max_contact_penetration_m"], 0.0)
+        self.assertGreater(loaded.observed["max_contact_normal_force_n"], 0.0)
         self.assertEqual(len(loaded.observed["paper_horizon_results"]), 2)
         self.assertIn("figure_pdf_sha256", loaded.observed)
         self.assertEqual(
@@ -227,6 +242,13 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             self.assertIn("threshold_violations", entry)
             self.assertIn("trajectory_samples", entry)
             self.assertIn("kinematic_feasibility", entry)
+            self.assertEqual(
+                entry["contact_diagnostic_policy"],
+                "evaluated_from_current_mabd_states_not_applied_to_step",
+            )
+            self.assertGreaterEqual(entry["max_contact_active_count"], 4)
+            self.assertGreater(entry["max_contact_penetration_m"], 0.0)
+            self.assertGreater(entry["max_contact_normal_force_n"], 0.0)
             feasibility = entry["kinematic_feasibility"]
             self.assertEqual(
                 feasibility["status"],
