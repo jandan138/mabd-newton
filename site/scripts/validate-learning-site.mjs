@@ -56,6 +56,35 @@ const requiredTutorialComponents = [
     importName: "PracticePrompt",
   },
 ];
+const requiredGuidedTutorialComponents = [
+  {
+    marker: "<GuidedProjectStep",
+    importPattern: /^\s*import\s+GuidedProjectStep\s+from\s+["']\.\.\/\.\.\/components\/GuidedProjectStep\.astro["'];?\s*$/m,
+    importName: "GuidedProjectStep",
+  },
+  {
+    marker: "<WorkedExercise",
+    importPattern: /^\s*import\s+WorkedExercise\s+from\s+["']\.\.\/\.\.\/components\/WorkedExercise\.astro["'];?\s*$/m,
+    importName: "WorkedExercise",
+  },
+];
+
+const mathBridgeRequiredLessonSlugs = new Set([
+  "vectors-matrices-transforms",
+  "affine-state",
+  "svd-polar-rotation",
+  "generalized-coordinates-forces",
+  "implicit-time-stepping",
+  "newton-hessian-kkt",
+  "single-body-abd",
+  "multi-body-mabd",
+]);
+
+const mathBridgeComponent = {
+  marker: "<MathBridge",
+  importPattern: /^\s*import\s+MathBridge\s+from\s+["']\.\.\/\.\.\/components\/MathBridge\.astro["'];?\s*$/m,
+  importName: "MathBridge",
+};
 const requiredFigureProps = ["alt", "caption", "kind", "provenance", "claimStatus"];
 const allowedFigureAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/[^/]+\.(?:png|webp)$/;
 const rasterDiagramAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/([^/]+\.(?:png|webp))$/;
@@ -144,6 +173,13 @@ function checkpointDetailsCount(text) {
   const cleaned = stripExamplesAndComments(text);
   return [...cleaned.matchAll(/^[ \t]*<CheckpointQuiz\b[\s\S]*?<\/CheckpointQuiz>/gm)]
     .reduce((count, checkpoint) => count + [...checkpoint[0].matchAll(/<details\b/g)].length, 0);
+}
+
+function componentDetailsCount(text, componentName) {
+  const cleaned = stripExamplesAndComments(text);
+  const pattern = new RegExp(`^[ \\t]*<${componentName}\\b[\\s\\S]*?<\\/${componentName}>`, "gm");
+  return [...cleaned.matchAll(pattern)]
+    .reduce((count, component) => count + [...component[0].matchAll(/<details\b/g)].length, 0);
 }
 
 function assetImports(text) {
@@ -324,6 +360,26 @@ for (const file of checkedFiles) {
       }
       if (!cleanedLessonText.includes(component.marker)) {
         issues.push(`${relative}: missing tutorial component ${component.marker}`);
+      }
+    }
+    for (const component of requiredGuidedTutorialComponents) {
+      if (!component.importPattern.test(cleanedLessonText)) {
+        issues.push(`${relative}: missing ${component.importName} component import`);
+      }
+      if (!cleanedLessonText.includes(component.marker)) {
+        issues.push(`${relative}: missing guided tutorial component ${component.marker}`);
+      }
+    }
+    if (componentDetailsCount(text, "WorkedExercise") < 2) {
+      issues.push(`${relative}: WorkedExercise must include at least two <details> blocks`);
+    }
+    const lessonSlug = path.basename(file, ".mdx");
+    if (mathBridgeRequiredLessonSlugs.has(lessonSlug)) {
+      if (!mathBridgeComponent.importPattern.test(cleanedLessonText)) {
+        issues.push(`${relative}: missing MathBridge component import`);
+      }
+      if (!cleanedLessonText.includes(mathBridgeComponent.marker)) {
+        issues.push(`${relative}: missing required MathBridge component`);
       }
     }
     if (checkpointDetailsCount(text) < 2) {
