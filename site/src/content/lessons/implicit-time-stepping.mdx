@@ -19,8 +19,11 @@ import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
 import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
+import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import MathBridge from "../../components/MathBridge.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
+import WorkedExercise from "../../components/WorkedExercise.astro";
 import implicitResidualLoop from "../../assets/diagrams/implicit-residual-loop.png";
 
 <ProblemCard title="它解决的问题">
@@ -48,9 +51,19 @@ import implicitResidualLoop from "../../assets/diagrams/implicit-residual-loop.p
   <li>知道求解器通常会反复修正猜测，而不是一次直接得到答案。</li>
 </PrereqBox>
 
+<GuidedProjectStep step="贯穿小项目 8/12" title="猜下一帧印章是否平衡">
+现在给软橡胶印章一个下一帧候选状态：新的 `q`、速度和内部力都在这个猜测上评估。隐式步长要问的不是“当前力会把它推到哪里”，而是“如果它真的到达这个候选状态，惯性和广义力是否已经平衡”。
+</GuidedProjectStep>
+
 ## 硬弹簧为什么麻烦
 
 想象一个小球被很硬的弹簧拉住。显式欧拉像“先按当前弹簧力冲出去，再下帧再看情况”。如果步长太大，小球可能直接越过平衡点很远，下一帧又被更大的力拉回，数值上会爆振。
+
+<MathBridge>
+  <li>显式方法问“现在的力会把物体推到哪里”。</li>
+  <li>隐式方法问“下一步猜测自己是否满足方程”。</li>
+  <li>residual 就是这个猜测还差多少，Newton 修正负责把差距变小。</li>
+</MathBridge>
 
 <ConceptCard title="显式看现在，隐式看将来">
 显式欧拉用当前状态 `q_n`、`v_n` 计算力；隐式欧拉要求下一时刻 `q_{n+1}`、`v_{n+1}` 自己满足方程。它像开车过弯：显式只看车头现在朝哪，隐式会问“如果我一步开到那里，轮胎力和速度是否一致”。
@@ -115,6 +128,20 @@ q_next, v_next = solve_equations(residual, initial_guess=(q, v))`}
 <PracticePrompt title="动手练习">
 写出一个四步循环的伪代码骨架：`guess` 下一状态，`evaluate` 残差，`solve` 修正量，最后 `update` 或接受新状态。
 </PracticePrompt>
+
+<WorkedExercise title="带答案的练习：四步隐式循环">
+把软橡胶印章的一帧隐式更新写成 `guess -> residual -> correction -> accept` 四步。每一步请写出它对印章状态做什么，以及 residual 小到阈值内时能说明什么。
+
+<details>
+  <summary>提示</summary>
+  <p>把候选下一状态当作草稿。先猜一个草稿，再检查离散方程还差多少，然后用 Newton 或线性化修正草稿，最后只在残差足够小时接受。</p>
+</details>
+
+<details>
+  <summary>参考答案</summary>
+  <p>四步可以写成：1. `guess`：用当前印章的 `q_n, v_n` 生成候选 `q_next, v_next`，例如先沿用当前状态或做一次预测；2. `residual`：在候选下一状态上计算惯性项、材料/外力广义力和位置更新误差，得到 `r`；3. `correction`：解线性化方程得到修正量，例如 `delta`，并更新候选 `q_next, v_next`；4. `accept`：当 residual 范数低于本步阈值时接受该候选作为下一帧。residual 小只说明这个候选在当前离散方程和阈值范围内自洽，不证明碰撞、完整模型或论文复现都正确。</p>
+</details>
+</WorkedExercise>
 
 <RememberBox title="核心记忆">
   <ul>

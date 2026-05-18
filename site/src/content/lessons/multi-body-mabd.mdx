@@ -21,6 +21,9 @@ import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
+import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import MathBridge from "../../components/MathBridge.astro";
+import WorkedExercise from "../../components/WorkedExercise.astro";
 import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-map.png";
 
 <ProblemCard title="它解决的问题">
@@ -37,7 +40,7 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 />
 
 <LearningGoals>
-  <li><strong>拆开三类难点：</strong>区分 body 数量、joint 约束和拓扑结构分别带来的复杂度。</li>
+  <li><strong>拆开三类难点：</strong>区分物体数量、关节约束和拓扑结构分别带来的复杂度。</li>
   <li><strong>解释 KKT 角色：</strong>说明多体系统中 `G` 描述约束触碰哪些自由度，`lambda` 描述约束对偶变量。</li>
   <li><strong>判断稀疏结构：</strong>比较 chain、tree、loop 和 graph 如何影响块矩阵结构和求解思路。</li>
 </LearningGoals>
@@ -45,15 +48,25 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 <PrereqBox>
   <li>已读单体 ABD 和 KKT 课程，知道一个体的仿射状态如何进入线性系统。</li>
   <li>知道控制点关节会把一个或多个体上的局部点联系起来。</li>
-  <li>理解本教程是概念解释，不等同于完整 M-ABD solver 已有证据。</li>
+  <li>理解本教程是概念解释，不等同于完整 M-ABD 求解器已有证据。</li>
 </PrereqBox>
+
+<GuidedProjectStep title="用标记点关节连接多块印章" step="贯穿小项目 11/12">
+现在复制多块软橡胶印章，每块都有自己的 `q` 状态块。把不同印章上的标记点通过关节连起来，再观察每条关节只触碰相关物体块，而不是让整张多体矩阵都变成稠密。
+</GuidedProjectStep>
+
+<MathBridge>
+  <li>先复制多块软橡胶印章，每块印章都有自己的 `q` 状态块。</li>
+  <li>再用标记点关节连接两个状态块，得到稀疏的约束行。</li>
+  <li>最后比较 chain、tree、loop、graph 对块求解的影响。</li>
+</MathBridge>
 
 ## 控制点关节
 
 仿射体上的点由 `x = A x_rest + t` 给出。控制点关节就是在一个或多个体上选取局部点，再要求这些点满足某种关系。球关节可以要求两个控制点重合；铰链还要限制相对旋转轴；万向节允许两个旋转自由度；滑动关节允许沿一条轴移动但限制其他方向。
 
-<ConceptCard title="关节像用夹具连接橡皮砖">
-每个仿射体是一块可轻微变形的砖。球关节像一个万向球头，把两个点扣在一起；铰链像门轴，只允许绕一根轴转；滑动关节像抽屉轨道，只允许沿轨道滑。求解器要同时尊重每块砖自己的动力学和这些夹具规则。
+<ConceptCard title="关节像用夹具连接软橡胶印章">
+每个仿射体是一块可轻微变形的印章。球关节像一个万向球头，把两个点扣在一起；铰链像门轴，只允许绕一根轴转；滑动关节像抽屉轨道，只允许沿轨道滑。求解器要同时尊重每块印章自己的动力学和这些夹具规则。
 </ConceptCard>
 
 <CompareGrid title="常见关节约束">
@@ -65,7 +78,7 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 
 ## 对偶变量与 KKT
 
-每个约束都会贡献约束残差 `C(q)` 和约束 Jacobian `G`。KKT 中的对偶变量 `lambda` 表示为了满足约束需要的约束力强度。多个体连接后，`G` 的稀疏结构反映了“哪个约束碰到哪些体”。
+每个约束都会贡献约束残差 `C(q)` 和约束 Jacobian `G`。KKT 中的对偶变量 `lambda` 和约束方程一起求出，并通过 `G.T lambda` 反馈到相关物体块；它的物理力解释取决于约束写法和离散化尺度。多个体连接后，`G` 的稀疏结构反映了“哪个约束碰到哪些体”。
 
 <PseudoCode title="多体约束装配的概念流程">
 {`for body in bodies:
@@ -87,7 +100,7 @@ delta_q, lambda = solve_kkt_system(H, residual, constraints)`}
 </StepFlow>
 
 <PitfallCard title="图拓扑 Gauss-Seidel 是有边界的重建说明">
-如果记录中提到 graph Gauss-Seidel，请把它读作在记录范围内的推断式重建或开发路径说明，而不是论文完整拓扑求解器已经被证明完成。具体可信范围必须回到对应记录、测试和 claim map。
+如果记录中提到 graph Gauss-Seidel，请把它读作在记录范围内的推断式重建或开发路径说明，而不是论文完整拓扑求解器已经被证明完成。具体可信范围必须回到对应记录、测试和主张映射。
 </PitfallCard>
 
 <CheckpointQuiz>
@@ -97,15 +110,27 @@ delta_q, lambda = solve_kkt_system(H, residual, constraints)`}
   </details>
   <details>
     <summary>`G` 的稀疏结构表示什么？</summary>
-    <p>`G` 的非零块表示某条约束会影响哪些体的哪些广义自由度。一个 joint 通常只触碰相关 body block，而不是填满整个多体矩阵。</p>
+    <p>`G` 的非零块表示某条约束会影响哪些体的哪些广义自由度。一个关节通常只触碰相关物体块，而不是填满整个多体矩阵。</p>
   </details>
 </CheckpointQuiz>
 
 <RepoEvidenceCard title="本页解释 M-ABD 多体概念" status="本课为 conceptual" />
 
 <PracticePrompt title="动手练习">
-画三个仿射体组成三角闭环，给三条 joint 编号，并列出每条 joint 会触碰哪两个 body block。
+画三个仿射体组成三角闭环，给三条关节编号，并列出每条关节会触碰哪两个物体块。
 </PracticePrompt>
+
+<WorkedExercise title="带答案的练习：三角闭环的块触碰关系">
+  <p>画三块软橡胶印章 `B1`、`B2`、`B3` 成三角形，用 `J12`、`J23`、`J31` 连接相邻标记点，并列出每条关节对应的两个物体块。</p>
+  <details>
+    <summary>提示</summary>
+    <p>每条边只看它两端的印章；闭环来自三条边合起来，不是单条关节触碰所有物体。</p>
+  </details>
+  <details>
+    <summary>参考答案</summary>
+    <p>`J12` 触碰 `B1` 和 `B2` 的 `q` 块，`J23` 触碰 `B2` 和 `B3`，`J31` 触碰 `B3` 和 `B1`。因此对应的 `G` 行在这两个相关物体块上有非零块，在第三个物体块上为零。这个练习只说明闭环拓扑和稀疏块直觉，不声称仓库已经完成完整 M-ABD 拓扑求解器。</p>
+  </details>
+</WorkedExercise>
 
 <RememberBox title="核心记忆">
   <ul>

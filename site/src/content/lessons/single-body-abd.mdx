@@ -26,6 +26,9 @@ import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
+import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import MathBridge from "../../components/MathBridge.astro";
+import WorkedExercise from "../../components/WorkedExercise.astro";
 import singleAbdPipeline from "../../assets/diagrams/single-abd-pipeline.png";
 
 <ProblemCard title="它解决的问题">
@@ -53,12 +56,22 @@ import singleAbdPipeline from "../../assets/diagrams/single-abd-pipeline.png";
   <li>尊重记录边界：本页只解释有范围的证据，不把它升级为完整实现声明。</li>
 </PrereqBox>
 
+<GuidedProjectStep title="把软橡胶印章接到有边界的 CPU oracle 记录" step="贯穿小项目 10/12">
+同一块带标记点的软橡胶印章仍然只是教程对象；本节把它的 `A`、`t`、质量和材料力直觉连接到仓库中已记录的单体 ABD CPU oracle 范围，并明确不把概念对象升级成完整求解器证据。
+</GuidedProjectStep>
+
+<MathBridge>
+  <li>先把软橡胶印章的 `q=[A,t]` 当作一个小规模状态。</li>
+  <li>再看质量、材料力和残差如何组成单体参考问题。</li>
+  <li>最后只把记录中验证过的 CPU oracle 范围称为证据，不升级为完整求解器。</li>
+</MathBridge>
+
 ## 一个物体，一组仿射自由度
 
 单体 ABD 的状态可以从 `A` 和 `t` 打包成 `q in R12`。质量矩阵描述“这些自由度动起来有多重”，刚度或材料力描述“偏离参考形状时有多想回去”。与 FEM 的许多节点不同，这里先把物体看成一个可整体仿射变形的块。
 
-<ConceptCard title="仿射体像一块带九个形变旋钮的橡皮砖">
-平移旋钮把砖搬走，矩阵 `A` 的旋钮改变砖的方向、长度和倾斜。质量告诉你推动这些旋钮有多费劲，刚度告诉你砖被拉歪后有多想恢复。
+<ConceptCard title="仿射体像一块带九个形变旋钮的软橡胶印章">
+平移旋钮把印章搬走，矩阵 `A` 的旋钮改变印章的方向、长度和倾斜。质量告诉你推动这些旋钮有多费劲，刚度告诉你印章被拉歪后有多想恢复。
 </ConceptCard>
 
 <CompareGrid title="单体 ABD 的部件">
@@ -120,6 +133,18 @@ delta_q = dense_cpu_solve(linearize(residual))`}
 <PracticePrompt title="动手练习">
 从本页任选一个 RepoEvidenceCard，写两句话：它支持的范围是什么，以及它明确不能支持哪些更大的结论。
 </PracticePrompt>
+
+<WorkedExercise title="带答案的练习：限定一张证据卡">
+  <p>任选一张本页证据卡，写出它支持的最小安全说法，并列出至少两个它不能支持的更大说法。</p>
+  <details>
+    <summary>提示</summary>
+    <p>优先选标题中已经带有 scoped、CPU、oracle、lane 或 RHS 的卡片，把这些词保留在安全说法里。</p>
+  </details>
+  <details>
+    <summary>参考答案</summary>
+    <p>例如选择 “Phase 4 configured CPU step record”：安全说法是“该记录支持配置化单体 ABD CPU step oracle 在记录限定输入和验证范围内作为参考路径”。它不支持“完整 M-ABD 求解器已经实现”，也不支持“GPU、多体拓扑、碰撞处理或完整论文实验已经复现”。这保持了 CPU oracle 的证据范围，没有把软橡胶印章教程或局部记录升级成完整求解器声明。</p>
+  </details>
+</WorkedExercise>
 
 <RememberBox title="核心记忆">
   <ul>

@@ -19,8 +19,10 @@ import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
 import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
+import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
+import WorkedExercise from "../../components/WorkedExercise.astro";
 import modelingSpectrum from "../../assets/diagrams/modeling-spectrum.png";
 
 <ProblemCard title="它解决的问题">
@@ -48,15 +50,19 @@ import modelingSpectrum from "../../assets/diagrams/modeling-spectrum.png";
   <li>已经读过 start-here，知道本页只建立概念位置，不提升仓库实现声明。</li>
 </PrereqBox>
 
-## 从一个立方体开始
+<GuidedProjectStep step="贯穿小项目 2/12" title="先决定它该像什么模型">
+继续使用同一小块软橡胶印章。它有三个标记好的静止点，但我们暂时不追踪每一道局部皱褶。本课的任务是判断：这个对象不能只当作一个粒子，也不适合只当作完全刚硬的印章；为了教程入口，它也不需要马上细分成完整 FEM 网格。仿射体正好让它保留整体压扁、拉伸和剪切的能力。
+</GuidedProjectStep>
 
-想象你手里拿着一个软橡胶立方体。它可以被拿起来、转动，也可以被轻轻拉长或推成斜的平行六面体。不同模拟方法对这个立方体的“可变形程度”和“计算成本”有不同选择。
+## 从一块软橡胶印章开始
+
+想象你手里拿着同一块带标记点的软橡胶印章。它可以被拿起来、转动，也可以被轻轻压扁、拉长或推成斜的形状。不同模拟方法对这块印章的“可变形程度”和“计算成本”有不同选择。
 
 <CompareGrid title="常见建模方式对比">
   <article><h4>粒子</h4><p>只跟踪点的位置和速度。适合沙粒、喷雾或质点系统，但没有天然的形状。</p></article>
-  <article><h4>RBD</h4><p>刚体立方体可以移动和旋转，不能拉伸或剪切。它像木块：形状被锁死。</p></article>
-  <article><h4>FEM</h4><p>立方体被切成许多小四面体。表达细节更强，但状态更多、求解更重。</p></article>
-  <article><h4>ABD</h4><p>立方体仍是一个对象，但用一个 3x3 矩阵表达旋转、拉伸和剪切。</p></article>
+  <article><h4>RBD</h4><p>刚体印章可以移动和旋转，不能拉伸或剪切。它像木块：形状被锁死。</p></article>
+  <article><h4>FEM</h4><p>印章体积被切成许多小四面体。表达细节更强，但状态更多、求解更重。</p></article>
+  <article><h4>ABD</h4><p>印章仍是一个对象，但用一个 3x3 矩阵表达旋转、拉伸和剪切。</p></article>
   <article><h4>M-ABD</h4><p>多个仿射体通过约束连接，形成链、树、环或更一般的拓扑。</p></article>
 </CompareGrid>
 
@@ -96,8 +102,22 @@ ABD 的优势是用较少自由度表达整体形变；它并不自动拥有 FEM
 <RepoEvidenceCard title="本页只建立建模位置" status="本课为 conceptual" />
 
 <PracticePrompt title="动手练习">
-设想一个软橡胶块被轻轻压扁、但不需要模拟表面每一道细小皱褶。判断粒子、刚体、仿射体、FEM 哪个表示最合适，并用两三句话说明你的理由。
+设想同一枚软橡胶印章被轻轻压扁、但不需要模拟表面每一道细小皱褶。判断粒子、刚体、仿射体、FEM 哪个表示最合适，并用两三句话说明你的理由。
 </PracticePrompt>
+
+<WorkedExercise title="带答案的练习：为压扁的印章选模型">
+同一枚软橡胶印章被手指从上方轻轻压扁。请在粒子、刚体、仿射体、FEM 四个选项中选择一个最适合本教程阶段的表示，并说明为什么排除另外三个。
+
+<details>
+  <summary>提示</summary>
+  <p>先问你是否需要形状，再问形状是否允许整体变形，最后问是否真的需要局部细节。</p>
+</details>
+
+<details>
+  <summary>参考答案</summary>
+  <p>最适合本教程阶段的是仿射体。粒子只给一个位置，无法表达印章的体积和三个标记点之间的形状关系；刚体能移动和旋转，但不能表达压扁或剪切；FEM 可以表达局部皱褶和更细形变，但对这个入门项目过重。仿射体用少量自由度表达整体压扁、拉伸和剪切，正好匹配“不追踪细小皱褶”的要求。</p>
+</details>
+</WorkedExercise>
 
 <RememberBox title="核心记忆">
   <ul>
