@@ -28,6 +28,8 @@ REPORTS = {
     "rbd": ROOT / "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
     "comparison": ROOT
     / "reports/experiment_matrix/single_body_spinning_box_comparison.json",
+    "model_plane_constraint": ROOT
+    / "reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json",
 }
 
 
@@ -213,6 +215,53 @@ class SpinningBoxReportArtifactTests(unittest.TestCase):
                     comparison.observed["lane_vector_metrics"][lane][metric],
                     report.observed[metric],
                 )
+
+    def test_model_plane_constraint_report_records_solver_model_lane_only(self) -> None:
+        report = self._load_reports()["model_plane_constraint"]
+
+        self.assertEqual(report.baseline_lane, "mabd_newton")
+        self.assertEqual(report.solver_mode, "solver_mabd_model_plane_constraint_diagnostic")
+        self.assertEqual(report.backend, "cpu_numpy_newton_solver_mabd_model_rows")
+        self.assertIn("diagnostic extraction path", report.failure_reason)
+        observed = report.observed
+        self.assertEqual(
+            observed["model_plane_constraint_policy"],
+            "solver_mabd_model_rows_free_predict_then_active_plane_constraints",
+        )
+        self.assertEqual(
+            observed["model_plane_constraint_scope"],
+            "diagnostic_only_no_lane_gate",
+        )
+        self.assertEqual(
+            observed["model_plane_constraint_config_source"],
+            "mabd:plane_constraint_custom_rows",
+        )
+        self.assertEqual(
+            observed["contact_constraint_policy"],
+            "free_predict_then_active_point_plane_normal_constraints",
+        )
+        self.assertEqual(observed["rank_filter_policy"], "increment_map_row_rank_filter")
+        self.assertNotIn("lane_gate_status", observed)
+        self.assertTrue(observed["model_plane_constraint_reduced_free_predicted_penetration"])
+        self.assertGreater(
+            _finite_scalar(observed["max_free_predicted_contact_penetration_m"]),
+            _finite_scalar(observed["max_constrained_contact_penetration_m"]),
+        )
+        self.assertEqual(observed["max_requested_plane_constraint_count"], 4)
+        self.assertEqual(observed["max_accepted_plane_constraint_count"], 3)
+        self.assertEqual(observed["max_skipped_plane_constraint_count"], 1)
+        self.assertLess(
+            _finite_scalar(observed["max_model_plane_constraint_residual_norm"]),
+            1.0e-12,
+        )
+        self.assertEqual(len(observed["model_plane_constraint_results"]), 2)
+        blockers = observed["blocking_reasons"]
+        self.assertIn("mabd_newton_report_incomplete", blockers)
+        self.assertIn("mabd_paper_horizon_diagnostic_thresholds_violated", blockers)
+        self.assertIn("spinning_box_model_plane_constraint_not_paper_faithful", blockers)
+        self.assertIn("spinning_box_comparison_pass_gate_not_enabled", blockers)
+        self.assertIn("mabd_kinematic_feasibility_blocker_recorded", blockers)
+        self.assertEqual(report.raw_outputs["time_series"], "compact_samples_only")
 
     def test_matrix_retains_spinning_box_blocked_status(self) -> None:
         matrix = yaml.safe_load(

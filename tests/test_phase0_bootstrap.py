@@ -4780,6 +4780,198 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("Phase 67 smoke residual", str(context.exception))
 
+    def test_phase68_model_plane_report_lane_is_bounded(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 68")
+        verified = claim_boundary_bullet(text, "Phase 68 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 68 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 68 SolverMABD model-plane report lane evidence",
+        )
+
+        self.assertIn("SolverMABD model-plane spinning-box diagnostic report lane evidence", current)
+        self.assertIn("SolverMABD.step()", verified)
+        self.assertIn("mabd:body", verified)
+        self.assertIn("mabd:plane_constraint", verified)
+        self.assertIn("free-predict/active point-plane normal constraint policy", verified)
+        self.assertIn(validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH, verified)
+        self.assertIn("model_plane_constraint_config_source", verified)
+        self.assertIn("reduced free-predicted penetration", verified)
+        for snippet in (
+            "contact solver",
+            "Newton `Contacts` ingestion",
+            "collision detection",
+            "broadphase or narrowphase",
+            "active-set generation inside Newton",
+            "IPC",
+            "friction",
+            "complementarity",
+            "continuous collision detection",
+            "generic inequality-constrained M-ABD KKT",
+            "paper-faithful affine contact",
+            "paper-faithful M-ABD stepping",
+            "comparison pass gate",
+            "rendered-output agreement",
+            "runtime performance",
+            "any passed `experiment.*` claim",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "unmodified Newton M-ABD contact support",
+            "paper-faithful affine collision/contact",
+            "contact solver",
+            "passed spinning-box experiment",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        report = load_claim_report(ROOT / validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH)
+        self.assertEqual(report.source_commit, validate_docs.PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT)
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(report.scene_id, "single_body_spinning_box")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.baseline_lane, "mabd_newton")
+        self.assertEqual(report.solver_mode, "solver_mabd_model_plane_constraint_diagnostic")
+        self.assertEqual(report.backend, "cpu_numpy_newton_solver_mabd_model_rows")
+        observed = report.observed
+        self.assertNotIn("lane_gate_status", observed)
+        self.assertEqual(
+            observed["model_plane_constraint_policy"],
+            "solver_mabd_model_rows_free_predict_then_active_plane_constraints",
+        )
+        self.assertEqual(observed["model_plane_constraint_scope"], "diagnostic_only_no_lane_gate")
+        self.assertEqual(
+            observed["model_plane_constraint_config_source"],
+            "mabd:plane_constraint_custom_rows",
+        )
+        self.assertTrue(observed["model_plane_constraint_reduced_free_predicted_penetration"])
+        self.assertGreater(
+            observed["max_free_predicted_contact_penetration_m"],
+            observed["max_constrained_contact_penetration_m"],
+        )
+        self.assertEqual(observed["max_requested_plane_constraint_count"], 4)
+        self.assertEqual(observed["max_accepted_plane_constraint_count"], 3)
+        self.assertEqual(observed["max_skipped_plane_constraint_count"], 1)
+        self.assertLess(observed["max_model_plane_constraint_residual_norm"], 1.0e-12)
+        self.assertEqual(len(observed["model_plane_constraint_results"]), 2)
+        self.assertEqual(
+            validate_docs.sha256_file(ROOT / validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH),
+            validate_docs.PHASE68_SPINNING_BOX_MODEL_PLANE_CONSTRAINT_SHA256,
+        )
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        self.assertFalse(
+            any(
+                claim["claim_id"].startswith("experiment.")
+                and claim["reproduction_status"] == "passed"
+                for claim in data["claims"]
+            )
+        )
+        validate_docs.validate_phase68_record()
+
+    def test_phase68_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT / "docs/records/2026-05-19-phase68-model-plane-report-lane.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_solver_mabd_model_plane_report_diagnostic",
+            "phase68-model-plane-report-lane",
+            validate_docs.PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH,
+            validate_docs.PHASE68_SPINNING_BOX_MODEL_PLANE_CONSTRAINT_SHA256,
+            "paper_horizon.model_plane_constraint_output_report",
+            "run_spinning_box_model_plane_constraint",
+            "write_spinning_box_model_plane_constraint_report",
+            "_run_spinning_box_solver_mabd_model_step",
+            "SolverMABD.step()",
+            "mabd:plane_constraint",
+            "MABDCPUOraclePlaneConstraint",
+            "solver_mabd_model_rows_free_predict_then_active_plane_constraints",
+            "model_plane_constraint_config_source = mabd:plane_constraint_custom_rows",
+            "max_requested_plane_constraint_count = 4",
+            "max_accepted_plane_constraint_count = 3",
+            "max_skipped_plane_constraint_count = 1",
+            "spinning_box_model_plane_constraint_not_paper_faithful",
+            "target_exists",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "No `experiment.*` claim is passed.",
+            "`paper-claims.yaml` is unchanged.",
+            "not Newton `Contacts` ingestion",
+            "not paper-faithful affine collision/contact",
+            "not full paper reproduction",
+            "scripts/env/readiness_check.py",
+            "PYTHONPATH=vendor/newton",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE68", text)
+        self.assertNotIn("phase68-working-tree", text)
+
+    def test_phase68_validator_rejects_lane_gate_overclaim(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(ROOT / validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH)
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "lane_gate_status": "passed",
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase68_record()
+
+        self.assertIn("lane_gate_status", str(context.exception))
+
+    def test_phase68_validator_rejects_passed_experiment_claim(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        corrupted = {
+            **data,
+            "claims": [
+                {
+                    **claim,
+                    "reproduction_status": (
+                        "passed"
+                        if claim["claim_id"] == "experiment.single_body.spinning_box"
+                        else claim["reproduction_status"]
+                    ),
+                }
+                for claim in data["claims"]
+            ],
+        }
+
+        def fake_read_yaml(path):
+            if str(path).endswith("paper-claims.yaml"):
+                return corrupted
+            return validate_docs.read_yaml(path)
+
+        with patch.object(validate_docs, "read_yaml", side_effect=fake_read_yaml):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase68_record()
+
+        self.assertIn("experiment claim status", str(context.exception))
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -5626,7 +5818,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

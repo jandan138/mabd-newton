@@ -817,6 +817,27 @@
   described as unmodified Newton M-ABD support, paper-faithful affine
   collision/contact, a contact solver, a passed experiment, or full paper
   reproduction.
+- This repository contains Phase 68 SolverMABD model-plane spinning-box
+  diagnostic report lane evidence after the Phase 68 record is created.
+- Phase 68 verifies that the spinning-box diagnostic runner can build transient
+  vendored/local Newton `SolverMABD.step()` models with `mabd:body` and
+  `mabd:plane_constraint` custom rows, run the free-predict/active
+  point-plane normal constraint policy, emit
+  `reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json`,
+  record `model_plane_constraint_config_source =
+  mabd:plane_constraint_custom_rows`, record reduced free-predicted
+  penetration, and keep no experiment claim passed.
+- Phase 68 does not verify contact solver behavior, Newton `Contacts`
+  ingestion, collision detection, broadphase or narrowphase, active-set
+  generation inside Newton, IPC, friction, complementarity, continuous
+  collision detection, generic inequality-constrained M-ABD KKT,
+  paper-faithful affine contact, paper-faithful M-ABD stepping, comparison pass
+  gate, rendered-output agreement, runtime performance, any passed
+  `experiment.*` claim, or full paper reproduction.
+- Phase 68 SolverMABD model-plane report lane evidence must not be described
+  as unmodified Newton M-ABD contact support, paper-faithful affine
+  collision/contact, a contact solver, a passed spinning-box experiment, or
+  full paper reproduction.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

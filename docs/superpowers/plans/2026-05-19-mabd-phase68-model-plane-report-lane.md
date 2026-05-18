@@ -750,6 +750,10 @@ This record does not claim paper-faithful contact, Newton `Contacts`
 ingestion, collision detection, friction, complementarity, IPC, performance
 agreement, comparison pass gates, any passed `experiment.*` claim, or full
 paper reproduction.
+
+Environment boundary fields must remain explicit:
+`mutates_reference_environment=false`, `uses_reference_python=false`, and
+`uses_ambient_python=false`.
 ```
 
 Replace the source commit line with the exact `source_commit` from the generated report before commit.

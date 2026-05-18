@@ -165,6 +165,8 @@ that rigid proxy collision is paper-faithful affine collision, that unmodified
 Newton supports M-ABD contact, that the spinning-box experiment passes, or that
 full paper reproduction is complete.
 
+Forbidden exact phrase to guard against overclaiming: unmodified Newton supports M-ABD contact.
+
 ## Tests
 
 Phase 68 requires test-first coverage for:

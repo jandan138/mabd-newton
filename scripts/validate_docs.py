@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-67 docs and provenance contracts."""
+"""Validate Phase 0-68 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -160,6 +160,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-19-phase65-spinning-box-figure-curves.md",
     "docs/records/2026-05-19-phase66-spinning-box-figure-agreement-diagnostics.md",
     "docs/records/2026-05-19-phase67-model-plane-constraints.md",
+    "docs/records/2026-05-19-phase68-model-plane-report-lane.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -232,10 +233,13 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-19-mabd-phase66-spinning-box-figure-agreement-diagnostics.md",
     "docs/superpowers/specs/2026-05-19-phase67-model-plane-constraints-design.md",
     "docs/superpowers/plans/2026-05-19-mabd-phase67-model-plane-constraints.md",
+    "docs/superpowers/specs/2026-05-19-phase68-model-plane-report-lane-design.md",
+    "docs/superpowers/plans/2026-05-19-mabd-phase68-model-plane-report-lane.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
     "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json",
+    "reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json",
     "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json",
     "reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -292,6 +296,7 @@ PHASE64_SPINNING_BOX_DECOUPLED_TWIST_COMMIT = "8c00873c9e85ca8a85d518f02f7bbf415
 PHASE65_SPINNING_BOX_FIGURE_CURVES_COMMIT = "8cfbb4647742cdf032706c03e16bcb37d8dbbc28"
 PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT = "27650c74cadb5008fdb3d69f1a3faed069da2757"
 PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT = "6252693a584e9a4cd5f1640440060c39c840fd33"
+PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT = "c2088d012e51d2b901c075c6b88790c347915089"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -300,6 +305,9 @@ SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH = (
 )
 SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json"
+)
+SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json"
 )
 SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json"
@@ -330,6 +338,9 @@ PHASE65_SPINNING_BOX_RENDERED_IMAGE_SHA256 = (
 )
 PHASE66_SPINNING_BOX_COMPARISON_SHA256 = (
     "e8dfb25537d8a6dafd22d89ac9d7339e8f89b720c8d0b574b7b9168e34b7e5a6"
+)
+PHASE68_SPINNING_BOX_MODEL_PLANE_CONSTRAINT_SHA256 = (
+    "0dcaef75c93437c95fbb7bd39d126a6f25f18ad4e30ee6c46002d81ea3d346b8"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -383,6 +394,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase65-working-tree",
     "TO_BE_BACKFILLED_PHASE67",
     "phase67-working-tree",
+    "TO_BE_BACKFILLED_PHASE68",
+    "phase68-working-tree",
 }
 
 
@@ -10422,6 +10435,7 @@ def validate_phase60_record() -> None:
     phase60_post_audit_reports = {
         SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH,
         SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH,
+        SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH,
         SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH,
         SPINNING_BOX_FIGURE_CURVES_REPORT_PATH,
     }
@@ -12601,6 +12615,274 @@ def validate_phase67_record() -> None:
     _validate_phase67_paper_claim_statuses()
 
 
+def validate_phase68_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-19-phase68-model-plane-report-lane.md"
+    spec_path = ROOT / "docs/superpowers/specs/2026-05-19-phase68-model-plane-report-lane-design.md"
+    plan_path = ROOT / "docs/superpowers/plans/2026-05-19-mabd-phase68-model-plane-report-lane.md"
+    report_path = ROOT / SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_solver_mabd_model_plane_report_diagnostic",
+        "phase68-model-plane-report-lane",
+        PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH,
+        PHASE68_SPINNING_BOX_MODEL_PLANE_CONSTRAINT_SHA256,
+        "paper_horizon.model_plane_constraint_output_report",
+        "run_spinning_box_model_plane_constraint",
+        "spinning_box_model_plane_constraint",
+        "write_spinning_box_model_plane_constraint_report",
+        "_run_spinning_box_solver_mabd_model_step",
+        "SolverMABD.step()",
+        "mabd:plane_constraint",
+        "MABDCPUOraclePlaneConstraint",
+        "solver_mabd_model_rows_free_predict_then_active_plane_constraints",
+        "free_predict_then_active_point_plane_normal_constraints",
+        "model_plane_constraint_config_source = mabd:plane_constraint_custom_rows",
+        "max_requested_plane_constraint_count = 4",
+        "max_accepted_plane_constraint_count = 3",
+        "max_skipped_plane_constraint_count = 1",
+        "spinning_box_model_plane_constraint_not_paper_faithful",
+        "target_exists",
+        "smoke_passed",
+        "`mutates_reference_environment=false`, `uses_reference_python=false`,\n"
+        "  `uses_ambient_python=false`",
+        "No `experiment.*` claim is passed.",
+        "`paper-claims.yaml` is unchanged.",
+        "not Newton `Contacts` ingestion",
+        "not paper-faithful affine collision/contact",
+        "not full paper reproduction",
+        "scripts/env/readiness_check.py",
+        "PYTHONPATH=vendor/newton",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 68 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE68",
+        "phase68-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 68 record contains stale placeholder")
+    if PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 68 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "contact solver implemented",
+        "paper-faithful affine collision implemented",
+        "spinning-box experiment passed",
+        "passed spinning-box experiment",
+        "full reproduction complete",
+        "unmodified newton supports m-abd contact",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 68 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 68")
+    verified = claim_boundary_bullet(boundary_text, "Phase 68 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 68 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text,
+        "Phase 68 SolverMABD model-plane report lane evidence",
+    )
+    for snippet in (
+        "SolverMABD model-plane spinning-box diagnostic report lane evidence",
+        "Phase 68 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 68 current boundary missing: {snippet}")
+    for snippet in (
+        "SolverMABD.step()",
+        "mabd:body",
+        "mabd:plane_constraint",
+        "free-predict/active point-plane normal constraint policy",
+        SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH,
+        "model_plane_constraint_config_source",
+        "reduced free-predicted penetration",
+        "no experiment claim passed",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 68 verified boundary missing: {snippet}")
+    for snippet in (
+        "contact solver",
+        "Newton `Contacts` ingestion",
+        "collision detection",
+        "broadphase or narrowphase",
+        "active-set generation inside Newton",
+        "IPC",
+        "friction",
+        "complementarity",
+        "continuous collision detection",
+        "generic inequality-constrained M-ABD KKT",
+        "paper-faithful affine contact",
+        "paper-faithful M-ABD stepping",
+        "comparison pass gate",
+        "rendered-output agreement",
+        "runtime performance",
+        "any passed `experiment.*` claim",
+        "full paper reproduction",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 68 non-claim boundary missing: {snippet}")
+    for snippet in (
+        "unmodified Newton M-ABD contact support",
+        "paper-faithful affine collision/contact",
+        "contact solver",
+        "passed spinning-box experiment",
+        "full paper reproduction",
+    ):
+        if snippet not in forbidden:
+            fail(f"Phase 68 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 68 Model Plane Report Lane Design",
+        "SolverMABD.step()",
+        "mabd:plane_constraint",
+        SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH,
+        "diagnostic_only_no_lane_gate",
+        "method.force_mapping.point_load_penalty_contact",
+        "Newton `Contacts` ingestion",
+        "unmodified Newton supports M-ABD contact",
+        "full paper reproduction",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 68 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 68 Model Plane Report Lane Implementation Plan",
+        "SolverMABD.step()",
+        "mabd:plane_constraint",
+        "spinning_box_model_plane_constraint",
+        "tests/test_spinning_box_report_artifacts.py",
+        "scripts/validate_docs.py",
+        "mutates_reference_environment=false",
+        "without changing paper claim statuses",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 68 plan missing required boundary text: {snippet}")
+
+    report = load_claim_report(report_path)
+    if report.source_commit != PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT:
+        fail("Phase 68 report source_commit mismatch")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 68 report vendored Newton commit changed")
+    if sha256_file(report_path) != PHASE68_SPINNING_BOX_MODEL_PLANE_CONSTRAINT_SHA256:
+        fail("Phase 68 report sha256 mismatch")
+    if report.claim_id != "experiment.single_body.spinning_box":
+        fail("Phase 68 report claim_id changed")
+    if report.scene_id != "single_body_spinning_box":
+        fail("Phase 68 report scene_id changed")
+    if report.status.value != "incomplete":
+        fail("Phase 68 report must remain incomplete")
+    if report.baseline_lane != "mabd_newton":
+        fail("Phase 68 report baseline lane changed")
+    if report.solver_mode != "solver_mabd_model_plane_constraint_diagnostic":
+        fail("Phase 68 report solver mode changed")
+    if report.backend != "cpu_numpy_newton_solver_mabd_model_rows":
+        fail("Phase 68 report backend changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 68 report paper source version changed")
+    if "diagnostic extraction path" not in report.failure_reason:
+        fail("Phase 68 report failure reason must stay diagnostic-only")
+    if report.raw_outputs.get("time_series") != "compact_samples_only":
+        fail("Phase 68 report raw output policy changed")
+
+    observed = report.observed
+    if "lane_gate_status" in observed:
+        fail("Phase 68 report must not write lane_gate_status")
+    expected_strings = {
+        "model_plane_constraint_policy": (
+            "solver_mabd_model_rows_free_predict_then_active_plane_constraints"
+        ),
+        "model_plane_constraint_scope": "diagnostic_only_no_lane_gate",
+        "model_plane_constraint_config_source": "mabd:plane_constraint_custom_rows",
+        "contact_constraint_policy": "free_predict_then_active_point_plane_normal_constraints",
+        "rank_filter_policy": "increment_map_row_rank_filter",
+    }
+    for key, expected in expected_strings.items():
+        if observed.get(key) != expected:
+            fail(f"Phase 68 observed string changed: {key}")
+    free_penetration = _require_finite_scalar(
+        observed.get("max_free_predicted_contact_penetration_m"),
+        "Phase 68 max_free_predicted_contact_penetration_m",
+    )
+    constrained_penetration = _require_finite_scalar(
+        observed.get("max_constrained_contact_penetration_m"),
+        "Phase 68 max_constrained_contact_penetration_m",
+    )
+    if constrained_penetration >= free_penetration:
+        fail("Phase 68 constrained penetration must be below free prediction")
+    if observed.get("model_plane_constraint_reduced_free_predicted_penetration") is not True:
+        fail("Phase 68 report must record reduced free-predicted penetration")
+    if observed.get("max_requested_plane_constraint_count") != 4:
+        fail("Phase 68 requested plane count changed")
+    if observed.get("max_accepted_plane_constraint_count") != 3:
+        fail("Phase 68 accepted plane count changed")
+    if observed.get("max_skipped_plane_constraint_count") != 1:
+        fail("Phase 68 skipped plane count changed")
+    residual = _require_finite_scalar(
+        observed.get("max_model_plane_constraint_residual_norm"),
+        "Phase 68 max_model_plane_constraint_residual_norm",
+    )
+    if residual > 1.0e-12:
+        fail("Phase 68 model plane residual exceeded tolerance")
+    results = observed.get("model_plane_constraint_results")
+    if not isinstance(results, list) or len(results) != 2:
+        fail("Phase 68 report must contain two timestep results")
+    for index, result in enumerate(results):
+        if not isinstance(result, dict):
+            fail("Phase 68 result entry must be a mapping")
+        for key, expected in expected_strings.items():
+            if result.get(key) != expected:
+                fail(f"Phase 68 result {index} string changed: {key}")
+        if result.get("max_requested_plane_constraint_count") < 1:
+            fail("Phase 68 result must request at least one plane row")
+        if result.get("max_accepted_plane_constraint_count") < 1:
+            fail("Phase 68 result must accept at least one plane row")
+        _require_finite_scalar(
+            result.get("max_model_plane_constraint_residual_norm"),
+            f"Phase 68 result {index} residual",
+        )
+        result_free = _require_finite_scalar(
+            result.get("max_free_predicted_contact_penetration_m"),
+            f"Phase 68 result {index} free penetration",
+        )
+        result_constrained = _require_finite_scalar(
+            result.get("max_constrained_contact_penetration_m"),
+            f"Phase 68 result {index} constrained penetration",
+        )
+        if result_constrained > result_free:
+            fail("Phase 68 result constrained penetration must not exceed free prediction")
+
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 68 blocking_reasons must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "mabd_paper_horizon_diagnostic_thresholds_violated",
+        "spinning_box_model_plane_constraint_not_paper_faithful",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "mabd_kinematic_feasibility_blocker_recorded",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 68 blocker missing: {blocker}")
+
+    config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    validate_spinning_box_config_against_matrix(config, matrix)
+    if config.paper_horizon.model_plane_constraint_output_report != (
+        SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH
+    ):
+        fail("Phase 68 config output report changed")
+    _validate_phase67_paper_claim_statuses()
+
+
 def _validate_phase65_digitized_curve(
     curve: Any,
     *,
@@ -12979,13 +13261,14 @@ def main() -> int:
     validate_phase65_record()
     validate_phase66_record()
     validate_phase67_record()
+    validate_phase68_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68 "
         "docs/provenance validation passed"
     )
     return 0
