@@ -17,7 +17,7 @@ import PseudoCode from "../../components/PseudoCode.astro";
 import PitfallCard from "../../components/PitfallCard.astro";
 import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
-import implicitResidualLoop from "../../assets/diagrams/implicit-residual-loop.svg";
+import implicitResidualLoop from "../../assets/diagrams/implicit-residual-loop.png";
 
 <ProblemCard title="它解决的问题">
 动力学方程告诉我们加速度来自力，但程序每一帧只能前进一步。时间积分就是把连续运动变成离散更新；隐式积分的重点是让硬系统在较大步长下更稳。
@@ -28,7 +28,7 @@ import implicitResidualLoop from "../../assets/diagrams/implicit-residual-loop.s
   alt="Implicit integration loop from next-state guess to forces, residual, correction, and acceptance"
   caption="Conceptual residual loop: an implicit step guesses the next state, evaluates forces and residuals there, then corrects until the residual is small."
   kind="diagram"
-  provenance="authored-svg"
+  provenance="ai-generated-raster"
   claimStatus="conceptual"
 />
 

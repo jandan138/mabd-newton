@@ -174,7 +174,7 @@ Prompt body:
 ```text
 Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.
 
-Diagram content: a modeling spectrum axis from left to right labeled "few state" to "many states". Show five clean icons labeled exactly: "Particle", "Rigid", "Affine", "Multi-affine", "FEM". Particle is a point, Rigid is a cube with rotate arrow, Affine is a sheared cube, Multi-affine is linked sheared blocks, FEM is a fine mesh cube. Add a subtle highlight around "Affine" as the middle representation.
+Diagram content: a modeling spectrum axis from left to right labeled exactly "few states" to "many states". Show five clean icons labeled exactly: "Particle", "Rigid", "Affine", "Multi-affine", "FEM". Particle is a point, Rigid is a cube with rotate arrow, Affine is a sheared cube, Multi-affine is linked sheared blocks, FEM is a fine mesh cube. Add a subtle highlight around "Affine" as the middle representation. Ensure all text is spelled exactly as requested.
 ```
 
 - [ ] **Step 3: Generate `matrix-grid-transform.png`**
@@ -343,7 +343,7 @@ Prompt body:
 ```text
 Create a polished scientific textbook diagram for an ABD/M-ABD learning website. Use a 16:9 landscape composition, clean warm off-white background, crisp vector-like arrows, short legible labels, precise formulas, and professional typography. Use orange arrows for transforms/forces/updates, purple solver blocks, blue evidence/boundary accents, and red only for forbidden-claim guardrails. Do not copy or imitate any paper figure. Do not show simulation screenshots or paper result plots. Do not imply a completed M-ABD solver or full paper reproduction. No watermark, logo, citation, author name, or decorative extra text.
 
-Diagram content: pipeline with blocks labeled exactly "state q = [A,t]", "mass M", "material force", "dense CPU oracle", "scoped evidence". Show an affine block/cube above the pipeline. Add a small blue boundary label "conceptual only". Do not depict a completed production solver.
+Diagram content: a single affine-body pipeline with blocks labeled exactly "q in R^12 = [A,t]", "M in R^{12x12}", "material force", "dense CPU oracle", "scoped evidence". Show an affine block/cube above the pipeline. Keep the mass/inertia label consistent with the full 12-number q state; do not write 9x9 anywhere. Add a small blue boundary label "conceptual only". Do not depict a completed production solver.
 ```
 
 - [ ] **Step 3: Generate `mabd-topology-solver-map.png`**

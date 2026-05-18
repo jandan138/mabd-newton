@@ -4,7 +4,9 @@ interface Props {
   alt: string;
   caption: string;
   kind: "diagram";
-  provenance: "authored-svg";
+  // Keep authored SVG support while this branch migrates existing lesson figures.
+  // The learning-site validator enforces the stricter lesson policy.
+  provenance: "authored-svg" | "ai-generated-raster";
   claimStatus: "conceptual" | "not_evidence";
 }
 
