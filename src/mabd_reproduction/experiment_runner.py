@@ -40,6 +40,7 @@ from .single_body_reports import (
     write_spinning_box_contact_response_report,
     write_spinning_box_decoupled_twist_report,
     write_spinning_box_development_report,
+    write_spinning_box_model_plane_constraint_report,
     write_spinning_box_normal_constraint_report,
     write_spinning_box_paper_horizon_report,
 )
@@ -304,6 +305,44 @@ def run_spinning_box_normal_constraint(
 
     report_path = Path(output_path)
     report = write_spinning_box_normal_constraint_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
+def run_spinning_box_model_plane_constraint(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    if output_path is None:
+        raise ValueError("spinning_box_model_plane_constraint requires --output")
+    if output_root is not None:
+        raise ValueError("spinning_box_model_plane_constraint uses --output, not --output-root")
+
+    config = load_spinning_box_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_spinning_box_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError("Phase 68 model-plane runner requires incomplete report status")
+
+    report_path = Path(output_path)
+    report = write_spinning_box_model_plane_constraint_report(
         report_path,
         config=config,
         source_commit=source_commit,
@@ -944,6 +983,7 @@ __all__ = [
     "run_spinning_box_contact_response",
     "run_spinning_box_decoupled_twist",
     "run_spinning_box_experiment",
+    "run_spinning_box_model_plane_constraint",
     "run_spinning_box_normal_constraint",
     "run_spinning_box_paper_horizon",
     "run_spinning_box_rbd_baseline",

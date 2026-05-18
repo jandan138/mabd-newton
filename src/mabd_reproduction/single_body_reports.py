@@ -8,7 +8,6 @@ from pathlib import Path
 
 import newton
 import numpy as np
-import warp as wp
 from newton.solvers import SolverMABD, mabd
 
 from .experiment_configs import SpinningBoxRunConfig
@@ -134,6 +133,13 @@ def _run_spinning_box_solver_mabd_model_step(
     time_step_s: float,
     plane_constraints: list[object] | None = None,
 ) -> SolverMABDModelStepResult:
+    import contextlib
+    import importlib
+    import sys
+
+    with contextlib.redirect_stdout(sys.stderr):
+        wp = importlib.import_module("warp")
+
     constraints = [] if plane_constraints is None else list(plane_constraints)
     properties = spinning_box_physical_properties(config)
     material = spinning_box_mabd_material_properties(config)

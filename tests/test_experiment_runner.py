@@ -32,6 +32,14 @@ class ExperimentRunnerTests(unittest.TestCase):
         path.write_text(yaml.safe_dump(config), encoding="utf-8")
         return path
 
+    def _write_short_spinning_box_model_plane_config(self, tmpdir: str) -> Path:
+        config = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+        config["paper_horizon"]["duration_s"] = 0.02
+        config["paper_horizon"]["sample_count"] = 3
+        path = Path(tmpdir) / "single_body_spinning_box_short_model_plane.yaml"
+        path.write_text(yaml.safe_dump(config), encoding="utf-8")
+        return path
+
     def _write_matrix_with_output_report(self, tmpdir: str, output_report: str) -> Path:
         matrix = yaml.safe_load(MATRIX_PATH.read_text(encoding="utf-8"))
         for entry in matrix["experiments"]:
@@ -433,6 +441,51 @@ class ExperimentRunnerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "spinning_box_normal_constraint requires --output"):
                 run_spinning_box_normal_constraint(
                     config_path=CONFIG_PATH,
+                    matrix_path=MATRIX_PATH,
+                    output_root=Path(tmpdir),
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+
+    def test_run_spinning_box_model_plane_constraint_writes_explicit_output_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_model_plane_constraint
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_spinning_box_model_plane_config(tmpdir)
+            output_path = Path(tmpdir) / "model_plane_constraint.json"
+            result = run_spinning_box_model_plane_constraint(
+                config_path=config_path,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.solver_mode, "solver_mabd_model_plane_constraint_diagnostic")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_solver_mabd_model_rows")
+        self.assertEqual(
+            loaded.observed["model_plane_constraint_config_source"],
+            "mabd:plane_constraint_custom_rows",
+        )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_spinning_box_model_plane_constraint_requires_explicit_output(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_model_plane_constraint
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_spinning_box_model_plane_config(tmpdir)
+            with self.assertRaisesRegex(
+                ValueError,
+                "spinning_box_model_plane_constraint requires --output",
+            ):
+                run_spinning_box_model_plane_constraint(
+                    config_path=config_path,
                     matrix_path=MATRIX_PATH,
                     output_root=Path(tmpdir),
                     source_commit="test-source",
@@ -1521,6 +1574,86 @@ class ExperimentRunnerTests(unittest.TestCase):
             "free_predict_then_active_point_plane_normal_constraints",
         )
         self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_experiment_cli_writes_spinning_box_model_plane_constraint_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_spinning_box_model_plane_config(tmpdir)
+            output_path = Path(tmpdir) / "model_plane_constraint_cli_report.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "spinning_box_model_plane_constraint",
+                    "--config",
+                    str(config_path),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.spinning_box")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "mabd_newton")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(loaded.solver_mode, "solver_mabd_model_plane_constraint_diagnostic")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_solver_mabd_model_rows")
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_experiment_cli_rejects_model_plane_constraint_output_root(self) -> None:
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_spinning_box_model_plane_config(tmpdir)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "spinning_box_model_plane_constraint",
+                    "--config",
+                    str(config_path),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output-root",
+                    tmpdir,
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("spinning_box_model_plane_constraint", result.stderr)
+        self.assertIn("--output", result.stderr)
 
     def test_run_experiment_cli_writes_spinning_box_decoupled_twist_report(self) -> None:
         import json
