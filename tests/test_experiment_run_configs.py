@@ -107,6 +107,10 @@ class ExperimentRunConfigTests(unittest.TestCase):
             "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
         )
         self.assertEqual(
+            config.paper_horizon.normal_constraint_output_report,
+            "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json",
+        )
+        self.assertEqual(
             config.paper_horizon.figure_pdf_sha256,
             "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
         )

@@ -24,6 +24,7 @@ from mabd_reproduction.experiment_runner import (
     run_spinning_box_comparison,
     run_spinning_box_contact_response,
     run_spinning_box_experiment,
+    run_spinning_box_normal_constraint,
     run_spinning_box_paper_horizon,
     run_spinning_box_rbd_baseline,
     run_t_handle_comparison,
@@ -59,6 +60,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "rbd_implicit_baseline",
             "spinning_box_comparison",
             "spinning_box_contact_response",
+            "spinning_box_normal_constraint",
             "t_handle_comparison",
             "t_handle_figure_curves",
             "t_handle_mabd_newton",
@@ -152,6 +154,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "spinning_box_contact_response":
             result = run_spinning_box_contact_response(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "spinning_box_normal_constraint":
+            result = run_spinning_box_normal_constraint(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

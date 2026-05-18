@@ -13,6 +13,7 @@ from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 from mabd_reproduction.single_body_reports import (
     write_spinning_box_contact_response_report,
     write_spinning_box_development_report,
+    write_spinning_box_normal_constraint_report,
     write_spinning_box_paper_horizon_report,
 )
 
@@ -405,6 +406,169 @@ class SingleBodyReportLaneTests(unittest.TestCase):
         )
         self.assertGreater(float(np.linalg.norm(captured_forces[0])), 0.0)
         self.assertGreater(result["max_applied_contact_generalized_force_norm"], 0.0)
+
+    def test_spinning_box_normal_constraint_report_records_active_set_lane(self) -> None:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_spinning_box_normal_constraint.json"
+            report = write_spinning_box_normal_constraint_report(
+                path,
+                config=config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(path)
+
+        self.assertEqual(report.scene_id, config.scene_id)
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(
+            loaded.solver_mode,
+            "mabd_cpu_oracle_point_plane_normal_constraint_diagnostic",
+        )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertEqual(
+            loaded.observed["contact_constraint_policy"],
+            "free_predict_then_active_point_plane_normal_constraints",
+        )
+        self.assertEqual(
+            loaded.observed["contact_constraint_scope"],
+            "diagnostic_only_no_lane_gate",
+        )
+        self.assertEqual(
+            loaded.observed["rank_filter_policy"],
+            "increment_map_row_rank_filter",
+        )
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertIn(
+            "spinning_box_normal_constraint_not_paper_faithful",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "spinning_box_comparison_pass_gate_not_enabled",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertGreater(loaded.observed["max_free_predicted_contact_penetration_m"], 0.0)
+        self.assertGreaterEqual(loaded.observed["max_requested_plane_constraint_count"], 1)
+        self.assertGreaterEqual(loaded.observed["max_accepted_plane_constraint_count"], 1)
+        self.assertGreaterEqual(loaded.observed["max_skipped_plane_constraint_count"], 0)
+        self.assertTrue(np.isfinite(loaded.observed["normal_constraint_residual_norm"]))
+        self.assertEqual(
+            len(loaded.observed["normal_constraint_results"]),
+            len(config.paper_horizon.time_step_grid_s),
+        )
+        for entry in loaded.observed["normal_constraint_results"]:
+            self.assertIn(entry["time_step_s"], [0.01, 0.001])
+            self.assertEqual(
+                entry["contact_constraint_policy"],
+                "free_predict_then_active_point_plane_normal_constraints",
+            )
+            self.assertIn("max_free_predicted_contact_penetration_m", entry)
+            self.assertIn("max_constrained_contact_penetration_m", entry)
+            self.assertIn("max_requested_plane_constraint_count", entry)
+            self.assertIn("max_accepted_plane_constraint_count", entry)
+            self.assertIn("max_skipped_plane_constraint_count", entry)
+            self.assertIn("max_normal_constraint_residual_norm", entry)
+            self.assertTrue(np.isfinite(entry["max_normal_constraint_residual_norm"]))
+            self.assertLessEqual(
+                len(entry["trajectory_samples"]),
+                config.paper_horizon.sample_count,
+            )
+
+    def test_spinning_box_normal_constraint_skips_rerun_when_free_prediction_is_clear(
+        self,
+    ) -> None:
+        from mabd_reproduction import single_body_reports
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        short_config = replace(
+            config,
+            paper_horizon=replace(config.paper_horizon, duration_s=0.01, sample_count=2),
+        )
+        captured_configs = []
+
+        def fake_solve_cpu_oracle_step(*, q, qd, dt, config):
+            captured_configs.append(config)
+            return SimpleNamespace(q=(q[0].copy(),), qd=(qd[0].copy(),), residual_norm=0.0)
+
+        with patch.object(
+            single_body_reports.mabd,
+            "solve_cpu_oracle_step",
+            side_effect=fake_solve_cpu_oracle_step,
+        ):
+            result = single_body_reports._run_spinning_box_paper_horizon_step_size(
+                config=short_config,
+                time_step_s=0.01,
+                normal_constraint_policy=single_body_reports.NORMAL_CONSTRAINT_POLICY,
+            )
+
+        self.assertEqual(len(captured_configs), 1)
+        self.assertEqual(result["max_requested_plane_constraint_count"], 0)
+        self.assertEqual(result["max_accepted_plane_constraint_count"], 0)
+
+    def test_spinning_box_normal_constraint_rerun_receives_active_plane_rows(
+        self,
+    ) -> None:
+        from mabd_reproduction import single_body_reports
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        short_config = replace(
+            config,
+            paper_horizon=replace(config.paper_horizon, duration_s=0.01, sample_count=2),
+        )
+        penetrating_q = short_config.initial_q.copy()
+        penetrating_q[10] = 0.049
+        captured_plane_constraints = []
+
+        def fake_solve_cpu_oracle_step(*, q, qd, dt, config):
+            if not captured_plane_constraints:
+                captured_plane_constraints.append(None)
+                return SimpleNamespace(
+                    q=(penetrating_q.copy(),),
+                    qd=(qd[0].copy(),),
+                    residual_norm=0.0,
+                )
+            captured_plane_constraints.append(tuple(config.plane_constraints))
+            return SimpleNamespace(
+                q=(q[0].copy(),),
+                qd=(qd[0].copy(),),
+                residual_norm=0.0,
+                constraint_residual_norm=0.0,
+                plane_constraint_requested_count=len(config.plane_constraints),
+                plane_constraint_accepted_count=len(config.plane_constraints),
+                plane_constraint_skipped_count=0,
+            )
+
+        with patch.object(
+            single_body_reports.mabd,
+            "solve_cpu_oracle_step",
+            side_effect=fake_solve_cpu_oracle_step,
+        ):
+            result = single_body_reports._run_spinning_box_paper_horizon_step_size(
+                config=short_config,
+                time_step_s=0.01,
+                normal_constraint_policy=single_body_reports.NORMAL_CONSTRAINT_POLICY,
+            )
+
+        self.assertEqual(len(captured_plane_constraints), 2)
+        plane_constraints = captured_plane_constraints[1]
+        self.assertIsNotNone(plane_constraints)
+        self.assertGreaterEqual(len(plane_constraints), 4)
+        for constraint in plane_constraints:
+            self.assertIsInstance(constraint, single_body_reports.mabd.MABDCPUOraclePlaneConstraint)
+            np.testing.assert_allclose(
+                constraint.plane_normal,
+                short_config.contact_surface["plane_normal"],
+            )
+            self.assertEqual(constraint.plane_offset, short_config.contact_surface["plane_offset"])
+        self.assertGreaterEqual(result["max_requested_plane_constraint_count"], 4)
 
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ class SpinningBoxPaperHorizonConfig:
     sample_count: int
     output_report: str
     contact_response_output_report: str
+    normal_constraint_output_report: str
     figure_pdf_sha256: str
     figure_text_source: str
     thresholds: dict[str, float]
@@ -658,6 +659,7 @@ def _require_paper_horizon(data: dict[str, Any]) -> SpinningBoxPaperHorizonConfi
         sample_count=_require_positive_int(horizon, "sample_count"),
         output_report=_require_str(horizon, "output_report"),
         contact_response_output_report=_require_str(horizon, "contact_response_output_report"),
+        normal_constraint_output_report=_require_str(horizon, "normal_constraint_output_report"),
         figure_pdf_sha256=_require_str(horizon, "figure_pdf_sha256"),
         figure_text_source=_require_str(horizon, "figure_text_source"),
         thresholds=thresholds,

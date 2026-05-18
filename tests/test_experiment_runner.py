@@ -397,6 +397,48 @@ class ExperimentRunnerTests(unittest.TestCase):
                     vendored_newton_commit="test-newton",
                 )
 
+    def test_run_spinning_box_normal_constraint_writes_explicit_output_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_normal_constraint
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "normal_constraint.json"
+            result = run_spinning_box_normal_constraint(
+                config_path=CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(result.report.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(
+            loaded.solver_mode,
+            "mabd_cpu_oracle_point_plane_normal_constraint_diagnostic",
+        )
+        self.assertEqual(
+            loaded.observed["contact_constraint_policy"],
+            "free_predict_then_active_point_plane_normal_constraints",
+        )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_spinning_box_normal_constraint_requires_explicit_output(self) -> None:
+        from mabd_reproduction.experiment_runner import run_spinning_box_normal_constraint
+
+        with TemporaryDirectory() as tmpdir:
+            with self.assertRaisesRegex(ValueError, "spinning_box_normal_constraint requires --output"):
+                run_spinning_box_normal_constraint(
+                    config_path=CONFIG_PATH,
+                    matrix_path=MATRIX_PATH,
+                    output_root=Path(tmpdir),
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+
     def test_run_physical_pendulum_analytic_reference_writes_report(self) -> None:
         from mabd_reproduction.experiment_runner import (
             run_physical_pendulum_analytic_reference,
@@ -1332,6 +1374,56 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(
             loaded.observed["contact_response_policy"],
             "explicit_current_state_penalty_force_as_external_force_next_step",
+        )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+
+    def test_run_experiment_cli_writes_spinning_box_normal_constraint_report(self) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "normal_constraint_cli_report.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "spinning_box_normal_constraint",
+                    "--config",
+                    str(CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["claim_id"], "experiment.single_body.spinning_box")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(summary["baseline_lane"], "mabd_newton")
+        self.assertEqual(summary["output_report"], output_path.as_posix())
+        self.assertEqual(
+            loaded.solver_mode,
+            "mabd_cpu_oracle_point_plane_normal_constraint_diagnostic",
+        )
+        self.assertEqual(
+            loaded.observed["contact_constraint_policy"],
+            "free_predict_then_active_point_plane_normal_constraints",
         )
         self.assertNotIn("lane_gate_status", loaded.observed)
 
