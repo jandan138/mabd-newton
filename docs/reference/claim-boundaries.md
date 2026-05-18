@@ -561,6 +561,27 @@
   T-handle geometry, raw figure curve agreement, M-ABD T-handle lane pass,
   ABD-vs-RBD comparison, rendered output, runtime performance, generated videos
   or raw simulation logs, or any passed `experiment.*` claim.
+- This repository contains Phase 56 T-handle MABD Newton diagnostic lane
+  evidence after the Phase 56 record is created.
+- Phase 56 verifies a `mabd_newton` diagnostic report for
+  `experiment.single_body.t_handle` generated through vendored Newton
+  `SolverMABD.step()`, model-derived `mabd:body` and disabled `mabd:gravity`
+  rows, `solver_model_config_source = newton_model_derived`, a 4 second
+  horizon, 9 samples aligned to the RK4 diagnostic grid, finite energy and
+  angular-momentum drift diagnostics, proxy inertia mismatch diagnostics,
+  current `max_affine_shape_spread_m` threshold failure, top-level report
+  status: `incomplete`, and replacement of the matrix blocker with
+  `mabd_newton_report_incomplete`.
+- Phase 56 does not verify a passed T-handle experiment, passed T-handle MABD
+  lane, paper-faithful T-handle geometry, paper-faithful inertia, raw waveform
+  agreement, ABD-vs-RBD comparison pass, paper timing, rendered output, runtime
+  performance, generated videos or raw simulation logs, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 56 T-handle MABD Newton diagnostic evidence must not be described as a
+  passed T-handle experiment, passed M-ABD lane, paper-faithful T-handle
+  geometry or inertia reconstruction, raw curve agreement, comparison pass
+  gate, paper timing result, full paper reproduction, or any passed
+  `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

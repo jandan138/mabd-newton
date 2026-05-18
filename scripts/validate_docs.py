@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-55 docs and provenance contracts."""
+"""Validate Phase 0-56 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -52,6 +52,11 @@ from mabd_reproduction.spinning_box_physics import (
     spinning_box_contact_diagnostics,
     spinning_box_kinematic_feasibility,
     spinning_box_mabd_mass_diagonal,
+)
+from mabd_reproduction.t_handle_mabd import (
+    NEWTON_MODEL_DERIVED_CONFIG_SOURCE as T_HANDLE_MABD_CONFIG_SOURCE,
+    NEWTON_MODEL_DERIVED_CUSTOM_FREQUENCIES as T_HANDLE_MABD_CUSTOM_FREQUENCIES,
+    roll_out_t_handle_mabd_model_derived,
 )
 from mabd_reproduction.t_handle_reference import roll_out_t_handle_rk4_reference
 
@@ -122,6 +127,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase53-heavy-top-figure-curves.md",
     "docs/records/2026-05-18-phase54-environment-clone-contract.md",
     "docs/records/2026-05-18-phase55-heavy-top-paper-horizon-mabd.md",
+    "docs/records/2026-05-18-phase56-t-handle-mabd-newton.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -170,6 +176,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-phase54-environment-clone-contract.md",
     "docs/superpowers/specs/2026-05-18-phase55-heavy-top-paper-horizon-mabd-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase55-heavy-top-paper-horizon.md",
+    "docs/superpowers/specs/2026-05-18-phase56-t-handle-mabd-newton-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase56-t-handle-newton-lane.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -180,6 +188,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_physical_pendulum_rbd_baseline.json",
     "reports/experiment_matrix/single_body_physical_pendulum_comparison.json",
     "reports/experiment_matrix/single_body_t_handle_rk4_reference.json",
+    "reports/experiment_matrix/single_body_t_handle_mabd_newton.json",
     "reports/experiment_matrix/single_body_heavy_top_rk4_reference.json",
     "reports/experiment_matrix/single_body_heavy_top_mabd_newton.json",
     "reports/experiment_matrix/single_body_heavy_top_mabd_paper_horizon.json",
@@ -5647,11 +5656,15 @@ def validate_phase43_record() -> None:
     for blocker in (
         "exact_t_handle_geometry_unknown",
         "raw_t_handle_reference_curve_data_missing",
-        "mabd_newton_report_missing",
         "t_handle_comparison_report_missing",
     ):
         if blocker not in matrix_blockers:
             fail(f"Phase 43 matrix blocker missing: {blocker}")
+    if not (
+        "mabd_newton_report_missing" in matrix_blockers
+        or "mabd_newton_report_incomplete" in matrix_blockers
+    ):
+        fail("Phase 43 matrix blocker missing: mabd_newton report state")
 
 
 def _pip_freeze_parts(python: Path, context: str) -> tuple[list[str], list[str]]:
@@ -8682,6 +8695,219 @@ def validate_phase55_record() -> None:
             fail("Phase 55 must not pass experiment.* claims")
 
 
+def validate_phase56_record() -> None:
+    text = (ROOT / "docs/records/2026-05-18-phase56-t-handle-mabd-newton.md").read_text(
+        encoding="utf-8"
+    )
+    report_path = "reports/experiment_matrix/single_body_t_handle_mabd_newton.json"
+    implementation_commit = "7d6de189599a199c5df570cbad31ded5facc90a7"
+    report_sha256 = "0dc92c2830e750fff010e8a46a5148bf2a61b7adc8dcb8aae213565a260843f7"
+    required_snippets = (
+        "## Status\n\npassed_for_t_handle_mabd_newton_diagnostic",
+        "phase56-t-handle-mabd-newton",
+        "00d864edd79e5f7073828534bdb3b9f74943d5d7",
+        implementation_commit,
+        VENDORED_NEWTON_COMMIT,
+        report_path,
+        report_sha256,
+        "mabd_cpu_oracle_t_handle_newton_lane",
+        "cpu_numpy_newton_only",
+        "mabd_newton",
+        "t_handle_model_derived_proxy",
+        "newton_model_derived",
+        "mabd:body",
+        "mabd:gravity",
+        "step count: `4000`",
+        "sample count: `9`",
+        "duration: `4.0`",
+        "lane status: `incomplete_diagnostic_failed`",
+        "current threshold violation: `max_affine_shape_spread_m`",
+        "mabd_newton_report_incomplete",
+        "No `experiment.*` claim is passed.",
+        "`experiment.single_body.t_handle` remains intended",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_experiment_run_configs tests.test_t_handle_reference tests.test_experiment_runner",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests",
+        "PYTHONPATH=vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -c \"import newton; print(newton.__file__)\"",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 56 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE56",
+        "phase56-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 56 record contains stale placeholder")
+
+    lower_text = text.lower()
+    for snippet in (
+        "t-handle experiment passed",
+        "t-handle mabd lane passed",
+        "paper-faithful t-handle geometry reconstructed",
+        "raw waveform agreement passed",
+        "comparison pass gate passed",
+        "runtime performance reproduced",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 56 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 56")
+    verified = claim_boundary_bullet(boundary_text, "Phase 56 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 56 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text,
+        "Phase 56 T-handle MABD Newton diagnostic",
+    )
+    for snippet in (
+        "T-handle MABD Newton diagnostic lane evidence",
+        "Phase 56 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 56 current boundary missing: {snippet}")
+    for snippet in (
+        "`mabd_newton` diagnostic report",
+        "`SolverMABD.step()`",
+        "`solver_model_config_source = newton_model_derived`",
+        "`mabd:body`",
+        "`mabd:gravity`",
+        "4 second horizon",
+        "9 samples",
+        "`max_affine_shape_spread_m` threshold failure",
+        "`mabd_newton_report_incomplete`",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 56 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed T-handle experiment",
+        "passed T-handle MABD lane",
+        "paper-faithful T-handle geometry",
+        "raw waveform agreement",
+        "comparison pass",
+        "paper timing",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 56 non-claim boundary missing: {snippet}")
+    for snippet in (
+        "passed T-handle experiment",
+        "passed M-ABD lane",
+        "paper-faithful T-handle geometry or inertia",
+        "raw curve agreement",
+        "comparison pass gate",
+        "paper timing result",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in forbidden:
+            fail(f"Phase 56 forbidden boundary missing: {snippet}")
+
+    try:
+        config = load_t_handle_config(ROOT / "configs/experiments/single_body_t_handle.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_t_handle_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 56 T-handle config validation failed: {exc}")
+
+    report = load_claim_report(ROOT / report_path)
+    if report.source_commit != implementation_commit:
+        fail("Phase 56 report source_commit changed")
+    if report.source_commit not in text:
+        fail("Phase 56 record must list report source_commit")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 56 report vendored Newton commit changed")
+    if report.status.value != "incomplete":
+        fail("Phase 56 report must remain incomplete")
+    if report.baseline_lane != "mabd_newton":
+        fail("Phase 56 report baseline lane changed")
+    if report.solver_mode != "mabd_cpu_oracle_t_handle_newton_lane":
+        fail("Phase 56 report solver mode changed")
+    if report.backend != "cpu_numpy_newton_only":
+        fail("Phase 56 report backend changed")
+    if report.observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 56 report must not pass full experiment claim")
+    if _record_sha256_for_artifact(text, report_path) != sha256_file(ROOT / report_path):
+        fail("Phase 56 report sha256 mismatch")
+
+    observed = report.observed
+    rollout = roll_out_t_handle_mabd_model_derived(config)
+    if observed.get("lane_status") != "incomplete_diagnostic_failed":
+        fail("Phase 56 lane_status changed")
+    if observed.get("mabd_diagnostic_scope") != "t_handle_model_derived_proxy":
+        fail("Phase 56 diagnostic scope changed")
+    if observed.get("solver_model_config_source") != T_HANDLE_MABD_CONFIG_SOURCE:
+        fail("Phase 56 solver_model_config_source changed")
+    if observed.get("newton_model_derived_custom_frequencies") != list(
+        T_HANDLE_MABD_CUSTOM_FREQUENCIES
+    ):
+        fail("Phase 56 custom frequencies changed")
+    if observed.get("threshold_violations") != ["max_affine_shape_spread_m"]:
+        fail("Phase 56 threshold violations changed")
+    if observed.get("step_count") != config.mabd_newton.step_count:
+        fail("Phase 56 step_count changed")
+    if observed.get("sample_count") != config.mabd_newton.sample_count:
+        fail("Phase 56 sample_count changed")
+    if not np.isclose(
+        _require_finite_scalar(observed.get("duration_s"), "Phase 56 duration_s"),
+        config.reference.duration_s,
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        fail("Phase 56 duration_s changed")
+    for key, expected in (
+        ("relative_energy_drift", rollout.relative_energy_drift),
+        ("angular_momentum_norm_drift", rollout.angular_momentum_norm_drift),
+        ("max_affine_shape_spread_m", rollout.max_affine_shape_spread_m),
+        ("max_proxy_inertia_relative_error", rollout.max_proxy_inertia_relative_error),
+    ):
+        actual = _require_finite_scalar(observed.get(key), f"Phase 56 {key}")
+        if not np.isclose(actual, expected, rtol=0.0, atol=1.0e-12):
+            fail(f"Phase 56 {key} does not match recomputed rollout")
+    samples = observed.get("angular_velocity_samples")
+    if not isinstance(samples, list) or len(samples) != config.reference.sample_count:
+        fail("Phase 56 angular_velocity_samples changed")
+    expected_times = np.linspace(0.0, config.reference.duration_s, config.reference.sample_count)
+    for index, (sample, expected_time) in enumerate(zip(samples, expected_times, strict=True)):
+        if not isinstance(sample, dict):
+            fail("Phase 56 sample must be a mapping")
+        actual_time = _require_finite_scalar(sample.get("time_s"), f"Phase 56 sample {index}")
+        if not np.isclose(actual_time, expected_time, rtol=0.0, atol=1.0e-12):
+            fail(f"Phase 56 sample {index} time changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 56 blockers must be a list")
+    for blocker in (
+        "exact_t_handle_geometry_unknown",
+        "raw_t_handle_reference_curve_data_missing",
+        "mabd_newton_report_incomplete",
+        "t_handle_comparison_report_missing",
+        "t_handle_timing_evidence_missing",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 56 blocker missing: {blocker}")
+    if "mabd_newton_report_missing" in blockers:
+        fail("Phase 56 report must not retain mabd_newton_report_missing")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.t_handle":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 56 must keep T-handle experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 56 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -8966,13 +9192,14 @@ def main() -> int:
     validate_phase53_record()
     validate_phase54_record()
     validate_phase55_record()
+    validate_phase56_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56 "
         "docs/provenance validation passed"
     )
     return 0
