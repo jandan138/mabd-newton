@@ -40,7 +40,7 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 />
 
 <LearningGoals>
-  <li><strong>拆开三类难点：</strong>区分 body 数量、joint 约束和拓扑结构分别带来的复杂度。</li>
+  <li><strong>拆开三类难点：</strong>区分物体数量、关节约束和拓扑结构分别带来的复杂度。</li>
   <li><strong>解释 KKT 角色：</strong>说明多体系统中 `G` 描述约束触碰哪些自由度，`lambda` 描述约束对偶变量。</li>
   <li><strong>判断稀疏结构：</strong>比较 chain、tree、loop 和 graph 如何影响块矩阵结构和求解思路。</li>
 </LearningGoals>
@@ -52,12 +52,12 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 </PrereqBox>
 
 <GuidedProjectStep title="用标记点关节连接多块印章" step="贯穿小项目 11/12">
-现在复制多块软橡胶印章，每块都有自己的 `q` block。把不同印章上的标记点通过关节连起来，再观察每条关节只触碰相关物体块，而不是让整张多体矩阵都变成稠密。
+现在复制多块软橡胶印章，每块都有自己的 `q` 状态块。把不同印章上的标记点通过关节连起来，再观察每条关节只触碰相关物体块，而不是让整张多体矩阵都变成稠密。
 </GuidedProjectStep>
 
 <MathBridge>
-  <li>先复制多块软橡胶印章，每块印章都有自己的 `q` block。</li>
-  <li>再用标记点关节连接两个 block，得到稀疏的约束行。</li>
+  <li>先复制多块软橡胶印章，每块印章都有自己的 `q` 状态块。</li>
+  <li>再用标记点关节连接两个状态块，得到稀疏的约束行。</li>
   <li>最后比较 chain、tree、loop、graph 对块求解的影响。</li>
 </MathBridge>
 
@@ -78,7 +78,7 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 
 ## 对偶变量与 KKT
 
-每个约束都会贡献约束残差 `C(q)` 和约束 Jacobian `G`。KKT 中的对偶变量 `lambda` 和约束方程一起求出，并通过 `G.T lambda` 反馈到相关 body block；它的物理力解释取决于约束写法和离散化尺度。多个体连接后，`G` 的稀疏结构反映了“哪个约束碰到哪些体”。
+每个约束都会贡献约束残差 `C(q)` 和约束 Jacobian `G`。KKT 中的对偶变量 `lambda` 和约束方程一起求出，并通过 `G.T lambda` 反馈到相关物体块；它的物理力解释取决于约束写法和离散化尺度。多个体连接后，`G` 的稀疏结构反映了“哪个约束碰到哪些体”。
 
 <PseudoCode title="多体约束装配的概念流程">
 {`for body in bodies:
@@ -100,7 +100,7 @@ delta_q, lambda = solve_kkt_system(H, residual, constraints)`}
 </StepFlow>
 
 <PitfallCard title="图拓扑 Gauss-Seidel 是有边界的重建说明">
-如果记录中提到 graph Gauss-Seidel，请把它读作在记录范围内的推断式重建或开发路径说明，而不是论文完整拓扑求解器已经被证明完成。具体可信范围必须回到对应记录、测试和 claim map。
+如果记录中提到 graph Gauss-Seidel，请把它读作在记录范围内的推断式重建或开发路径说明，而不是论文完整拓扑求解器已经被证明完成。具体可信范围必须回到对应记录、测试和主张映射。
 </PitfallCard>
 
 <CheckpointQuiz>
@@ -110,7 +110,7 @@ delta_q, lambda = solve_kkt_system(H, residual, constraints)`}
   </details>
   <details>
     <summary>`G` 的稀疏结构表示什么？</summary>
-    <p>`G` 的非零块表示某条约束会影响哪些体的哪些广义自由度。一个 joint 通常只触碰相关 body block，而不是填满整个多体矩阵。</p>
+    <p>`G` 的非零块表示某条约束会影响哪些体的哪些广义自由度。一个关节通常只触碰相关物体块，而不是填满整个多体矩阵。</p>
   </details>
 </CheckpointQuiz>
 

@@ -43,7 +43,7 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 
 <LearningGoals>
   <li><strong>区分状态词：</strong>读懂 conceptual、passed、incomplete 和 intended 之间的证据差别。</li>
-  <li><strong>按证据查证：</strong>用 claim map、claim boundaries 和 dated records 检查一个仓库说法。</li>
+  <li><strong>按证据查证：</strong>用主张映射、声明边界和按日期记录检查一个仓库说法。</li>
   <li><strong>守住边界：</strong>避免把学习页、局部记录或计划目标升级成完整复现结论。</li>
 </LearningGoals>
 
@@ -77,9 +77,9 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 方法主张通常说“某个公式、oracle、装配路径或验证器在限定输入上成立”。实验主张通常说“某个场景、指标、对照或论文表格结果被复现”。前者通过小规模 oracle 也可能有价值；后者需要配置、运行、指标、报告和对照范围。
 
 <StepFlow title="阅读一个仓库主张">
-  <li>找到它在 `paper-claims.yaml` 或 claim-boundary 文档中的条目。</li>
+  <li>找到它在 `paper-claims.yaml` 或声明边界文档中的条目。</li>
   <li>查看对应 `docs/records/` 文件，确认记录实际覆盖什么。</li>
-  <li>区分 method record、experiment report、manifest 和 incomplete blocker。</li>
+  <li>区分方法记录、实验报告、清单和未完成阻塞项。</li>
   <li>只复述记录支持的范围，不补写记录没有证明的结论。</li>
 </StepFlow>
 
@@ -99,30 +99,30 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 <CheckpointQuiz>
   <details>
     <summary>没有 records 时，`claimStatus` 应该怎么读？</summary>
-    <p>应把它读成概念说明、未验证或计划方向，而不是仓库已经证明的结论。能否升级必须回到 claim map、records 和验证结果。</p>
+    <p>应把它读成概念说明、未验证或计划方向，而不是仓库已经证明的结论。能否升级必须回到主张映射、记录和验证结果。</p>
   </details>
   <details>
     <summary>`passed` 是否等于完整论文复现？</summary>
-    <p>不等于。`passed` 只表示对应记录范围内通过；是否构成完整论文复现，还要看所有必要 paper claims、实验配置、对照和报告是否齐备。</p>
+    <p>不等于。`passed` 只表示对应记录范围内通过；是否构成完整论文复现，还要看所有必要论文主张条目、实验配置、对照和报告是否齐备。</p>
   </details>
 </CheckpointQuiz>
 
-<RepoEvidenceCard title="Claim boundaries" status="source-of-truth boundary document" href="https://github.com/jandan138/mabd-newton/blob/main/docs/reference/claim-boundaries.md" />
+<RepoEvidenceCard title="声明边界文档" status="source-of-truth 声明边界" href="https://github.com/jandan138/mabd-newton/blob/main/docs/reference/claim-boundaries.md" />
 
-<RepoEvidenceCard title="Paper claim mapping" status="machine-checkable claim map" href="https://github.com/jandan138/mabd-newton/blob/main/docs/reference/paper-claims.yaml" />
+<RepoEvidenceCard title="论文主张映射" status="machine-checkable 主张映射" href="https://github.com/jandan138/mabd-newton/blob/main/docs/reference/paper-claims.yaml" />
 
-<RepoEvidenceCard title="Dated records" status="scoped evidence records" href="https://github.com/jandan138/mabd-newton/tree/main/docs/records" />
+<RepoEvidenceCard title="按日期记录" status="有范围证据记录" href="https://github.com/jandan138/mabd-newton/tree/main/docs/records" />
 
 <PitfallCard title="incomplete 不是失败遮羞布">
 把报告标成 incomplete 是诚实进展：它告诉读者已经做了什么、还缺什么、为什么不能升级声明。相比模糊地说“差不多完成”，明确 incomplete 更有利于复现和后续审计。
 </PitfallCard>
 
 <PracticePrompt title="动手练习">
-打开 `docs/reference/claim-boundaries.md`，摘录一条 forbidden claim，并把它改写成只陈述记录已支持范围的安全说法。
+打开 `docs/reference/claim-boundaries.md`，摘录一条禁止越界说法，并把它改写成只陈述记录已支持范围的安全说法。
 </PracticePrompt>
 
 <WorkedExercise title="带答案的练习：把危险说法改成有边界说法">
-  <p>选择一句不安全说法，例如“这个仓库已经复现了完整 M-ABD 论文”，把它改写成必须同时引用记录范围和 claim boundaries 的安全说法。</p>
+  <p>选择一句不安全说法，例如“这个仓库已经复现了完整 M-ABD 论文”，把它改写成必须同时引用记录范围和声明边界的安全说法。</p>
   <details>
     <summary>提示</summary>
     <p>安全说法通常要包含“在某个记录范围内”“conceptual、scoped、incomplete”等边界词，并明确哪些更大结论还不能说。</p>
