@@ -753,6 +753,30 @@
   contact solver, paper-faithful affine collision, comparison pass gate,
   rendered result, runtime performance, full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 65 spinning-box paper-figure color-family
+  digitization evidence after the Phase 65 record is created.
+- Phase 65 verifies the recorded `roll_cube.pdf` paper figure can be rendered
+  with `pdftocairo -png -singlefile -r 300`, hashed, and sampled into finite
+  angular and linear momentum color-family curves using
+  `nearest_color_family_within_threshold`, records
+  `color_family_curve_available = true`, records
+  `paper_reference_legend_identity_available = false`, records
+  `curve_identity_status = color_family_not_legend_entry`, records
+  `curve_agreement_status = not_evaluated`, top-level report status:
+  `incomplete`, and no lane gate.
+- Phase 65 does not verify a passed spinning-box experiment, M-ABD lane pass,
+  paper reference legend-entry identity, solid/dashed line-style split,
+  Newton-vs-paper curve agreement, paper-faithful M-ABD stepping, contact
+  solver, paper-faithful affine collision, comparison pass gate, rendered
+  output inspection, runtime performance, full paper reproduction, or any
+  passed `experiment.*` claim.
+- Phase 65 spinning-box paper-figure digitization evidence must not be
+  described as a passed spinning-box experiment, M-ABD lane pass, authors' raw
+  simulation data, paper reference legend-entry identity, solid/dashed
+  line-style split, Newton-vs-paper curve agreement, paper-faithful M-ABD
+  stepping, contact solver, paper-faithful affine collision, comparison pass
+  gate, rendered output inspection, runtime performance, full paper
+  reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1104,6 +1128,14 @@
   contact solver, not paper-faithful affine collision, not a comparison pass
   gate, not a rendered result, not runtime performance evidence, not a full
   paper reproduction, and not any passed `experiment.*` claim.
+- Phase 65 spinning-box paper-figure digitization is not a passed spinning-box
+  experiment, not a passed M-ABD lane, not authors' raw simulation data, not
+  paper reference legend-entry identity, not solid/dashed line-style
+  split, not Newton-vs-paper curve agreement, not paper-faithful M-ABD
+  stepping, not a contact solver, not paper-faithful affine collision, not a
+  comparison pass gate, not rendered-output inspection evidence, not runtime
+  performance evidence, not a full paper reproduction, and not any passed
+  `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
