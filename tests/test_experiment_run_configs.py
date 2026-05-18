@@ -290,6 +290,10 @@ class ExperimentRunConfigTests(unittest.TestCase):
             config.comparison.output_report,
             "reports/experiment_matrix/single_body_t_handle_comparison.json",
         )
+        self.assertEqual(
+            config.figure_curves.output_report,
+            "reports/experiment_matrix/single_body_t_handle_figure_curves.json",
+        )
         self.assertEqual(config.comparison.required_lanes, ("mabd_newton", "rbd_rk4_reference"))
         self.assertEqual(
             config.comparison.required_metrics,

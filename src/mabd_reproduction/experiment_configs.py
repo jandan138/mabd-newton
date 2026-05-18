@@ -172,6 +172,11 @@ class THandleComparisonConfig:
 
 
 @dataclass(frozen=True)
+class THandleFigureCurvesConfig:
+    output_report: str
+
+
+@dataclass(frozen=True)
 class THandleRunConfig:
     schema_version: int
     claim_id: str
@@ -184,6 +189,7 @@ class THandleRunConfig:
     reference: THandleReferenceConfig
     mabd_newton: THandleMABDNewtonConfig
     comparison: THandleComparisonConfig
+    figure_curves: THandleFigureCurvesConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -927,6 +933,13 @@ def _require_t_handle_comparison(data: dict[str, Any]) -> THandleComparisonConfi
     )
 
 
+def _require_t_handle_figure_curves(data: dict[str, Any]) -> THandleFigureCurvesConfig:
+    figure_curves = _require_mapping(data, "figure_curves")
+    return THandleFigureCurvesConfig(
+        output_report=_require_str(figure_curves, "output_report"),
+    )
+
+
 def _require_heavy_top_reference(data: dict[str, Any]) -> HeavyTopReferenceConfig:
     reference = _require_mapping(data, "reference")
     thresholds = _require_float_mapping(reference, "thresholds")
@@ -1415,6 +1428,7 @@ def load_t_handle_config(path: str | Path) -> THandleRunConfig:
         reference=_require_t_handle_reference(data),
         mabd_newton=_require_t_handle_mabd_newton(data),
         comparison=_require_t_handle_comparison(data),
+        figure_curves=_require_t_handle_figure_curves(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1528,6 +1542,19 @@ def validate_t_handle_config_against_matrix(
         config.mabd_newton.output_report,
     ):
         raise ExperimentRunConfigError("comparison.output_report must be separate from other lane reports")
+    if (
+        not config.figure_curves.output_report.startswith(expected_prefix)
+        or not config.figure_curves.output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "figure_curves.output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.figure_curves.output_report in (
+        config.reference.output_report,
+        config.mabd_newton.output_report,
+        config.comparison.output_report,
+    ):
+        raise ExperimentRunConfigError("figure_curves.output_report must be separate from lane reports")
     mabd_duration = config.mabd_newton.step_count * config.mabd_newton.time_step_s
     if not np.isclose(mabd_duration, config.reference.duration_s, rtol=0.0, atol=1.0e-12):
         raise ExperimentRunConfigError("mabd_newton step_count*time_step_s must match reference.duration_s")
@@ -1811,6 +1838,7 @@ __all__ = [
     "SpinningBoxPaperHorizonConfig",
     "SpinningBoxRunConfig",
     "THandleComparisonConfig",
+    "THandleFigureCurvesConfig",
     "THandleMABDNewtonConfig",
     "THandleReferenceConfig",
     "THandleRunConfig",
