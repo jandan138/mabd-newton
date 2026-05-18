@@ -308,7 +308,7 @@ def _heavy_top_lane_provenance(path: str | Path, report: ClaimReport) -> dict[st
     return provenance
 
 
-def _t_handle_lane_provenance(path: str | Path, report: ClaimReport) -> dict[str, str]:
+def _t_handle_lane_provenance(path: str | Path, report: ClaimReport) -> dict[str, str | bool]:
     provenance = {
         "path": Path(path).as_posix(),
         "sha256": _sha256_file(path),
@@ -319,6 +319,9 @@ def _t_handle_lane_provenance(path: str | Path, report: ClaimReport) -> dict[str
         "baseline_lane": report.baseline_lane,
         "status": report.status.value,
     }
+    reference_not_paper_geometry = report.observed.get("reference_not_paper_geometry")
+    if isinstance(reference_not_paper_geometry, bool):
+        provenance["reference_not_paper_geometry"] = reference_not_paper_geometry
     for key in (
         "reference_scope",
         "mabd_diagnostic_scope",
@@ -567,19 +570,54 @@ def _t_handle_first_sample_grid_flip_time(
     if not finite_rows:
         return None
     finite_rows.sort(key=lambda item: item[0])
-    prev_time, prev_value = finite_rows[0]
-    if prev_value == 0.0:
-        return prev_time
-    for time_s, value in finite_rows[1:]:
+    prev_time: float | None = None
+    prev_value: float | None = None
+    zero_run_start_time: float | None = None
+    for time_s, value in finite_rows:
         if value == 0.0:
-            return time_s
-        if prev_value * value < 0.0:
+            if prev_value is not None and zero_run_start_time is None:
+                zero_run_start_time = time_s
+            continue
+        if prev_value is not None and prev_time is not None and prev_value * value < 0.0:
+            if zero_run_start_time is not None:
+                return zero_run_start_time
             alpha = abs(prev_value) / (abs(prev_value) + abs(value))
             crossing = prev_time + alpha * (time_s - prev_time)
             return crossing if isfinite(crossing) else None
         prev_time = time_s
         prev_value = value
+        zero_run_start_time = None
     return None
+
+
+def _t_handle_rows_by_unique_sample_key(
+    rows: list[dict[str, Any]],
+) -> tuple[
+    dict[int, dict[str, Any]],
+    list[int],
+    list[dict[str, float | int | None]],
+    list[dict[str, float | int | None]],
+]:
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    invalid_samples: list[dict[str, float | int | None]] = []
+    for row in rows:
+        key = _t_handle_sample_key(row)
+        if key is None:
+            invalid_samples.append(_t_handle_sample_identity(row))
+            continue
+        grouped.setdefault(key, []).append(row)
+    duplicate_keys = sorted(key for key, values in grouped.items() if len(values) > 1)
+    duplicate_samples = [
+        _t_handle_sample_identity(row)
+        for key in duplicate_keys
+        for row in grouped[key]
+    ]
+    unique_rows = {
+        key: values[0]
+        for key, values in grouped.items()
+        if len(values) == 1
+    }
+    return unique_rows, duplicate_keys, duplicate_samples, invalid_samples
 
 
 def _t_handle_sample_index_differences(
@@ -591,22 +629,32 @@ def _t_handle_sample_index_differences(
 ) -> dict[str, Any]:
     rk4_rows = _t_handle_sample_rows(rk4_report)
     mabd_rows = _t_handle_sample_rows(mabd_report)
-    rk4_by_key = {
-        key: row for row in rk4_rows if (key := _t_handle_sample_key(row)) is not None
-    }
-    mabd_by_key = {
-        key: row for row in mabd_rows if (key := _t_handle_sample_key(row)) is not None
-    }
+    (
+        rk4_by_key,
+        duplicate_rk4_keys,
+        duplicate_rk4_samples,
+        invalid_rk4_samples,
+    ) = _t_handle_rows_by_unique_sample_key(rk4_rows)
+    (
+        mabd_by_key,
+        duplicate_mabd_keys,
+        duplicate_mabd_samples,
+        invalid_mabd_samples,
+    ) = _t_handle_rows_by_unique_sample_key(mabd_rows)
     matched_keys = sorted(set(rk4_by_key) & set(mabd_by_key))
-    unmatched_rk4 = [
+    unmatched_rk4 = invalid_rk4_samples + duplicate_rk4_samples + [
         _t_handle_sample_identity(row)
         for row in rk4_rows
-        if (key := _t_handle_sample_key(row)) is None or key not in mabd_by_key
+        if (key := _t_handle_sample_key(row)) is not None
+        and key in rk4_by_key
+        and key not in mabd_by_key
     ]
-    unmatched_mabd = [
+    unmatched_mabd = invalid_mabd_samples + duplicate_mabd_samples + [
         _t_handle_sample_identity(row)
         for row in mabd_rows
-        if (key := _t_handle_sample_key(row)) is None or key not in rk4_by_key
+        if (key := _t_handle_sample_key(row)) is not None
+        and key in mabd_by_key
+        and key not in rk4_by_key
     ]
     differences: list[dict[str, float | int]] = []
     nonfinite = False
@@ -689,16 +737,28 @@ def _t_handle_sample_index_differences(
         "time_aligned_sample_count": time_aligned_count,
         "unmatched_rk4_samples": unmatched_rk4,
         "unmatched_mabd_samples": unmatched_mabd,
+        "duplicate_rk4_sample_indices": duplicate_rk4_keys,
+        "duplicate_mabd_sample_indices": duplicate_mabd_keys,
         "sample_index_differences": differences,
         "max_sample_time_delta_s": max_time_delta,
         "max_abs_angular_velocity_delta_rad_s": max_abs_omega_delta,
         "intermediate_axis_waveform_rmse_rad_s": waveform_rmse,
         "time_grid_mismatch": time_grid_mismatch,
+        "sample_index_duplicate": bool(duplicate_rk4_keys or duplicate_mabd_keys),
         "nonfinite": nonfinite,
     }
 
 
-def _t_handle_paper_metric_statuses(sample_diagnostics: dict[str, Any]) -> dict[str, dict[str, str]]:
+def _t_handle_paper_metric_statuses(
+    sample_diagnostics: dict[str, Any],
+    *,
+    flip_delta: float | None,
+) -> dict[str, dict[str, str]]:
+    flip_status = (
+        "sample_grid_diagnostic_not_paper_timing"
+        if flip_delta is not None
+        else "sample_grid_flip_delta_unavailable_not_paper_timing"
+    )
     waveform_status = (
         "diagnostic_available_not_paper_curve"
         if sample_diagnostics["time_aligned_sample_count"] > 0
@@ -706,7 +766,7 @@ def _t_handle_paper_metric_statuses(sample_diagnostics: dict[str, Any]) -> dict[
     )
     return {
         "flip_timing_error": {
-            "status": "sample_grid_diagnostic_not_paper_timing",
+            "status": flip_status,
             "diagnostic_field": "flip_timing_diagnostics",
             "limitation": "sample-grid interpolation only; raw paper timing unavailable",
         },
@@ -1344,8 +1404,12 @@ def write_t_handle_comparison_report(
         blocking_reasons.append("sample_time_grid_mismatch")
     if sample_diagnostics["time_aligned_sample_count"] == 0:
         blocking_reasons.append("time_aligned_waveform_samples_missing")
+    if sample_diagnostics["sample_index_duplicate"]:
+        blocking_reasons.append("duplicate_sample_indices")
     if sample_diagnostics["nonfinite"]:
         blocking_reasons.append("nonfinite_sample_values")
+    if flip_delta is None:
+        blocking_reasons.append("sample_grid_flip_delta_unavailable")
     if rk4_energy_drift is None or mabd_energy_drift is None:
         blocking_reasons.append("energy_drift_nonfinite")
 
@@ -1377,7 +1441,10 @@ def write_t_handle_comparison_report(
             "rbd_rk4_reference": _t_handle_metric_snapshot(rk4_report),
             "mabd_newton": _t_handle_metric_snapshot(mabd_report),
         },
-        "paper_metric_statuses": _t_handle_paper_metric_statuses(sample_diagnostics),
+        "paper_metric_statuses": _t_handle_paper_metric_statuses(
+            sample_diagnostics,
+            flip_delta=flip_delta,
+        ),
         "missing_required_lanes": [],
         "missing_paper_metrics": [
             "flip_timing_error:raw_paper_timing_missing",
@@ -1394,6 +1461,8 @@ def write_t_handle_comparison_report(
         "time_aligned_sample_count": sample_diagnostics["time_aligned_sample_count"],
         "unmatched_rk4_samples": sample_diagnostics["unmatched_rk4_samples"],
         "unmatched_mabd_samples": sample_diagnostics["unmatched_mabd_samples"],
+        "duplicate_rk4_sample_indices": sample_diagnostics["duplicate_rk4_sample_indices"],
+        "duplicate_mabd_sample_indices": sample_diagnostics["duplicate_mabd_sample_indices"],
         "sample_index_differences": sample_diagnostics["sample_index_differences"],
         "max_sample_time_delta_s": sample_diagnostics["max_sample_time_delta_s"],
         "max_abs_angular_velocity_delta_rad_s": sample_diagnostics[
@@ -1403,6 +1472,7 @@ def write_t_handle_comparison_report(
             "intermediate_axis_waveform_rmse_rad_s"
         ],
         "time_grid_mismatch": sample_diagnostics["time_grid_mismatch"],
+        "sample_index_duplicate": sample_diagnostics["sample_index_duplicate"],
         "sample_nonfinite": sample_diagnostics["nonfinite"],
         "flip_timing_diagnostics": {
             "axis_index": axis_index,

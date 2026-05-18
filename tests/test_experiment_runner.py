@@ -727,8 +727,10 @@ class ExperimentRunnerTests(unittest.TestCase):
             "raw_t_handle_reference_curve_data_missing",
             loaded.observed["blocking_reasons"],
         )
-        self.assertIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
+        self.assertIn("mabd_newton_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertNotIn("mabd_newton_report_missing", loaded.observed["blocking_reasons"])
         self.assertIn("t_handle_comparison_report_incomplete", loaded.observed["blocking_reasons"])
+        self.assertEqual(loaded.observed["required_missing_lanes"], [])
         self.assertNotIn("lane_gate_status", loaded.observed)
 
     def test_run_t_handle_mabd_newton_writes_incomplete_newton_diagnostic_report(self) -> None:

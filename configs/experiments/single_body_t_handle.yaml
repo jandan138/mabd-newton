@@ -6,8 +6,7 @@ source_lines:
 asset_ids:
   - t_handle_procedural
 baseline_lane: rbd_rk4_reference
-required_missing_lanes:
-  - mabd_newton
+required_missing_lanes: []
 paper_values:
   initial_angular_speed_rad_s: 3
   reference_h_s: 0.0001

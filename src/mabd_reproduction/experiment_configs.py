@@ -336,7 +336,7 @@ T_HANDLE_MABD_NEWTON_THRESHOLD_KEYS = frozenset(
     }
 )
 T_HANDLE_MABD_NEWTON_ROTATION_MODES = frozenset({"polar"})
-T_HANDLE_REQUIRED_MISSING_LANES = ("mabd_newton",)
+T_HANDLE_REQUIRED_MISSING_LANES: tuple[str, ...] = ()
 T_HANDLE_COMPARISON_REQUIRED_LANES = ("mabd_newton", "rbd_rk4_reference")
 T_HANDLE_COMPARISON_REQUIRED_METRICS = (
     "flip_timing_error",
@@ -917,6 +917,8 @@ def _require_t_handle_comparison(data: dict[str, Any]) -> THandleComparisonConfi
         raise ExperimentRunConfigError(
             "comparison.thresholds missing required keys: " + ", ".join(missing)
         )
+    if thresholds["max_sample_time_delta_s"] < 0.0:
+        raise ExperimentRunConfigError("comparison.thresholds.max_sample_time_delta_s must be nonnegative")
     return THandleComparisonConfig(
         output_report=_require_str(comparison, "output_report"),
         required_lanes=required_lanes,
@@ -1456,7 +1458,7 @@ def validate_t_handle_config_against_matrix(
     if config.baseline_lane not in entry.required_lanes:
         raise ExperimentRunConfigError("baseline_lane must be listed in required_lanes")
     if config.required_missing_lanes != T_HANDLE_REQUIRED_MISSING_LANES:
-        raise ExperimentRunConfigError("required_missing_lanes must be mabd_newton only")
+        raise ExperimentRunConfigError("required_missing_lanes must be empty after Phase 57")
     missing_lanes = set(config.required_missing_lanes) - set(entry.required_lanes)
     if missing_lanes:
         raise ExperimentRunConfigError("required_missing_lanes must be listed in required_lanes")

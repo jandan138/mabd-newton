@@ -95,7 +95,9 @@ class THandleComparisonReportTests(unittest.TestCase):
         )
         provenance = loaded.observed["input_report_provenance"]
         self.assertEqual(provenance["rbd_rk4_reference"]["source_commit"], "test-source")
+        self.assertTrue(provenance["rbd_rk4_reference"]["reference_not_paper_geometry"])
         self.assertEqual(provenance["mabd_newton"]["baseline_lane"], "mabd_newton")
+        self.assertTrue(provenance["mabd_newton"]["reference_not_paper_geometry"])
         self.assertEqual(
             provenance["mabd_newton"]["mabd_diagnostic_scope"],
             "t_handle_model_derived_proxy",
@@ -131,7 +133,7 @@ class THandleComparisonReportTests(unittest.TestCase):
         )
         self.assertEqual(
             loaded.observed["paper_metric_statuses"]["flip_timing_error"]["status"],
-            "sample_grid_diagnostic_not_paper_timing",
+            "sample_grid_flip_delta_unavailable_not_paper_timing",
         )
         self.assertEqual(
             loaded.observed["paper_metric_statuses"]["energy_loss"]["status"],
@@ -144,6 +146,7 @@ class THandleComparisonReportTests(unittest.TestCase):
         self.assertIn("t_handle_comparison_report_incomplete", blockers)
         self.assertIn("t_handle_comparison_pass_gate_not_enabled", blockers)
         self.assertIn("t_handle_timing_evidence_missing", blockers)
+        self.assertIn("sample_grid_flip_delta_unavailable", blockers)
         self.assertNotIn("t_handle_comparison_report_missing", blockers)
 
     def test_t_handle_comparison_rejects_wrong_input_identity(self) -> None:
@@ -243,6 +246,49 @@ class THandleComparisonReportTests(unittest.TestCase):
         self.assertIn("nonfinite_sample_values", report.observed["blocking_reasons"])
         self.assertNotIn("NaN", raw_output)
         self.assertNotIn("Infinity", raw_output)
+
+    def test_t_handle_comparison_does_not_count_exact_zero_without_sign_reversal_as_flip(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            payload = json.loads(mabd_path.read_text(encoding="utf-8"))
+            for index, sample in enumerate(payload["observed"]["angular_velocity_samples"]):
+                sample["omega_y_rad_s"] = 0.0 if index == 0 else 1.0
+            mabd_path.write_text(json.dumps(payload, allow_nan=False), encoding="utf-8")
+            output_path = Path(tmpdir) / "comparison.json"
+            report = self._write_comparison(
+                output_path=output_path,
+                config=config,
+                rk4_path=rk4_path,
+                mabd_path=mabd_path,
+            )
+
+        flip = report.observed["flip_timing_diagnostics"]
+        self.assertIsNone(flip["mabd_first_sample_grid_flip_time_s"])
+        self.assertEqual(flip["mabd_status"], "sample_grid_flip_unavailable")
+        self.assertEqual(flip["comparison_status"], "sample_grid_flip_delta_unavailable")
+        self.assertIn("sample_grid_flip_delta_unavailable", report.observed["blocking_reasons"])
+
+    def test_t_handle_comparison_blocks_duplicate_sample_indices(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            payload = json.loads(rk4_path.read_text(encoding="utf-8"))
+            duplicate = dict(payload["observed"]["angular_velocity_samples"][0])
+            duplicate["time_s"] = 0.25
+            duplicate["omega_y_rad_s"] = -100.0
+            payload["observed"]["angular_velocity_samples"].append(duplicate)
+            rk4_path.write_text(json.dumps(payload, allow_nan=False), encoding="utf-8")
+            output_path = Path(tmpdir) / "comparison.json"
+            report = self._write_comparison(
+                output_path=output_path,
+                config=config,
+                rk4_path=rk4_path,
+                mabd_path=mabd_path,
+            )
+
+        self.assertTrue(report.observed["sample_index_duplicate"])
+        self.assertEqual(report.observed["duplicate_rk4_sample_indices"], [0])
+        self.assertIn("duplicate_sample_indices", report.observed["blocking_reasons"])
+        self.assertLess(report.observed["matched_sample_index_count"], config.reference.sample_count)
 
 
 if __name__ == "__main__":

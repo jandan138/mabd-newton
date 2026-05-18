@@ -241,7 +241,7 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertEqual(config.source_lines, ("/tmp/mabd-paper/source/sections/experiment.tex:57-75",))
         self.assertEqual(config.asset_ids, ("t_handle_procedural",))
         self.assertEqual(config.baseline_lane, "rbd_rk4_reference")
-        self.assertEqual(config.required_missing_lanes, ("mabd_newton",))
+        self.assertEqual(config.required_missing_lanes, ())
         self.assertEqual(config.report_status, EvidenceStatus.INCOMPLETE)
         self.assertEqual(config.reference.time_step_s, 1.0e-4)
         self.assertEqual(config.reference.duration_s, 4.0)
@@ -434,6 +434,16 @@ class ExperimentRunConfigTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(source), encoding="utf-8")
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "comparison.thresholds"):
+                load_t_handle_config(path)
+
+    def test_t_handle_config_rejects_negative_comparison_time_threshold(self) -> None:
+        source = self._t_handle_mapping_with_comparison()
+        source["comparison"]["thresholds"]["max_sample_time_delta_s"] = -1.0
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_t_handle.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "max_sample_time_delta_s"):
                 load_t_handle_config(path)
 
     def test_t_handle_config_rejects_comparison_report_overlap(self) -> None:
