@@ -19,8 +19,10 @@ import RememberBox from "../../components/RememberBox.astro";
 import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
 import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
+import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
+import WorkedExercise from "../../components/WorkedExercise.astro";
 import modelingSpectrum from "../../assets/diagrams/modeling-spectrum.png";
 
 <ProblemCard title="它解决的问题">
@@ -47,6 +49,10 @@ import modelingSpectrum from "../../assets/diagrams/modeling-spectrum.png";
   <li>见过矩阵乘法，知道一个矩阵可以作用到一个点或向量上。</li>
   <li>已经读过 start-here，知道本页只建立概念位置，不提升仓库实现声明。</li>
 </PrereqBox>
+
+<GuidedProjectStep step="贯穿小项目 2/12" title="先决定它该像什么模型">
+继续使用同一小块软橡胶印章。它有三个标记好的静止点，但我们暂时不追踪每一道局部皱褶。本课的任务是判断：这个对象不能只当作一个粒子，也不适合只当作完全刚硬的印章；为了教程入口，它也不需要马上细分成完整 FEM 网格。仿射体正好让它保留整体压扁、拉伸和剪切的能力。
+</GuidedProjectStep>
 
 ## 从一个立方体开始
 
@@ -98,6 +104,20 @@ ABD 的优势是用较少自由度表达整体形变；它并不自动拥有 FEM
 <PracticePrompt title="动手练习">
 设想一个软橡胶块被轻轻压扁、但不需要模拟表面每一道细小皱褶。判断粒子、刚体、仿射体、FEM 哪个表示最合适，并用两三句话说明你的理由。
 </PracticePrompt>
+
+<WorkedExercise title="带答案的练习：为压扁的印章选模型">
+同一枚软橡胶印章被手指从上方轻轻压扁。请在粒子、刚体、仿射体、FEM 四个选项中选择一个最适合本教程阶段的表示，并说明为什么排除另外三个。
+
+<details>
+  <summary>提示</summary>
+  <p>先问你是否需要形状，再问形状是否允许整体变形，最后问是否真的需要局部细节。</p>
+</details>
+
+<details>
+  <summary>参考答案</summary>
+  <p>最适合本教程阶段的是仿射体。粒子只给一个位置，无法表达印章的体积和三个标记点之间的形状关系；刚体能移动和旋转，但不能表达压扁或剪切；FEM 可以表达局部皱褶和更细形变，但对这个入门项目过重。仿射体用少量自由度表达整体压扁、拉伸和剪切，正好匹配“不追踪细小皱褶”的要求。</p>
+</details>
+</WorkedExercise>
 
 <RememberBox title="核心记忆">
   <ul>
