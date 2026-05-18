@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 
@@ -353,6 +356,55 @@ class SingleBodyReportLaneTests(unittest.TestCase):
                 len(entry["trajectory_samples"]),
                 config.paper_horizon.sample_count,
             )
+
+    def test_spinning_box_contact_response_step_passes_current_contact_force_to_oracle(
+        self,
+    ) -> None:
+        from mabd_reproduction import single_body_reports
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+        from mabd_reproduction.spinning_box_physics import spinning_box_contact_diagnostics
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        penetrating_q = config.initial_q.copy()
+        penetrating_q[10] = 0.049
+        short_config = replace(
+            config,
+            initial_q=penetrating_q,
+            paper_horizon=replace(config.paper_horizon, duration_s=0.01, sample_count=2),
+        )
+        expected_contact = spinning_box_contact_diagnostics(
+            short_config,
+            short_config.initial_q,
+            short_config.initial_qd,
+        )
+        captured_forces: list[np.ndarray] = []
+
+        def fake_solve_cpu_oracle_step(*, q, qd, dt, config):
+            self.assertEqual(len(config.external_forces), 1)
+            captured_forces.append(config.external_forces[0].copy())
+            return SimpleNamespace(q=(q[0].copy(),), qd=(qd[0].copy(),), residual_norm=0.0)
+
+        with patch.object(
+            single_body_reports.mabd,
+            "solve_cpu_oracle_step",
+            side_effect=fake_solve_cpu_oracle_step,
+        ):
+            result = single_body_reports._run_spinning_box_paper_horizon_step_size(
+                config=short_config,
+                time_step_s=0.01,
+                contact_response_policy=single_body_reports.CONTACT_RESPONSE_POLICY,
+            )
+
+        self.assertEqual(len(captured_forces), 1)
+        np.testing.assert_allclose(
+            captured_forces[0],
+            expected_contact.total_generalized_force,
+            rtol=0.0,
+            atol=1.0e-12,
+        )
+        self.assertGreater(float(np.linalg.norm(captured_forces[0])), 0.0)
+        self.assertGreater(result["max_applied_contact_generalized_force_norm"], 0.0)
 
 
 if __name__ == "__main__":
