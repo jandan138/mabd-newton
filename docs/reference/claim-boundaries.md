@@ -690,6 +690,26 @@
   implementation, paper-faithful affine collision, comparison pass gate,
   rendered result, runtime performance, full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 62 spinning-box explicit contact-response
+  diagnostic evidence after the Phase 62 record is created.
+- Phase 62 verifies the current spinning-box paper-horizon `mabd_newton`
+  diagnostic can pass the existing point-plane penalty contact generalized
+  force through the Newton CPU oracle `external_forces` hook with
+  `contact_response_policy =
+  explicit_current_state_penalty_force_as_external_force_next_step`, records
+  `spinning_box_contact_response_not_paper_faithful`,
+  `contact_response_does_not_reduce_penetration`, positive applied contact
+  force, top-level report status: `incomplete`, and no lane gate.
+- Phase 62 does not verify a passed spinning-box experiment, M-ABD lane pass,
+  contact solver, collision implementation, implicit contact solve,
+  paper-faithful affine collision, comparison pass gate, rendered result,
+  runtime performance, full paper reproduction, or any passed `experiment.*`
+  claim.
+- Phase 62 spinning-box contact-response diagnostic evidence must not be
+  described as a passed spinning-box experiment, M-ABD lane pass, contact
+  solver, collision implementation, implicit contact solve, paper-faithful
+  affine collision, comparison pass gate, rendered result, runtime
+  performance, full paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1023,6 +1043,12 @@
   implementation, not paper-faithful affine collision, not a comparison pass
   gate, not a rendered result, not runtime performance evidence, not a full
   paper reproduction, and not any passed `experiment.*` claim.
+- Phase 62 spinning-box contact-response diagnostics are not a passed
+  spinning-box experiment, not a passed M-ABD lane, not a contact solver, not a
+  collision implementation, not an implicit contact solve, not paper-faithful
+  affine collision, not a comparison pass gate, not a rendered result, not
+  runtime performance evidence, not a full paper reproduction, and not any
+  passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

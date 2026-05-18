@@ -3849,6 +3849,143 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("top-level contact normal force", str(context.exception))
 
+    def test_phase62_spinning_box_contact_response_is_bounded(self) -> None:
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 62")
+        verified = claim_boundary_bullet(text, "Phase 62 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 62 does not verify")
+        forbidden = claim_boundary_bullet(text, "Phase 62 spinning-box contact-response")
+
+        self.assertIn("spinning-box explicit contact-response diagnostic evidence", current)
+        self.assertIn("external_forces", verified)
+        self.assertIn(
+            "explicit_current_state_penalty_force_as_external_force_next_step",
+            verified,
+        )
+        self.assertIn("spinning_box_contact_response_not_paper_faithful", verified)
+        self.assertIn("contact_response_does_not_reduce_penetration", verified)
+        self.assertIn("positive applied contact force", verified)
+        self.assertIn("no lane gate", verified)
+        self.assertIn("passed spinning-box experiment", non_claim)
+        self.assertIn("contact solver", non_claim)
+        self.assertIn("implicit contact solve", non_claim)
+        self.assertIn("paper-faithful affine collision", non_claim)
+        self.assertIn("full paper reproduction", forbidden)
+
+        report_path = ROOT / "reports/experiment_matrix/single_body_spinning_box_contact_response.json"
+        report = load_claim_report(report_path)
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertNotIn("lane_gate_status", report.observed)
+        self.assertEqual(report.solver_mode, "mabd_cpu_oracle_contact_response_diagnostic")
+        self.assertEqual(
+            report.observed["contact_response_policy"],
+            "explicit_current_state_penalty_force_as_external_force_next_step",
+        )
+        self.assertEqual(report.observed["contact_response_scope"], "diagnostic_only_no_lane_gate")
+        self.assertIn(
+            "spinning_box_contact_response_not_paper_faithful",
+            report.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "contact_response_does_not_reduce_penetration",
+            report.observed["blocking_reasons"],
+        )
+        self.assertGreaterEqual(report.observed["response_max_contact_active_count"], 4)
+        self.assertGreater(report.observed["response_max_contact_penetration_m"], 0.0)
+        self.assertGreater(report.observed["response_max_applied_contact_force_norm"], 0.0)
+        self.assertGreater(report.observed["no_response_max_contact_penetration_m"], 0.0)
+        self.assertEqual(report.observed["penetration_delta_vs_no_response_m"], 0.0)
+        self.assertEqual(len(report.observed["contact_response_results"]), 2)
+
+        import scripts.validate_docs as validate_docs
+
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT,
+        )
+        self.assertNotIn(report.source_commit, validate_docs.PLACEHOLDER_SOURCE_COMMITS)
+        self.assertEqual(
+            validate_docs.sha256_file(report_path),
+            validate_docs.PHASE62_SPINNING_BOX_CONTACT_RESPONSE_SHA256,
+        )
+
+    def test_phase62_record_has_required_evidence_fields(self) -> None:
+        text = (
+            ROOT / "docs/records/2026-05-18-phase62-spinning-box-contact-response.md"
+        ).read_text()
+        import scripts.validate_docs as validate_docs
+
+        for snippet in (
+            "## Status\n\npassed_for_spinning_box_contact_response_diagnostic_slice",
+            "phase62-spinning-box-contact-response",
+            validate_docs.PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
+            "0dac0d45baeccbab0120059112268453b59ceb4af025d123ce1979ecb4c91942",
+            "explicit_current_state_penalty_force_as_external_force_next_step",
+            "spinning_box_contact_response_not_paper_faithful",
+            "contact_response_does_not_reduce_penetration",
+            "response_max_applied_contact_force_norm = `5776.765458377781`",
+            "No `experiment.*` claim is passed.",
+            "does not implement a contact solver",
+            "paper-faithful affine collision",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE62", text)
+        self.assertNotIn("phase62-working-tree", text)
+
+    def test_phase62_validator_rejects_nonfinite_applied_contact_force(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_contact_response.json"
+        )
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "response_max_applied_contact_force_norm": math.nan,
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase62_record()
+
+        self.assertIn("applied contact force", str(context.exception))
+
+    def test_phase62_validator_rejects_inconsistent_response_penetration(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual = load_claim_report(
+            ROOT / "reports/experiment_matrix/single_body_spinning_box_contact_response.json"
+        )
+        corrupted = replace(
+            actual,
+            observed={
+                **actual.observed,
+                "response_max_contact_penetration_m": (
+                    actual.observed["response_max_contact_penetration_m"] * 0.5
+                ),
+            },
+        )
+
+        def fake_load_claim_report(path):
+            if str(path).endswith(validate_docs.SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH):
+                return corrupted
+            return load_claim_report(path)
+
+        with patch.object(validate_docs, "load_claim_report", side_effect=fake_load_claim_report):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase62_record()
+
+        self.assertIn("top-level penetration", str(context.exception))
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -4695,7 +4832,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

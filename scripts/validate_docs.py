@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-61 docs and provenance contracts."""
+"""Validate Phase 0-62 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -140,6 +140,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-18-phase59-t-handle-figure-agreement-diagnostics.md",
     "docs/records/2026-05-18-phase60-reproduction-gap-audit.md",
     "docs/records/2026-05-18-phase61-spinning-box-contact-diagnostics.md",
+    "docs/records/2026-05-18-phase62-spinning-box-contact-response.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -200,8 +201,11 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-18-mabd-phase60-reproduction-gap-audit.md",
     "docs/superpowers/specs/2026-05-18-phase61-spinning-box-contact-diagnostics-design.md",
     "docs/superpowers/plans/2026-05-18-mabd-phase61-spinning-box-contact-diagnostics.md",
+    "docs/superpowers/specs/2026-05-18-phase62-spinning-box-contact-response-design.md",
+    "docs/superpowers/plans/2026-05-18-mabd-phase62-spinning-box-contact-response.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
+    "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
     "reports/experiment_matrix/single_body_spinning_box_comparison.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
@@ -250,11 +254,18 @@ VENDORED_NEWTON_COMMIT = "96713fa965463b69c229a4d30582c733ff3526bb"
 PHASE59_T_HANDLE_AGREEMENT_COMMIT = "5d8a0079876d17568464a87c320c53be2d898089"
 PHASE60_REPRODUCTION_GAP_AUDIT_COMMIT = "f83889adbec6402e0baa1b4c55db5962a224808d"
 PHASE61_SPINNING_BOX_CONTACT_COMMIT = "d73e105515c270d4bac9b3b373553132c7c6d99b"
+PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT = "98f66d7344c3bb09995d1c9187beb1830683195e"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
+SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_spinning_box_contact_response.json"
+)
 PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256 = (
     "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
+)
+PHASE62_SPINNING_BOX_CONTACT_RESPONSE_SHA256 = (
+    "0dac0d45baeccbab0120059112268453b59ceb4af025d123ce1979ecb4c91942"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -299,6 +310,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase60-working-tree",
     "TO_BE_BACKFILLED_PHASE61",
     "phase61-working-tree",
+    "TO_BE_BACKFILLED_PHASE62",
+    "phase62-working-tree",
 }
 
 
@@ -10308,9 +10321,11 @@ def validate_phase60_record() -> None:
             fail(f"Phase 60 audit duplicate report entry: {path}")
         report_entries[path] = entry
 
+    phase60_post_audit_reports = {SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH}
     expected_report_paths = sorted(
-        path.relative_to(ROOT).as_posix()
+        relative_path
         for path in (ROOT / "reports/experiment_matrix").glob("*.json")
+        if (relative_path := path.relative_to(ROOT).as_posix()) not in phase60_post_audit_reports
     )
     if sorted(report_entries) != expected_report_paths:
         fail("Phase 60 audit current_evidence_reports set changed")
@@ -10649,6 +10664,314 @@ def validate_phase61_record() -> None:
             fail("Phase 61 must not pass experiment.* claims")
 
 
+def validate_phase62_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-18-phase62-spinning-box-contact-response.md"
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-18-phase62-spinning-box-contact-response-design.md"
+    )
+    plan_path = (
+        ROOT / "docs/superpowers/plans/2026-05-18-mabd-phase62-spinning-box-contact-response.md"
+    )
+    report_path = SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_spinning_box_contact_response_diagnostic_slice",
+        "phase62-spinning-box-contact-response",
+        PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+        SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH,
+        PHASE62_SPINNING_BOX_CONTACT_RESPONSE_SHA256,
+        "contact_response_policy =",
+        "`explicit_current_state_penalty_force_as_external_force_next_step`",
+        "spinning_box_contact_response_not_paper_faithful",
+        "contact_response_does_not_reduce_penetration",
+        "response_max_applied_contact_force_norm = `5776.765458377781`",
+        "No `experiment.*` claim is passed.",
+        "does not implement a contact solver",
+        "paper-faithful affine collision",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane spinning_box_contact_response",
+        "PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 62 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE62",
+        "TO_BE_BACKFILLED_PHASE62_REPORT_SHA256",
+        "phase62-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 62 record contains stale placeholder")
+    if PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 62 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "spinning-box experiment passed",
+        "passed spinning-box experiment",
+        "m-abd lane passed",
+        "contact solver implemented",
+        "collision implementation verified",
+        "implicit contact solve implemented",
+        "comparison pass gate enabled",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 62 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 62")
+    verified = claim_boundary_bullet(boundary_text, "Phase 62 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 62 does not verify")
+    forbidden = claim_boundary_bullet(boundary_text, "Phase 62 spinning-box contact-response")
+    for snippet in (
+        "spinning-box explicit contact-response diagnostic evidence",
+        "Phase 62 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 62 current boundary missing: {snippet}")
+    for snippet in (
+        "external_forces",
+        "contact_response_policy =",
+        "explicit_current_state_penalty_force_as_external_force_next_step",
+        "`spinning_box_contact_response_not_paper_faithful`",
+        "`contact_response_does_not_reduce_penetration`",
+        "positive applied contact force",
+        "top-level report status: `incomplete`",
+        "no lane gate",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 62 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed spinning-box experiment",
+        "M-ABD lane pass",
+        "contact solver",
+        "collision implementation",
+        "implicit contact solve",
+        "paper-faithful affine collision",
+        "comparison pass gate",
+        "rendered result",
+        "runtime performance",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 62 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 62 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 62 Spinning-Box Contact Response Design",
+        "explicit_current_state_penalty_force_as_external_force_next_step",
+        "spinning_box_contact_response_not_paper_faithful",
+        "contact_response_does_not_reduce_penetration",
+        "not a contact solver",
+        "not a passed spinning-box paper experiment",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 62 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 62 Spinning-Box Contact Response Implementation Plan",
+        "Add a Newton-only explicit contact-response diagnostic report",
+        "spinning_box_contact_response",
+        "Request multi-agent review before merging",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 62 plan missing required boundary text: {snippet}")
+
+    try:
+        config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        validate_spinning_box_config_against_matrix(config, matrix)
+    except (ExperimentRunConfigError, ExperimentMatrixError) as exc:
+        fail(f"Phase 62 spinning-box config validation failed: {exc}")
+
+    if config.paper_horizon.contact_response_output_report != report_path:
+        fail("Phase 62 config contact response output report changed")
+
+    report = load_claim_report(ROOT / report_path)
+    if report.source_commit != PHASE62_SPINNING_BOX_CONTACT_RESPONSE_COMMIT:
+        fail("Phase 62 contact-response report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 62 contact-response report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 62 contact-response report vendored Newton commit changed")
+    if report.claim_id != config.claim_id:
+        fail("Phase 62 contact-response report claim_id does not match config")
+    if report.scene_id != config.scene_id:
+        fail("Phase 62 contact-response report scene_id does not match config")
+    if report.baseline_lane != "mabd_newton":
+        fail("Phase 62 contact-response report lane changed")
+    if report.solver_mode != "mabd_cpu_oracle_contact_response_diagnostic":
+        fail("Phase 62 contact-response solver mode changed")
+    if report.backend != "cpu_numpy":
+        fail("Phase 62 contact-response backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 62 contact-response report must remain incomplete")
+
+    observed = report.observed
+    if observed.get("contact_response_policy") != (
+        "explicit_current_state_penalty_force_as_external_force_next_step"
+    ):
+        fail("Phase 62 contact response policy changed")
+    if observed.get("contact_response_scope") != "diagnostic_only_no_lane_gate":
+        fail("Phase 62 contact response scope changed")
+    if observed.get("contact_response_status") != "explicit_response_diagnostic_incomplete":
+        fail("Phase 62 contact response status changed")
+    if "lane_gate_status" in observed:
+        fail("Phase 62 contact-response report must not expose a passed lane gate")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 62 contact-response blockers must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "mabd_paper_horizon_diagnostic_thresholds_violated",
+        "spinning_box_contact_response_not_paper_faithful",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "mabd_kinematic_feasibility_blocker_recorded",
+        "contact_response_does_not_reduce_penetration",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 62 contact-response blocker missing: {blocker}")
+
+    corner_count = spinning_box_contact_diagnostics(config, config.initial_q, config.initial_qd).corner_count
+    response_contact_count = _require_integer_count(
+        observed.get("response_max_contact_active_count"),
+        "Phase 62 response contact count",
+        maximum=corner_count,
+    )
+    if response_contact_count < 4:
+        fail("Phase 62 contact-response count unexpectedly low")
+    no_response_penetration = _require_finite_scalar(
+        observed.get("no_response_max_contact_penetration_m"),
+        "Phase 62 no-response penetration",
+    )
+    response_penetration = _require_finite_scalar(
+        observed.get("response_max_contact_penetration_m"),
+        "Phase 62 response penetration",
+    )
+    applied_force = _require_finite_scalar(
+        observed.get("response_max_applied_contact_force_norm"),
+        "Phase 62 applied contact force",
+    )
+    penetration_delta = _require_finite_scalar(
+        observed.get("penetration_delta_vs_no_response_m"),
+        "Phase 62 penetration delta",
+    )
+    if no_response_penetration <= 0.0 or response_penetration <= 0.0:
+        fail("Phase 62 contact-response report must record positive penetration")
+    if applied_force <= 0.0:
+        fail("Phase 62 contact-response report must record a positive applied force")
+    if penetration_delta < 0.0:
+        fail("Phase 62 committed contact-response report unexpectedly reduces penetration")
+
+    results = observed.get("contact_response_results")
+    if not isinstance(results, list) or len(results) != len(config.paper_horizon.time_step_grid_s):
+        fail("Phase 62 contact-response results must cover the configured step grid")
+    response_counts: list[int] = []
+    response_penetrations: list[float] = []
+    response_applied_forces: list[float] = []
+    for result in results:
+        if not isinstance(result, dict):
+            fail("Phase 62 contact-response result must be a mapping")
+        if result.get("contact_response_policy") != (
+            "explicit_current_state_penalty_force_as_external_force_next_step"
+        ):
+            fail("Phase 62 per-step contact response policy changed")
+        response_counts.append(
+            _require_integer_count(
+                result.get("max_contact_active_count"),
+                "Phase 62 result contact count",
+                maximum=corner_count,
+            )
+        )
+        result_penetration = _require_finite_scalar(
+            result.get("max_contact_penetration_m"),
+            "Phase 62 result penetration",
+        )
+        result_applied_force = _require_finite_scalar(
+            result.get("max_applied_contact_generalized_force_norm"),
+            "Phase 62 result applied contact force",
+        )
+        response_penetrations.append(result_penetration)
+        response_applied_forces.append(result_applied_force)
+        if result_penetration <= 0.0:
+            fail("Phase 62 per-step result must record positive penetration")
+        if result_applied_force <= 0.0:
+            fail("Phase 62 per-step result must record positive applied contact force")
+        samples = result.get("trajectory_samples")
+        if not isinstance(samples, list) or not samples:
+            fail("Phase 62 per-step result must retain compact trajectory samples")
+        for sample in samples:
+            if not isinstance(sample, dict):
+                fail("Phase 62 trajectory sample must be a mapping")
+            if sample.get("contact_response_policy") != (
+                "explicit_current_state_penalty_force_as_external_force_next_step"
+            ):
+                fail("Phase 62 trajectory sample response policy changed")
+            for key in (
+                "contact_min_signed_distance_m",
+                "contact_max_penetration_m",
+                "contact_normal_force_norm_n",
+                "contact_generalized_force_norm",
+            ):
+                _require_finite_scalar(sample.get(key), f"Phase 62 trajectory sample {key}")
+
+    if response_contact_count != max(response_counts):
+        fail("Phase 62 top-level contact count must match response maximum")
+    if not np.isclose(response_penetration, max(response_penetrations), rtol=0.0, atol=1.0e-12):
+        fail("Phase 62 top-level penetration must match response maximum")
+    if not np.isclose(applied_force, max(response_applied_forces), rtol=0.0, atol=1.0e-12):
+        fail("Phase 62 top-level applied force must match response maximum")
+
+    no_response_results = observed.get("no_response_reference_results")
+    if not isinstance(no_response_results, list) or len(no_response_results) != len(
+        config.paper_horizon.time_step_grid_s
+    ):
+        fail("Phase 62 no-response reference results must cover the configured step grid")
+    no_response_result_penetrations = [
+        _require_finite_scalar(
+            result.get("max_contact_penetration_m") if isinstance(result, dict) else None,
+            "Phase 62 no-response result penetration",
+        )
+        for result in no_response_results
+    ]
+    if not np.isclose(
+        no_response_penetration,
+        max(no_response_result_penetrations),
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        fail("Phase 62 no-response top-level penetration must match reference maximum")
+
+    actual_hash = sha256_file(ROOT / report_path)
+    if actual_hash != PHASE62_SPINNING_BOX_CONTACT_RESPONSE_SHA256:
+        fail("Phase 62 contact-response report sha256 changed")
+    record_hash = _record_sha256_for_artifact(text, report_path)
+    if record_hash != actual_hash:
+        fail("Phase 62 contact-response report sha256 mismatch")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.spinning_box":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 62 must keep spinning-box experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 62 must not pass experiment.* claims")
+
+
 def validate_paper_claims() -> None:
     data = read_yaml(ROOT / "docs/reference/paper-claims.yaml")
     paper = data.get("paper")
@@ -10952,13 +11275,14 @@ def main() -> int:
     validate_phase59_record()
     validate_phase60_record()
     validate_phase61_record()
+    validate_phase62_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62 "
         "docs/provenance validation passed"
     )
     return 0
