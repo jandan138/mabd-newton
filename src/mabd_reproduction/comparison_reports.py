@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from bisect import bisect_left
 from math import isfinite, sqrt
 from pathlib import Path
 from typing import Any
@@ -81,6 +82,7 @@ HEAVY_TOP_FIGURE_BACKEND = "pdftocairo_pillow"
 T_HANDLE_FIGURE_BASELINE_LANE = "paper_figure_digitization"
 T_HANDLE_FIGURE_SOLVER_MODE = "t_handle_paper_figure_digitization"
 T_HANDLE_FIGURE_BACKEND = "pdftocairo_pillow"
+T_HANDLE_FIGURE_TIME_RANGE = (0.0, 100.0)
 
 
 def _require_lane_report(
@@ -271,12 +273,20 @@ def _finite_t_handle_figure_curve_samples(report: ClaimReport) -> bool:
             samples = curve.get("samples")
             if not isinstance(samples, list) or not samples:
                 return False
-            if not all(
-                isinstance(sample, dict)
-                and _finite_scalar(sample.get("time_s")) is not None
-                and _finite_scalar(sample.get("value")) is not None
-                for sample in samples
-            ):
+            finite_times: list[float] = []
+            for sample in samples:
+                if not isinstance(sample, dict):
+                    return False
+                time_s = _finite_scalar(sample.get("time_s"))
+                value = _finite_scalar(sample.get("value"))
+                if time_s is None or value is None:
+                    return False
+                finite_times.append(time_s)
+            if finite_times[0] != T_HANDLE_FIGURE_TIME_RANGE[0]:
+                return False
+            if finite_times[-1] != T_HANDLE_FIGURE_TIME_RANGE[1]:
+                return False
+            if any(rhs <= lhs for lhs, rhs in zip(finite_times, finite_times[1:])):
                 return False
     return True
 
@@ -823,6 +833,212 @@ def _t_handle_sample_index_differences(
     }
 
 
+def _t_handle_figure_samples(
+    figure_report: ClaimReport,
+    *,
+    metric_key: str,
+    color_family: str,
+) -> list[tuple[float, float]]:
+    curve = figure_report.observed[metric_key][color_family]
+    return [
+        (float(sample["time_s"]), float(sample["value"]))
+        for sample in curve["samples"]
+    ]
+
+
+def _interpolate_t_handle_figure_value(
+    samples: list[tuple[float, float]],
+    figure_time: float,
+) -> float | None:
+    if not samples or figure_time < samples[0][0] or figure_time > samples[-1][0]:
+        return None
+    times = [sample[0] for sample in samples]
+    index = bisect_left(times, figure_time)
+    if index < len(samples) and samples[index][0] == figure_time:
+        return samples[index][1]
+    if index == 0 or index >= len(samples):
+        return None
+    left_time, left_value = samples[index - 1]
+    right_time, right_value = samples[index]
+    alpha = (figure_time - left_time) / (right_time - left_time)
+    interpolated = left_value + alpha * (right_value - left_value)
+    return interpolated if isfinite(interpolated) else None
+
+
+def _t_handle_sample_value_for_figure_metric(
+    row: dict[str, Any],
+    *,
+    metric: str,
+    axis_index: int,
+) -> float | None:
+    if metric == "intermediate_axis_angular_velocity_waveform":
+        omega = _t_handle_omega(row)
+        return omega[axis_index] if omega is not None else None
+    if metric == "energy_loss":
+        return _finite_scalar(row.get("relative_energy_loss"))
+    raise ValueError(f"unsupported T-handle figure metric: {metric}")
+
+
+def _t_handle_figure_error_diagnostic(
+    lane_report: ClaimReport,
+    figure_report: ClaimReport,
+    *,
+    lane: str,
+    metric: str,
+    figure_metric_key: str,
+    axis_index: int,
+) -> dict[str, Any]:
+    duration_s = _finite_scalar(lane_report.observed.get("duration_s"))
+    rows = _t_handle_sample_rows(lane_report)
+    time_range = list(T_HANDLE_FIGURE_TIME_RANGE)
+    time_normalization = {
+        "mapping": "lane_time_s / diagnostic_duration_s * 100",
+        "duration_source": "lane_report_observed_duration_s",
+        "diagnostic_duration_s": duration_s,
+        "figure_time_range": time_range,
+        "claim_status": "normalized_figure_time_not_paper_raw_time",
+    }
+    if duration_s is None or duration_s <= 0.0:
+        return {
+            "status": "missing_finite_lane_duration",
+            "lane": lane,
+            "metric": metric,
+            "time_normalization": time_normalization,
+            "matched_sample_count": 0,
+            "best_color_family": None,
+            "best_rmse": None,
+            "best_max_abs_error": None,
+            "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+            "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+            "all_color_family_errors": {},
+        }
+
+    lane_samples: list[tuple[float, float, float]] = []
+    for row in rows:
+        time_s = _finite_scalar(row.get("time_s"))
+        value = _t_handle_sample_value_for_figure_metric(
+            row,
+            metric=metric,
+            axis_index=axis_index,
+        )
+        if time_s is None or value is None:
+            continue
+        figure_time = (time_s / duration_s) * T_HANDLE_FIGURE_TIME_RANGE[1]
+        if (
+            figure_time < T_HANDLE_FIGURE_TIME_RANGE[0]
+            or figure_time > T_HANDLE_FIGURE_TIME_RANGE[1]
+        ):
+            continue
+        lane_samples.append((time_s, figure_time, value))
+
+    all_color_errors: dict[str, dict[str, float | int | None]] = {}
+    for color_family in ("blue", "orange", "green"):
+        figure_samples = _t_handle_figure_samples(
+            figure_report,
+            metric_key=figure_metric_key,
+            color_family=color_family,
+        )
+        errors: list[float] = []
+        for _time_s, figure_time, lane_value in lane_samples:
+            figure_value = _interpolate_t_handle_figure_value(figure_samples, figure_time)
+            if figure_value is None:
+                continue
+            errors.append(lane_value - figure_value)
+        if errors:
+            squared = sum(error * error for error in errors)
+            max_abs = max(abs(error) for error in errors)
+            mean_error = sum(errors) / float(len(errors))
+            all_color_errors[color_family] = {
+                "rmse": sqrt(squared / float(len(errors))),
+                "max_abs_error": max_abs,
+                "mean_error": mean_error,
+                "matched_sample_count": len(errors),
+            }
+        else:
+            all_color_errors[color_family] = {
+                "rmse": None,
+                "max_abs_error": None,
+                "mean_error": None,
+                "matched_sample_count": 0,
+            }
+
+    finite_color_errors = {
+        color_family: errors
+        for color_family, errors in all_color_errors.items()
+        if _finite_scalar(errors["rmse"]) is not None
+    }
+    if not lane_samples or not finite_color_errors:
+        return {
+            "status": "missing_finite_lane_samples",
+            "lane": lane,
+            "metric": metric,
+            "time_normalization": time_normalization,
+            "matched_sample_count": 0,
+            "best_color_family": None,
+            "best_rmse": None,
+            "best_max_abs_error": None,
+            "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+            "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+            "all_color_family_errors": all_color_errors,
+        }
+
+    best_color_family = min(
+        finite_color_errors,
+        key=lambda color_family: float(finite_color_errors[color_family]["rmse"]),
+    )
+    best_errors = finite_color_errors[best_color_family]
+    return {
+        "status": "diagnostic_available_not_pass_gate",
+        "lane": lane,
+        "metric": metric,
+        "time_normalization": time_normalization,
+        "matched_sample_count": best_errors["matched_sample_count"],
+        "best_color_family": best_color_family,
+        "best_rmse": best_errors["rmse"],
+        "best_max_abs_error": best_errors["max_abs_error"],
+        "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
+        "agreement_claim_status": "diagnostic_only_not_curve_agreement",
+        "all_color_family_errors": all_color_errors,
+    }
+
+
+def _t_handle_digitized_figure_agreement_diagnostics(
+    *,
+    rk4_report: ClaimReport,
+    mabd_report: ClaimReport,
+    figure_report: ClaimReport,
+    axis_index: int,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    reports = {
+        "rbd_rk4_reference": rk4_report,
+        "mabd_newton": mabd_report,
+    }
+    return {
+        "intermediate_axis_angular_velocity_waveform": {
+            lane: _t_handle_figure_error_diagnostic(
+                report,
+                figure_report,
+                lane=lane,
+                metric="intermediate_axis_angular_velocity_waveform",
+                figure_metric_key="angular_velocity_curves",
+                axis_index=axis_index,
+            )
+            for lane, report in reports.items()
+        },
+        "energy_loss": {
+            lane: _t_handle_figure_error_diagnostic(
+                report,
+                figure_report,
+                lane=lane,
+                metric="energy_loss",
+                figure_metric_key="energy_loss_curves",
+                axis_index=axis_index,
+            )
+            for lane, report in reports.items()
+        },
+    }
+
+
 def _t_handle_paper_metric_statuses(
     sample_diagnostics: dict[str, Any],
     *,
@@ -843,15 +1059,19 @@ def _t_handle_paper_metric_statuses(
     waveform_limitation = "compares diagnostic lanes, not raw paper waveform curves"
     energy_limitation = "relative_energy_drift is signed diagnostic drift, not paper energy loss"
     if digitized_figure_reference_available:
-        waveform_status = "paper_figure_digitized_color_family_available_not_curve_agreement"
-        energy_status = "paper_figure_digitized_color_family_available_not_energy_agreement"
+        waveform_status = (
+            "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement"
+        )
+        energy_status = (
+            "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement"
+        )
         waveform_limitation = (
-            "paper figure color-family digitization is available, but no curve "
-            "agreement gate has passed"
+            "paper figure color-family error diagnostics are available, but no "
+            "curve agreement gate has passed"
         )
         energy_limitation = (
-            "paper figure color-family digitization is available, but no energy-loss "
-            "agreement gate has passed"
+            "paper figure energy-loss color-family error diagnostics are available, "
+            "but no energy-loss agreement gate has passed"
         )
     return {
         "flip_timing_error": {
@@ -1525,6 +1745,7 @@ def write_t_handle_comparison_report(
         "mabd_report": Path(mabd_report_path).as_posix(),
     }
     figure_sample_counts: dict[str, dict[str, int]] = {}
+    figure_agreement_diagnostics: dict[str, dict[str, dict[str, Any]]] = {}
     if figure_reference_available and figure_report is not None and figure_curve_report_path is not None:
         input_report_provenance["paper_figure_curves"] = _t_handle_lane_provenance(
             figure_curve_report_path,
@@ -1532,11 +1753,19 @@ def write_t_handle_comparison_report(
         )
         raw_outputs["figure_curve_report"] = Path(figure_curve_report_path).as_posix()
         figure_sample_counts = _t_handle_figure_sample_counts(figure_report)
+        figure_agreement_diagnostics = _t_handle_digitized_figure_agreement_diagnostics(
+            rk4_report=rk4_report,
+            mabd_report=mabd_report,
+            figure_report=figure_report,
+            axis_index=axis_index,
+        )
 
     observed = {
         "full_experiment_claim_passed": False,
         "digitized_figure_reference_available": figure_reference_available,
         "digitized_figure_reference_samples": figure_sample_counts,
+        "digitized_figure_curve_agreement_available": bool(figure_agreement_diagnostics),
+        "digitized_figure_curve_agreement_passed": False,
         "lane_statuses": {
             "rbd_rk4_reference": rk4_report.status.value,
             "mabd_newton": mabd_report.status.value,
@@ -1619,6 +1848,8 @@ def write_t_handle_comparison_report(
             "limitation": "signed relative_energy_drift diagnostic, not paper energy_loss",
         },
     }
+    if figure_agreement_diagnostics:
+        observed["digitized_figure_curve_agreement_diagnostics"] = figure_agreement_diagnostics
     report = ClaimReport(
         claim_id=config.claim_id,
         scene_id=config.scene_id,

@@ -81,6 +81,12 @@ class THandleComparisonReportTests(unittest.TestCase):
         target[keys[-1]] = value
         path.write_text(json.dumps(payload, allow_nan=True), encoding="utf-8")
 
+    def _payload(self, path: Path) -> dict:
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def _write_payload(self, path: Path, payload: dict) -> None:
+        path.write_text(json.dumps(payload, allow_nan=False), encoding="utf-8")
+
     def test_t_handle_lane_reports_record_relative_energy_loss_samples(self) -> None:
         with TemporaryDirectory() as tmpdir:
             _config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
@@ -202,12 +208,46 @@ class THandleComparisonReportTests(unittest.TestCase):
             loaded.observed["paper_metric_statuses"][
                 "intermediate_axis_angular_velocity_waveform"
             ]["status"],
-            "paper_figure_digitized_color_family_available_not_curve_agreement",
+            "paper_figure_digitized_color_family_error_diagnostic_available_not_agreement",
         )
         self.assertEqual(
             loaded.observed["paper_metric_statuses"]["energy_loss"]["status"],
-            "paper_figure_digitized_color_family_available_not_energy_agreement",
+            "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement",
         )
+        self.assertTrue(loaded.observed["digitized_figure_curve_agreement_available"])
+        self.assertFalse(loaded.observed["digitized_figure_curve_agreement_passed"])
+        diagnostics = loaded.observed["digitized_figure_curve_agreement_diagnostics"]
+        for metric in ("intermediate_axis_angular_velocity_waveform", "energy_loss"):
+            for lane in ("rbd_rk4_reference", "mabd_newton"):
+                entry = diagnostics[metric][lane]
+                self.assertEqual(entry["status"], "diagnostic_available_not_pass_gate")
+                self.assertEqual(entry["lane"], lane)
+                self.assertEqual(entry["metric"], metric)
+                self.assertEqual(
+                    entry["time_normalization"]["figure_time_range"],
+                    [0.0, 100.0],
+                )
+                self.assertEqual(
+                    entry["time_normalization"]["mapping"],
+                    "lane_time_s / diagnostic_duration_s * 100",
+                )
+                self.assertEqual(
+                    entry["time_normalization"]["claim_status"],
+                    "normalized_figure_time_not_paper_raw_time",
+                )
+                self.assertEqual(
+                    entry["best_color_family_claim_status"],
+                    "numeric_best_fit_not_legend_identity",
+                )
+                self.assertEqual(
+                    entry["agreement_claim_status"],
+                    "diagnostic_only_not_curve_agreement",
+                )
+                self.assertIn(entry["best_color_family"], {"blue", "orange", "green"})
+                self.assertGreater(entry["matched_sample_count"], 0)
+                self.assertTrue(isfinite(entry["best_rmse"]))
+                self.assertTrue(isfinite(entry["best_max_abs_error"]))
+                self.assertEqual(set(entry["all_color_family_errors"]), {"blue", "orange", "green"})
         self.assertIn(
             "t_handle_digitized_figure_curve_agreement_not_passed",
             loaded.observed["blocking_reasons"],
@@ -266,6 +306,50 @@ class THandleComparisonReportTests(unittest.TestCase):
                         loaded.observed["paper_metric_statuses"]["energy_loss"]["status"],
                         "signed_energy_drift_diagnostic_not_paper_loss",
                     )
+                    self.assertFalse(
+                        loaded.observed["digitized_figure_curve_agreement_available"]
+                    )
+                    self.assertNotIn(
+                        "digitized_figure_curve_agreement_diagnostics",
+                        loaded.observed,
+                    )
+
+    def test_t_handle_energy_loss_figure_diagnostic_uses_sample_relative_loss(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            config, rk4_path, mabd_path = self._write_lane_reports(tmpdir)
+            for path in (rk4_path, mabd_path):
+                payload = self._payload(path)
+                payload["observed"]["relative_energy_drift"] = 0.75
+                for sample in payload["observed"]["angular_velocity_samples"]:
+                    sample["energy"] = 999.0
+                    sample["relative_energy_loss"] = 0.125
+                self._write_payload(path, payload)
+            figure_path = self._write_figure_report(tmpdir)
+            figure_payload = self._payload(figure_path)
+            for sample in figure_payload["observed"]["energy_loss_curves"]["blue"]["samples"]:
+                sample["value"] = 0.125
+            for sample in figure_payload["observed"]["energy_loss_curves"]["orange"]["samples"]:
+                sample["value"] = 0.0
+            for sample in figure_payload["observed"]["energy_loss_curves"]["green"]["samples"]:
+                sample["value"] = 0.25
+            self._write_payload(figure_path, figure_payload)
+            output_path = Path(tmpdir) / "comparison.json"
+            self._write_comparison(
+                output_path=output_path,
+                config=config,
+                rk4_path=rk4_path,
+                mabd_path=mabd_path,
+                figure_path=figure_path,
+            )
+            loaded = load_claim_report(output_path)
+
+        diagnostics = loaded.observed["digitized_figure_curve_agreement_diagnostics"]
+        for lane in ("rbd_rk4_reference", "mabd_newton"):
+            with self.subTest(lane=lane):
+                entry = diagnostics["energy_loss"][lane]
+                self.assertEqual(entry["best_color_family"], "blue")
+                self.assertAlmostEqual(entry["best_rmse"], 0.0)
+                self.assertAlmostEqual(entry["best_max_abs_error"], 0.0)
 
     def test_t_handle_comparison_rejects_wrong_input_identity(self) -> None:
         cases = (

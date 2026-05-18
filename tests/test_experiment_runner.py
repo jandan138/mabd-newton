@@ -1673,8 +1673,9 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertIn("paper_figure_curves", loaded.observed["input_report_provenance"])
         self.assertEqual(
             loaded.observed["paper_metric_statuses"]["energy_loss"]["status"],
-            "paper_figure_digitized_color_family_available_not_energy_agreement",
+            "paper_figure_digitized_energy_loss_error_diagnostic_available_not_agreement",
         )
+        self.assertTrue(loaded.observed["digitized_figure_curve_agreement_available"])
 
     def test_run_experiment_cli_writes_heavy_top_rk4_reference_report(self) -> None:
         import json
