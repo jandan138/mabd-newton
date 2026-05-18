@@ -12,7 +12,7 @@ current spinning-box paper-horizon M-ABD diagnostic lane. It does not implement 
 ## Repository
 
 - branch: `phase61-spinning-box-contact-mabd-lane`
-- implementation commit: `e11cb83163368af36a5000fa3a1338a8c6206aab`
+- implementation commit: `d73e105515c270d4bac9b3b373553132c7c6d99b`
 - vendored Newton commit: `96713fa965463b69c229a4d30582c733ff3526bb`
 - paper: `2603.08079v2`
 - canonical Python:
@@ -31,9 +31,9 @@ current spinning-box paper-horizon M-ABD diagnostic lane. It does not implement 
 
 - `reports/experiment_matrix/single_body_spinning_box_paper_horizon.json`
   - sha256:
-    `7f538d76fb9a123db022c8f64682aceb1b55fecb74d6f8ff577fc3847b5b0fa9`
+    `3281b40f66e62639dc10b5a1cd72ee8e9831282097b2365838fd4178bc47ca83`
   - source_commit:
-    `e11cb83163368af36a5000fa3a1338a8c6206aab`
+    `d73e105515c270d4bac9b3b373553132c7c6d99b`
   - baseline lane: `mabd_newton`
   - solver mode: `mabd_cpu_oracle_paper_horizon_diagnostic`
   - backend: `cpu_numpy`
@@ -72,7 +72,7 @@ performance, generated video, raw simulation log, or full paper reproduction.
 ## Verification Commands
 
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest tests.test_single_body_report_lane tests.test_spinning_box_report_artifacts`
-- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane mabd_paper_horizon --config configs/experiments/single_body_spinning_box.yaml --output reports/experiment_matrix/single_body_spinning_box_paper_horizon.json --source-commit e11cb83163368af36a5000fa3a1338a8c6206aab --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb`
+- `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane mabd_paper_horizon --config configs/experiments/single_body_spinning_box.yaml --output reports/experiment_matrix/single_body_spinning_box_paper_horizon.json --source-commit d73e105515c270d4bac9b3b373553132c7c6d99b --vendored-newton-commit 96713fa965463b69c229a4d30582c733ff3526bb`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/validate_docs.py`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m unittest discover -s tests`
 - `PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python -m ruff check .`
