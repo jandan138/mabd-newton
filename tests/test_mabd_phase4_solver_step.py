@@ -282,6 +282,53 @@ def _mabd_model_with_box_and_static_plane() -> tuple[object, int, int]:
     return builder.finalize(), box_shape, plane_shape
 
 
+def _mabd_model_with_box_and_dynamic_rigid_box() -> tuple[object, int, int]:
+    builder = newton.ModelBuilder()
+    SolverMABD.register_custom_attributes(builder)
+    mabd_body = _add_model_body_row(builder, young_modulus=1.0)
+    mabd_shape = builder.add_shape_box(body=mabd_body, hx=0.5, hy=0.5, hz=0.5)
+    rigid_body = builder.add_body()
+    rigid_shape = builder.add_shape_box(body=rigid_body, hx=0.25, hy=0.25, hz=0.25)
+    return builder.finalize(), mabd_shape, rigid_shape
+
+
+def _contacts_with_rigid_rows(
+    rows: list[
+        tuple[
+            int,
+            int,
+            tuple[float, float, float],
+            tuple[float, float, float],
+            tuple[float, float, float],
+        ]
+    ],
+    *,
+    capacity: int | None = None,
+    reported_count: int | None = None,
+) -> object:
+    capacity = max(len(rows), 1) if capacity is None else capacity
+    reported_count = len(rows) if reported_count is None else reported_count
+    contacts = newton.Contacts(rigid_contact_max=capacity, soft_contact_max=0)
+    contacts.rigid_contact_count.assign(np.array([reported_count], dtype=np.int32))
+    shape0_values = np.full(capacity, -1, dtype=np.int32)
+    shape1_values = np.full(capacity, -1, dtype=np.int32)
+    point0_values = np.zeros((capacity, 3), dtype=np.float32)
+    point1_values = np.zeros((capacity, 3), dtype=np.float32)
+    normal_values = np.zeros((capacity, 3), dtype=np.float32)
+    for index, (shape0, shape1, point0, point1, normal) in enumerate(rows[:capacity]):
+        shape0_values[index] = shape0
+        shape1_values[index] = shape1
+        point0_values[index] = np.asarray(point0, dtype=np.float32)
+        point1_values[index] = np.asarray(point1, dtype=np.float32)
+        normal_values[index] = np.asarray(normal, dtype=np.float32)
+    contacts.rigid_contact_shape0.assign(shape0_values)
+    contacts.rigid_contact_shape1.assign(shape1_values)
+    contacts.rigid_contact_point0.assign(point0_values)
+    contacts.rigid_contact_point1.assign(point1_values)
+    contacts.rigid_contact_normal.assign(normal_values)
+    return contacts
+
+
 def _contacts_with_one_rigid_row(
     *,
     shape0: int,
@@ -292,24 +339,11 @@ def _contacts_with_one_rigid_row(
     capacity: int = 4,
     reported_count: int = 1,
 ) -> object:
-    contacts = newton.Contacts(rigid_contact_max=capacity, soft_contact_max=0)
-    contacts.rigid_contact_count.assign(np.array([reported_count], dtype=np.int32))
-    shape0_values = np.full(capacity, -1, dtype=np.int32)
-    shape1_values = np.full(capacity, -1, dtype=np.int32)
-    point0_values = np.zeros((capacity, 3), dtype=np.float32)
-    point1_values = np.zeros((capacity, 3), dtype=np.float32)
-    normal_values = np.zeros((capacity, 3), dtype=np.float32)
-    shape0_values[0] = shape0
-    shape1_values[0] = shape1
-    point0_values[0] = np.asarray(point0, dtype=np.float32)
-    point1_values[0] = np.asarray(point1, dtype=np.float32)
-    normal_values[0] = np.asarray(normal, dtype=np.float32)
-    contacts.rigid_contact_shape0.assign(shape0_values)
-    contacts.rigid_contact_shape1.assign(shape1_values)
-    contacts.rigid_contact_point0.assign(point0_values)
-    contacts.rigid_contact_point1.assign(point1_values)
-    contacts.rigid_contact_normal.assign(normal_values)
-    return contacts
+    return _contacts_with_rigid_rows(
+        [(shape0, shape1, point0, point1, normal)],
+        capacity=capacity,
+        reported_count=reported_count,
+    )
 
 
 def _add_model_gravity_row(
@@ -1663,6 +1697,39 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertEqual(summary.rigid_contact_rows_read, 1)
         self.assertEqual(summary.generated_plane_constraint_count, 0)
         self.assertEqual(summary.skipped_contact_count, 3)
+        self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 0)
+
+    def test_solver_step_skips_dynamic_non_mabd_contact_rows(self) -> None:
+        model, mabd_shape, rigid_shape = _mabd_model_with_box_and_dynamic_rigid_box()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+        contacts = _contacts_with_rigid_rows(
+            [
+                (
+                    mabd_shape,
+                    rigid_shape,
+                    (0.25, 0.0, 0.0),
+                    (0.0, 0.25, 0.0),
+                    (0.0, 1.0, 0.0),
+                ),
+                (
+                    rigid_shape,
+                    mabd_shape,
+                    (0.0, 0.25, 0.0),
+                    (0.25, 0.0, 0.0),
+                    (0.0, -1.0, 0.0),
+                ),
+            ]
+        )
+
+        solver.step(state, state, None, contacts, 0.05)
+
+        summary = solver.last_contacts_input_summary
+        self.assertEqual(summary.rigid_contact_count, 2)
+        self.assertEqual(summary.rigid_contact_rows_read, 2)
+        self.assertEqual(summary.generated_plane_constraint_count, 0)
+        self.assertEqual(summary.skipped_contact_count, 2)
         self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 0)
 
     def test_solver_step_rejects_duplicate_mabd_body_index_mapping_for_contacts(self) -> None:

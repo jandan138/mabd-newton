@@ -335,18 +335,26 @@ class SolverMABD(SolverBase):
                     skipped_count += 1
                     continue
 
-                mabd_body0 = body_rows.get(int(shape_body[shape0_id]))
-                mabd_body1 = body_rows.get(int(shape_body[shape1_id]))
+                newton_body0 = int(shape_body[shape0_id])
+                newton_body1 = int(shape_body[shape1_id])
+                mabd_body0 = body_rows.get(newton_body0)
+                mabd_body1 = body_rows.get(newton_body1)
                 if (mabd_body0 is None) == (mabd_body1 is None):
                     skipped_count += 1
                     continue
 
                 if mabd_body0 is not None:
+                    if newton_body1 != -1:
+                        skipped_count += 1
+                        continue
                     body = mabd_body0
                     rest_point = point0
                     plane_normal = normal
                     plane_point = point1
                 else:
+                    if newton_body0 != -1:
+                        skipped_count += 1
+                        continue
                     body = int(mabd_body1)
                     rest_point = point1
                     plane_normal = -normal
