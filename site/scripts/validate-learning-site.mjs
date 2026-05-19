@@ -127,6 +127,23 @@ const chapterRecapComponent = {
   importPattern: /^\s*import\s+ChapterRecap\s+from\s+["']\.\.\/\.\.\/components\/ChapterRecap\.astro["'];?\s*$/m,
   importName: "ChapterRecap",
 };
+const requiredExecutableComponentSourceMarkers = [
+  {
+    path: "src/components/ToySolverStep.astro",
+    marker: '<p class="tutorial-card__eyebrow">最小玩具求解器 · {step}</p>',
+    label: "ToySolverStep stable label",
+  },
+  {
+    path: "src/components/MisconceptionRepair.astro",
+    marker: '<p class="tutorial-card__eyebrow">常见误解纠正</p>',
+    label: "MisconceptionRepair stable label",
+  },
+  {
+    path: "src/components/ChapterRecap.astro",
+    marker: '<p class="tutorial-card__eyebrow">阶段复盘</p>',
+    label: "ChapterRecap stable label",
+  },
+];
 const requiredFigureProps = ["alt", "caption", "kind", "provenance", "claimStatus"];
 const allowedFigureAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/[^/]+\.(?:png|webp)$/;
 const rasterDiagramAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/([^/]+\.(?:png|webp))$/;
@@ -316,6 +333,15 @@ if (requiredLessons === null) {
   issues.push("missing src/data/lessons.ts");
 } else if (requiredLessons.length === 0) {
   issues.push("src/data/lessons.ts must define required lesson slugs");
+}
+
+for (const component of requiredExecutableComponentSourceMarkers) {
+  const componentText = readIfExists(component.path);
+  if (componentText === null) {
+    issues.push(`${component.path}: missing executable tutorial component source`);
+  } else if (!componentText.includes(component.marker)) {
+    issues.push(`${component.path}: missing ${component.label}`);
+  }
 }
 
 for (const slug of requiredLessons ?? []) {
