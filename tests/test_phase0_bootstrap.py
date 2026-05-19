@@ -5033,6 +5033,191 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("experiment claim status", str(context.exception))
 
+    def test_phase69_contacts_input_plane_constraints_are_bounded(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        phase69_commit = "674064f7558527da92be0f186361df4a7c71d4f7"
+        self.assertEqual(validate_docs.PHASE69_CONTACTS_INPUT_COMMIT, phase69_commit)
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 69")
+        verified = claim_boundary_bullet(text, "Phase 69 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 69 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 69 SolverMABD Contacts input evidence",
+        )
+
+        self.assertIn("SolverMABD Contacts input plane-constraint plumbing evidence", current)
+        self.assertIn("SolverMABD.step(..., contacts=...)", verified)
+        self.assertIn("newton.Contacts.rigid_contact_*", verified)
+        self.assertIn("rigid_contacts_to_point_plane_constraints_diagnostic", verified)
+        self.assertIn("diagnostic_only_static_geometry_plane_constraints", verified)
+        self.assertIn("last_contacts_input_summary", verified)
+        self.assertIn("no experiment claim passed", verified)
+        for snippet in (
+            "contact solver",
+            "collision detection",
+            "broadphase or narrowphase",
+            "active-set generation inside Newton",
+            "IPC",
+            "friction",
+            "complementarity",
+            "continuous collision detection",
+            "body-body affine contact",
+            "generic inequality-constrained M-ABD KKT",
+            "paper-faithful affine collision/contact",
+            "paper-faithful M-ABD stepping",
+            "comparison pass gate",
+            "rendered-output agreement",
+            "runtime performance",
+            "any passed `experiment.*` claim",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "contact solver",
+            "collision detection",
+            "paper-faithful affine collision/contact",
+            "generic inequality-constrained M-ABD KKT",
+            "passed experiment",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        solver_source = (
+            ROOT / "vendor/newton/newton/_src/solvers/mabd/solver_mabd.py"
+        ).read_text()
+        for snippet in (
+            "MABDContactsInputSummary",
+            "last_contacts_input_summary",
+            "_cpu_oracle_config_with_contacts",
+            "rigid_contacts_to_point_plane_constraints_diagnostic",
+            "newton.Contacts.rigid_contact_*",
+            "diagnostic_only_static_geometry_plane_constraints",
+            "duplicate mabd:body_index mapping for Newton body",
+        ):
+            self.assertIn(snippet, solver_source)
+
+        test_source = (
+            ROOT / "vendor/newton/newton/tests/test_mabd_phase4_solver_step.py"
+        ).read_text()
+        repo_test_source = (ROOT / "tests/test_mabd_phase4_solver_step.py").read_text()
+        for snippet in (
+            "test_solver_step_consumes_newton_contacts_as_plane_constraints",
+            "test_solver_step_flips_contact_normal_when_mabd_body_is_shape1",
+            "test_solver_step_records_skipped_and_overflow_contact_rows",
+            "test_solver_step_rejects_duplicate_mabd_body_index_mapping_for_contacts",
+            "test_solver_step_clears_contacts_summary_when_contacts_none",
+        ):
+            self.assertIn(snippet, test_source)
+            self.assertIn(snippet, repo_test_source)
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        spinning_box = next(
+            claim for claim in data["claims"] if claim["claim_id"] == "experiment.single_body.spinning_box"
+        )
+        self.assertEqual(spinning_box["reproduction_status"], "intended")
+        contact_claim = next(
+            claim
+            for claim in data["claims"]
+            if claim["claim_id"] == "method.force_mapping.point_load_penalty_contact"
+        )
+        self.assertEqual(contact_claim["reproduction_status"], "passed")
+        self.assertIn("not collision detection", contact_claim["conflict_note"])
+
+        validate_docs.validate_phase69_record()
+
+    def test_phase69_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT / "docs/records/2026-05-19-phase69-contacts-input-plane-constraints.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_solver_mabd_contacts_input_plumbing",
+            "phase68-model-plane-report-lane",
+            validate_docs.PHASE69_CONTACTS_INPUT_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "SolverMABD.step(..., contacts=...)",
+            "MABDContactsInputSummary",
+            "last_contacts_input_summary",
+            "rigid_contacts_to_point_plane_constraints_diagnostic",
+            "newton.Contacts.rigid_contact_*",
+            "diagnostic_only_static_geometry_plane_constraints",
+            "rigid_contact_overflow_count",
+            "generated_plane_constraint_count",
+            "skipped_contact_count",
+            "Control input remains unsupported",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "No `experiment.*` claim is passed.",
+            "`paper-claims.yaml` is unchanged.",
+            "not collision detection",
+            "not contact solver",
+            "not paper-faithful affine collision/contact",
+            "not full paper reproduction",
+            "PYTHONPATH=vendor/newton",
+            "scripts/env/readiness_check.py",
+            "git diff --check",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE69", text)
+        self.assertNotIn("phase69-working-tree", text)
+
+    def test_phase69_validator_rejects_missing_summary_contract(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        actual_record = (
+            ROOT / "docs/records/2026-05-19-phase69-contacts-input-plane-constraints.md"
+        ).read_text()
+        corrupted_record = actual_record.replace("last_contacts_input_summary", "missing_summary")
+
+        original_read_text = Path.read_text
+
+        def fake_read_text(path, *args, **kwargs):
+            if str(path).endswith("2026-05-19-phase69-contacts-input-plane-constraints.md"):
+                return corrupted_record
+            return original_read_text(path, *args, **kwargs)
+
+        with patch.object(Path, "read_text", fake_read_text):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase69_record()
+
+        self.assertIn("last_contacts_input_summary", str(context.exception))
+
+    def test_phase69_validator_rejects_passed_experiment_claim(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        corrupted = {
+            **data,
+            "claims": [
+                {
+                    **claim,
+                    "reproduction_status": (
+                        "passed"
+                        if claim["claim_id"] == "experiment.single_body.spinning_box"
+                        else claim["reproduction_status"]
+                    ),
+                }
+                for claim in data["claims"]
+            ],
+        }
+
+        def fake_read_yaml(path):
+            if str(path).endswith("paper-claims.yaml"):
+                return corrupted
+            return validate_docs.read_yaml(path)
+
+        with patch.object(validate_docs, "read_yaml", side_effect=fake_read_yaml):
+            with self.assertRaises(SystemExit) as context:
+                validate_docs.validate_phase69_record()
+
+        self.assertIn("experiment claim status", str(context.exception))
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -5879,7 +6064,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

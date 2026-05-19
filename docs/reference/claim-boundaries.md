@@ -838,6 +838,27 @@
   as unmodified Newton M-ABD contact support, paper-faithful affine
   collision/contact, a contact solver, a passed spinning-box experiment, or
   full paper reproduction.
+- This repository contains Phase 69 SolverMABD Contacts input
+  plane-constraint plumbing evidence after the Phase 69 record is created.
+- Phase 69 verifies that bounded Newton `Contacts` rows can be consumed by
+  vendored/local Newton `SolverMABD.step(..., contacts=...)`, read from
+  `newton.Contacts.rigid_contact_*`, mapped from shape ids through
+  `mabd:body_index`, translated into existing point-plane normal constraint
+  rows using the
+  `rigid_contacts_to_point_plane_constraints_diagnostic` policy, scoped as
+  `diagnostic_only_static_geometry_plane_constraints`, and summarized through
+  `last_contacts_input_summary` while keeping no experiment claim passed.
+- Phase 69 does not verify contact solver behavior, collision detection,
+  broadphase or narrowphase correctness, active-set generation inside Newton,
+  IPC, friction, complementarity, continuous collision detection, body-body
+  affine contact, generic inequality-constrained M-ABD KKT,
+  paper-faithful affine collision/contact, paper-faithful M-ABD stepping,
+  comparison pass gate, rendered-output agreement, runtime performance, any
+  passed `experiment.*` claim, or full paper reproduction.
+- Phase 69 SolverMABD Contacts input evidence must not be described as a
+  contact solver, collision detection, paper-faithful affine collision/contact,
+  generic inequality-constrained M-ABD KKT, a passed experiment, or full paper
+  reproduction.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
