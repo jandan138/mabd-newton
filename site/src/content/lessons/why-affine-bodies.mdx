@@ -20,6 +20,8 @@ import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
 import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
@@ -53,6 +55,16 @@ import modelingSpectrum from "../../assets/diagrams/modeling-spectrum.png";
 <GuidedProjectStep step="贯穿小项目 2/12" title="先决定它该像什么模型">
 继续使用同一小块软橡胶印章。它有三个标记好的静止点，但我们暂时不追踪每一道局部皱褶。本课的任务是判断：这个对象不能只当作一个粒子，也不适合只当作完全刚硬的印章；为了教程入口，它也不需要马上细分成完整 FEM 网格。仿射体正好让它保留整体压扁、拉伸和剪切的能力。
 </GuidedProjectStep>
+
+<ToySolverStep step="玩具求解器 2/12" title="为印章选择概念模型">
+这里的选择只服务教程对比：把软橡胶印章暂时看成一个仿射体，同时保留粒子、刚体和 FEM 作为比较对象。
+
+```text
+candidates = ["particle", "rigid_body", "affine_body", "fem"]
+model = "affine_body"
+comparison_models = candidates - [model]
+```
+</ToySolverStep>
 
 ## 从一块软橡胶印章开始
 
@@ -118,6 +130,19 @@ ABD 的优势是用较少自由度表达整体形变；它并不自动拥有 FEM
   <p>最适合本教程阶段的是仿射体。粒子只给一个位置，无法表达印章的体积和三个标记点之间的形状关系；刚体能移动和旋转，但不能表达压扁或剪切；FEM 可以表达局部皱褶和更细形变，但对这个入门项目过重。仿射体用少量自由度表达整体压扁、拉伸和剪切，正好匹配“不追踪细小皱褶”的要求。</p>
 </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="常见误解纠正">
+<dl>
+  <dt>误解</dt>
+  <dd>ABD 就是低分辨率 FEM。</dd>
+  <dt>为什么容易这样想</dt>
+  <dd>两者都能表达变形，而且 ABD 也常被放在“更轻量”的位置讨论。</dd>
+  <dt>正确读法</dt>
+  <dd>ABD 用整体仿射状态表达大尺度形变；FEM 用单元和节点表达局部形变，自由度组织不同。</dd>
+  <dt>下一步检查</dt>
+  <dd>读模型描述时，先问状态是一个整体 `A, t`，还是许多单元/节点的局部自由度。</dd>
+</dl>
+</MisconceptionRepair>
 
 <RememberBox title="核心记忆">
   <ul>

@@ -21,6 +21,9 @@ import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
 import MathBridge from "../../components/MathBridge.astro";
+import HandCalc from "../../components/HandCalc.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
@@ -55,6 +58,16 @@ ABD 里的位置、速度、力、旋转和形变都会变成向量或矩阵。�
 继续看同一枚带三个静止标记点的软橡胶印章。我们在同一套静止坐标上再画两根基方向箭头：一根指向局部 x 方向，一根指向局部 y 方向。接下来不急着谈求解器，只用坐标追踪这些箭头和三个标记点被矩阵送到哪里。
 </GuidedProjectStep>
 
+<ToySolverStep step="玩具求解器 3/12" title="把点和基箭头存成数组">
+本步只把上一课的标记点和局部基方向写成数组，方便后续用同一个矩阵变换它们。
+
+```text
+rest_markers = [[0, 0], [1, 0], [0, 1]]
+basis_arrows = [[1, 0], [0, 1]]
+tracked_vectors = rest_markers + basis_arrows
+```
+</ToySolverStep>
+
 ## 向量：箭头，也是数字列表
 
 一个 2D 向量 `[3, 1]` 可以看成从原点指向右 3、上 1 的箭头，也可以看成程序里的两个数字。物理直觉喜欢箭头，代码喜欢数组；两种看法说的是同一个对象。
@@ -72,6 +85,17 @@ ABD 里的位置、速度、力、旋转和形变都会变成向量或矩阵。�
   <li>再看两个基方向：第一列和第二列一起决定方格如何倾斜或拉伸。</li>
   <li>最后把同一规则搬到 3D：三列分别控制局部 x、y、z 方向。</li>
 </MathBridge>
+
+<HandCalc title="手算小算例：剪切矩阵把基箭头送到哪里">
+  <p>给定 `A = [[1, 0.5], [0, 1]]`。</p>
+  <table>
+    <thead><tr><th>输入</th><th>计算</th><th>结果</th><th>解释</th></tr></thead>
+    <tbody>
+      <tr><td>`e_x = [1, 0]`</td><td>`A @ e_x`</td><td>`[1, 0]`</td><td>x 方向不变。</td></tr>
+      <tr><td>`e_y = [0, 1]`</td><td>`A @ e_y`</td><td>`[0.5, 1]`</td><td>y 方向向右偏，方格被剪切。</td></tr>
+    </tbody>
+  </table>
+</HandCalc>
 
 <PseudoCode title="2D 基向量列">
 {`A = [[2, 0],
@@ -133,6 +157,19 @@ A @ e_y  # -> [0, 1], y 方向不变`}
   <p>`[[1, 0.5], [0, 1]] @ [1, 0] = [1, 0]`，所以局部 x 方向保持不变。`[[1, 0.5], [0, 1]] @ [0, 1] = [0.5, 1]`，所以局部 y 方向向右倾斜 0.5 个单位。方格不会整体放大成更大的正方形，而是被剪切成向右倾斜的平行四边形网格。</p>
 </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="常见误解纠正">
+<dl>
+  <dt>误解</dt>
+  <dd>矩阵只是数字表，列没有几何含义。</dd>
+  <dt>为什么容易这样想</dt>
+  <dd>编程时矩阵经常以二维数组出现，视觉上确实像普通表格。</dd>
+  <dt>正确读法</dt>
+  <dd>矩阵的每一列说明一个局部基方向会被送到哪里；列一起定义了方格如何变形。</dd>
+  <dt>下一步检查</dt>
+  <dd>看到 `A @ x` 时，先用单位基向量试算每一列，再解释输出方向。</dd>
+</dl>
+</MisconceptionRepair>
 
 <RememberBox title="核心记忆">
   <ul>

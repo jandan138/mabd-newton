@@ -20,6 +20,8 @@ import RepoEvidenceCard from "../../components/RepoEvidenceCard.astro";
 import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
@@ -53,6 +55,18 @@ import learningRoadmap from "../../assets/diagrams/learning-roadmap.png";
 <GuidedProjectStep step="贯穿小项目 1/12" title="拿起同一枚软橡胶印章">
 从这一课开始，请想象桌上有一小块柔软的橡胶印章。我们先在它的静止形状上标出三个点：左下角、右下角和上方一个角点。后面的每一课都推进同一个对象：先学会怎么读它，再学会怎么用坐标、矩阵、状态和证据描述它。
 </GuidedProjectStep>
+
+<ToySolverStep step="玩具求解器 1/12" title="先定义教程对象">
+本卡片只定义后续课程共用的概念对象和三个静止标记点；它是教程伪代码，不是仓库实现证据。
+
+```text
+toy_object = "soft_rubber_stamp"
+p0 = [0, 0]
+px = [1, 0]
+py = [0, 1]
+rest_markers = [p0, px, py]
+```
+</ToySolverStep>
 
 ## 这门课的范围
 
@@ -120,6 +134,19 @@ import learningRoadmap from "../../assets/diagrams/learning-roadmap.png";
   <p>概念层：这枚软橡胶印章在本课里被当成什么对象，它为什么不是一个抽象符号？公式层：三个静止标记点会被哪些向量、矩阵或状态量描述？代码层：这些点、矩阵和状态会以什么数组形状传入函数？证据层：仓库是否有源码、测试、记录或报告支持对应声明；如果没有，只能把它记为概念解释。</p>
 </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="常见误解纠正">
+<dl>
+  <dt>误解</dt>
+  <dd>教程页讲了这个概念，所以仓库已经证明它。</dd>
+  <dt>为什么容易这样想</dt>
+  <dd>教程会用公式和伪代码把思路讲顺，看起来像已经完成实现。</dd>
+  <dt>正确读法</dt>
+  <dd>本页只提供概念入口；是否有仓库证据，要回到源码、测试、记录和报告查证。</dd>
+  <dt>下一步检查</dt>
+  <dd>遇到任何“已实现”或“已复现”的判断，先查 claim-boundary 和对应记录。</dd>
+</dl>
+</MisconceptionRepair>
 
 <RememberBox title="记住三件事">
   <ul>
