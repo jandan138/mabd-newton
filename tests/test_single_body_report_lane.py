@@ -13,6 +13,7 @@ from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 from mabd_reproduction.single_body_reports import (
     _run_spinning_box_solver_mabd_contacts_input_step,
     _run_spinning_box_solver_mabd_model_step,
+    write_spinning_box_affine_static_plane_contacts_report,
     write_spinning_box_contacts_input_report,
     write_spinning_box_contact_response_report,
     write_spinning_box_decoupled_twist_report,
@@ -829,6 +830,91 @@ class SingleBodyReportLaneTests(unittest.TestCase):
                 "diagnostic_only_static_geometry_plane_constraints_no_lane_gate",
             )
             self.assertEqual(entry["contacts_input_overflow_count"], 0)
+            self.assertGreaterEqual(entry["contacts_input_generated_plane_constraint_count"], 0)
+            self.assertTrue(np.isfinite(entry["max_contacts_input_constraint_residual_norm"]))
+
+    def test_spinning_box_affine_static_plane_contacts_report_records_solver_generated_active_set(self) -> None:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        short_config = replace(
+            config,
+            paper_horizon=replace(config.paper_horizon, duration_s=0.02, sample_count=3),
+        )
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_spinning_box_affine_static_plane_contacts.json"
+            report = write_spinning_box_affine_static_plane_contacts_report(
+                path,
+                config=short_config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(path)
+
+        self.assertEqual(report.scene_id, config.scene_id)
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(
+            loaded.solver_mode,
+            "solver_mabd_affine_static_plane_contacts_diagnostic",
+        )
+        self.assertEqual(
+            loaded.backend,
+            "cpu_numpy_newton_solver_mabd_affine_static_plane_contacts_diagnostic",
+        )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertEqual(
+            loaded.observed["affine_static_plane_contact_policy"],
+            "solver_mabd_detect_affine_box_static_plane_contacts",
+        )
+        self.assertEqual(
+            loaded.observed["affine_static_plane_contact_source"],
+            "SolverMABD.detect_static_plane_contacts",
+        )
+        self.assertEqual(
+            loaded.observed["affine_static_plane_contact_scope"],
+            "diagnostic_affine_box_corners_vs_static_infinite_planes_no_lane_gate",
+        )
+        self.assertEqual(
+            loaded.observed["contacts_input_summary_source"],
+            "last_contacts_input_summary",
+        )
+        self.assertGreater(
+            loaded.observed["max_affine_static_plane_candidate_contact_count"],
+            0,
+        )
+        self.assertGreater(
+            loaded.observed["max_contacts_input_generated_plane_constraint_count"],
+            0,
+        )
+        self.assertEqual(loaded.observed["max_contacts_input_overflow_count"], 0)
+        self.assertLess(
+            loaded.observed["max_constrained_contact_penetration_m"],
+            loaded.observed["max_free_predicted_contact_penetration_m"],
+        )
+        self.assertTrue(loaded.observed["affine_static_plane_contacts_reduced_free_predicted_penetration"])
+        self.assertIn(
+            "spinning_box_affine_static_plane_contacts_not_paper_faithful",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertNotIn(
+            "collision_detection_not_enabled_for_contacts_input",
+            loaded.observed["blocking_reasons"],
+        )
+        for entry in loaded.observed["affine_static_plane_contacts_results"]:
+            self.assertEqual(
+                entry["affine_static_plane_contact_policy"],
+                "solver_mabd_detect_affine_box_static_plane_contacts",
+            )
+            self.assertEqual(
+                entry["affine_static_plane_contact_source"],
+                "SolverMABD.detect_static_plane_contacts",
+            )
+            self.assertEqual(
+                entry["affine_static_plane_contact_scope"],
+                "diagnostic_affine_box_corners_vs_static_infinite_planes_no_lane_gate",
+            )
+            self.assertGreaterEqual(entry["affine_static_plane_candidate_contact_count"], 0)
             self.assertGreaterEqual(entry["contacts_input_generated_plane_constraint_count"], 0)
             self.assertTrue(np.isfinite(entry["max_contacts_input_constraint_residual_norm"]))
 

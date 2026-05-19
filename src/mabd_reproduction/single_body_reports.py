@@ -43,6 +43,12 @@ CONTACTS_INPUT_SCOPE = "diagnostic_only_static_geometry_plane_constraints_no_lan
 CONTACTS_INPUT_SOURCE = "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners"
 CONTACTS_INPUT_BACKEND = "cpu_numpy_newton_solver_mabd_contacts_input_diagnostic"
 CONTACTS_INPUT_EMPTY_SUMMARY_SOURCE = "contacts_none_no_active_diagnostic_contacts"
+AFFINE_STATIC_PLANE_CONTACT_POLICY = "solver_mabd_detect_affine_box_static_plane_contacts"
+AFFINE_STATIC_PLANE_CONTACT_SCOPE = "diagnostic_affine_box_corners_vs_static_infinite_planes_no_lane_gate"
+AFFINE_STATIC_PLANE_CONTACT_SOURCE = "SolverMABD.detect_static_plane_contacts"
+AFFINE_STATIC_PLANE_CONTACT_BACKEND = (
+    "cpu_numpy_newton_solver_mabd_affine_static_plane_contacts_diagnostic"
+)
 DECOUPLED_TWIST_POLICY = "decoupled_spatial_twist_with_exponential_rigid_update"
 DECOUPLED_TWIST_SCOPE = "diagnostic_only_no_lane_gate"
 DECOUPLED_TWIST_SOLVER_STEP_POLICY = "no_solver_step_rigid_reconstruction_diagnostic"
@@ -79,6 +85,20 @@ class SolverMABDContactsInputStepResult:
     contacts_input_rows_read: int
     contacts_input_generated_plane_constraint_count: int
     contacts_input_skipped_contact_count: int
+
+
+@dataclass(frozen=True)
+class SolverMABDAffineStaticPlaneContactsStepResult(SolverMABDContactsInputStepResult):
+    free_q: np.ndarray
+    free_qd: np.ndarray
+    affine_static_plane_contact_policy: str
+    affine_static_plane_contact_source: str
+    affine_static_plane_contact_scope: str
+    affine_static_plane_box_shape_count: int
+    affine_static_plane_static_plane_shape_count: int
+    affine_static_plane_candidate_contact_count: int
+    affine_static_plane_rows_written: int
+    affine_static_plane_skipped_shape_pair_count: int
 
 
 def _oracle_body(config: SpinningBoxRunConfig | None = None) -> mabd.MABDCPUOracleBody:
@@ -257,14 +277,9 @@ def _contacts_from_static_plane_constraints(
     return contacts
 
 
-def _run_spinning_box_solver_mabd_contacts_input_step(
-    *,
+def _spinning_box_solver_mabd_static_plane_model(
     config: SpinningBoxRunConfig,
-    q: np.ndarray,
-    qd: np.ndarray,
-    time_step_s: float,
-    contact_constraints: list[object],
-) -> SolverMABDContactsInputStepResult:
+) -> tuple[object, int, int]:
     import contextlib
     import importlib
     import sys
@@ -313,8 +328,18 @@ def _run_spinning_box_solver_mabd_contacts_input_step(
         width=0.0,
         length=0.0,
     )
+    return builder.finalize(), int(box_shape), int(plane_shape)
 
-    model = builder.finalize()
+
+def _run_spinning_box_solver_mabd_contacts_input_step(
+    *,
+    config: SpinningBoxRunConfig,
+    q: np.ndarray,
+    qd: np.ndarray,
+    time_step_s: float,
+    contact_constraints: list[object],
+) -> SolverMABDContactsInputStepResult:
+    model, box_shape, plane_shape = _spinning_box_solver_mabd_static_plane_model(config)
     state = model.state()
     _assign_solver_mabd_state(state, q, qd)
     solver = SolverMABD(model)
@@ -380,6 +405,79 @@ def _run_spinning_box_solver_mabd_contacts_input_step(
             summary.generated_plane_constraint_count
         ),
         contacts_input_skipped_contact_count=summary.skipped_contact_count,
+    )
+
+
+def _run_spinning_box_solver_mabd_affine_static_plane_contacts_step(
+    *,
+    config: SpinningBoxRunConfig,
+    q: np.ndarray,
+    qd: np.ndarray,
+    time_step_s: float,
+) -> SolverMABDAffineStaticPlaneContactsStepResult:
+    model, _box_shape, _plane_shape = _spinning_box_solver_mabd_static_plane_model(config)
+    state = model.state()
+    solver = SolverMABD(model)
+
+    _assign_solver_mabd_state(state, q, qd)
+    solver.step(state, state, control=None, contacts=None, dt=time_step_s)
+    free_q, free_qd = _read_solver_mabd_state(state)
+
+    contacts = solver.detect_static_plane_contacts(state)
+    collision_summary = solver.last_static_plane_collision_summary
+    if collision_summary is None:
+        raise RuntimeError("SolverMABD.detect_static_plane_contacts() did not record summary")
+
+    _assign_solver_mabd_state(state, q, qd)
+    solver.step(state, state, control=None, contacts=contacts, dt=time_step_s)
+    q_next, qd_next = _read_solver_mabd_state(state)
+    result = solver.last_step_result
+    if result is None:
+        raise RuntimeError("SolverMABD.step() did not record last_step_result")
+    summary = solver.last_contacts_input_summary
+    if summary is None:
+        raise RuntimeError("SolverMABD.step() did not record contacts input summary")
+
+    return SolverMABDAffineStaticPlaneContactsStepResult(
+        q=q_next,
+        qd=qd_next,
+        free_q=free_q,
+        free_qd=free_qd,
+        residual_norm=float(result.residual_norm),
+        constraint_residual_norm=float(getattr(result, "constraint_residual_norm", 0.0)),
+        plane_constraint_requested_count=int(
+            getattr(result, "plane_constraint_requested_count", 0)
+        ),
+        plane_constraint_accepted_count=int(
+            getattr(result, "plane_constraint_accepted_count", 0)
+        ),
+        plane_constraint_skipped_count=int(getattr(result, "plane_constraint_skipped_count", 0)),
+        contacts_input_policy=summary.policy,
+        contacts_input_source=summary.source,
+        contacts_input_summary_source=summary.source,
+        contacts_input_scope=summary.scope,
+        contacts_input_rigid_contact_count=summary.rigid_contact_count,
+        contacts_input_capacity=summary.rigid_contact_capacity,
+        contacts_input_overflow_count=summary.rigid_contact_overflow_count,
+        contacts_input_rows_read=summary.rigid_contact_rows_read,
+        contacts_input_generated_plane_constraint_count=(
+            summary.generated_plane_constraint_count
+        ),
+        contacts_input_skipped_contact_count=summary.skipped_contact_count,
+        affine_static_plane_contact_policy=AFFINE_STATIC_PLANE_CONTACT_POLICY,
+        affine_static_plane_contact_source=AFFINE_STATIC_PLANE_CONTACT_SOURCE,
+        affine_static_plane_contact_scope=AFFINE_STATIC_PLANE_CONTACT_SCOPE,
+        affine_static_plane_box_shape_count=collision_summary.box_shape_count,
+        affine_static_plane_static_plane_shape_count=(
+            collision_summary.static_plane_shape_count
+        ),
+        affine_static_plane_candidate_contact_count=(
+            collision_summary.candidate_contact_count
+        ),
+        affine_static_plane_rows_written=collision_summary.rigid_contact_rows_written,
+        affine_static_plane_skipped_shape_pair_count=(
+            collision_summary.skipped_shape_pair_count
+        ),
     )
 
 
@@ -454,6 +552,7 @@ def _paper_horizon_state_metrics(
     normal_constraint_policy: str | None = None,
     model_plane_constraint_policy: str | None = None,
     contacts_input_policy: str | None = None,
+    affine_static_plane_contact_policy: str | None = None,
 ) -> dict[str, object]:
     shape = spinning_box_affine_shape_diagnostics(q)
     momentum = mabd_momentum_diagnostics(config, q, qd)
@@ -505,6 +604,11 @@ def _paper_horizon_state_metrics(
         metrics["contacts_input_policy"] = contacts_input_policy
         metrics["contacts_input_scope"] = CONTACTS_INPUT_SCOPE
         metrics["contacts_input_source"] = CONTACTS_INPUT_SOURCE
+    if affine_static_plane_contact_policy is not None:
+        metrics["contact_constraint_policy"] = NORMAL_CONSTRAINT_POLICY
+        metrics["affine_static_plane_contact_policy"] = affine_static_plane_contact_policy
+        metrics["affine_static_plane_contact_scope"] = AFFINE_STATIC_PLANE_CONTACT_SCOPE
+        metrics["affine_static_plane_contact_source"] = AFFINE_STATIC_PLANE_CONTACT_SOURCE
     return metrics
 
 
@@ -570,16 +674,18 @@ def _run_spinning_box_paper_horizon_step_size(
     normal_constraint_policy: str | None = None,
     model_plane_constraint_policy: str | None = None,
     contacts_input_policy: str | None = None,
+    affine_static_plane_contact_policy: str | None = None,
 ) -> dict[str, object]:
     enabled_modes = [
         contact_response_policy is not None,
         normal_constraint_policy is not None,
         model_plane_constraint_policy is not None,
         contacts_input_policy is not None,
+        affine_static_plane_contact_policy is not None,
     ]
     if sum(enabled_modes) > 1:
         raise ValueError(
-            "contact, normal-constraint, model-plane, and contacts-input modes are mutually exclusive"
+            "contact, normal-constraint, model-plane, contacts-input, and affine-static-plane modes are mutually exclusive"
         )
     duration = config.paper_horizon.duration_s
     feasibility = spinning_box_kinematic_feasibility(config, time_step_s)
@@ -650,6 +756,13 @@ def _run_spinning_box_paper_horizon_step_size(
         "max_contacts_input_skipped_contact_count": (-np.inf, 0),
         "max_contacts_input_overflow_count": (-np.inf, 0),
         "max_contacts_input_constraint_residual_norm": (-np.inf, 0),
+    }
+    affine_static_plane_contact_extrema: dict[str, tuple[float, int]] = {
+        "max_affine_static_plane_box_shape_count": (-np.inf, 0),
+        "max_affine_static_plane_static_plane_shape_count": (-np.inf, 0),
+        "max_affine_static_plane_candidate_contact_count": (-np.inf, 0),
+        "max_affine_static_plane_rows_written": (-np.inf, 0),
+        "max_affine_static_plane_skipped_shape_pair_count": (-np.inf, 0),
     }
 
     def update(metrics: dict[str, object]) -> None:
@@ -809,6 +922,33 @@ def _run_spinning_box_paper_horizon_step_size(
             if value > current:
                 contacts_input_extrema[key] = (value, step_index)
 
+    def update_affine_static_plane_contacts(
+        *,
+        result: SolverMABDAffineStaticPlaneContactsStepResult,
+        step_index: int,
+    ) -> None:
+        candidates = {
+            "max_affine_static_plane_box_shape_count": float(
+                result.affine_static_plane_box_shape_count
+            ),
+            "max_affine_static_plane_static_plane_shape_count": float(
+                result.affine_static_plane_static_plane_shape_count
+            ),
+            "max_affine_static_plane_candidate_contact_count": float(
+                result.affine_static_plane_candidate_contact_count
+            ),
+            "max_affine_static_plane_rows_written": float(
+                result.affine_static_plane_rows_written
+            ),
+            "max_affine_static_plane_skipped_shape_pair_count": float(
+                result.affine_static_plane_skipped_shape_pair_count
+            ),
+        }
+        for key, value in candidates.items():
+            current, _current_step = affine_static_plane_contact_extrema[key]
+            if value > current:
+                affine_static_plane_contact_extrema[key] = (value, step_index)
+
     def active_plane_constraints(contact: object) -> list[object]:
         surface = config.contact_surface
         return [
@@ -833,6 +973,7 @@ def _run_spinning_box_paper_horizon_step_size(
             or normal_constraint_policy is not None
             or model_plane_constraint_policy is not None
             or contacts_input_policy is not None
+            or affine_static_plane_contact_policy is not None
         )
         else CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY
     )
@@ -851,6 +992,7 @@ def _run_spinning_box_paper_horizon_step_size(
         normal_constraint_policy=normal_constraint_policy,
         model_plane_constraint_policy=model_plane_constraint_policy,
         contacts_input_policy=contacts_input_policy,
+        affine_static_plane_contact_policy=affine_static_plane_contact_policy,
     )
     update(metrics)
     if 0 in sample_indices:
@@ -962,9 +1104,35 @@ def _run_spinning_box_paper_horizon_step_size(
                 requested_count=len(constraints),
                 step_index=step_index - 1,
             )
+        elif affine_static_plane_contact_policy is not None:
+            result = _run_spinning_box_solver_mabd_affine_static_plane_contacts_step(
+                config=config,
+                q=q,
+                qd=qd,
+                time_step_s=time_step_s,
+            )
+            free_contact = spinning_box_contact_diagnostics(
+                config,
+                result.free_q,
+                result.free_qd,
+            )
+            update_contacts_input(
+                free_predicted_contact=free_contact,
+                result=result,
+                requested_count=result.affine_static_plane_candidate_contact_count,
+                step_index=step_index - 1,
+            )
+            update_affine_static_plane_contacts(
+                result=result,
+                step_index=step_index - 1,
+            )
         else:
             result = mabd.solve_cpu_oracle_step(q=[q], qd=[qd], dt=time_step_s, config=step_config)
-        if model_plane_constraint_policy is not None or contacts_input_policy is not None:
+        if (
+            model_plane_constraint_policy is not None
+            or contacts_input_policy is not None
+            or affine_static_plane_contact_policy is not None
+        ):
             q = result.q
             qd = result.qd
         else:
@@ -985,6 +1153,7 @@ def _run_spinning_box_paper_horizon_step_size(
             normal_constraint_policy=normal_constraint_policy,
             model_plane_constraint_policy=model_plane_constraint_policy,
             contacts_input_policy=contacts_input_policy,
+            affine_static_plane_contact_policy=affine_static_plane_contact_policy,
         )
         if not _all_state_values_finite(q, qd, metrics):
             first_nonfinite_step = step_index
@@ -1071,6 +1240,53 @@ def _run_spinning_box_paper_horizon_step_size(
         summary["contacts_input_overflow_count"] = summary[
             "max_contacts_input_overflow_count"
         ]
+    elif affine_static_plane_contact_policy is not None:
+        summary["contact_constraint_policy"] = NORMAL_CONSTRAINT_POLICY
+        summary["contact_diagnostic_policy"] = contact_diagnostic_policy
+        summary["rank_filter_policy"] = NORMAL_CONSTRAINT_RANK_FILTER_POLICY
+        summary["affine_static_plane_contact_policy"] = affine_static_plane_contact_policy
+        summary["affine_static_plane_contact_scope"] = AFFINE_STATIC_PLANE_CONTACT_SCOPE
+        summary["affine_static_plane_contact_source"] = AFFINE_STATIC_PLANE_CONTACT_SOURCE
+        summary["contacts_input_summary_source"] = "last_contacts_input_summary"
+        summary["max_constrained_contact_penetration_m"] = summary["max_contact_penetration_m"]
+        for key, (value, step_index) in contacts_input_extrema.items():
+            if value == -np.inf:
+                value = 0.0
+            summary[key] = int(value) if key.endswith("_count") else value
+            summary[f"{key}_step_index"] = step_index
+        for key, (value, step_index) in affine_static_plane_contact_extrema.items():
+            if value == -np.inf:
+                value = 0.0
+            summary[key] = int(value) if key.endswith("_count") or key.endswith("_written") else value
+            summary[f"{key}_step_index"] = step_index
+        summary["contacts_input_rigid_contact_count"] = summary[
+            "max_contacts_input_rigid_contact_count"
+        ]
+        summary["contacts_input_rows_read"] = summary["max_contacts_input_rows_read"]
+        summary["contacts_input_generated_plane_constraint_count"] = summary[
+            "max_contacts_input_generated_plane_constraint_count"
+        ]
+        summary["contacts_input_skipped_contact_count"] = summary[
+            "max_contacts_input_skipped_contact_count"
+        ]
+        summary["contacts_input_overflow_count"] = summary[
+            "max_contacts_input_overflow_count"
+        ]
+        summary["affine_static_plane_box_shape_count"] = summary[
+            "max_affine_static_plane_box_shape_count"
+        ]
+        summary["affine_static_plane_static_plane_shape_count"] = summary[
+            "max_affine_static_plane_static_plane_shape_count"
+        ]
+        summary["affine_static_plane_candidate_contact_count"] = summary[
+            "max_affine_static_plane_candidate_contact_count"
+        ]
+        summary["affine_static_plane_rows_written"] = summary[
+            "max_affine_static_plane_rows_written"
+        ]
+        summary["affine_static_plane_skipped_shape_pair_count"] = summary[
+            "max_affine_static_plane_skipped_shape_pair_count"
+        ]
     else:
         summary["contact_diagnostic_policy"] = CONTACT_DIAGNOSTIC_NO_RESPONSE_POLICY
     summary["contact_diagnostic_status"] = (
@@ -1079,6 +1295,7 @@ def _run_spinning_box_paper_horizon_step_size(
         and normal_constraint_policy is None
         and model_plane_constraint_policy is None
         and contacts_input_policy is None
+        and affine_static_plane_contact_policy is None
         and summary["max_contact_active_count"] > 0
         else "contact_penetration_observed_after_explicit_response"
         if summary["max_contact_active_count"] > 0
@@ -1089,6 +1306,7 @@ def _run_spinning_box_paper_horizon_step_size(
             normal_constraint_policy is not None
             or model_plane_constraint_policy is not None
             or contacts_input_policy is not None
+            or affine_static_plane_contact_policy is not None
         )
         else "no_contact_penetration_observed"
     )
@@ -1872,6 +2090,165 @@ def write_spinning_box_contacts_input_report(
     return report
 
 
+def write_spinning_box_affine_static_plane_contacts_report(
+    path: str | Path,
+    *,
+    config: SpinningBoxRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    expected_mass_diagonal = spinning_box_mabd_mass_diagonal(config)
+    if not np.allclose(config.mass_diagonal, expected_mass_diagonal, rtol=0.0, atol=1.0e-15):
+        raise ValueError("single_body_spinning_box mass_diagonal must match paper cube ABD mass")
+
+    results = [
+        _run_spinning_box_paper_horizon_step_size(
+            config=config,
+            time_step_s=time_step_s,
+            affine_static_plane_contact_policy=AFFINE_STATIC_PLANE_CONTACT_POLICY,
+        )
+        for time_step_s in config.paper_horizon.time_step_grid_s
+    ]
+    all_violations = sorted(
+        {
+            violation
+            for result in results
+            for violation in result["threshold_violations"]
+        }
+    )
+    feasibility_statuses = sorted(
+        {
+            str(result["kinematic_feasibility"]["status"])
+            for result in results
+        }
+    )
+    max_free_predicted_penetration = max(
+        float(result["max_free_predicted_contact_penetration_m"]) for result in results
+    )
+    max_constrained_penetration = max(
+        float(result["max_constrained_contact_penetration_m"]) for result in results
+    )
+    max_rigid_contact_count = max(
+        int(result["max_contacts_input_rigid_contact_count"]) for result in results
+    )
+    max_rows_read = max(int(result["max_contacts_input_rows_read"]) for result in results)
+    max_generated_count = max(
+        int(result["max_contacts_input_generated_plane_constraint_count"])
+        for result in results
+    )
+    max_skipped_count = max(
+        int(result["max_contacts_input_skipped_contact_count"]) for result in results
+    )
+    max_overflow_count = max(
+        int(result["max_contacts_input_overflow_count"]) for result in results
+    )
+    max_residual_norm = max(
+        float(result["max_contacts_input_constraint_residual_norm"]) for result in results
+    )
+    max_affine_box_count = max(
+        int(result["max_affine_static_plane_box_shape_count"]) for result in results
+    )
+    max_affine_plane_count = max(
+        int(result["max_affine_static_plane_static_plane_shape_count"]) for result in results
+    )
+    max_affine_candidate_count = max(
+        int(result["max_affine_static_plane_candidate_contact_count"]) for result in results
+    )
+    max_affine_rows_written = max(
+        int(result["max_affine_static_plane_rows_written"]) for result in results
+    )
+    max_affine_skipped_shape_pairs = max(
+        int(result["max_affine_static_plane_skipped_shape_pair_count"])
+        for result in results
+    )
+    reduced_free_predicted_penetration = (
+        max_constrained_penetration < max_free_predicted_penetration
+    )
+    blockers = [
+        "mabd_newton_report_incomplete",
+        "spinning_box_affine_static_plane_contacts_not_paper_faithful",
+        "spinning_box_comparison_pass_gate_not_enabled",
+    ]
+    if all_violations:
+        blockers.insert(1, "mabd_paper_horizon_diagnostic_thresholds_violated")
+    if "paper_momentum_requires_affine_stretch_under_q_delta_over_h" in feasibility_statuses:
+        blockers.append("mabd_kinematic_feasibility_blocker_recorded")
+
+    observed = {
+        "paper_horizon_duration_s": config.paper_horizon.duration_s,
+        "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        "paper_source_lines": list(config.source_lines),
+        "figure_text_source": config.paper_horizon.figure_text_source,
+        "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+        "affine_static_plane_contact_policy": AFFINE_STATIC_PLANE_CONTACT_POLICY,
+        "affine_static_plane_contact_scope": AFFINE_STATIC_PLANE_CONTACT_SCOPE,
+        "affine_static_plane_contact_source": AFFINE_STATIC_PLANE_CONTACT_SOURCE,
+        "contacts_input_summary_source": "last_contacts_input_summary",
+        "contact_constraint_policy": NORMAL_CONSTRAINT_POLICY,
+        "rank_filter_policy": NORMAL_CONSTRAINT_RANK_FILTER_POLICY,
+        "mabd_kinematic_feasibility_statuses": feasibility_statuses,
+        "threshold_violations": all_violations,
+        "max_free_predicted_contact_penetration_m": max_free_predicted_penetration,
+        "max_constrained_contact_penetration_m": max_constrained_penetration,
+        "max_contacts_input_rigid_contact_count": max_rigid_contact_count,
+        "max_contacts_input_rows_read": max_rows_read,
+        "max_contacts_input_generated_plane_constraint_count": max_generated_count,
+        "max_contacts_input_skipped_contact_count": max_skipped_count,
+        "max_contacts_input_overflow_count": max_overflow_count,
+        "max_contacts_input_constraint_residual_norm": max_residual_norm,
+        "max_affine_static_plane_box_shape_count": max_affine_box_count,
+        "max_affine_static_plane_static_plane_shape_count": max_affine_plane_count,
+        "max_affine_static_plane_candidate_contact_count": max_affine_candidate_count,
+        "max_affine_static_plane_rows_written": max_affine_rows_written,
+        "max_affine_static_plane_skipped_shape_pair_count": max_affine_skipped_shape_pairs,
+        "affine_static_plane_contacts_reduced_free_predicted_penetration": (
+            reduced_free_predicted_penetration
+        ),
+        "initial_position_m": config.initial_q[9:12].tolist(),
+        "final_position_m": results[0]["final_position_m"],
+        "affine_static_plane_contacts_results": results,
+        "blocking_reasons": blockers,
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={"primitive_cube": "not_applicable_procedural"},
+        solver_mode="solver_mabd_affine_static_plane_contacts_diagnostic",
+        backend=AFFINE_STATIC_PLANE_CONTACT_BACKEND,
+        baseline_lane=config.baseline_lane,
+        expected={
+            "paper_claim_status": "affine static-plane contacts diagnostic only; no lane gate",
+            "paper_horizon_duration_s": config.paper_horizon.duration_s,
+            "paper_step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+            "source_lines": list(config.source_lines),
+            "figure_text_source": config.paper_horizon.figure_text_source,
+            "figure_pdf_sha256": config.paper_horizon.figure_pdf_sha256,
+            "phase71_gate_policy": "diagnostic_only_no_lane_gate",
+        },
+        observed=observed,
+        threshold=config.paper_horizon.thresholds,
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason=(
+            "SolverMABD affine static-plane contacts are a bounded diagnostic "
+            "active-set path, not a paper-faithful contact solve or spinning-box "
+            "experiment pass"
+        ),
+        timing_distribution={
+            "scope": "not_timed",
+            "step_sizes_s": list(config.paper_horizon.time_step_grid_s),
+        },
+        raw_outputs={"time_series": "compact_samples_only"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 def write_spinning_box_decoupled_twist_report(
     path: str | Path,
     *,
@@ -2323,6 +2700,7 @@ def write_spinning_box_paper_horizon_report(
 
 
 __all__ = [
+    "write_spinning_box_affine_static_plane_contacts_report",
     "write_spinning_box_contacts_input_report",
     "write_spinning_box_contact_response_report",
     "write_spinning_box_decoupled_twist_report",
