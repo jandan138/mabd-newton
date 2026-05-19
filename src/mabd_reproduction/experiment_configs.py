@@ -28,6 +28,7 @@ class SpinningBoxPaperHorizonConfig:
     contact_response_output_report: str
     normal_constraint_output_report: str
     model_plane_constraint_output_report: str
+    contacts_input_output_report: str
     decoupled_twist_output_report: str
     figure_curve_output_report: str
     figure_pdf_sha256: str
@@ -667,6 +668,7 @@ def _require_paper_horizon(data: dict[str, Any]) -> SpinningBoxPaperHorizonConfi
             horizon,
             "model_plane_constraint_output_report",
         ),
+        contacts_input_output_report=_require_str(horizon, "contacts_input_output_report"),
         decoupled_twist_output_report=_require_str(horizon, "decoupled_twist_output_report"),
         figure_curve_output_report=_require_str(horizon, "figure_curve_output_report"),
         figure_pdf_sha256=_require_str(horizon, "figure_pdf_sha256"),
@@ -1250,6 +1252,25 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
         raise ExperimentRunConfigError("energy_drift metric must be present in matrix and thresholds")
     expected_prefix = Path(entry.output_report).with_suffix("").as_posix() + "_"
     if (
+        not config.paper_horizon.contacts_input_output_report.startswith(expected_prefix)
+        or not config.paper_horizon.contacts_input_output_report.endswith(".json")
+    ):
+        raise ExperimentRunConfigError(
+            "paper_horizon.contacts_input_output_report must be a lane-specific report under the matrix stem"
+        )
+    if config.paper_horizon.contacts_input_output_report in (
+        config.output_report,
+        config.paper_horizon.output_report,
+        config.paper_horizon.contact_response_output_report,
+        config.paper_horizon.normal_constraint_output_report,
+        config.paper_horizon.model_plane_constraint_output_report,
+        config.paper_horizon.decoupled_twist_output_report,
+        config.paper_horizon.figure_curve_output_report,
+    ):
+        raise ExperimentRunConfigError(
+            "paper_horizon.contacts_input_output_report must be separate from lane reports"
+        )
+    if (
         not config.paper_horizon.figure_curve_output_report.startswith(expected_prefix)
         or not config.paper_horizon.figure_curve_output_report.endswith(".json")
     ):
@@ -1262,6 +1283,7 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
         config.paper_horizon.contact_response_output_report,
         config.paper_horizon.normal_constraint_output_report,
         config.paper_horizon.decoupled_twist_output_report,
+        config.paper_horizon.contacts_input_output_report,
     ):
         raise ExperimentRunConfigError(
             "paper_horizon.figure_curve_output_report must be separate from lane reports"
@@ -1280,11 +1302,11 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
         config.paper_horizon.normal_constraint_output_report,
         config.paper_horizon.decoupled_twist_output_report,
         config.paper_horizon.figure_curve_output_report,
+        config.paper_horizon.contacts_input_output_report,
     ):
         raise ExperimentRunConfigError(
             "paper_horizon.model_plane_constraint_output_report must be separate from lane reports"
         )
-
 
 def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig:
     config_path = Path(path)

@@ -115,6 +115,10 @@ class ExperimentRunConfigTests(unittest.TestCase):
             "reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json",
         )
         self.assertEqual(
+            config.paper_horizon.contacts_input_output_report,
+            "reports/experiment_matrix/single_body_spinning_box_contacts_input.json",
+        )
+        self.assertEqual(
             config.paper_horizon.decoupled_twist_output_report,
             "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json",
         )
@@ -983,6 +987,42 @@ class ExperimentRunConfigTests(unittest.TestCase):
                 with self.assertRaisesRegex(
                     ExperimentRunConfigError,
                     "paper_horizon.model_plane_constraint_output_report",
+                ):
+                    validate_spinning_box_config_against_matrix(invalid, matrix)
+
+    def test_spinning_box_contacts_input_report_path_must_be_lane_specific(self) -> None:
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+
+        self.assertEqual(
+            config.paper_horizon.contacts_input_output_report,
+            "reports/experiment_matrix/single_body_spinning_box_contacts_input.json",
+        )
+        validate_spinning_box_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            config.paper_horizon.output_report,
+            config.paper_horizon.contact_response_output_report,
+            config.paper_horizon.normal_constraint_output_report,
+            config.paper_horizon.model_plane_constraint_output_report,
+            config.paper_horizon.decoupled_twist_output_report,
+            config.paper_horizon.figure_curve_output_report,
+            "reports/experiment_matrix/not_the_spinning_box_contacts_input.json",
+            "reports/experiment_matrix/single_body_spinning_box_contacts_input.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    paper_horizon=replace(
+                        config.paper_horizon,
+                        contacts_input_output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "paper_horizon.contacts_input_output_report",
                 ):
                     validate_spinning_box_config_against_matrix(invalid, matrix)
 
