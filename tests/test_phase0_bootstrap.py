@@ -5038,6 +5038,10 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         phase69_commit = "674064f7558527da92be0f186361df4a7c71d4f7"
         self.assertEqual(validate_docs.PHASE69_CONTACTS_INPUT_COMMIT, phase69_commit)
+        self.assertEqual(
+            validate_docs.PHASE69_STATIC_CONTACT_REVIEW_FIX_COMMIT,
+            "4659b13662df287a406d1cc1c4a652d2eb156ab7",
+        )
 
         text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
         current = claim_boundary_bullet(text, "This repository contains Phase 69")
@@ -5051,6 +5055,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("SolverMABD Contacts input plane-constraint plumbing evidence", current)
         self.assertIn("SolverMABD.step(..., contacts=...)", verified)
         self.assertIn("newton.Contacts.rigid_contact_*", verified)
+        self.assertIn("shape_body == -1", verified)
         self.assertIn("rigid_contacts_to_point_plane_constraints_diagnostic", verified)
         self.assertIn("diagnostic_only_static_geometry_plane_constraints", verified)
         self.assertIn("last_contacts_input_summary", verified)
@@ -5065,6 +5070,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "complementarity",
             "continuous collision detection",
             "body-body affine contact",
+            "dynamic non-M-ABD body contact",
             "generic inequality-constrained M-ABD KKT",
             "paper-faithful affine collision/contact",
             "paper-faithful M-ABD stepping",
@@ -5095,6 +5101,8 @@ class Phase0BootstrapTests(unittest.TestCase):
             "rigid_contacts_to_point_plane_constraints_diagnostic",
             "newton.Contacts.rigid_contact_*",
             "diagnostic_only_static_geometry_plane_constraints",
+            "newton_body1 != -1",
+            "newton_body0 != -1",
             "duplicate mabd:body_index mapping for Newton body",
         ):
             self.assertIn(snippet, solver_source)
@@ -5107,6 +5115,7 @@ class Phase0BootstrapTests(unittest.TestCase):
             "test_solver_step_consumes_newton_contacts_as_plane_constraints",
             "test_solver_step_flips_contact_normal_when_mabd_body_is_shape1",
             "test_solver_step_records_skipped_and_overflow_contact_rows",
+            "test_solver_step_skips_dynamic_non_mabd_contact_rows",
             "test_solver_step_rejects_duplicate_mabd_body_index_mapping_for_contacts",
             "test_solver_step_clears_contacts_summary_when_contacts_none",
         ):
@@ -5139,16 +5148,27 @@ class Phase0BootstrapTests(unittest.TestCase):
             "## Status\n\npassed_for_solver_mabd_contacts_input_plumbing",
             "phase68-model-plane-report-lane",
             validate_docs.PHASE69_CONTACTS_INPUT_COMMIT,
+            validate_docs.PHASE69_STATIC_CONTACT_REVIEW_FIX_COMMIT,
+            "1df81a6",
             "96713fa965463b69c229a4d30582c733ff3526bb",
+            "paper source version: `2603.08079v2`",
+            "config path: `not applicable; unit-test ModelBuilder fixtures only`",
+            "backend: `cpu_numpy_newton_solver_mabd_contacts_input_diagnostic`",
+            "random seed: `not applicable`",
             "SolverMABD.step(..., contacts=...)",
             "MABDContactsInputSummary",
             "last_contacts_input_summary",
             "rigid_contacts_to_point_plane_constraints_diagnostic",
             "newton.Contacts.rigid_contact_*",
             "diagnostic_only_static_geometry_plane_constraints",
+            "shape_body == -1",
+            "dynamic non-M-ABD contact rows are skipped",
             "rigid_contact_overflow_count",
             "generated_plane_constraint_count",
             "skipped_contact_count",
+            "dynamic non-M-ABD generated plane constraints",
+            "dynamic non-M-ABD skipped contacts",
+            "raw artifacts:",
             "Control input remains unsupported",
             "mutates_reference_environment=false",
             "uses_reference_python=false",

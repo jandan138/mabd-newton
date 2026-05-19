@@ -843,18 +843,20 @@
 - Phase 69 verifies that bounded Newton `Contacts` rows can be consumed by
   vendored/local Newton `SolverMABD.step(..., contacts=...)`, read from
   `newton.Contacts.rigid_contact_*`, mapped from shape ids through
-  `mabd:body_index`, translated into existing point-plane normal constraint
-  rows using the
+  `mabd:body_index`, limited to contacts whose opposite side is static
+  geometry with `shape_body == -1`, translated into existing point-plane
+  normal constraint rows using the
   `rigid_contacts_to_point_plane_constraints_diagnostic` policy, scoped as
   `diagnostic_only_static_geometry_plane_constraints`, and summarized through
   `last_contacts_input_summary` while keeping no experiment claim passed.
 - Phase 69 does not verify contact solver behavior, collision detection,
   broadphase or narrowphase correctness, active-set generation inside Newton,
   IPC, friction, complementarity, continuous collision detection, body-body
-  affine contact, generic inequality-constrained M-ABD KKT,
-  paper-faithful affine collision/contact, paper-faithful M-ABD stepping,
-  comparison pass gate, rendered-output agreement, runtime performance, any
-  passed `experiment.*` claim, or full paper reproduction.
+  affine contact, dynamic non-M-ABD body contact, generic
+  inequality-constrained M-ABD KKT, paper-faithful affine collision/contact,
+  paper-faithful M-ABD stepping, comparison pass gate, rendered-output
+  agreement, runtime performance, any passed `experiment.*` claim, or full
+  paper reproduction.
 - Phase 69 SolverMABD Contacts input evidence must not be described as a
   contact solver, collision detection, paper-faithful affine collision/contact,
   generic inequality-constrained M-ABD KKT, a passed experiment, or full paper

@@ -4,7 +4,7 @@
 
 **Goal:** Let `SolverMABD.step(..., contacts=...)` consume bounded Newton rigid contact rows and convert the supported static-geometry subset into existing M-ABD point-plane constraint rows.
 
-**Architecture:** Add contact-row conversion inside vendored Newton `solver_mabd.py`, keep the existing CPU oracle plane-constraint solver unchanged, and mirror tests in repo and vendored Newton test suites. Record docs, boundaries, and validator evidence without changing any paper claim to passed.
+**Architecture:** Add contact-row conversion inside vendored Newton `solver_mabd.py`, keep the existing CPU oracle plane-constraint solver unchanged, and mirror tests in repo and vendored Newton test suites. The conversion is limited to exactly one M-ABD side against static geometry with `shape_body == -1`; dynamic non-M-ABD contacts are skipped. Record docs, boundaries, and validator evidence without changing any paper claim to passed.
 
 **Tech Stack:** Python 3.10, `unittest`, vendored Newton `Contacts`, `ModelBuilder`, `SolverMABD`, existing docs validator.
 
@@ -123,7 +123,7 @@ def test_solver_step_consumes_newton_contacts_as_plane_constraints(self) -> None
     )
 ```
 
-- [ ] **Step 3: Add normal-flip and skip-count tests**
+- [ ] **Step 3: Add normal-flip, dynamic-skip, and skip-count tests**
 
 Add these tests:
 
@@ -197,6 +197,12 @@ def test_solver_step_records_skipped_and_overflow_contact_rows(self) -> None:
     self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 0)
 
 
+def test_solver_step_skips_dynamic_non_mabd_contact_rows(self) -> None:
+    # Covers both M-ABD shape 0 vs dynamic non-M-ABD shape 1 and the flipped order.
+    # Expected: generated_plane_constraint_count=0, skipped_contact_count=2.
+    ...
+
+
 def test_solver_step_rejects_duplicate_mabd_body_index_mapping_for_contacts(self) -> None:
     builder = newton.ModelBuilder()
     SolverMABD.register_custom_attributes(builder)
@@ -263,7 +269,7 @@ Add `_mabd_body_row_by_newton_body()` that reads `self.model.mabd.body_index.num
 
 - [ ] **Step 3: Add contact conversion helper**
 
-Add `_plane_constraints_from_contacts(contacts)` that reads rigid contact arrays up to `min(reported_count, rigid_contact_max)`, checks `model.shape_body`, maps exactly-one-MABD-side contacts into `MABDCPUOraclePlaneConstraint`, records skipped and overflow counts, sets `self.last_contacts_input_summary`, and returns a tuple of generated constraints.
+Add `_plane_constraints_from_contacts(contacts)` that reads rigid contact arrays up to `min(reported_count, rigid_contact_max)`, checks `model.shape_body`, maps exactly-one-MABD-side contacts into `MABDCPUOraclePlaneConstraint` only when the opposite side has `shape_body == -1`, records skipped and overflow counts, sets `self.last_contacts_input_summary`, and returns a tuple of generated constraints.
 
 - [ ] **Step 4: Merge contacts into config**
 

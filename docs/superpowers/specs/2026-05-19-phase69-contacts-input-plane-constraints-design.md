@@ -37,9 +37,10 @@ Supported conversion:
   reported count exceeds capacity;
 - map Newton shape ids to Newton body ids through `model.shape_body`;
 - map Newton body ids to M-ABD body rows through `mabd:body_index`;
-- convert a contact row only when exactly one side maps to an M-ABD body row;
+- convert a contact row only when exactly one side maps to an M-ABD body row
+  and the opposite side is static geometry with `shape_body == -1`;
 - use the mapped side's body-frame contact point as the M-ABD rest point;
-- use the opposite side's contact point to define the plane offset;
+- use the static opposite side's contact point to define the plane offset;
 - flip the contact normal when the mapped M-ABD body is shape 1 rather than
   shape 0;
 - append generated plane rows to the existing explicit/model-derived
@@ -52,6 +53,7 @@ Unsupported contact rows are skipped, not guessed:
 - rows with invalid shape ids;
 - rows where neither side maps to an M-ABD body;
 - rows where both sides map to M-ABD bodies;
+- rows where the opposite side maps to a dynamic non-M-ABD Newton body;
 - rows requiring shape-transform reconstruction beyond the stored contact
   point buffers.
 
@@ -62,7 +64,8 @@ Unsupported contact rows are skipped, not guessed:
 For each consumed rigid contact, let `n` be Newton's
 `rigid_contact_normal`, pointing from shape 0 toward shape 1.
 
-If shape 0 maps to M-ABD body row `b`, Phase 69 creates:
+If shape 0 maps to M-ABD body row `b` and shape 1 is static geometry
+(`shape_body == -1`), Phase 69 creates:
 
 ```text
 body = b
@@ -71,7 +74,8 @@ plane_normal = n
 plane_offset = dot(n, rigid_contact_point1)
 ```
 
-If shape 1 maps to M-ABD body row `b`, Phase 69 creates:
+If shape 1 maps to M-ABD body row `b` and shape 0 is static geometry
+(`shape_body == -1`), Phase 69 creates:
 
 ```text
 body = b
@@ -143,6 +147,7 @@ Phase 69 requires test-first coverage for:
 - generated contact plane constraints matching the explicit
   `MABDCPUOracleConfig(plane_constraints=[...])` result;
 - normal flipping when the M-ABD body is on shape 1;
+- skipping dynamic non-M-ABD contact rows in both shape orders;
 - skipping unsupported rows and recording counts;
 - detecting duplicate `mabd:body_index` rows as an ambiguous mapping;
 - preserving `contacts=None` behavior and `Control` rejection;

@@ -301,6 +301,7 @@ PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT = "27650c74cadb5008fdb3d69f1a3faed0
 PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT = "6252693a584e9a4cd5f1640440060c39c840fd33"
 PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT = "e2dc01ac9b4dd7184ddea9743b27fbf6c66f2e4a"
 PHASE69_CONTACTS_INPUT_COMMIT = "674064f7558527da92be0f186361df4a7c71d4f7"
+PHASE69_STATIC_CONTACT_REVIEW_FIX_COMMIT = "4659b13662df287a406d1cc1c4a652d2eb156ab7"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -12955,8 +12956,14 @@ def validate_phase69_record() -> None:
         "## Status\n\npassed_for_solver_mabd_contacts_input_plumbing",
         "phase68-model-plane-report-lane",
         PHASE69_CONTACTS_INPUT_COMMIT,
+        PHASE69_STATIC_CONTACT_REVIEW_FIX_COMMIT,
+        "1df81a6",
         VENDORED_NEWTON_COMMIT,
         str(MABD_PYTHON),
+        "paper source version: `2603.08079v2`",
+        "config path: `not applicable; unit-test ModelBuilder fixtures only`",
+        "backend: `cpu_numpy_newton_solver_mabd_contacts_input_diagnostic`",
+        "random seed: `not applicable`",
         "SolverMABD.step(..., contacts=...)",
         "MABDContactsInputSummary",
         "last_contacts_input_summary",
@@ -12965,9 +12972,14 @@ def validate_phase69_record() -> None:
         "diagnostic_only_static_geometry_plane_constraints",
         "_cpu_oracle_config_with_contacts",
         "duplicate mabd:body_index mapping for Newton body",
+        "opposite shape to have `shape_body == -1`",
+        "dynamic non-M-ABD contact rows are skipped",
         "rigid_contact_overflow_count",
         "generated_plane_constraint_count",
         "skipped_contact_count",
+        "dynamic non-M-ABD generated plane constraints",
+        "dynamic non-M-ABD skipped contacts",
+        "raw artifacts:",
         "Control input remains unsupported",
         "`mutates_reference_environment=false`, `uses_reference_python=false`,\n"
         "  `uses_ambient_python=false`",
@@ -13025,6 +13037,7 @@ def validate_phase69_record() -> None:
         "SolverMABD.step(..., contacts=...)",
         "newton.Contacts.rigid_contact_*",
         "mabd:body_index",
+        "shape_body == -1",
         "point-plane normal constraint rows",
         "rigid_contacts_to_point_plane_constraints_diagnostic",
         "diagnostic_only_static_geometry_plane_constraints",
@@ -13043,6 +13056,7 @@ def validate_phase69_record() -> None:
         "complementarity",
         "continuous collision detection",
         "body-body affine contact",
+        "dynamic non-M-ABD body contact",
         "generic inequality-constrained M-ABD KKT",
         "paper-faithful affine collision/contact",
         "paper-faithful M-ABD stepping",
@@ -13070,6 +13084,8 @@ def validate_phase69_record() -> None:
         "SolverMABD.step(..., contacts=...)",
         "Contacts.rigid_contact_count",
         "mabd:body_index",
+        "shape_body == -1",
+        "dynamic non-M-ABD contact rows",
         "last_contacts_input_summary",
         "rigid_contacts_to_point_plane_constraints_diagnostic",
         "diagnostic_only_static_geometry_plane_constraints",
@@ -13085,7 +13101,9 @@ def validate_phase69_record() -> None:
         "SolverMABD.step(..., contacts=...)",
         "vendor/newton/newton/_src/solvers/mabd/solver_mabd.py",
         "test_solver_step_consumes_newton_contacts_as_plane_constraints",
+        "test_solver_step_skips_dynamic_non_mabd_contact_rows",
         "_cpu_oracle_config_with_contacts",
+        "shape_body == -1",
         "scripts/validate_docs.py",
         "unchanged paper-claim statuses",
         "experiment.single_body.spinning_box",
@@ -13103,6 +13121,8 @@ def validate_phase69_record() -> None:
         "newton.Contacts.rigid_contact_*",
         "diagnostic_only_static_geometry_plane_constraints",
         "duplicate mabd:body_index mapping for Newton body",
+        "newton_body1 != -1",
+        "newton_body0 != -1",
         "replace(",
     ):
         if snippet not in solver_text:
@@ -13113,6 +13133,7 @@ def validate_phase69_record() -> None:
         "test_solver_step_consumes_newton_contacts_as_plane_constraints",
         "test_solver_step_flips_contact_normal_when_mabd_body_is_shape1",
         "test_solver_step_records_skipped_and_overflow_contact_rows",
+        "test_solver_step_skips_dynamic_non_mabd_contact_rows",
         "test_solver_step_rejects_duplicate_mabd_body_index_mapping_for_contacts",
         "test_solver_step_clears_contacts_summary_when_contacts_none",
     ):
