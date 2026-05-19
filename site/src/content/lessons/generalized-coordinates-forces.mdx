@@ -21,9 +21,12 @@ import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
 import MathBridge from "../../components/MathBridge.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
+import HandCalc from "../../components/HandCalc.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
 import jacobianForceMap from "../../assets/diagrams/jacobian-force-map.png";
 
 <ProblemCard title="它解决的问题">
@@ -55,6 +58,16 @@ import jacobianForceMap from "../../assets/diagrams/jacobian-force-map.png";
 这次只推印章上的一个标记点。点本身活在世界空间，但求解器更新的是印章的广义坐标，所以我们先看这个点如何随 `q` 运动，再把点力通过 Jacobian 转置映射回 `q` 的各个分量。
 </GuidedProjectStep>
 
+<ToySolverStep step="玩具求解器 7/12" title="把点速度和点力接到 q">
+这段伪代码只展示教程里的 Jacobian 方向：`J` 把 `qd` 推到点速度，`J.T` 把点力拉回广义力，不代表仓库已有求解器实现。
+
+```text
+J = jacobian(point_position, q)
+point_velocity = J @ qd
+tau = J.T @ f
+```
+</ToySolverStep>
+
 ## 从点到旋钮
 
 <MathBridge>
@@ -62,6 +75,15 @@ import jacobianForceMap from "../../assets/diagrams/jacobian-force-map.png";
   <li>再线性化得到 `dx = J dq`：旋钮小动一下，点跟着小动。</li>
   <li>最后用虚功反向读力：点力通过 `J^T f` 变成广义力。</li>
 </MathBridge>
+
+<HandCalc title="手算小算例：一个小 Jacobian 的两个方向">
+  <p>给定 `J = [[1, 0], [0, 2]]`、`qd = [3, 1]`、`f = [2, 1]`。</p>
+  <ol>
+    <li>`J @ qd = [3, 2]`，这是标记点速度。</li>
+    <li>`J.T @ f = [2, 2]`，这是广义力。</li>
+  </ol>
+  <p>同一个 `J` 一边把旋钮速度推到点速度，另一边把点力拉回旋钮力。</p>
+</HandCalc>
 
 `q` 是广义坐标，可以理解为控制物体的旋钮；`qd` 是这些旋钮的速度。一个点的位置 `x(q)` 由旋钮决定，所以点的小变化满足 `dx = J dq`，这里的 `J = partial x / partial q` 就是 Jacobian。
 
@@ -130,6 +152,19 @@ xd = J @ qd`}
   <p>`J qd` 的方向是从广义速度空间到点速度空间：输入是印章状态旋钮的速度 `qd`，输出是这个标记点在世界空间中的速度 `xd`。`J^T f` 的方向是从点力空间到广义力空间：输入是作用在标记点上的世界空间力 `f`，输出是对 `q` 每个分量的广义力 `tau`，表示这股点力会推动哪些平移、旋转或仿射分量。两者通过虚功 `f dot (J dq) = (J^T f) dot dq` 保持同一物理作用的功一致。</p>
 </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="常见误解纠正">
+<dl>
+  <dt>误解</dt>
+  <dd>`J^T f` 是为了形状凑得上随便转置。</dd>
+  <dt>为什么容易这样想</dt>
+  <dd>线性代数推导里常先看到矩阵尺寸匹配，容易把转置理解成纯粹的数组技巧。</dd>
+  <dt>正确读法</dt>
+  <dd>转置来自虚功相等：点力在点位移上做的功，要等于广义力在 `dq` 上做的功。</dd>
+  <dt>下一步检查</dt>
+  <dd>写出 `dx = J dq` 和 `f dot dx = tau dot dq`，再确认 `tau = J^T f` 的方向和单位。</dd>
+</dl>
+</MisconceptionRepair>
 
 <RememberBox title="核心记忆">
   <ul>

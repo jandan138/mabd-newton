@@ -21,6 +21,10 @@ import LearningGoals from "../../components/LearningGoals.astro";
 import PrereqBox from "../../components/PrereqBox.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
 import MathBridge from "../../components/MathBridge.astro";
+import HandCalc from "../../components/HandCalc.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
+import ChapterRecap from "../../components/ChapterRecap.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
@@ -55,6 +59,17 @@ import affineStateMap from "../../assets/diagrams/affine-state-map.png";
 还是那枚带三个静止标记点的软橡胶印章。现在我们把它的整体形变交给矩阵 `A`，把整体位置交给平移 `t`。为了让后续求解过程能统一读入状态，再把 `A` 的数字和 `t` 的数字按固定顺序排进同一个 `q`。
 </GuidedProjectStep>
 
+<ToySolverStep step="玩具求解器 4/12" title="存储 A、t 和 q">
+这段伪代码只展示教程里的状态打包约定：保存 `A`、`t`，再把它们排进 `q`，不代表仓库已有求解器实现。
+
+```text
+A = identity_matrix(3)
+t = [0, 0, 0]
+q = pack(A, t)
+state = {"A": A, "t": t, "q": q}
+```
+</ToySolverStep>
+
 ## 一个仿射体的状态
 
 <MathBridge>
@@ -62,6 +77,16 @@ import affineStateMap from "../../assets/diagrams/affine-state-map.png";
   <li>再用 `+ t` 把整个变形后的物体搬到世界位置。</li>
   <li>最后把 `A` 的 9 个数和 `t` 的 3 个数排成求解器读得懂的 `q`。</li>
 </MathBridge>
+
+<HandCalc title="手算小算例：先乘 A，再加 t">
+  <p>给定 `A = diag(2, 1, 1)`、`t = [3, 0, 0]`、`x_rest = [1, 0, 0]`。</p>
+  <ol>
+    <li>`A @ x_rest = [2, 0, 0]`。</li>
+    <li>`x_world = [2, 0, 0] + [3, 0, 0] = [5, 0, 0]`。</li>
+    <li>`q = [2, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0]`。</li>
+  </ol>
+  <p>这个点先被 x 方向拉伸，再被整体平移。</p>
+</HandCalc>
 
 对一个静止点 `x_rest`，仿射体把它放到世界空间：`x_world = A @ x_rest + t`。这里 `A` 是 3x3 矩阵，负责旋转、拉伸、缩放和剪切；`t` 是 3D 向量，负责整体平移。
 
@@ -126,6 +151,30 @@ def pack_q(A, t):
   <p>按列优先打包时，`q = [2, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0]`。对静止点 `x_rest = [1, 0, 0]`，先算 `A @ x_rest = [2, 0, 0]`，表示它在局部 x 方向被拉到原来的 2 倍；再加 `t = [3, 0, 0]`，得到世界位置 `[5, 0, 0]`。</p>
 </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="常见误解纠正">
+<dl>
+  <dt>误解</dt>
+  <dd>`q` 的 12 个数字是 12 个互不相关的旋钮。</dd>
+  <dt>为什么容易这样想</dt>
+  <dd>打包后 `q` 看起来只是一个一维数组，很容易忘记前 9 个数原本组成同一个矩阵。</dd>
+  <dt>正确读法</dt>
+  <dd>`q` 是结构化状态：前 9 个数共同定义 `A` 的三列，最后 3 个数定义平移 `t`。</dd>
+  <dt>下一步检查</dt>
+  <dd>读任何 `q` 操作前，先确认打包顺序，并把它还原成 `A` 和 `t` 来解释。</dd>
+</dl>
+</MisconceptionRepair>
+
+<ChapterRecap title="阶段复盘">
+<dl>
+  <dt>现在能做</dt>
+  <dd>用 `A @ x_rest + t` 映射静止点，并按固定顺序把 `A` 和 `t` 打包成 `q`。</dd>
+  <dt>还不能做</dt>
+  <dd>还没有处理力、时间步进、约束，也不能把教程伪代码升级为仓库证据声明。</dd>
+  <dt>下一段</dt>
+  <dd>继续看 polar、刚体对比、Jacobian 力映射和隐式步进。</dd>
+</dl>
+</ChapterRecap>
 
 <RememberBox title="核心记忆">
   <ul>

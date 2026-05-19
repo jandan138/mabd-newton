@@ -25,7 +25,10 @@ import PrereqBox from "../../components/PrereqBox.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
+import ChapterRecap from "../../components/ChapterRecap.astro";
 import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 
 <ProblemCard title="它解决的问题">
@@ -56,6 +59,17 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
 <GuidedProjectStep title="把教程小项目和仓库证据分开放回地图" step="贯穿小项目 12/12">
 贯穿教程的软橡胶印章帮助读者理解 ABD/M-ABD 结构，但它本身不是证据。最后一步是把教程小项目的概念理解、按日期记录的验证范围和声明边界文档的禁止越界说法分开记录。
 </GuidedProjectStep>
+
+<ToySolverStep title="玩具求解器：逐行标注证据等级" step="概念追踪 12/12">
+  <p>这段把贯穿教程的 trace 逐行分类：除非有按日期记录支撑一个有边界主张，否则都保持 conceptual。</p>
+
+```text
+trace_line("pack rubber-stamp points into q")        -> conceptual
+trace_line("linearize residual and KKT blocks")      -> conceptual
+trace_line("compare with scoped CPU oracle record")  -> bounded only if dated record matches
+trace_line("claim complete M-ABD reproduction")      -> not_allowed_by_claim_boundaries
+```
+</ToySolverStep>
 
 ## 先看边界，再看证据
 
@@ -132,6 +146,30 @@ import evidenceFunnel from "../../assets/diagrams/evidence-funnel.png";
     <p>不安全说法：“这个仓库已经复现了完整 M-ABD 论文。” 有边界改写：“学习站点提供了 ABD/M-ABD 的概念性软橡胶印章教程；仓库中若干按日期记录支持特定 CPU oracle、材料项或开发路径的有范围主张。根据 `docs/reference/claim-boundaries.md`，在 `SolverMABD` 方法记录、完整实验记录和所有必要论文主张条目通过之前，不能声称完整 M-ABD 求解器或完整论文复现已经完成。”</p>
   </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="误解纠正：教程跑通概念不升级仓库主张">
+  <dl>
+    <dt>误解</dt>
+    <dd>“教程小项目能跑通概念，所以仓库主张也能升级。”</dd>
+    <dt>为什么容易这样想</dt>
+    <dd>贯穿小项目把点、状态、KKT 和证据地图串起来，学习体验像一条完整管线。</dd>
+    <dt>正确读法</dt>
+    <dd>教程 trace 只帮助理解；仓库主张必须由声明边界、主张映射、记录、测试和报告共同支撑。</dd>
+    <dt>下一步检查</dt>
+    <dd>逐条查 `docs/records/` 和 `docs/reference/paper-claims.yaml`，只升级记录明确支持且未越过边界的说法。</dd>
+  </dl>
+</MisconceptionRepair>
+
+<ChapterRecap title="本章复盘：从玩具 trace 到证据边界">
+  <dl>
+    <dt>现在能做</dt>
+    <dd>用软橡胶印章玩具 trace 从点、仿射状态、残差、KKT 一路走到证据分类，并把每一行读成 conceptual，除非有匹配的按日期记录支持一个有边界说法。</dd>
+    <dt>还不能做</dt>
+    <dd>不能声称完整 M-ABD 实现、完整论文复现、比较 baselines、paper-matching 结果，或 paper-faithful 碰撞处理已经完成。</dd>
+    <dt>下一步</dt>
+    <dd>只有新增或更新的记录、测试和报告能升级仓库主张；教程解释本身不能升级声明。</dd>
+  </dl>
+</ChapterRecap>
 
 <RememberBox title="核心记忆">
   <ul>

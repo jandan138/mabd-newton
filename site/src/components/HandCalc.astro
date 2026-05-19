@@ -1,0 +1,14 @@
+---
+interface Props {
+  title?: string;
+}
+
+const { title = "手算小算例" } = Astro.props;
+---
+
+<section class="tutorial-card tutorial-card--hand-calc">
+  <h3>{title}</h3>
+  <div class="tutorial-card__body hand-calc">
+    <slot />
+  </div>
+</section>

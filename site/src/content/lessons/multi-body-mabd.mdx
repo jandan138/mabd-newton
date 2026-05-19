@@ -22,8 +22,11 @@ import PrereqBox from "../../components/PrereqBox.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
 import MathBridge from "../../components/MathBridge.astro";
+import HandCalc from "../../components/HandCalc.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
 import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-map.png";
 
 <ProblemCard title="它解决的问题">
@@ -55,11 +58,39 @@ import mabdTopologySolverMap from "../../assets/diagrams/mabd-topology-solver-ma
 现在复制多块软橡胶印章，每块都有自己的 `q` 状态块。把不同印章上的标记点通过关节连起来，再观察每条关节只触碰相关物体块，而不是让整张多体矩阵都变成稠密。
 </GuidedProjectStep>
 
+<ToySolverStep title="玩具求解器：从一个 q 块扩展到 q1、q2、q3" step="概念追踪 11/12">
+  <p>这段只画出三块印章和三条关节的概念装配顺序；它不是完整 M-ABD 拓扑求解器或论文求解器实现证据。</p>
+
+```text
+q = [q1, q2, q3]
+add_body_block(H, q1)
+add_body_block(H, q2)
+add_body_block(H, q3)
+
+add_joint_row(G, J12, touches=[q1, q2])
+add_joint_row(G, J23, touches=[q2, q3])
+add_joint_row(G, J31, touches=[q3, q1])
+solve_conceptual_kkt(H, G, residual, constraints)
+```
+</ToySolverStep>
+
 <MathBridge>
   <li>先复制多块软橡胶印章，每块印章都有自己的 `q` 状态块。</li>
   <li>再用标记点关节连接两个状态块，得到稀疏的约束行。</li>
   <li>最后比较 chain、tree、loop、graph 对块求解的影响。</li>
 </MathBridge>
+
+<HandCalc title="手算小算例：三块印章的稀疏触碰表">
+  <table>
+    <thead><tr><th>关节</th><th>触碰的物体块</th><th>不触碰</th></tr></thead>
+    <tbody>
+      <tr><td>`J12`</td><td>`B1`, `B2`</td><td>`B3`</td></tr>
+      <tr><td>`J23`</td><td>`B2`, `B3`</td><td>`B1`</td></tr>
+      <tr><td>`J31`</td><td>`B3`, `B1`</td><td>`B2`</td></tr>
+    </tbody>
+  </table>
+  <p>这张表解释 `G` 的稀疏块位置，不声称完整拓扑求解器已经完成。</p>
+</HandCalc>
 
 ## 控制点关节
 
@@ -131,6 +162,19 @@ delta_q, lambda = solve_kkt_system(H, residual, constraints)`}
     <p>`J12` 触碰 `B1` 和 `B2` 的 `q` 块，`J23` 触碰 `B2` 和 `B3`，`J31` 触碰 `B3` 和 `B1`。因此对应的 `G` 行在这两个相关物体块上有非零块，在第三个物体块上为零。这个练习只说明闭环拓扑和稀疏块直觉，不声称仓库已经完成完整 M-ABD 拓扑求解器。</p>
   </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="误解纠正：闭环不是沿树走一遍就够">
+  <dl>
+    <dt>误解</dt>
+    <dd>“三体闭环只要沿树走一遍就够。”</dd>
+    <dt>为什么容易这样想</dt>
+    <dd>chain 和 tree 的传播直觉很清楚，看起来把第三条边也按顺序处理就能闭合。</dd>
+    <dt>正确读法</dt>
+    <dd>闭环多了回路一致性；绕一圈回到起点时，所有关节约束必须同时满足，不能只靠一次树状传播保证。</dd>
+    <dt>下一步检查</dt>
+    <dd>列出每条关节触碰的 `q` 块，再检查 `G` 中是否包含闭环边以及求解说明是否覆盖回路一致性。</dd>
+  </dl>
+</MisconceptionRepair>
 
 <RememberBox title="核心记忆">
   <ul>

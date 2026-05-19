@@ -85,6 +85,48 @@ const mathBridgeComponent = {
   importPattern: /^\s*import\s+MathBridge\s+from\s+["']\.\.\/\.\.\/components\/MathBridge\.astro["'];?\s*$/m,
   importName: "MathBridge",
 };
+
+const requiredExecutableTutorialComponents = [
+  {
+    marker: "<ToySolverStep",
+    importPattern: /^\s*import\s+ToySolverStep\s+from\s+["']\.\.\/\.\.\/components\/ToySolverStep\.astro["'];?\s*$/m,
+    importName: "ToySolverStep",
+  },
+  {
+    marker: "<MisconceptionRepair",
+    importPattern: /^\s*import\s+MisconceptionRepair\s+from\s+["']\.\.\/\.\.\/components\/MisconceptionRepair\.astro["'];?\s*$/m,
+    importName: "MisconceptionRepair",
+  },
+];
+
+const handCalcRequiredLessonSlugs = new Set([
+  "vectors-matrices-transforms",
+  "affine-state",
+  "svd-polar-rotation",
+  "generalized-coordinates-forces",
+  "implicit-time-stepping",
+  "newton-hessian-kkt",
+  "single-body-abd",
+  "multi-body-mabd",
+]);
+
+const handCalcComponent = {
+  marker: "<HandCalc",
+  importPattern: /^\s*import\s+HandCalc\s+from\s+["']\.\.\/\.\.\/components\/HandCalc\.astro["'];?\s*$/m,
+  importName: "HandCalc",
+};
+
+const chapterRecapRequiredLessonSlugs = new Set([
+  "affine-state",
+  "implicit-time-stepping",
+  "repo-evidence-map",
+]);
+
+const chapterRecapComponent = {
+  marker: "<ChapterRecap",
+  importPattern: /^\s*import\s+ChapterRecap\s+from\s+["']\.\.\/\.\.\/components\/ChapterRecap\.astro["'];?\s*$/m,
+  importName: "ChapterRecap",
+};
 const requiredFigureProps = ["alt", "caption", "kind", "provenance", "claimStatus"];
 const allowedFigureAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/[^/]+\.(?:png|webp)$/;
 const rasterDiagramAssetImport = /^\.\.\/\.\.\/assets\/diagrams\/([^/]+\.(?:png|webp))$/;
@@ -380,6 +422,30 @@ for (const file of checkedFiles) {
       }
       if (!cleanedLessonText.includes(mathBridgeComponent.marker)) {
         issues.push(`${relative}: missing required MathBridge component`);
+      }
+    }
+    for (const component of requiredExecutableTutorialComponents) {
+      if (!component.importPattern.test(cleanedLessonText)) {
+        issues.push(`${relative}: missing ${component.importName} component import`);
+      }
+      if (!cleanedLessonText.includes(component.marker)) {
+        issues.push(`${relative}: missing executable tutorial component ${component.marker}`);
+      }
+    }
+    if (handCalcRequiredLessonSlugs.has(lessonSlug)) {
+      if (!handCalcComponent.importPattern.test(cleanedLessonText)) {
+        issues.push(`${relative}: missing HandCalc component import`);
+      }
+      if (!cleanedLessonText.includes(handCalcComponent.marker)) {
+        issues.push(`${relative}: missing required HandCalc component`);
+      }
+    }
+    if (chapterRecapRequiredLessonSlugs.has(lessonSlug)) {
+      if (!chapterRecapComponent.importPattern.test(cleanedLessonText)) {
+        issues.push(`${relative}: missing ChapterRecap component import`);
+      }
+      if (!cleanedLessonText.includes(chapterRecapComponent.marker)) {
+        issues.push(`${relative}: missing required ChapterRecap component`);
       }
     }
     if (checkpointDetailsCount(text) < 2) {
