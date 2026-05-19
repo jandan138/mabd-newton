@@ -9,9 +9,10 @@ import numpy as np
 import warp as wp
 
 from ...core.types import override
+from ...geometry import GeoType
 from ...sim import Contacts, Control, Model, ModelBuilder, State
 from ..solver import SolverBase
-from .affine_math import pack_q, tetra_volume
+from .affine_math import pack_q, tetra_volume, unpack_q
 from .control_forces import actuation_specs_from_model
 from .joint_constraints import (
     JointGradientMode,
@@ -46,6 +47,21 @@ class MABDContactsInputSummary:
     scope: str
 
 
+@dataclass(frozen=True)
+class MABDStaticPlaneCollisionSummary:
+    policy: str
+    box_shape_count: int
+    static_plane_shape_count: int
+    candidate_contact_count: int
+    rigid_contact_count: int
+    rigid_contact_capacity: int
+    rigid_contact_overflow_count: int
+    rigid_contact_rows_written: int
+    skipped_shape_pair_count: int
+    source: str
+    scope: str
+
+
 class SolverMABD(SolverBase):
     """Multi-Affine-Body Dynamics solver shell with configured CPU oracle stepping.
 
@@ -70,11 +86,13 @@ class SolverMABD(SolverBase):
         self.model_cpu_oracle_version = -1
         self.last_step_result: MABDCPUOracleStepResult | None = None
         self.last_contacts_input_summary: MABDContactsInputSummary | None = None
+        self.last_static_plane_collision_summary: MABDStaticPlaneCollisionSummary | None = None
 
     def configure_cpu_oracle(self, config: MABDCPUOracleConfig | None) -> None:
         self.cpu_oracle_config = config
         self.last_step_result = None
         self.last_contacts_input_summary = None
+        self.last_static_plane_collision_summary = None
 
     @staticmethod
     def _rotation_mode_from_model(value: int) -> str:
@@ -398,6 +416,162 @@ class SolverMABD(SolverBase):
             config,
             plane_constraints=tuple(config.plane_constraints) + contact_plane_constraints,
         )
+
+    @staticmethod
+    def _quat_rotate_vector(quat: np.ndarray, vector: np.ndarray) -> np.ndarray:
+        q = np.asarray(quat, dtype=float)
+        v = np.asarray(vector, dtype=float)
+        if q.shape != (4,):
+            raise ValueError(f"quat must have shape (4,), got {q.shape}")
+        if v.shape != (3,):
+            raise ValueError(f"vector must have shape (3,), got {v.shape}")
+        q_norm = float(np.linalg.norm(q))
+        if q_norm == 0.0:
+            raise ValueError("shape transform quaternion must be nonzero")
+        x, y, z, w = q / q_norm
+        q_vec = np.array([x, y, z], dtype=float)
+        return v + 2.0 * np.cross(q_vec, np.cross(q_vec, v) + w * v)
+
+    @staticmethod
+    def _transform_point(transform: np.ndarray, point: np.ndarray) -> np.ndarray:
+        tf = np.asarray(transform, dtype=float)
+        if tf.shape != (7,):
+            raise ValueError(f"shape_transform row must have shape (7,), got {tf.shape}")
+        return SolverMABD._quat_rotate_vector(tf[3:7], point) + tf[0:3]
+
+    @staticmethod
+    def _transform_direction(transform: np.ndarray, direction: np.ndarray) -> np.ndarray:
+        tf = np.asarray(transform, dtype=float)
+        if tf.shape != (7,):
+            raise ValueError(f"shape_transform row must have shape (7,), got {tf.shape}")
+        rotated = SolverMABD._quat_rotate_vector(tf[3:7], direction)
+        norm = float(np.linalg.norm(rotated))
+        if norm == 0.0:
+            raise ValueError("transformed direction must be nonzero")
+        return rotated / norm
+
+    @staticmethod
+    def _box_corner_points(scale: np.ndarray) -> np.ndarray:
+        half_extents = np.asarray(scale, dtype=float)
+        if half_extents.shape != (3,):
+            raise ValueError(f"box scale must have shape (3,), got {half_extents.shape}")
+        if np.any(half_extents <= 0.0):
+            raise ValueError("MABD affine box contact detection requires positive box half-extents")
+        signs = (-1.0, 1.0)
+        return np.asarray(
+            [
+                [sx * half_extents[0], sy * half_extents[1], sz * half_extents[2]]
+                for sx in signs
+                for sy in signs
+                for sz in signs
+            ],
+            dtype=float,
+        )
+
+    def detect_static_plane_contacts(self, state: State, max_contacts: int | None = None) -> Contacts:
+        """Generate bounded diagnostic contacts for M-ABD boxes vs static infinite planes.
+
+        This helper evaluates affine box corners against world-static infinite plane
+        shapes and returns ordinary Newton ``Contacts`` rows for the existing
+        contacts-input path. It is intentionally scoped to the paper-reproduction
+        diagnostic subset and is not a generic collision pipeline.
+        """
+
+        if max_contacts is not None and int(max_contacts) < 0:
+            raise ValueError("max_contacts must be nonnegative")
+        if self.model.shape_body is None or self.model.shape_type is None:
+            raise ValueError("SolverMABD static-plane contact detection requires model shape arrays")
+        if self.model.shape_scale is None or self.model.shape_transform is None:
+            raise ValueError("SolverMABD static-plane contact detection requires shape scale/transform arrays")
+
+        shape_body = np.asarray(self.model.shape_body.numpy(), dtype=int)
+        shape_type = np.asarray(self.model.shape_type.numpy(), dtype=int)
+        shape_scale = np.asarray(self.model.shape_scale.numpy(), dtype=float)
+        shape_transform = np.asarray(self.model.shape_transform.numpy(), dtype=float)
+        body_rows = self._mabd_body_row_by_newton_body()
+        q, _qd = self._read_mabd_state(state)
+
+        mabd_box_shapes: list[tuple[int, int, np.ndarray, np.ndarray]] = []
+        static_planes: list[tuple[int, np.ndarray, float]] = []
+        skipped_shape_pair_count = 0
+        for shape_id, (body_id, geo_type) in enumerate(zip(shape_body, shape_type, strict=True)):
+            if int(geo_type) == int(GeoType.BOX):
+                mabd_body = body_rows.get(int(body_id))
+                if mabd_body is None:
+                    continue
+                rest_corners = np.asarray(
+                    [
+                        self._transform_point(shape_transform[shape_id], corner)
+                        for corner in self._box_corner_points(shape_scale[shape_id])
+                    ],
+                    dtype=float,
+                )
+                mabd_box_shapes.append((shape_id, int(mabd_body), rest_corners, shape_transform[shape_id]))
+            elif int(geo_type) == int(GeoType.PLANE):
+                if int(body_id) != -1:
+                    skipped_shape_pair_count += 1
+                    continue
+                if not np.allclose(shape_scale[shape_id, 0:2], 0.0):
+                    skipped_shape_pair_count += 1
+                    continue
+                normal = self._transform_direction(shape_transform[shape_id], np.array([0.0, 0.0, 1.0]))
+                plane_point = np.asarray(shape_transform[shape_id, 0:3], dtype=float)
+                static_planes.append((shape_id, normal, float(np.dot(normal, plane_point))))
+
+        candidates: list[tuple[int, int, np.ndarray, np.ndarray, np.ndarray]] = []
+        for box_shape, mabd_body, rest_corners, _box_transform in mabd_box_shapes:
+            A, t = unpack_q(q[mabd_body])
+            for plane_shape, normal, plane_offset in static_planes:
+                plane_point = normal * plane_offset
+                for rest_corner in rest_corners:
+                    world_point = A @ rest_corner + t
+                    signed_distance = float(np.dot(normal, world_point) - plane_offset)
+                    if signed_distance < 0.0:
+                        candidates.append((box_shape, plane_shape, rest_corner, plane_point, normal))
+
+        candidate_count = len(candidates)
+        if max_contacts is None:
+            capacity = max(1, candidate_count)
+        else:
+            capacity = max(1, int(max_contacts))
+        rows_written = min(candidate_count, capacity)
+        overflow_count = max(0, candidate_count - capacity)
+        contacts = Contacts(
+            rigid_contact_max=capacity,
+            soft_contact_max=0,
+            device=getattr(self.model, "device", None),
+        )
+        contacts.rigid_contact_count.assign(np.array([candidate_count], dtype=np.int32))
+        shape0_values = np.full(capacity, -1, dtype=np.int32)
+        shape1_values = np.full(capacity, -1, dtype=np.int32)
+        point0_values = np.zeros((capacity, 3), dtype=np.float32)
+        point1_values = np.zeros((capacity, 3), dtype=np.float32)
+        normal_values = np.zeros((capacity, 3), dtype=np.float32)
+        for row, (shape0, shape1, point0, point1, normal) in enumerate(candidates[:rows_written]):
+            shape0_values[row] = int(shape0)
+            shape1_values[row] = int(shape1)
+            point0_values[row] = np.asarray(point0, dtype=np.float32)
+            point1_values[row] = np.asarray(point1, dtype=np.float32)
+            normal_values[row] = np.asarray(normal, dtype=np.float32)
+        contacts.rigid_contact_shape0.assign(shape0_values)
+        contacts.rigid_contact_shape1.assign(shape1_values)
+        contacts.rigid_contact_point0.assign(point0_values)
+        contacts.rigid_contact_point1.assign(point1_values)
+        contacts.rigid_contact_normal.assign(normal_values)
+        self.last_static_plane_collision_summary = MABDStaticPlaneCollisionSummary(
+            policy="mabd_affine_box_static_plane_active_set_diagnostic",
+            box_shape_count=len(mabd_box_shapes),
+            static_plane_shape_count=len(static_planes),
+            candidate_contact_count=candidate_count,
+            rigid_contact_count=candidate_count,
+            rigid_contact_capacity=capacity,
+            rigid_contact_overflow_count=overflow_count,
+            rigid_contact_rows_written=rows_written,
+            skipped_shape_pair_count=skipped_shape_pair_count,
+            source="SolverMABD.detect_static_plane_contacts",
+            scope="affine_box_corners_vs_static_infinite_planes",
+        )
+        return contacts
 
     @staticmethod
     def _read_mabd_state(state: State) -> tuple[tuple[np.ndarray, ...], tuple[np.ndarray, ...]]:

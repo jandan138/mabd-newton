@@ -1732,6 +1732,127 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertEqual(summary.skipped_contact_count, 2)
         self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 0)
 
+    def test_solver_detects_affine_box_static_plane_contacts(self) -> None:
+        model, box_shape, plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q((0.0, -0.1, 0.0)), np.zeros(12))
+
+        contacts = solver.detect_static_plane_contacts(state)
+
+        self.assertEqual(int(contacts.rigid_contact_count.numpy()[0]), 4)
+        self.assertEqual(int(contacts.rigid_contact_max), 4)
+        np.testing.assert_array_equal(
+            contacts.rigid_contact_shape0.numpy()[:4],
+            np.full(4, box_shape, dtype=np.int32),
+        )
+        np.testing.assert_array_equal(
+            contacts.rigid_contact_shape1.numpy()[:4],
+            np.full(4, plane_shape, dtype=np.int32),
+        )
+        np.testing.assert_allclose(
+            contacts.rigid_contact_normal.numpy()[:4],
+            np.tile(np.array([0.0, 1.0, 0.0], dtype=np.float32), (4, 1)),
+            atol=1.0e-7,
+        )
+        np.testing.assert_allclose(contacts.rigid_contact_point1.numpy()[:4], np.zeros((4, 3)))
+        np.testing.assert_allclose(
+            np.sort(contacts.rigid_contact_point0.numpy()[:4, 1]),
+            np.full(4, -0.5),
+        )
+        summary = solver.last_static_plane_collision_summary
+        self.assertEqual(summary.policy, "mabd_affine_box_static_plane_active_set_diagnostic")
+        self.assertEqual(summary.source, "SolverMABD.detect_static_plane_contacts")
+        self.assertEqual(summary.scope, "affine_box_corners_vs_static_infinite_planes")
+        self.assertEqual(summary.box_shape_count, 1)
+        self.assertEqual(summary.static_plane_shape_count, 1)
+        self.assertEqual(summary.candidate_contact_count, 4)
+        self.assertEqual(summary.rigid_contact_count, 4)
+        self.assertEqual(summary.rigid_contact_capacity, 4)
+        self.assertEqual(summary.rigid_contact_overflow_count, 0)
+        self.assertEqual(summary.rigid_contact_rows_written, 4)
+        self.assertEqual(summary.skipped_shape_pair_count, 0)
+
+    def test_solver_detects_no_affine_box_static_plane_contacts_when_separated(self) -> None:
+        model, _box_shape, _plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q((0.0, 1.0, 0.0)), np.zeros(12))
+
+        contacts = solver.detect_static_plane_contacts(state)
+
+        self.assertEqual(int(contacts.rigid_contact_count.numpy()[0]), 0)
+        self.assertEqual(int(contacts.rigid_contact_max), 1)
+        summary = solver.last_static_plane_collision_summary
+        self.assertEqual(summary.candidate_contact_count, 0)
+        self.assertEqual(summary.rigid_contact_count, 0)
+        self.assertEqual(summary.rigid_contact_capacity, 1)
+        self.assertEqual(summary.rigid_contact_overflow_count, 0)
+        self.assertEqual(summary.rigid_contact_rows_written, 0)
+
+    def test_solver_detects_affine_box_static_plane_contacts_with_capacity_limit(self) -> None:
+        model, box_shape, plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q((0.0, -0.1, 0.0)), np.zeros(12))
+
+        contacts = solver.detect_static_plane_contacts(state, max_contacts=2)
+
+        self.assertEqual(int(contacts.rigid_contact_count.numpy()[0]), 4)
+        self.assertEqual(int(contacts.rigid_contact_max), 2)
+        np.testing.assert_array_equal(
+            contacts.rigid_contact_shape0.numpy()[:2],
+            np.full(2, box_shape, dtype=np.int32),
+        )
+        np.testing.assert_array_equal(
+            contacts.rigid_contact_shape1.numpy()[:2],
+            np.full(2, plane_shape, dtype=np.int32),
+        )
+        summary = solver.last_static_plane_collision_summary
+        self.assertEqual(summary.candidate_contact_count, 4)
+        self.assertEqual(summary.rigid_contact_count, 4)
+        self.assertEqual(summary.rigid_contact_capacity, 2)
+        self.assertEqual(summary.rigid_contact_overflow_count, 2)
+        self.assertEqual(summary.rigid_contact_rows_written, 2)
+
+    def test_solver_step_matches_explicit_plane_constraints_with_detected_affine_contacts(self) -> None:
+        model, _box_shape, _plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.5, -1.0, 0.25])
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        dt = 0.05
+
+        contacts = solver.detect_static_plane_contacts(state)
+        explicit_constraints = [
+            mabd.MABDCPUOraclePlaneConstraint(
+                body=0,
+                rest_point=point,
+                plane_normal=np.array([0.0, 1.0, 0.0], dtype=float),
+                plane_offset=0.0,
+            )
+            for point in np.asarray(contacts.rigid_contact_point0.numpy()[:4], dtype=float)
+        ]
+
+        solver.step(state, state, None, contacts, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                plane_constraints=explicit_constraints,
+                topology="dense",
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        self.assertEqual(solver.last_contacts_input_summary.generated_plane_constraint_count, 4)
+
     def test_solver_step_rejects_duplicate_mabd_body_index_mapping_for_contacts(self) -> None:
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)
