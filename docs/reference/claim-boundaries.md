@@ -861,6 +861,29 @@
   contact solver, collision detection, paper-faithful affine collision/contact,
   generic inequality-constrained M-ABD KKT, a passed experiment, or full paper
   reproduction.
+- This repository contains Phase 70 SolverMABD Contacts input spinning-box
+  diagnostic report lane evidence after the Phase 70 record is created.
+- Phase 70 verifies that the spinning-box diagnostic runner can build
+  transient vendored/local Newton models with one `mabd:body`, one M-ABD box
+  shape, one static plane shape with `shape_body == -1`, synthesize
+  `newton.Contacts` rows from diagnostic corner/plane penetrations using
+  `newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners`,
+  call `SolverMABD.step(..., contacts=...)`, emit
+  `reports/experiment_matrix/single_body_spinning_box_contacts_input.json`,
+  record `contacts_input_summary_source = last_contacts_input_summary`, record
+  reduced free-predicted penetration, and keep no experiment claim passed.
+- Phase 70 does not verify contact solver behavior, collision detection,
+  broadphase or narrowphase correctness, active-set generation inside Newton,
+  IPC, friction, complementarity, continuous collision detection, body-body
+  affine contact, dynamic non-M-ABD body contact, generic
+  inequality-constrained M-ABD KKT, paper-faithful affine collision/contact,
+  paper-faithful M-ABD stepping, comparison pass gate, rendered-output
+  agreement, runtime performance, any passed `experiment.*` claim, or full
+  paper reproduction.
+- Phase 70 SolverMABD Contacts input report lane evidence must not be
+  described as a contact solver, collision detection, paper-faithful affine
+  collision/contact, generic inequality-constrained M-ABD KKT, a passed
+  experiment, or full paper reproduction.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

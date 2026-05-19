@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-69 docs and provenance contracts."""
+"""Validate Phase 0-70 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -162,6 +162,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-19-phase67-model-plane-constraints.md",
     "docs/records/2026-05-19-phase68-model-plane-report-lane.md",
     "docs/records/2026-05-19-phase69-contacts-input-plane-constraints.md",
+    "docs/records/2026-05-19-phase70-contacts-input-report-lane.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -238,11 +239,14 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-19-mabd-phase68-model-plane-report-lane.md",
     "docs/superpowers/specs/2026-05-19-phase69-contacts-input-plane-constraints-design.md",
     "docs/superpowers/plans/2026-05-19-mabd-phase69-contacts-input-plane-constraints.md",
+    "docs/superpowers/specs/2026-05-19-phase70-contacts-input-report-lane-design.md",
+    "docs/superpowers/plans/2026-05-19-mabd-phase70-contacts-input-report-lane.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
     "reports/experiment_matrix/single_body_spinning_box_normal_constraint.json",
     "reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json",
+    "reports/experiment_matrix/single_body_spinning_box_contacts_input.json",
     "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json",
     "reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
@@ -302,6 +306,7 @@ PHASE67_MODEL_PLANE_CONSTRAINT_COMMIT = "6252693a584e9a4cd5f1640440060c39c840fd3
 PHASE68_MODEL_PLANE_REPORT_LANE_COMMIT = "e2dc01ac9b4dd7184ddea9743b27fbf6c66f2e4a"
 PHASE69_CONTACTS_INPUT_COMMIT = "674064f7558527da92be0f186361df4a7c71d4f7"
 PHASE69_STATIC_CONTACT_REVIEW_FIX_COMMIT = "4659b13662df287a406d1cc1c4a652d2eb156ab7"
+PHASE70_CONTACTS_INPUT_REPORT_LANE_COMMIT = "493cc1ac9cb0eb11faac89b1540813b3dab4bcd1"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -313,6 +318,9 @@ SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH = (
 )
 SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json"
+)
+SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_spinning_box_contacts_input.json"
 )
 SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_decoupled_twist.json"
@@ -346,6 +354,9 @@ PHASE66_SPINNING_BOX_COMPARISON_SHA256 = (
 )
 PHASE68_SPINNING_BOX_MODEL_PLANE_CONSTRAINT_SHA256 = (
     "5520f5f9e07c70591fe524e9aacf16afbeee560e7fb58a6a18112a2a92af8d30"
+)
+PHASE70_SPINNING_BOX_CONTACTS_INPUT_SHA256 = (
+    "a9076b8df0eff7d5f98b042f9a6d6d293ae772181b41ed0f23c80a3627e5160d"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -403,6 +414,8 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase68-working-tree",
     "TO_BE_BACKFILLED_PHASE69",
     "phase69-working-tree",
+    "TO_BE_BACKFILLED_PHASE70",
+    "phase70-working-tree",
 }
 
 
@@ -10443,6 +10456,7 @@ def validate_phase60_record() -> None:
         SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH,
         SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH,
         SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH,
+        SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH,
         SPINNING_BOX_DECOUPLED_TWIST_REPORT_PATH,
         SPINNING_BOX_FIGURE_CURVES_REPORT_PATH,
     }
@@ -13165,6 +13179,332 @@ def validate_phase69_record() -> None:
     _validate_phase67_paper_claim_statuses()
 
 
+def validate_phase70_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-19-phase70-contacts-input-report-lane.md"
+    spec_path = ROOT / "docs/superpowers/specs/2026-05-19-phase70-contacts-input-report-lane-design.md"
+    plan_path = ROOT / "docs/superpowers/plans/2026-05-19-mabd-phase70-contacts-input-report-lane.md"
+    report_path = ROOT / SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_solver_mabd_contacts_input_report_diagnostic",
+        "phase68-model-plane-report-lane",
+        PHASE70_CONTACTS_INPUT_REPORT_LANE_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        str(MABD_PYTHON),
+        SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH,
+        PHASE70_SPINNING_BOX_CONTACTS_INPUT_SHA256,
+        "paper_horizon.contacts_input_output_report",
+        "run_spinning_box_contacts_input",
+        "spinning_box_contacts_input",
+        "write_spinning_box_contacts_input_report",
+        "_run_spinning_box_solver_mabd_contacts_input_step",
+        "SolverMABD.step(..., contacts=...)",
+        "newton.Contacts",
+        "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners",
+        "last_contacts_input_summary",
+        "contacts_none_no_active_diagnostic_contacts",
+        "solver_mabd_contacts_input_free_predict_then_static_plane_constraints",
+        "diagnostic_only_static_geometry_plane_constraints_no_lane_gate",
+        "contacts_input_summary_source = last_contacts_input_summary",
+        "max_contacts_input_rigid_contact_count = 4",
+        "max_contacts_input_rows_read = 4",
+        "max_contacts_input_generated_plane_constraint_count = 4",
+        "max_contacts_input_skipped_contact_count = 0",
+        "max_contacts_input_overflow_count = 0",
+        "spinning_box_contacts_input_not_paper_faithful",
+        "collision_detection_not_enabled_for_contacts_input",
+        "target_exists",
+        "smoke_passed",
+        "`mutates_reference_environment=false`, `uses_reference_python=false`,\n"
+        "  `uses_ambient_python=false`",
+        "No `experiment.*` claim is passed.",
+        "`paper-claims.yaml` is unchanged.",
+        "not collision detection",
+        "not contact solver",
+        "not generic inequality-constrained M-ABD KKT",
+        "not paper-faithful affine collision/contact",
+        "not full paper reproduction",
+        "scripts/env/readiness_check.py",
+        "PYTHONPATH=vendor/newton",
+        "git diff --check",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 70 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE70",
+        "phase70-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 70 record contains stale placeholder")
+    if PHASE70_CONTACTS_INPUT_REPORT_LANE_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 70 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "contact solver implemented",
+        "collision detection implemented",
+        "paper-faithful affine collision implemented",
+        "spinning-box experiment passed",
+        "passed spinning-box experiment",
+        "full reproduction complete",
+        "unmodified newton supports m-abd contact",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 70 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 70")
+    verified = claim_boundary_bullet(boundary_text, "Phase 70 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 70 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text,
+        "Phase 70 SolverMABD Contacts input report lane evidence",
+    )
+    for snippet in (
+        "Contacts input spinning-box diagnostic report lane evidence",
+        "Phase 70 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 70 current boundary missing: {snippet}")
+    for snippet in (
+        "SolverMABD.step(..., contacts=...)",
+        "newton.Contacts",
+        "rigid_contact_static_plane_rows_from_diagnostic_corners",
+        "shape_body == -1",
+        SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH,
+        "contacts_input_summary_source = last_contacts_input_summary",
+        "reduced free-predicted penetration",
+        "no experiment claim passed",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 70 verified boundary missing: {snippet}")
+    for snippet in (
+        "contact solver",
+        "collision detection",
+        "broadphase or narrowphase",
+        "active-set generation inside Newton",
+        "IPC",
+        "friction",
+        "complementarity",
+        "continuous collision detection",
+        "body-body affine contact",
+        "dynamic non-M-ABD body contact",
+        "generic inequality-constrained M-ABD KKT",
+        "paper-faithful affine collision/contact",
+        "paper-faithful M-ABD stepping",
+        "comparison pass gate",
+        "rendered-output agreement",
+        "runtime performance",
+        "any passed `experiment.*` claim",
+        "full paper reproduction",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 70 non-claim boundary missing: {snippet}")
+    for snippet in (
+        "contact solver",
+        "collision detection",
+        "paper-faithful affine collision/contact",
+        "generic inequality-constrained M-ABD KKT",
+        "passed experiment",
+        "full paper reproduction",
+    ):
+        if snippet not in forbidden:
+            fail(f"Phase 70 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 70 Contacts Input Report Lane Design",
+        "run_spinning_box_contacts_input",
+        "write_spinning_box_contacts_input_report",
+        "SolverMABD.step(..., contacts=...)",
+        "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners",
+        SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH,
+        "diagnostic_only_static_geometry_plane_constraints_no_lane_gate",
+        "contacts_input_summary_source = last_contacts_input_summary",
+        "collision detection",
+        "paper-faithful affine collision/contact",
+        "passed `experiment.*` claim",
+        "full paper reproduction",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 70 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 70 Contacts Input Report Lane Implementation Plan",
+        "run_spinning_box_contacts_input",
+        "write_spinning_box_contacts_input_report",
+        "tests/test_spinning_box_report_artifacts.py",
+        "tests/test_phase0_bootstrap.py",
+        "scripts/validate_docs.py",
+        "newton.Contacts",
+        "last_contacts_input_summary",
+        "without claiming collision detection",
+        "No `experiment.*` claim is passed.",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 70 plan missing required boundary text: {snippet}")
+
+    report = load_claim_report(report_path)
+    if report.source_commit != PHASE70_CONTACTS_INPUT_REPORT_LANE_COMMIT:
+        fail("Phase 70 report source_commit mismatch")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 70 report vendored Newton commit changed")
+    if sha256_file(report_path) != PHASE70_SPINNING_BOX_CONTACTS_INPUT_SHA256:
+        fail("Phase 70 report sha256 mismatch")
+    if report.claim_id != "experiment.single_body.spinning_box":
+        fail("Phase 70 report claim_id changed")
+    if report.scene_id != "single_body_spinning_box":
+        fail("Phase 70 report scene_id changed")
+    if report.status.value != "incomplete":
+        fail("Phase 70 report must remain incomplete")
+    if report.baseline_lane != "mabd_newton":
+        fail("Phase 70 report baseline lane changed")
+    if report.solver_mode != "solver_mabd_contacts_input_diagnostic":
+        fail("Phase 70 report solver mode changed")
+    if report.backend != "cpu_numpy_newton_solver_mabd_contacts_input_diagnostic":
+        fail("Phase 70 report backend changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 70 report paper source version changed")
+    if "diagnostic path" not in report.failure_reason:
+        fail("Phase 70 report failure reason must stay diagnostic-only")
+    if report.raw_outputs.get("time_series") != "compact_samples_only":
+        fail("Phase 70 report raw output policy changed")
+
+    config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+    matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+    validate_spinning_box_config_against_matrix(config, matrix)
+    if config.paper_horizon.contacts_input_output_report != SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH:
+        fail("Phase 70 config output report changed")
+    expected_step_grid = [float(value) for value in config.paper_horizon.time_step_grid_s]
+    report_step_grid = report.expected.get("paper_step_sizes_s")
+    if not isinstance(report_step_grid, list):
+        fail("Phase 70 timestep grid must be recorded in report expected payload")
+    report_step_grid_values = [
+        _require_finite_scalar(value, f"Phase 70 timestep grid[{index}]")
+        for index, value in enumerate(report_step_grid)
+    ]
+    if len(report_step_grid_values) != len(expected_step_grid) or not np.allclose(
+        report_step_grid_values,
+        expected_step_grid,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        fail("Phase 70 timestep grid does not match config")
+    report_duration = _require_finite_scalar(
+        report.expected.get("paper_horizon_duration_s"),
+        "Phase 70 paper_horizon_duration_s",
+    )
+    if not np.isclose(report_duration, config.paper_horizon.duration_s, rtol=0.0, atol=1.0e-15):
+        fail("Phase 70 report duration does not match config")
+
+    observed = report.observed
+    if "lane_gate_status" in observed:
+        fail("Phase 70 report must not write lane_gate_status")
+    expected_strings = {
+        "contacts_input_policy": (
+            "solver_mabd_contacts_input_free_predict_then_static_plane_constraints"
+        ),
+        "contacts_input_scope": "diagnostic_only_static_geometry_plane_constraints_no_lane_gate",
+        "contacts_input_source": (
+            "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners"
+        ),
+        "contacts_input_summary_source": "last_contacts_input_summary",
+        "contact_constraint_policy": "free_predict_then_active_point_plane_normal_constraints",
+        "rank_filter_policy": "increment_map_row_rank_filter",
+    }
+    for key, expected in expected_strings.items():
+        if observed.get(key) != expected:
+            fail(f"Phase 70 observed string changed: {key}")
+    free_penetration = _require_finite_scalar(
+        observed.get("max_free_predicted_contact_penetration_m"),
+        "Phase 70 max_free_predicted_contact_penetration_m",
+    )
+    constrained_penetration = _require_finite_scalar(
+        observed.get("max_constrained_contact_penetration_m"),
+        "Phase 70 max_constrained_contact_penetration_m",
+    )
+    if constrained_penetration >= free_penetration:
+        fail("Phase 70 constrained penetration must be below free prediction")
+    if observed.get("contacts_input_reduced_free_predicted_penetration") is not True:
+        fail("Phase 70 report must record reduced free-predicted penetration")
+    count_expectations = {
+        "max_contacts_input_rigid_contact_count": 4,
+        "max_contacts_input_rows_read": 4,
+        "max_contacts_input_generated_plane_constraint_count": 4,
+        "max_contacts_input_skipped_contact_count": 0,
+        "max_contacts_input_overflow_count": 0,
+    }
+    for key, expected in count_expectations.items():
+        value = _require_finite_scalar(observed.get(key), f"Phase 70 {key}")
+        if not np.isclose(value, float(expected), rtol=0.0, atol=0.0):
+            fail(f"Phase 70 {key} changed")
+    residual = _require_finite_scalar(
+        observed.get("max_contacts_input_constraint_residual_norm"),
+        "Phase 70 max_contacts_input_constraint_residual_norm",
+    )
+    if residual > 1.0e-12:
+        fail("Phase 70 contacts input residual exceeded tolerance")
+    results = observed.get("contacts_input_results")
+    if not isinstance(results, list) or len(results) != len(expected_step_grid):
+        fail("Phase 70 timestep grid result count changed")
+    aggregate_counts = {key: [] for key in count_expectations}
+    for index, (result, expected_time_step_s) in enumerate(zip(results, expected_step_grid, strict=True)):
+        if not isinstance(result, dict):
+            fail("Phase 70 result entry must be a mapping")
+        result_time_step_s = _require_finite_scalar(
+            result.get("time_step_s"),
+            f"Phase 70 result {index} time_step_s",
+        )
+        if not np.isclose(result_time_step_s, expected_time_step_s, rtol=0.0, atol=1.0e-15):
+            fail("Phase 70 timestep grid result time_step_s mismatch")
+        result_duration = _require_finite_scalar(
+            result.get("duration_s"),
+            f"Phase 70 result {index} duration_s",
+        )
+        if not np.isclose(result_duration, config.paper_horizon.duration_s, rtol=0.0, atol=1.0e-15):
+            fail("Phase 70 result duration does not match config")
+        expected_steps = int(round(config.paper_horizon.duration_s / expected_time_step_s))
+        if result.get("steps_attempted") != expected_steps:
+            fail("Phase 70 result steps_attempted does not match config")
+        if result.get("steps_completed") != expected_steps:
+            fail("Phase 70 result steps_completed does not match config")
+        for key, expected in expected_strings.items():
+            if result.get(key) != expected:
+                fail(f"Phase 70 result {index} string changed: {key}")
+        for key in aggregate_counts:
+            value = _require_finite_scalar(result.get(key), f"Phase 70 result {index} {key}")
+            aggregate_counts[key].append(value)
+        if result.get("contacts_input_overflow_count") != 0:
+            fail("Phase 70 contacts input overflow count must stay zero")
+        _require_finite_scalar(
+            result.get("max_contacts_input_constraint_residual_norm"),
+            f"Phase 70 result {index} contacts residual",
+        )
+    for key, values in aggregate_counts.items():
+        observed_value = _require_finite_scalar(observed.get(key), f"Phase 70 observed {key}")
+        if not np.isclose(max(values), observed_value, rtol=0.0, atol=0.0):
+            fail(f"Phase 70 aggregate mismatch for {key}")
+
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 70 blockers must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "mabd_paper_horizon_diagnostic_thresholds_violated",
+        "spinning_box_contacts_input_not_paper_faithful",
+        "collision_detection_not_enabled_for_contacts_input",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "mabd_kinematic_feasibility_blocker_recorded",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 70 blocker missing: {blocker}")
+
+    _validate_phase67_paper_claim_statuses()
+
+
 def _validate_phase65_digitized_curve(
     curve: Any,
     *,
@@ -13545,13 +13885,14 @@ def main() -> int:
     validate_phase67_record()
     validate_phase68_record()
     validate_phase69_record()
+    validate_phase70_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70 "
         "docs/provenance validation passed"
     )
     return 0

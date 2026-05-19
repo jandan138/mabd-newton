@@ -5238,6 +5238,133 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         self.assertIn("experiment claim status", str(context.exception))
 
+    def test_phase70_contacts_input_report_lane_is_bounded(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        self.assertEqual(
+            validate_docs.PHASE70_CONTACTS_INPUT_REPORT_LANE_COMMIT,
+            "493cc1ac9cb0eb11faac89b1540813b3dab4bcd1",
+        )
+        self.assertEqual(
+            validate_docs.PHASE70_SPINNING_BOX_CONTACTS_INPUT_SHA256,
+            "a9076b8df0eff7d5f98b042f9a6d6d293ae772181b41ed0f23c80a3627e5160d",
+        )
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 70")
+        verified = claim_boundary_bullet(text, "Phase 70 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 70 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 70 SolverMABD Contacts input report lane evidence",
+        )
+
+        self.assertIn("Contacts input spinning-box diagnostic report lane evidence", current)
+        self.assertIn("SolverMABD.step(..., contacts=...)", verified)
+        self.assertIn("newton.Contacts", verified)
+        self.assertIn("rigid_contact_static_plane_rows_from_diagnostic_corners", verified)
+        self.assertIn("shape_body == -1", verified)
+        self.assertIn("contacts_input_summary_source = last_contacts_input_summary", verified)
+        self.assertIn(validate_docs.SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH, verified)
+        self.assertIn("reduced free-predicted penetration", verified)
+        for snippet in (
+            "contact solver",
+            "collision detection",
+            "broadphase or narrowphase",
+            "active-set generation inside Newton",
+            "IPC",
+            "friction",
+            "complementarity",
+            "continuous collision detection",
+            "body-body affine contact",
+            "dynamic non-M-ABD body contact",
+            "generic inequality-constrained M-ABD KKT",
+            "paper-faithful affine collision/contact",
+            "paper-faithful M-ABD stepping",
+            "comparison pass gate",
+            "rendered-output agreement",
+            "runtime performance",
+            "any passed `experiment.*` claim",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "contact solver",
+            "collision detection",
+            "paper-faithful affine collision/contact",
+            "generic inequality-constrained M-ABD KKT",
+            "passed experiment",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        report = load_claim_report(ROOT / validate_docs.SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH)
+        self.assertEqual(report.source_commit, validate_docs.PHASE70_CONTACTS_INPUT_REPORT_LANE_COMMIT)
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(report.scene_id, "single_body_spinning_box")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.baseline_lane, "mabd_newton")
+        self.assertEqual(report.solver_mode, "solver_mabd_contacts_input_diagnostic")
+        self.assertEqual(report.backend, "cpu_numpy_newton_solver_mabd_contacts_input_diagnostic")
+        observed = report.observed
+        self.assertNotIn("lane_gate_status", observed)
+        self.assertEqual(
+            observed["contacts_input_policy"],
+            "solver_mabd_contacts_input_free_predict_then_static_plane_constraints",
+        )
+        self.assertEqual(
+            observed["contacts_input_source"],
+            "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners",
+        )
+        self.assertEqual(observed["contacts_input_summary_source"], "last_contacts_input_summary")
+        self.assertEqual(
+            observed["contacts_input_scope"],
+            "diagnostic_only_static_geometry_plane_constraints_no_lane_gate",
+        )
+        self.assertTrue(observed["contacts_input_reduced_free_predicted_penetration"])
+        self.assertGreater(
+            observed["max_free_predicted_contact_penetration_m"],
+            observed["max_constrained_contact_penetration_m"],
+        )
+        self.assertEqual(observed["max_contacts_input_rigid_contact_count"], 4)
+        self.assertEqual(observed["max_contacts_input_rows_read"], 4.0)
+        self.assertEqual(observed["max_contacts_input_generated_plane_constraint_count"], 4)
+        self.assertEqual(observed["max_contacts_input_skipped_contact_count"], 0)
+        self.assertEqual(observed["max_contacts_input_overflow_count"], 0)
+        self.assertLess(observed["max_contacts_input_constraint_residual_norm"], 1.0e-12)
+        self.assertEqual(len(observed["contacts_input_results"]), 2)
+        for result in observed["contacts_input_results"]:
+            self.assertEqual(
+                result["contacts_input_source"],
+                "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners",
+            )
+            self.assertEqual(result["contacts_input_summary_source"], "last_contacts_input_summary")
+            self.assertEqual(
+                result["contacts_input_scope"],
+                "diagnostic_only_static_geometry_plane_constraints_no_lane_gate",
+            )
+            self.assertEqual(result["contacts_input_overflow_count"], 0)
+            self.assertGreaterEqual(result["contacts_input_generated_plane_constraint_count"], 0)
+            self.assertTrue(math.isfinite(result["max_contacts_input_constraint_residual_norm"]))
+        blockers = observed["blocking_reasons"]
+        self.assertIn("spinning_box_contacts_input_not_paper_faithful", blockers)
+        self.assertIn("collision_detection_not_enabled_for_contacts_input", blockers)
+        self.assertEqual(
+            validate_docs.sha256_file(ROOT / validate_docs.SPINNING_BOX_CONTACTS_INPUT_REPORT_PATH),
+            validate_docs.PHASE70_SPINNING_BOX_CONTACTS_INPUT_SHA256,
+        )
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        self.assertFalse(
+            any(
+                claim["claim_id"].startswith("experiment.")
+                and claim["reproduction_status"] == "passed"
+                for claim in data["claims"]
+            )
+        )
+        validate_docs.validate_phase70_record()
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -6084,7 +6211,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
