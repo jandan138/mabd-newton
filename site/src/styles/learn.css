@@ -440,6 +440,48 @@ pre,
   background: #f7fbec;
 }
 
+.tutorial-card--hand-calc {
+  border-color: #e3c27f;
+  background: #fff8e6;
+}
+
+.tutorial-card--toy-solver {
+  border-color: #b5d0d5;
+  background: #f1fbfc;
+}
+
+.tutorial-card--misconception {
+  border-color: #e5b4a5;
+  background: #fff4f0;
+}
+
+.tutorial-card--chapter-recap {
+  border-color: #c7c0ec;
+  background: #f8f6ff;
+}
+
+.tutorial-card__body > :first-child,
+.tutorial-card--toy-solver > :first-child,
+.tutorial-card--misconception > :first-child,
+.tutorial-card--chapter-recap > :first-child {
+  margin-top: 0;
+}
+
+.hand-calc table {
+  border-collapse: collapse;
+  font-size: 0.94rem;
+  margin: 0.75rem 0;
+  width: 100%;
+}
+
+.hand-calc th,
+.hand-calc td {
+  border: 1px solid rgba(107, 64, 40, 0.18);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
 .math-bridge-list {
   display: grid;
   gap: 0.55rem;
