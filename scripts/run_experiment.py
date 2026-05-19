@@ -22,6 +22,7 @@ from mabd_reproduction.experiment_runner import (
     run_physical_pendulum_mabd_newton,
     run_physical_pendulum_rbd_baseline,
     run_spinning_box_comparison,
+    run_spinning_box_contacts_input,
     run_spinning_box_contact_response,
     run_spinning_box_decoupled_twist,
     run_spinning_box_experiment,
@@ -62,6 +63,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "physical_pendulum_mabd_newton",
             "rbd_implicit_baseline",
             "spinning_box_comparison",
+            "spinning_box_contacts_input",
             "spinning_box_contact_response",
             "spinning_box_decoupled_twist",
             "spinning_box_figure_curves",
@@ -183,6 +185,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "spinning_box_model_plane_constraint":
             result = run_spinning_box_model_plane_constraint(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "spinning_box_contacts_input":
+            result = run_spinning_box_contacts_input(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,
