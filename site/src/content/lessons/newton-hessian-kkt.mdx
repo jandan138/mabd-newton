@@ -22,8 +22,11 @@ import PrereqBox from "../../components/PrereqBox.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
 import MathBridge from "../../components/MathBridge.astro";
+import HandCalc from "../../components/HandCalc.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
 import kktBlockSystem from "../../assets/diagrams/kkt-block-system.png";
 
 <ProblemCard title="它解决的问题">
@@ -55,11 +58,34 @@ import kktBlockSystem from "../../assets/diagrams/kkt-block-system.png";
 把同一块软橡胶印章的一个标记点固定在桌面位置。求解时不再先修正运动、再补救约束，而是把印章的运动修正 `dq` 和被钉住点的约束对偶变量一起放进 KKT 系统。
 </GuidedProjectStep>
 
+<ToySolverStep title="玩具求解器：给 KKT 加一行 pinned point 约束" step="概念追踪 9/12">
+  <p>这段只演示教程中的概念块系统：同一个线性求解同时输出 `dq` 和 `lambda`，不是仓库求解器实现证据。</p>
+
+```text
+H = motion_hessian_for_rubber_stamp(q)
+g = motion_residual(q)
+G = pinned_point_jacobian(mark_point, q)
+c = pinned_point_position(mark_point, q) - target_position
+
+solve [ H  G.T ] [ dq     ] = [ -g ]
+      [ G   0  ] [ lambda ]   [ -c ]
+```
+</ToySolverStep>
+
 <MathBridge>
   <li>先只有运动残差：`H dq = -r` 表示怎样修正下一步猜测。</li>
   <li>加入约束后，`G dq` 描述这次修正会怎样改变被钉住的点。</li>
   <li>KKT 把运动修正和约束变量放进同一个线性系统，避免先修正运动再破坏约束。</li>
 </MathBridge>
+
+<HandCalc title="手算小算例：一个 2x2 KKT 玩具系统">
+  <p>给定 `[2 1; 1 0][dq; lambda] = [4; -1]`。</p>
+  <ol>
+    <li>第二行给出 `dq = -1`。</li>
+    <li>代回第一行：`2 * (-1) + lambda = 4`，所以 `lambda = 6`。</li>
+  </ol>
+  <p>这里的 `lambda` 是对偶变量；它的物理解释依赖约束写法和尺度。</p>
+</HandCalc>
 
 ## 残差就是“还差多少”
 
@@ -147,6 +173,19 @@ KKT 系统像把“物体想怎么动”和“约束不允许怎么动”放到�
     <p>`H` 是运动方程的 Hessian 或有效系统矩阵，乘以 motion correction `dq`；`G` 是 pinned point 约束对 `q` 的 Jacobian，`G dq` 表示这次修正会怎样改变被钉住点的约束残差；`G.T lambda` 是约束变量反馈到运动方程的项；`lambda` 是约束对偶变量。两行分别是 `H dq + G.T lambda = -g` 和 `G dq = -c`，表示运动修正和约束变量被耦合求解，而不是分两步补丁。</p>
   </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="误解纠正：lambda 不是可直接横向比较的约束力">
+  <dl>
+    <dt>误解</dt>
+    <dd>“`lambda` 就是可以直接比较大小的约束力。”</dd>
+    <dt>为什么容易这样想</dt>
+    <dd>KKT 方程把 `lambda` 放在运动方程旁边，看起来像求解器直接输出了力。</dd>
+    <dt>正确读法</dt>
+    <dd>`lambda` 是约束对偶变量；只有结合约束 Jacobian、时间离散、尺度和单位，才可能解释它反馈到运动方程中的作用。</dd>
+    <dt>下一步检查</dt>
+    <dd>先看 `G.T lambda` 如何进入残差，再查记录是否说明了该约束写法和尺度。</dd>
+  </dl>
+</MisconceptionRepair>
 
 <RememberBox title="核心记忆">
   <ul>

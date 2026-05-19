@@ -27,8 +27,11 @@ import PrereqBox from "../../components/PrereqBox.astro";
 import CheckpointQuiz from "../../components/CheckpointQuiz.astro";
 import PracticePrompt from "../../components/PracticePrompt.astro";
 import GuidedProjectStep from "../../components/GuidedProjectStep.astro";
+import ToySolverStep from "../../components/ToySolverStep.astro";
 import MathBridge from "../../components/MathBridge.astro";
+import HandCalc from "../../components/HandCalc.astro";
 import WorkedExercise from "../../components/WorkedExercise.astro";
+import MisconceptionRepair from "../../components/MisconceptionRepair.astro";
 import singleAbdPipeline from "../../assets/diagrams/single-abd-pipeline.png";
 
 <ProblemCard title="它解决的问题">
@@ -60,11 +63,37 @@ import singleAbdPipeline from "../../assets/diagrams/single-abd-pipeline.png";
 同一块带标记点的软橡胶印章仍然只是教程对象；本节把它的 `A`、`t`、质量和材料力直觉连接到仓库中已记录的单体 ABD CPU oracle 范围，并明确不把概念对象升级成完整求解器证据。
 </GuidedProjectStep>
 
+<ToySolverStep title="玩具求解器：把单块印章轨迹读成有范围 oracle" step="概念追踪 10/12">
+  <p>这段把软橡胶印章的单体 trace 对齐到 scoped CPU oracle 的读法；它是教程伪代码，不是完整 M-ABD 求解器实现证据。</p>
+
+```text
+q = pack(A, t)                 # 12 tutorial coordinates
+residual = single_body_residual(q, material, timestep)
+dq = dense_cpu_oracle_solve(linearize(residual))
+q_next = q + dq
+
+evidence = "bounded only by matching dated CPU-oracle records"
+```
+</ToySolverStep>
+
 <MathBridge>
   <li>先把软橡胶印章的 `q=[A,t]` 当作一个小规模状态。</li>
   <li>再看质量、材料力和残差如何组成单体参考问题。</li>
   <li>最后只把记录中验证过的 CPU oracle 范围称为证据，不升级为完整求解器。</li>
 </MathBridge>
+
+<HandCalc title="手算小算例：单体状态和残差大小">
+  <p>一块印章有 `q=[A,t]`，所以状态和 residual 都按 12 个分量记账。</p>
+  <table>
+    <thead><tr><th>部分</th><th>数字个数</th><th>教程含义</th></tr></thead>
+    <tbody>
+      <tr><td>`A`</td><td>9</td><td>旋转、拉伸、剪切的整体线性部分。</td></tr>
+      <tr><td>`t`</td><td>3</td><td>整体平移。</td></tr>
+      <tr><td>`residual`</td><td>12</td><td>每个状态分量还差多少才满足一步方程。</td></tr>
+    </tbody>
+  </table>
+  <p>这只是单体教程记账，不证明完整求解器存在。</p>
+</HandCalc>
 
 ## 一个物体，一组仿射自由度
 
@@ -145,6 +174,19 @@ delta_q = dense_cpu_solve(linearize(residual))`}
     <p>例如选择 “Phase 4 configured CPU step record”：安全说法是“该记录支持配置化单体 ABD CPU step oracle 在记录限定输入和验证范围内作为参考路径”。它不支持“完整 M-ABD 求解器已经实现”，也不支持“GPU、多体拓扑、碰撞处理或完整论文实验已经复现”。这保持了 CPU oracle 的证据范围，没有把软橡胶印章教程或局部记录升级成完整求解器声明。</p>
   </details>
 </WorkedExercise>
+
+<MisconceptionRepair title="误解纠正：CPU oracle 不是完整 M-ABD 求解器">
+  <dl>
+    <dt>误解</dt>
+    <dd>“CPU oracle 通过就等于完整 M-ABD 求解器完成。”</dd>
+    <dt>为什么容易这样想</dt>
+    <dd>oracle 结果可运行、可比较，容易被误读成求解器所有路径都已经完成。</dd>
+    <dt>正确读法</dt>
+    <dd>CPU oracle 只支持记录中限定的单体、稠密、参考路径或材料项范围；它不能自动覆盖 GPU、多体拓扑、碰撞或完整论文实验。</dd>
+    <dt>下一步检查</dt>
+    <dd>回到对应日期记录，确认它的输入、验证命令、通过范围和明确保留的未完成边界。</dd>
+  </dl>
+</MisconceptionRepair>
 
 <RememberBox title="核心记忆">
   <ul>
