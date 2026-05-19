@@ -11,7 +11,9 @@ import numpy as np
 
 from mabd_reproduction.reporting import EvidenceStatus, load_claim_report
 from mabd_reproduction.single_body_reports import (
+    _run_spinning_box_solver_mabd_contacts_input_step,
     _run_spinning_box_solver_mabd_model_step,
+    write_spinning_box_contacts_input_report,
     write_spinning_box_contact_response_report,
     write_spinning_box_decoupled_twist_report,
     write_spinning_box_development_report,
@@ -557,6 +559,119 @@ class SingleBodyReportLaneTests(unittest.TestCase):
             places=8,
         )
 
+    def test_solver_mabd_contacts_input_step_records_static_plane_summary(self) -> None:
+        from newton.solvers import mabd
+
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+        from mabd_reproduction.single_body_reports import _oracle_body
+        from mabd_reproduction.spinning_box_physics import (
+            spinning_box_contact_diagnostics,
+            spinning_box_cube_corners,
+        )
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        penetrating_q = config.initial_q.copy()
+        penetrating_q[10] = -0.02
+        contact = spinning_box_contact_diagnostics(config, penetrating_q, config.initial_qd)
+        constraints = [
+            mabd.MABDCPUOraclePlaneConstraint(
+                body=0,
+                rest_point=corner,
+                plane_normal=config.contact_surface["plane_normal"],
+                plane_offset=float(config.contact_surface["plane_offset"]),
+            )
+            for corner, signed_distance in zip(
+                spinning_box_cube_corners(config),
+                contact.corner_signed_distances,
+                strict=True,
+            )
+            if float(signed_distance) < 0.0
+        ]
+        self.assertGreater(len(constraints), 0)
+
+        oracle_result = mabd.solve_cpu_oracle_step(
+            q=[penetrating_q],
+            qd=[config.initial_qd],
+            dt=0.01,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_oracle_body(config)],
+                plane_constraints=constraints,
+                topology="dense",
+            ),
+        )
+
+        result = _run_spinning_box_solver_mabd_contacts_input_step(
+            config=config,
+            q=penetrating_q,
+            qd=config.initial_qd,
+            time_step_s=0.01,
+            contact_constraints=constraints,
+        )
+
+        self.assertEqual(
+            result.contacts_input_policy,
+            "rigid_contacts_to_point_plane_constraints_diagnostic",
+        )
+        self.assertEqual(
+            result.contacts_input_source,
+            "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners",
+        )
+        self.assertEqual(result.contacts_input_summary_source, "newton.Contacts.rigid_contact_*")
+        self.assertEqual(
+            result.contacts_input_scope,
+            "diagnostic_only_static_geometry_plane_constraints",
+        )
+        self.assertEqual(result.contacts_input_rigid_contact_count, len(constraints))
+        self.assertEqual(result.contacts_input_rows_read, len(constraints))
+        self.assertEqual(result.contacts_input_generated_plane_constraint_count, len(constraints))
+        self.assertEqual(result.contacts_input_skipped_contact_count, 0)
+        self.assertEqual(result.plane_constraint_requested_count, len(constraints))
+        np.testing.assert_allclose(result.q, oracle_result.q[0], rtol=1.0e-6, atol=1.0e-5)
+        np.testing.assert_allclose(result.qd, oracle_result.qd[0], rtol=1.0e-6, atol=1.0e-5)
+        self.assertEqual(
+            result.plane_constraint_accepted_count,
+            int(getattr(oracle_result, "plane_constraint_accepted_count", 0)),
+        )
+        self.assertEqual(
+            result.plane_constraint_skipped_count,
+            int(getattr(oracle_result, "plane_constraint_skipped_count", 0)),
+        )
+        self.assertTrue(np.all(np.isfinite(result.q)))
+        self.assertTrue(np.all(np.isfinite(result.qd)))
+
+    def test_solver_mabd_contacts_input_step_records_contacts_none_when_no_active_rows(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+
+        result = _run_spinning_box_solver_mabd_contacts_input_step(
+            config=config,
+            q=config.initial_q,
+            qd=np.zeros(12, dtype=float),
+            time_step_s=0.01,
+            contact_constraints=[],
+        )
+
+        self.assertEqual(
+            result.contacts_input_source,
+            "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners",
+        )
+        self.assertEqual(
+            result.contacts_input_summary_source,
+            "contacts_none_no_active_diagnostic_contacts",
+        )
+        self.assertEqual(result.contacts_input_rigid_contact_count, 0)
+        self.assertEqual(result.contacts_input_rows_read, 0)
+        self.assertEqual(result.contacts_input_generated_plane_constraint_count, 0)
+        self.assertEqual(result.contacts_input_skipped_contact_count, 0)
+        self.assertEqual(result.plane_constraint_requested_count, 0)
+        self.assertTrue(np.all(np.isfinite(result.q)))
+        self.assertTrue(np.all(np.isfinite(result.qd)))
+
     def test_spinning_box_model_plane_constraint_report_records_solver_model_rows(self) -> None:
         from mabd_reproduction.experiment_configs import load_spinning_box_config
 
@@ -644,6 +759,78 @@ class SingleBodyReportLaneTests(unittest.TestCase):
                 len(entry["trajectory_samples"]),
                 short_config.paper_horizon.sample_count,
             )
+
+    def test_spinning_box_contacts_input_report_records_newton_contacts_lane(self) -> None:
+        from mabd_reproduction.experiment_configs import load_spinning_box_config
+
+        root = Path(__file__).resolve().parents[1]
+        config = load_spinning_box_config(root / "configs/experiments/single_body_spinning_box.yaml")
+        short_config = replace(
+            config,
+            paper_horizon=replace(config.paper_horizon, duration_s=0.02, sample_count=3),
+        )
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_spinning_box_contacts_input.json"
+            report = write_spinning_box_contacts_input_report(
+                path,
+                config=short_config,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(path)
+
+        self.assertEqual(report.scene_id, config.scene_id)
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.solver_mode, "solver_mabd_contacts_input_diagnostic")
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_solver_mabd_contacts_input_diagnostic")
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertEqual(
+            loaded.observed["contacts_input_policy"],
+            "solver_mabd_contacts_input_free_predict_then_static_plane_constraints",
+        )
+        self.assertEqual(
+            loaded.observed["contacts_input_source"],
+            "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners",
+        )
+        self.assertEqual(
+            loaded.observed["contacts_input_summary_source"],
+            "last_contacts_input_summary",
+        )
+        self.assertGreater(
+            loaded.observed["max_contacts_input_generated_plane_constraint_count"],
+            0,
+        )
+        self.assertEqual(loaded.observed["max_contacts_input_overflow_count"], 0)
+        self.assertLess(
+            loaded.observed["max_constrained_contact_penetration_m"],
+            loaded.observed["max_free_predicted_contact_penetration_m"],
+        )
+        self.assertTrue(loaded.observed["contacts_input_reduced_free_predicted_penetration"])
+        self.assertIn(
+            "spinning_box_contacts_input_not_paper_faithful",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "collision_detection_not_enabled_for_contacts_input",
+            loaded.observed["blocking_reasons"],
+        )
+        for entry in loaded.observed["contacts_input_results"]:
+            self.assertEqual(
+                entry["contacts_input_policy"],
+                "solver_mabd_contacts_input_free_predict_then_static_plane_constraints",
+            )
+            self.assertEqual(
+                entry["contacts_input_source"],
+                "newton.Contacts.rigid_contact_static_plane_rows_from_diagnostic_corners",
+            )
+            self.assertIn("contacts_input_summary_source", entry)
+            self.assertEqual(
+                entry["contacts_input_scope"],
+                "diagnostic_only_static_geometry_plane_constraints_no_lane_gate",
+            )
+            self.assertEqual(entry["contacts_input_overflow_count"], 0)
+            self.assertGreaterEqual(entry["contacts_input_generated_plane_constraint_count"], 0)
+            self.assertTrue(np.isfinite(entry["max_contacts_input_constraint_residual_norm"]))
 
     def test_spinning_box_decoupled_twist_report_records_velocity_semantics_diagnostic(self) -> None:
         from mabd_reproduction.experiment_configs import load_spinning_box_config
