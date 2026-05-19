@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, replace
+
 import numpy as np
 import warp as wp
 
@@ -31,6 +33,19 @@ from .step_oracle import (
 )
 
 
+@dataclass(frozen=True)
+class MABDContactsInputSummary:
+    policy: str
+    rigid_contact_count: int
+    rigid_contact_capacity: int
+    rigid_contact_overflow_count: int
+    rigid_contact_rows_read: int
+    generated_plane_constraint_count: int
+    skipped_contact_count: int
+    source: str
+    scope: str
+
+
 class SolverMABD(SolverBase):
     """Multi-Affine-Body Dynamics solver shell with configured CPU oracle stepping.
 
@@ -54,10 +69,12 @@ class SolverMABD(SolverBase):
         self.model_cpu_oracle_config: MABDCPUOracleConfig | None = None
         self.model_cpu_oracle_version = -1
         self.last_step_result: MABDCPUOracleStepResult | None = None
+        self.last_contacts_input_summary: MABDContactsInputSummary | None = None
 
     def configure_cpu_oracle(self, config: MABDCPUOracleConfig | None) -> None:
         self.cpu_oracle_config = config
         self.last_step_result = None
+        self.last_contacts_input_summary = None
 
     @staticmethod
     def _rotation_mode_from_model(value: int) -> str:
@@ -272,6 +289,108 @@ class SolverMABD(SolverBase):
         self.model_cpu_oracle_version = self.model_version
         return config
 
+    def _mabd_body_row_by_newton_body(self) -> dict[int, int]:
+        namespace = self.model.mabd
+        body_indices = np.asarray(namespace.body_index.numpy(), dtype=int)
+        mapping: dict[int, int] = {}
+        for row, newton_body in enumerate(body_indices):
+            body_id = int(newton_body)
+            if body_id < 0:
+                continue
+            if body_id in mapping:
+                raise ValueError("duplicate mabd:body_index mapping for Newton body")
+            mapping[body_id] = row
+        return mapping
+
+    def _plane_constraints_from_contacts(self, contacts: Contacts) -> tuple[MABDCPUOraclePlaneConstraint, ...]:
+        reported_count = max(0, int(contacts.rigid_contact_count.numpy()[0]))
+        capacity = int(contacts.rigid_contact_max)
+        rows_read = min(reported_count, capacity)
+        overflow_count = max(0, reported_count - capacity)
+        generated: list[MABDCPUOraclePlaneConstraint] = []
+        skipped_count = overflow_count
+
+        if rows_read > 0:
+            if self.model.shape_body is None:
+                raise ValueError("SolverMABD Contacts input requires model.shape_body")
+            shape_body = np.asarray(self.model.shape_body.numpy(), dtype=int)
+            body_rows = self._mabd_body_row_by_newton_body()
+            shape0_values = np.asarray(contacts.rigid_contact_shape0.numpy()[:rows_read], dtype=int)
+            shape1_values = np.asarray(contacts.rigid_contact_shape1.numpy()[:rows_read], dtype=int)
+            point0_values = np.asarray(contacts.rigid_contact_point0.numpy()[:rows_read], dtype=float)
+            point1_values = np.asarray(contacts.rigid_contact_point1.numpy()[:rows_read], dtype=float)
+            normal_values = np.asarray(contacts.rigid_contact_normal.numpy()[:rows_read], dtype=float)
+
+            for shape0, shape1, point0, point1, normal in zip(
+                shape0_values,
+                shape1_values,
+                point0_values,
+                point1_values,
+                normal_values,
+                strict=True,
+            ):
+                shape0_id = int(shape0)
+                shape1_id = int(shape1)
+                if not 0 <= shape0_id < len(shape_body) or not 0 <= shape1_id < len(shape_body):
+                    skipped_count += 1
+                    continue
+
+                mabd_body0 = body_rows.get(int(shape_body[shape0_id]))
+                mabd_body1 = body_rows.get(int(shape_body[shape1_id]))
+                if (mabd_body0 is None) == (mabd_body1 is None):
+                    skipped_count += 1
+                    continue
+
+                if mabd_body0 is not None:
+                    body = mabd_body0
+                    rest_point = point0
+                    plane_normal = normal
+                    plane_point = point1
+                else:
+                    body = int(mabd_body1)
+                    rest_point = point1
+                    plane_normal = -normal
+                    plane_point = point0
+
+                generated.append(
+                    MABDCPUOraclePlaneConstraint(
+                        body=int(body),
+                        rest_point=np.asarray(rest_point, dtype=float),
+                        plane_normal=np.asarray(plane_normal, dtype=float),
+                        plane_offset=float(np.dot(plane_normal, plane_point)),
+                    )
+                )
+
+        self.last_contacts_input_summary = MABDContactsInputSummary(
+            policy="rigid_contacts_to_point_plane_constraints_diagnostic",
+            rigid_contact_count=reported_count,
+            rigid_contact_capacity=capacity,
+            rigid_contact_overflow_count=overflow_count,
+            rigid_contact_rows_read=rows_read,
+            generated_plane_constraint_count=len(generated),
+            skipped_contact_count=skipped_count,
+            source="newton.Contacts.rigid_contact_*",
+            scope="diagnostic_only_static_geometry_plane_constraints",
+        )
+        return tuple(generated)
+
+    def _cpu_oracle_config_with_contacts(
+        self,
+        config: MABDCPUOracleConfig,
+        contacts: Contacts | None,
+    ) -> MABDCPUOracleConfig:
+        if contacts is None:
+            self.last_contacts_input_summary = None
+            return config
+
+        contact_plane_constraints = self._plane_constraints_from_contacts(contacts)
+        if not contact_plane_constraints:
+            return config
+        return replace(
+            config,
+            plane_constraints=tuple(config.plane_constraints) + contact_plane_constraints,
+        )
+
     @staticmethod
     def _read_mabd_state(state: State) -> tuple[tuple[np.ndarray, ...], tuple[np.ndarray, ...]]:
         q0 = state.mabd.q0.numpy().copy()
@@ -316,9 +435,8 @@ class SolverMABD(SolverBase):
     ) -> None:
         if control is not None:
             raise NotImplementedError("SolverMABD Phase 4 CPU oracle step does not support Control input")
-        if contacts is not None:
-            raise NotImplementedError("SolverMABD Phase 4 CPU oracle step does not support Contacts input")
         config = self.cpu_oracle_config if self.cpu_oracle_config is not None else self._cpu_oracle_config_from_model()
+        config = self._cpu_oracle_config_with_contacts(config, contacts)
         q, qd = self._read_mabd_state(state_in)
         result = solve_cpu_oracle_step(q=q, qd=qd, dt=dt, config=config)
         if state_out is not state_in:

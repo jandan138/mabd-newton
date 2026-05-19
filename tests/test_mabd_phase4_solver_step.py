@@ -273,6 +273,45 @@ def _add_model_plane_constraint_row(
     )
 
 
+def _mabd_model_with_box_and_static_plane() -> tuple[object, int, int]:
+    builder = newton.ModelBuilder()
+    SolverMABD.register_custom_attributes(builder)
+    mabd_body = _add_model_body_row(builder, young_modulus=1.0)
+    box_shape = builder.add_shape_box(body=mabd_body, hx=0.5, hy=0.5, hz=0.5)
+    plane_shape = builder.add_shape_plane(plane=(0.0, 1.0, 0.0, 0.0), width=0.0, length=0.0)
+    return builder.finalize(), box_shape, plane_shape
+
+
+def _contacts_with_one_rigid_row(
+    *,
+    shape0: int,
+    shape1: int,
+    point0: tuple[float, float, float],
+    point1: tuple[float, float, float],
+    normal: tuple[float, float, float],
+    capacity: int = 4,
+    reported_count: int = 1,
+) -> object:
+    contacts = newton.Contacts(rigid_contact_max=capacity, soft_contact_max=0)
+    contacts.rigid_contact_count.assign(np.array([reported_count], dtype=np.int32))
+    shape0_values = np.full(capacity, -1, dtype=np.int32)
+    shape1_values = np.full(capacity, -1, dtype=np.int32)
+    point0_values = np.zeros((capacity, 3), dtype=np.float32)
+    point1_values = np.zeros((capacity, 3), dtype=np.float32)
+    normal_values = np.zeros((capacity, 3), dtype=np.float32)
+    shape0_values[0] = shape0
+    shape1_values[0] = shape1
+    point0_values[0] = np.asarray(point0, dtype=np.float32)
+    point1_values[0] = np.asarray(point1, dtype=np.float32)
+    normal_values[0] = np.asarray(normal, dtype=np.float32)
+    contacts.rigid_contact_shape0.assign(shape0_values)
+    contacts.rigid_contact_shape1.assign(shape1_values)
+    contacts.rigid_contact_point0.assign(point0_values)
+    contacts.rigid_contact_point1.assign(point1_values)
+    contacts.rigid_contact_normal.assign(normal_values)
+    return contacts
+
+
 def _add_model_gravity_row(
     builder: newton.ModelBuilder,
     *,
@@ -1512,18 +1551,169 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertIsNone(solver.model_cpu_oracle_config)
         self.assertEqual(solver.last_step_result.topology, "unconstrained")
 
-    def test_solver_step_still_rejects_newton_contacts_input_with_model_plane_rows(self) -> None:
+    def test_solver_step_consumes_newton_contacts_as_plane_constraints(self) -> None:
+        model, box_shape, plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.5, -1.0, 0.25])
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        contacts = _contacts_with_one_rigid_row(
+            shape0=box_shape,
+            shape1=plane_shape,
+            point0=(0.25, 0.0, 0.0),
+            point1=(0.25, 0.0, 0.0),
+            normal=(0.0, 1.0, 0.0),
+        )
+        dt = 0.05
+
+        solver.step(state, state, None, contacts, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=np.array([0.25, 0.0, 0.0], dtype=float),
+                        plane_normal=np.array([0.0, 1.0, 0.0], dtype=float),
+                        plane_offset=0.0,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 1)
+        self.assertEqual(solver.last_contacts_input_summary.generated_plane_constraint_count, 1)
+        self.assertEqual(solver.last_contacts_input_summary.skipped_contact_count, 0)
+        self.assertEqual(
+            solver.last_contacts_input_summary.policy,
+            "rigid_contacts_to_point_plane_constraints_diagnostic",
+        )
+
+    def test_solver_step_flips_contact_normal_when_mabd_body_is_shape1(self) -> None:
+        model, box_shape, plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.5, -1.0, 0.25])
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        contacts = _contacts_with_one_rigid_row(
+            shape0=plane_shape,
+            shape1=box_shape,
+            point0=(0.25, 0.0, 0.0),
+            point1=(0.25, 0.0, 0.0),
+            normal=(0.0, -1.0, 0.0),
+        )
+        dt = 0.05
+
+        solver.step(state, state, None, contacts, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=np.array([0.25, 0.0, 0.0], dtype=float),
+                        plane_normal=np.array([0.0, 1.0, 0.0], dtype=float),
+                        plane_offset=0.0,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        self.assertEqual(solver.last_contacts_input_summary.generated_plane_constraint_count, 1)
+
+    def test_solver_step_records_skipped_and_overflow_contact_rows(self) -> None:
+        model, _box_shape, plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q(), np.zeros(12))
+        contacts = _contacts_with_one_rigid_row(
+            shape0=plane_shape,
+            shape1=plane_shape,
+            point0=(0.0, 0.0, 0.0),
+            point1=(0.0, 0.0, 0.0),
+            normal=(0.0, 1.0, 0.0),
+            capacity=1,
+            reported_count=3,
+        )
+
+        solver.step(state, state, None, contacts, 0.05)
+
+        summary = solver.last_contacts_input_summary
+        self.assertEqual(summary.rigid_contact_count, 3)
+        self.assertEqual(summary.rigid_contact_capacity, 1)
+        self.assertEqual(summary.rigid_contact_overflow_count, 2)
+        self.assertEqual(summary.rigid_contact_rows_read, 1)
+        self.assertEqual(summary.generated_plane_constraint_count, 0)
+        self.assertEqual(summary.skipped_contact_count, 3)
+        self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 0)
+
+    def test_solver_step_rejects_duplicate_mabd_body_index_mapping_for_contacts(self) -> None:
         builder = newton.ModelBuilder()
         SolverMABD.register_custom_attributes(builder)
-        _add_model_body_row(builder, young_modulus=1.0)
-        _add_model_plane_constraint_row(builder, body=0, rest_point=(0.25, 0.0, 0.0))
+        body_id = builder.add_body()
+        for _ in range(2):
+            builder.add_custom_values(
+                **{
+                    "mabd:body_index": body_id,
+                    "mabd:young_modulus": 1.0,
+                    "mabd:poisson_ratio": 0.25,
+                    "mabd:density": 1.0,
+                    "mabd:polar_mode": 0,
+                    "mabd:rest_point0": wp.vec3(0.0, 0.0, 0.0),
+                    "mabd:rest_point1": wp.vec3(1.0, 0.0, 0.0),
+                    "mabd:rest_point2": wp.vec3(0.0, 1.0, 0.0),
+                    "mabd:rest_point3": wp.vec3(0.0, 0.0, 1.0),
+                    "mabd:point_mass0": -1.0,
+                    "mabd:point_mass1": -1.0,
+                    "mabd:point_mass2": -1.0,
+                    "mabd:point_mass3": -1.0,
+                    "mabd:volume": -1.0,
+                }
+            )
+        box_shape = builder.add_shape_box(body=body_id, hx=0.5, hy=0.5, hz=0.5)
+        plane_shape = builder.add_shape_plane(plane=(0.0, 1.0, 0.0, 0.0), width=0.0, length=0.0)
         model = builder.finalize()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, [_identity_q(), _identity_q()], [np.zeros(12), np.zeros(12)])
+        contacts = _contacts_with_one_rigid_row(
+            shape0=box_shape,
+            shape1=plane_shape,
+            point0=(0.25, 0.0, 0.0),
+            point1=(0.25, 0.0, 0.0),
+            normal=(0.0, 1.0, 0.0),
+        )
+
+        with self.assertRaisesRegex(ValueError, "duplicate mabd:body_index"):
+            solver.step(state, state, None, contacts, 0.05)
+
+    def test_solver_step_clears_contacts_summary_when_contacts_none(self) -> None:
+        model, _box_shape, _plane_shape = _mabd_model_with_box_and_static_plane()
         solver = SolverMABD(model)
         state = model.state()
         _assign_mabd_state(state, _identity_q(), np.zeros(12))
 
-        with self.assertRaisesRegex(NotImplementedError, "Contacts input"):
-            solver.step(state, state, None, object(), 0.05)
+        solver.step(state, state, None, None, 0.05)
+
+        self.assertIsNone(solver.last_contacts_input_summary)
 
     def test_solver_step_manual_config_takes_precedence_over_model_world_constraints(self) -> None:
         model = _mabd_model_with_one_world_constraint()
