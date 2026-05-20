@@ -57,6 +57,14 @@ class ExperimentRunnerTests(unittest.TestCase):
         path.write_text(yaml.safe_dump(config), encoding="utf-8")
         return path
 
+    def _write_short_rolling_spinning_rbd_config(self, tmpdir: str) -> Path:
+        config = yaml.safe_load(ROLLING_SPINNING_CONFIG_PATH.read_text(encoding="utf-8"))
+        config["rbd_implicit_baseline"]["step_count"] = 4
+        config["rbd_implicit_baseline"]["sample_count"] = 3
+        path = Path(tmpdir) / "single_body_rolling_spinning_short_rbd.yaml"
+        path.write_text(yaml.safe_dump(config), encoding="utf-8")
+        return path
+
     def _write_matrix_with_output_report(self, tmpdir: str, output_report: str) -> Path:
         matrix = yaml.safe_load(MATRIX_PATH.read_text(encoding="utf-8"))
         for entry in matrix["experiments"]:
@@ -382,6 +390,84 @@ class ExperimentRunnerTests(unittest.TestCase):
                     vendored_newton_commit="test-newton",
                 )
 
+    def test_run_rolling_spinning_rbd_implicit_baseline_writes_newton_report(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_rolling_spinning_rbd_implicit_baseline,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_rolling_spinning_rbd_config(tmpdir)
+            output_path = Path(tmpdir) / "rolling_spinning_rbd.json"
+            result = run_rolling_spinning_rbd_implicit_baseline(
+                config_path=config_path,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(result.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "rbd_implicit_baseline")
+        self.assertEqual(
+            loaded.solver_mode,
+            "newton_semimplicit_rolling_cylinder_rbd_cpu_development",
+        )
+        self.assertEqual(loaded.backend, "cpu_newton_warp")
+        self.assertTrue(loaded.observed["local_runtime_measured"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(
+            loaded.observed["required_lanes_missing"],
+            ["rbd_explicit_baseline", "mabd_newton", "paper_comparable_timing"],
+        )
+        self.assertIn(
+            "rbd_explicit_baseline_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "mabd_rolling_cylinder_lane_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_comparable_timing_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "newton_semimplicit_not_paper_implicit_rbd_solver",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertEqual(loaded.observed["newton_device"], "cpu")
+        self.assertEqual(loaded.observed["cylinder_axis_world"], [0.0, 0.0, 1.0])
+        self.assertEqual(
+            set(loaded.observed["newton_api"]),
+            {
+                "ModelBuilder.add_shape_cylinder",
+                "ModelBuilder.add_ground_plane",
+                "Model.contacts",
+                "Model.collide",
+                "SolverSemiImplicit",
+            },
+        )
+        self.assertEqual(loaded.observed["step_count"], 4)
+        self.assertEqual(loaded.observed["time_step_s"], 0.01)
+        contact_summary = loaded.observed["contact_count_summary"]
+        self.assertGreaterEqual(contact_summary["max"], 1)
+        for key in ("initial", "final", "min", "max"):
+            self.assertIsInstance(contact_summary[key], int)
+            self.assertGreaterEqual(contact_summary[key], 0)
+        self.assertGreaterEqual(loaded.observed["max_center_penetration_m"], 0.0)
+        self.assertEqual(
+            set(loaded.observed["contact_material"]),
+            {"ke", "kd", "kf", "mu", "gap"},
+        )
+        self.assertGreater(loaded.timing_distribution["total_wall_time_ms"], 0.0)
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(loaded.raw_outputs["time_series"], "not_written")
+
     def test_run_experiment_cli_runs_rolling_spinning_protocol_lane(self) -> None:
         import json
         import subprocess
@@ -418,6 +504,46 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
         self.assertEqual(payload["status"], "incomplete")
         self.assertEqual(payload["baseline_lane"], "mabd_newton")
+
+    def test_run_experiment_cli_runs_rolling_spinning_rbd_implicit_baseline_lane(
+        self,
+    ) -> None:
+        import json
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_rolling_spinning_rbd_config(tmpdir)
+            output_path = Path(tmpdir) / "rolling_spinning_rbd.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rolling_spinning_rbd_implicit_baseline",
+                    "--config",
+                    str(config_path),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "test-source",
+                    "--vendored-newton-commit",
+                    "test-newton",
+                ],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertEqual(payload["status"], "incomplete")
+        self.assertEqual(payload["baseline_lane"], "rbd_implicit_baseline")
 
     def test_run_spinning_box_rbd_baseline_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_rbd_baseline

@@ -71,6 +71,23 @@ class RollingSpinningPerformanceConfig:
 
 
 @dataclass(frozen=True)
+class RollingSpinningRBDBaselineConfig:
+    output_report: str
+    radius_m: float
+    half_height_m: float
+    density_kg_m3: float
+    time_step_s: float
+    step_count: int
+    sample_count: int
+    initial_position_m: np.ndarray
+    initial_linear_velocity_m_s: np.ndarray
+    initial_angular_velocity_rad_s: np.ndarray
+    gravity_m_s2: np.ndarray
+    contact: dict[str, float]
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class RollingSpinningRunConfig:
     schema_version: int
     claim_id: str
@@ -81,6 +98,7 @@ class RollingSpinningRunConfig:
     required_missing_lanes: tuple[str, ...]
     paper_values: dict[str, Any]
     performance: RollingSpinningPerformanceConfig
+    rbd_implicit_baseline: RollingSpinningRBDBaselineConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -322,6 +340,18 @@ ROLLING_SPINNING_TIMING_KEYS = frozenset(
 ROLLING_SPINNING_REQUIRED_MISSING_LANES = (
     "rbd_implicit_baseline",
     "rbd_explicit_baseline",
+)
+ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT = (
+    "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json"
+)
+ROLLING_SPINNING_RBD_CONTACT_KEYS = frozenset({"ke", "kd", "kf", "mu", "gap"})
+ROLLING_SPINNING_RBD_THRESHOLD_KEYS = frozenset(
+    {
+        "max_no_slip_residual_m_s",
+        "max_relative_energy_drift",
+        "min_contact_count",
+        "max_runtime_wall_time_ms",
+    }
 )
 
 PHYSICAL_PENDULUM_THRESHOLD_KEYS = frozenset(
@@ -751,6 +781,53 @@ def _require_rolling_spinning_performance(
         paper_hardware_context="i7 CPU, single thread",
         protocol_status="paper_text_timing_only_no_local_runtime_measurement",
         paper_total_simulation_time_ms=paper_timing,
+    )
+
+
+def _require_rolling_spinning_rbd_implicit_baseline(
+    data: dict[str, Any],
+) -> RollingSpinningRBDBaselineConfig:
+    baseline = _require_mapping(data, "rbd_implicit_baseline")
+    contact = _require_float_mapping(baseline, "contact")
+    if set(contact) != ROLLING_SPINNING_RBD_CONTACT_KEYS:
+        raise ExperimentRunConfigError(
+            "rbd_implicit_baseline.contact keys must match Newton shape material fields"
+        )
+    for key, value in contact.items():
+        if value < 0.0:
+            raise ExperimentRunConfigError(
+                f"rbd_implicit_baseline.contact.{key} must be non-negative"
+            )
+    thresholds = _require_float_mapping(baseline, "thresholds")
+    if set(thresholds) != ROLLING_SPINNING_RBD_THRESHOLD_KEYS:
+        raise ExperimentRunConfigError(
+            "rbd_implicit_baseline.thresholds keys must match Phase 74 metrics"
+        )
+    for key, value in thresholds.items():
+        if value < 0.0:
+            raise ExperimentRunConfigError(
+                f"rbd_implicit_baseline.thresholds.{key} must be non-negative"
+            )
+    return RollingSpinningRBDBaselineConfig(
+        output_report=_require_str(baseline, "output_report"),
+        radius_m=_require_positive_float(baseline, "radius_m"),
+        half_height_m=_require_positive_float(baseline, "half_height_m"),
+        density_kg_m3=_require_positive_float(baseline, "density_kg_m3"),
+        time_step_s=_require_positive_float(baseline, "time_step_s"),
+        step_count=_require_positive_int(baseline, "step_count"),
+        sample_count=_require_positive_int(baseline, "sample_count"),
+        initial_position_m=_require_vec3_array(baseline, "initial_position_m"),
+        initial_linear_velocity_m_s=_require_vec3_array(
+            baseline,
+            "initial_linear_velocity_m_s",
+        ),
+        initial_angular_velocity_rad_s=_require_vec3_array(
+            baseline,
+            "initial_angular_velocity_rad_s",
+        ),
+        gravity_m_s2=_require_negative_y_gravity_array(baseline, "gravity_m_s2"),
+        contact=contact,
+        thresholds=thresholds,
     )
 
 
@@ -1277,6 +1354,7 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
         required_missing_lanes=_require_str_tuple(data, "required_missing_lanes"),
         paper_values=_require_mapping(data, "paper_values"),
         performance=_require_rolling_spinning_performance(data),
+        rbd_implicit_baseline=_require_rolling_spinning_rbd_implicit_baseline(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1329,6 +1407,50 @@ def validate_rolling_spinning_config_against_matrix(
         )
     if config.performance.step_count != 10000:
         raise ExperimentRunConfigError("performance.step_count must match paper 10K steps")
+    rbd_report = config.rbd_implicit_baseline.output_report
+    rbd_report_path = Path(rbd_report)
+    if (
+        rbd_report_path.is_absolute()
+        or ".." in rbd_report_path.parts
+        or rbd_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or rbd_report_path.suffix != ".json"
+        or rbd_report != ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT
+        or rbd_report == config.output_report
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_implicit_baseline.output_report must be the lane-specific "
+            "relative JSON report under reports/experiment_matrix"
+        )
+    if config.rbd_implicit_baseline.time_step_s != config.performance.time_step_s:
+        raise ExperimentRunConfigError(
+            "rbd_implicit_baseline.time_step_s must match performance.time_step_s"
+        )
+    if config.rbd_implicit_baseline.step_count > config.performance.step_count:
+        raise ExperimentRunConfigError(
+            "rbd_implicit_baseline.step_count must not exceed performance.step_count"
+        )
+    if config.rbd_implicit_baseline.sample_count < 2:
+        raise ExperimentRunConfigError(
+            "rbd_implicit_baseline.sample_count must include initial and final samples"
+        )
+    if not np.isclose(
+        config.rbd_implicit_baseline.initial_position_m[1],
+        config.rbd_implicit_baseline.radius_m,
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_implicit_baseline.initial_position_m must place the cylinder on the plane"
+        )
+    expected_no_slip = (
+        config.rbd_implicit_baseline.initial_linear_velocity_m_s[0]
+        + config.rbd_implicit_baseline.initial_angular_velocity_rad_s[2]
+        * config.rbd_implicit_baseline.radius_m
+    )
+    if not np.isclose(expected_no_slip, 0.0, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "rbd_implicit_baseline initial velocities must satisfy the no-slip diagnostic"
+        )
 
 
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
@@ -2064,6 +2186,9 @@ __all__ = [
     "HEAVY_TOP_REQUIRED_MISSING_LANES",
     "HEAVY_TOP_THRESHOLD_KEYS",
     "PAPER_HORIZON_THRESHOLD_KEYS",
+    "ROLLING_SPINNING_RBD_CONTACT_KEYS",
+    "ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT",
+    "ROLLING_SPINNING_RBD_THRESHOLD_KEYS",
     "ROLLING_SPINNING_REQUIRED_MISSING_LANES",
     "ROLLING_SPINNING_TIMING_KEYS",
     "PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES",
@@ -2096,6 +2221,7 @@ __all__ = [
     "PhysicalPendulumReferenceConfig",
     "PhysicalPendulumRunConfig",
     "RollingSpinningPerformanceConfig",
+    "RollingSpinningRBDBaselineConfig",
     "RollingSpinningRunConfig",
     "SpinningBoxPaperHorizonConfig",
     "SpinningBoxRunConfig",

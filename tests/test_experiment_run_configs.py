@@ -214,12 +214,81 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("energy_drift", config.thresholds)
         self.assertIn("linear_momentum_error", config.thresholds)
         self.assertIn("angular_momentum_error", config.thresholds)
+        self.assertEqual(
+            config.rbd_implicit_baseline.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+        )
+        self.assertEqual(config.rbd_implicit_baseline.radius_m, 0.5)
+        self.assertEqual(config.rbd_implicit_baseline.half_height_m, 0.5)
+        self.assertEqual(config.rbd_implicit_baseline.density_kg_m3, 1000.0)
+        self.assertEqual(config.rbd_implicit_baseline.time_step_s, 0.01)
+        self.assertEqual(config.rbd_implicit_baseline.step_count, 10000)
+        self.assertEqual(config.rbd_implicit_baseline.sample_count, 7)
+        np.testing.assert_allclose(
+            config.rbd_implicit_baseline.initial_position_m,
+            [0.0, 0.5, 0.0],
+        )
+        np.testing.assert_allclose(
+            config.rbd_implicit_baseline.initial_linear_velocity_m_s,
+            [1.0, 0.0, 0.0],
+        )
+        np.testing.assert_allclose(
+            config.rbd_implicit_baseline.initial_angular_velocity_rad_s,
+            [0.0, 0.0, -2.0],
+        )
+        np.testing.assert_allclose(
+            config.rbd_implicit_baseline.gravity_m_s2,
+            [0.0, -9.81, 0.0],
+        )
+        self.assertEqual(
+            set(config.rbd_implicit_baseline.contact),
+            {"ke", "kd", "kf", "mu", "gap"},
+        )
+        self.assertIn("max_no_slip_residual_m_s", config.rbd_implicit_baseline.thresholds)
+        self.assertIn("max_relative_energy_drift", config.rbd_implicit_baseline.thresholds)
+        self.assertIn("min_contact_count", config.rbd_implicit_baseline.thresholds)
+        self.assertIn("max_runtime_wall_time_ms", config.rbd_implicit_baseline.thresholds)
 
     def test_rolling_spinning_config_matches_matrix(self) -> None:
         config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
 
         validate_rolling_spinning_config_against_matrix(config, matrix)
+
+    def test_rolling_spinning_rbd_implicit_baseline_report_path_must_be_lane_specific(
+        self,
+    ) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        self.assertEqual(
+            config.rbd_implicit_baseline.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+        )
+        validate_rolling_spinning_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            "/tmp/single_body_rolling_spinning_rbd_implicit_baseline.json",
+            "reports/not_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+            "../reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+            "reports/experiment_matrix/not_the_rolling_spinning_rbd_implicit_baseline.json",
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    rbd_implicit_baseline=replace(
+                        config.rbd_implicit_baseline,
+                        output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "rbd_implicit_baseline.output_report",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
 
     def test_physical_pendulum_config_is_machine_checkable(self) -> None:
         config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)
