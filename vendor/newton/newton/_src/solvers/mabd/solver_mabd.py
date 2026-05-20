@@ -51,6 +51,7 @@ class MABDContactsInputSummary:
 class MABDStaticPlaneCollisionSummary:
     policy: str
     box_shape_count: int
+    cylinder_shape_count: int
     static_plane_shape_count: int
     candidate_contact_count: int
     rigid_contact_count: int
@@ -451,6 +452,17 @@ class SolverMABD(SolverBase):
         return rotated / norm
 
     @staticmethod
+    def _inverse_transform_direction(transform: np.ndarray, direction: np.ndarray) -> np.ndarray:
+        tf = np.asarray(transform, dtype=float)
+        if tf.shape != (7,):
+            raise ValueError(f"shape_transform row must have shape (7,), got {tf.shape}")
+        quat = np.asarray(tf[3:7], dtype=float)
+        if quat.shape != (4,):
+            raise ValueError(f"shape transform quaternion must have shape (4,), got {quat.shape}")
+        inverse_quat = np.array([-quat[0], -quat[1], -quat[2], quat[3]], dtype=float)
+        return SolverMABD._quat_rotate_vector(inverse_quat, direction)
+
+    @staticmethod
     def _box_corner_points(scale: np.ndarray) -> np.ndarray:
         half_extents = np.asarray(scale, dtype=float)
         if half_extents.shape != (3,):
@@ -468,13 +480,43 @@ class SolverMABD(SolverBase):
             dtype=float,
         )
 
-    def detect_static_plane_contacts(self, state: State, max_contacts: int | None = None) -> Contacts:
-        """Generate bounded diagnostic contacts for M-ABD boxes vs static infinite planes.
+    @staticmethod
+    def _cylinder_support_point(scale: np.ndarray, direction: np.ndarray) -> np.ndarray:
+        cylinder_scale = np.asarray(scale, dtype=float)
+        if cylinder_scale.shape != (3,):
+            raise ValueError(f"cylinder scale must have shape (3,), got {cylinder_scale.shape}")
+        radius = float(cylinder_scale[0])
+        half_height = float(cylinder_scale[1])
+        if radius <= 0.0 or half_height <= 0.0:
+            raise ValueError("MABD affine cylinder contact detection requires positive radius and half-height")
+        local_direction = np.asarray(direction, dtype=float)
+        if local_direction.shape != (3,):
+            raise ValueError(f"cylinder support direction must have shape (3,), got {local_direction.shape}")
+        if not np.any(local_direction):
+            raise ValueError("cylinder support direction must be nonzero")
 
-        This helper evaluates affine box corners against world-static infinite plane
-        shapes and returns ordinary Newton ``Contacts`` rows for the existing
-        contacts-input path. It is intentionally scoped to the paper-reproduction
-        diagnostic subset and is not a generic collision pipeline.
+        xy_norm = float(np.linalg.norm(local_direction[:2]))
+        if xy_norm > 0.0:
+            xy = -radius * local_direction[:2] / xy_norm
+        else:
+            xy = np.array([radius, 0.0], dtype=float)
+        z_deadband = 1.0e-10 * float(np.linalg.norm(local_direction))
+        if local_direction[2] > z_deadband:
+            z = -half_height
+        elif local_direction[2] < -z_deadband:
+            z = half_height
+        else:
+            z = 0.0
+        return np.array([xy[0], xy[1], z], dtype=float)
+
+    def detect_static_plane_contacts(self, state: State, max_contacts: int | None = None) -> Contacts:
+        """Generate bounded diagnostic contacts for M-ABD shapes vs static infinite planes.
+
+        This helper evaluates affine box corners and affine cylinder support
+        points against world-static infinite plane shapes, then returns ordinary
+        Newton ``Contacts`` rows for the existing contacts-input path. It is
+        intentionally scoped to the paper-reproduction diagnostic subset and is
+        not a generic collision pipeline.
         """
 
         if max_contacts is not None and int(max_contacts) < 0:
@@ -492,6 +534,7 @@ class SolverMABD(SolverBase):
         q, _qd = self._read_mabd_state(state)
 
         mabd_box_shapes: list[tuple[int, int, np.ndarray, np.ndarray]] = []
+        mabd_cylinder_shapes: list[tuple[int, int, np.ndarray, np.ndarray]] = []
         static_planes: list[tuple[int, np.ndarray, float]] = []
         skipped_shape_pair_count = 0
         for shape_id, (body_id, geo_type) in enumerate(zip(shape_body, shape_type, strict=True)):
@@ -507,6 +550,15 @@ class SolverMABD(SolverBase):
                     dtype=float,
                 )
                 mabd_box_shapes.append((shape_id, int(mabd_body), rest_corners, shape_transform[shape_id]))
+            elif int(geo_type) == int(GeoType.CYLINDER):
+                mabd_body = body_rows.get(int(body_id))
+                if mabd_body is None:
+                    continue
+                scale = np.asarray(shape_scale[shape_id], dtype=float)
+                if scale[0] <= 0.0 or scale[1] <= 0.0:
+                    skipped_shape_pair_count += 1
+                    continue
+                mabd_cylinder_shapes.append((shape_id, int(mabd_body), scale, shape_transform[shape_id]))
             elif int(geo_type) == int(GeoType.PLANE):
                 if int(body_id) != -1:
                     skipped_shape_pair_count += 1
@@ -528,6 +580,18 @@ class SolverMABD(SolverBase):
                     signed_distance = float(np.dot(normal, world_point) - plane_offset)
                     if signed_distance < 0.0:
                         candidates.append((box_shape, plane_shape, rest_corner, plane_point, normal))
+        for cylinder_shape, mabd_body, scale, transform in mabd_cylinder_shapes:
+            A, t = unpack_q(q[mabd_body])
+            for plane_shape, normal, plane_offset in static_planes:
+                plane_point = normal * plane_offset
+                affine_direction = A.T @ normal
+                local_direction = self._inverse_transform_direction(transform, affine_direction)
+                local_support = self._cylinder_support_point(scale, local_direction)
+                rest_point = self._transform_point(transform, local_support)
+                world_point = A @ rest_point + t
+                signed_distance = float(np.dot(normal, world_point) - plane_offset)
+                if signed_distance < 0.0:
+                    candidates.append((cylinder_shape, plane_shape, rest_point, plane_point, normal))
 
         candidate_count = len(candidates)
         if max_contacts is None:
@@ -558,9 +622,21 @@ class SolverMABD(SolverBase):
         contacts.rigid_contact_point0.assign(point0_values)
         contacts.rigid_contact_point1.assign(point1_values)
         contacts.rigid_contact_normal.assign(normal_values)
+        box_shape_count = len(mabd_box_shapes)
+        cylinder_shape_count = len(mabd_cylinder_shapes)
+        if cylinder_shape_count and not box_shape_count:
+            policy = "mabd_affine_cylinder_static_plane_support_diagnostic"
+            scope = "affine_cylinder_support_points_vs_static_infinite_planes"
+        elif cylinder_shape_count:
+            policy = "mabd_affine_mixed_static_plane_active_set_diagnostic"
+            scope = "affine_box_corners_and_cylinder_support_points_vs_static_infinite_planes"
+        else:
+            policy = "mabd_affine_box_static_plane_active_set_diagnostic"
+            scope = "affine_box_corners_vs_static_infinite_planes"
         self.last_static_plane_collision_summary = MABDStaticPlaneCollisionSummary(
-            policy="mabd_affine_box_static_plane_active_set_diagnostic",
-            box_shape_count=len(mabd_box_shapes),
+            policy=policy,
+            box_shape_count=box_shape_count,
+            cylinder_shape_count=cylinder_shape_count,
             static_plane_shape_count=len(static_planes),
             candidate_contact_count=candidate_count,
             rigid_contact_count=candidate_count,
@@ -569,7 +645,7 @@ class SolverMABD(SolverBase):
             rigid_contact_rows_written=rows_written,
             skipped_shape_pair_count=skipped_shape_pair_count,
             source="SolverMABD.detect_static_plane_contacts",
-            scope="affine_box_corners_vs_static_infinite_planes",
+            scope=scope,
         )
         return contacts
 

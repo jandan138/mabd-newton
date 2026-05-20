@@ -282,6 +282,19 @@ def _mabd_model_with_box_and_static_plane() -> tuple[object, int, int]:
     return builder.finalize(), box_shape, plane_shape
 
 
+def _mabd_model_with_cylinder_and_static_plane() -> tuple[object, int, int]:
+    builder = newton.ModelBuilder()
+    SolverMABD.register_custom_attributes(builder)
+    mabd_body = _add_model_body_row(builder, young_modulus=1.0)
+    cylinder_shape = builder.add_shape_cylinder(
+        body=mabd_body,
+        radius=0.5,
+        half_height=0.5,
+    )
+    plane_shape = builder.add_shape_plane(plane=(0.0, 1.0, 0.0, 0.0), width=0.0, length=0.0)
+    return builder.finalize(), cylinder_shape, plane_shape
+
+
 def _mabd_model_with_box_and_dynamic_rigid_box() -> tuple[object, int, int]:
     builder = newton.ModelBuilder()
     SolverMABD.register_custom_attributes(builder)
@@ -1765,12 +1778,66 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertEqual(summary.source, "SolverMABD.detect_static_plane_contacts")
         self.assertEqual(summary.scope, "affine_box_corners_vs_static_infinite_planes")
         self.assertEqual(summary.box_shape_count, 1)
+        self.assertEqual(summary.cylinder_shape_count, 0)
         self.assertEqual(summary.static_plane_shape_count, 1)
         self.assertEqual(summary.candidate_contact_count, 4)
         self.assertEqual(summary.rigid_contact_count, 4)
         self.assertEqual(summary.rigid_contact_capacity, 4)
         self.assertEqual(summary.rigid_contact_overflow_count, 0)
         self.assertEqual(summary.rigid_contact_rows_written, 4)
+        self.assertEqual(summary.skipped_shape_pair_count, 0)
+
+    def test_solver_detects_affine_cylinder_static_plane_contact(self) -> None:
+        model, cylinder_shape, plane_shape = _mabd_model_with_cylinder_and_static_plane()
+        solver = SolverMABD(model)
+        state = model.state()
+        _assign_mabd_state(state, _identity_q((0.0, -0.1, 0.0)), np.zeros(12))
+
+        contacts = solver.detect_static_plane_contacts(state)
+
+        self.assertEqual(int(contacts.rigid_contact_count.numpy()[0]), 1)
+        self.assertEqual(int(contacts.rigid_contact_max), 1)
+        np.testing.assert_array_equal(
+            contacts.rigid_contact_shape0.numpy()[:1],
+            np.full(1, cylinder_shape, dtype=np.int32),
+        )
+        np.testing.assert_array_equal(
+            contacts.rigid_contact_shape1.numpy()[:1],
+            np.full(1, plane_shape, dtype=np.int32),
+        )
+        np.testing.assert_allclose(
+            contacts.rigid_contact_normal.numpy()[:1],
+            np.array([[0.0, 1.0, 0.0]], dtype=np.float32),
+            atol=1.0e-7,
+        )
+        np.testing.assert_allclose(
+            contacts.rigid_contact_point0.numpy()[:1],
+            np.array([[0.0, -0.5, 0.0]], dtype=np.float32),
+            atol=1.0e-7,
+        )
+        np.testing.assert_allclose(
+            contacts.rigid_contact_point1.numpy()[:1],
+            np.zeros((1, 3), dtype=np.float32),
+            atol=1.0e-7,
+        )
+        summary = solver.last_static_plane_collision_summary
+        self.assertEqual(
+            summary.policy,
+            "mabd_affine_cylinder_static_plane_support_diagnostic",
+        )
+        self.assertEqual(summary.source, "SolverMABD.detect_static_plane_contacts")
+        self.assertEqual(
+            summary.scope,
+            "affine_cylinder_support_points_vs_static_infinite_planes",
+        )
+        self.assertEqual(summary.box_shape_count, 0)
+        self.assertEqual(summary.cylinder_shape_count, 1)
+        self.assertEqual(summary.static_plane_shape_count, 1)
+        self.assertEqual(summary.candidate_contact_count, 1)
+        self.assertEqual(summary.rigid_contact_count, 1)
+        self.assertEqual(summary.rigid_contact_capacity, 1)
+        self.assertEqual(summary.rigid_contact_overflow_count, 0)
+        self.assertEqual(summary.rigid_contact_rows_written, 1)
         self.assertEqual(summary.skipped_shape_pair_count, 0)
 
     def test_solver_detects_no_affine_box_static_plane_contacts_when_separated(self) -> None:

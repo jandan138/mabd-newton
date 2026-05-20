@@ -294,6 +294,52 @@ class ExperimentRunConfigTests(unittest.TestCase):
             config.rbd_explicit_baseline.thresholds,
             config.rbd_implicit_baseline.thresholds,
         )
+        self.assertEqual(
+            config.mabd_newton.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json",
+        )
+        self.assertEqual(config.mabd_newton.radius_m, 0.5)
+        self.assertEqual(config.mabd_newton.half_height_m, 0.5)
+        self.assertEqual(config.mabd_newton.density_kg_m3, 1000.0)
+        self.assertEqual(config.mabd_newton.time_step_s, 0.01)
+        self.assertEqual(config.mabd_newton.step_count, 10000)
+        self.assertEqual(config.mabd_newton.sample_count, 7)
+        self.assertEqual(config.mabd_newton.rotation_mode, "polar")
+        np.testing.assert_allclose(
+            config.mabd_newton.initial_position_m,
+            config.rbd_implicit_baseline.initial_position_m,
+        )
+        np.testing.assert_allclose(
+            config.mabd_newton.initial_linear_velocity_m_s,
+            config.rbd_implicit_baseline.initial_linear_velocity_m_s,
+        )
+        np.testing.assert_allclose(
+            config.mabd_newton.initial_angular_velocity_rad_s,
+            config.rbd_implicit_baseline.initial_angular_velocity_rad_s,
+        )
+        np.testing.assert_allclose(
+            config.mabd_newton.gravity_m_s2,
+            config.rbd_implicit_baseline.gravity_m_s2,
+        )
+        self.assertEqual(config.mabd_newton.rest_points_m.shape, (4, 3))
+        self.assertEqual(config.mabd_newton.point_masses_kg.shape, (4,))
+        expected_mass = (
+            config.mabd_newton.density_kg_m3
+            * np.pi
+            * config.mabd_newton.radius_m**2
+            * (2.0 * config.mabd_newton.half_height_m)
+        )
+        self.assertAlmostEqual(float(np.sum(config.mabd_newton.point_masses_kg)), expected_mass)
+        self.assertAlmostEqual(
+            config.mabd_newton.volume_m3,
+            np.pi * config.mabd_newton.radius_m**2 * (2.0 * config.mabd_newton.half_height_m),
+        )
+        self.assertIn("max_no_slip_residual_m_s", config.mabd_newton.thresholds)
+        self.assertIn("max_relative_energy_drift", config.mabd_newton.thresholds)
+        self.assertIn("min_contact_count", config.mabd_newton.thresholds)
+        self.assertIn("max_affine_shape_spread_m", config.mabd_newton.thresholds)
+        self.assertIn("max_constraint_residual_norm", config.mabd_newton.thresholds)
+        self.assertIn("max_runtime_wall_time_ms", config.mabd_newton.thresholds)
 
     def test_rolling_spinning_config_matches_matrix(self) -> None:
         config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)

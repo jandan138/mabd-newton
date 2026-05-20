@@ -88,6 +88,26 @@ class RollingSpinningRBDBaselineConfig:
 
 
 @dataclass(frozen=True)
+class RollingSpinningMABDNewtonConfig:
+    output_report: str
+    radius_m: float
+    half_height_m: float
+    density_kg_m3: float
+    time_step_s: float
+    step_count: int
+    sample_count: int
+    rest_points_m: np.ndarray
+    point_masses_kg: np.ndarray
+    volume_m3: float
+    rotation_mode: str
+    initial_position_m: np.ndarray
+    initial_linear_velocity_m_s: np.ndarray
+    initial_angular_velocity_rad_s: np.ndarray
+    gravity_m_s2: np.ndarray
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class RollingSpinningRunConfig:
     schema_version: int
     claim_id: str
@@ -100,6 +120,7 @@ class RollingSpinningRunConfig:
     performance: RollingSpinningPerformanceConfig
     rbd_implicit_baseline: RollingSpinningRBDBaselineConfig
     rbd_explicit_baseline: RollingSpinningRBDBaselineConfig
+    mabd_newton: RollingSpinningMABDNewtonConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -348,12 +369,25 @@ ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT = (
 ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json"
 )
+ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT = (
+    "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json"
+)
 ROLLING_SPINNING_RBD_CONTACT_KEYS = frozenset({"ke", "kd", "kf", "mu", "gap"})
 ROLLING_SPINNING_RBD_THRESHOLD_KEYS = frozenset(
     {
         "max_no_slip_residual_m_s",
         "max_relative_energy_drift",
         "min_contact_count",
+        "max_runtime_wall_time_ms",
+    }
+)
+ROLLING_SPINNING_MABD_NEWTON_THRESHOLD_KEYS = frozenset(
+    {
+        "max_no_slip_residual_m_s",
+        "max_relative_energy_drift",
+        "min_contact_count",
+        "max_affine_shape_spread_m",
+        "max_constraint_residual_norm",
         "max_runtime_wall_time_ms",
     }
 )
@@ -833,6 +867,59 @@ def _require_rolling_spinning_rbd_baseline(
         ),
         gravity_m_s2=_require_negative_y_gravity_array(baseline, "gravity_m_s2"),
         contact=contact,
+        thresholds=thresholds,
+    )
+
+
+def _require_rolling_spinning_mabd_newton(
+    data: dict[str, Any],
+) -> RollingSpinningMABDNewtonConfig:
+    section = _require_mapping(data, "mabd_newton")
+    thresholds = _require_float_mapping(section, "thresholds")
+    if set(thresholds) != ROLLING_SPINNING_MABD_NEWTON_THRESHOLD_KEYS:
+        raise ExperimentRunConfigError(
+            "mabd_newton.thresholds keys must match rolling-cylinder M-ABD metrics"
+        )
+    for threshold_key, value in thresholds.items():
+        if value < 0.0:
+            raise ExperimentRunConfigError(
+                f"mabd_newton.thresholds.{threshold_key} must be non-negative"
+            )
+    rest_points = _require_points(section, "rest_points_m")
+    if rest_points.shape != (4, 3):
+        raise ExperimentRunConfigError(
+            "mabd_newton.rest_points_m must contain exactly 4 diagnostic points"
+        )
+    point_masses = _require_positive_mass_vector(
+        section,
+        "point_masses_kg",
+        rest_points.shape[0],
+    )
+    rotation_mode = _require_str(section, "rotation_mode")
+    if rotation_mode != "polar":
+        raise ExperimentRunConfigError("mabd_newton.rotation_mode must be polar")
+    return RollingSpinningMABDNewtonConfig(
+        output_report=_require_str(section, "output_report"),
+        radius_m=_require_positive_float(section, "radius_m"),
+        half_height_m=_require_positive_float(section, "half_height_m"),
+        density_kg_m3=_require_positive_float(section, "density_kg_m3"),
+        time_step_s=_require_positive_float(section, "time_step_s"),
+        step_count=_require_positive_int(section, "step_count"),
+        sample_count=_require_positive_int(section, "sample_count"),
+        rest_points_m=rest_points,
+        point_masses_kg=point_masses,
+        volume_m3=_require_positive_float(section, "volume_m3"),
+        rotation_mode=rotation_mode,
+        initial_position_m=_require_vec3_array(section, "initial_position_m"),
+        initial_linear_velocity_m_s=_require_vec3_array(
+            section,
+            "initial_linear_velocity_m_s",
+        ),
+        initial_angular_velocity_rad_s=_require_vec3_array(
+            section,
+            "initial_angular_velocity_rad_s",
+        ),
+        gravity_m_s2=_require_negative_y_gravity_array(section, "gravity_m_s2"),
         thresholds=thresholds,
     )
 
@@ -1368,6 +1455,7 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
             data,
             "rbd_explicit_baseline",
         ),
+        mabd_newton=_require_rolling_spinning_mabd_newton(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1486,6 +1574,75 @@ def validate_rolling_spinning_config_against_matrix(
             config.rbd_implicit_baseline.output_report,
         ),
     )
+
+    mabd_report = config.mabd_newton.output_report
+    mabd_report_path = Path(mabd_report)
+    if (
+        mabd_report_path.is_absolute()
+        or ".." in mabd_report_path.parts
+        or mabd_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or mabd_report_path.suffix != ".json"
+        or mabd_report != ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT
+        or mabd_report
+        in (
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+        )
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_newton.output_report must be the lane-specific relative JSON "
+            "report under reports/experiment_matrix"
+        )
+    if config.mabd_newton.time_step_s != config.performance.time_step_s:
+        raise ExperimentRunConfigError(
+            "mabd_newton.time_step_s must match performance.time_step_s"
+        )
+    if config.mabd_newton.step_count > config.performance.step_count:
+        raise ExperimentRunConfigError(
+            "mabd_newton.step_count must not exceed performance.step_count"
+        )
+    if config.mabd_newton.sample_count < 2:
+        raise ExperimentRunConfigError(
+            "mabd_newton.sample_count must include initial and final samples"
+        )
+    expected_volume = (
+        np.pi
+        * config.mabd_newton.radius_m**2
+        * (2.0 * config.mabd_newton.half_height_m)
+    )
+    if not np.isclose(config.mabd_newton.volume_m3, expected_volume, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "mabd_newton.volume_m3 must match the configured cylinder volume"
+        )
+    expected_mass = config.mabd_newton.density_kg_m3 * config.mabd_newton.volume_m3
+    if not np.isclose(
+        float(np.sum(config.mabd_newton.point_masses_kg)),
+        expected_mass,
+        rtol=0.0,
+        atol=1.0e-9,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_newton.point_masses_kg must sum to cylinder mass"
+        )
+    if not np.isclose(
+        config.mabd_newton.initial_position_m[1],
+        config.mabd_newton.radius_m,
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_newton.initial_position_m must place the cylinder on the plane"
+        )
+    expected_no_slip = (
+        config.mabd_newton.initial_linear_velocity_m_s[0]
+        + config.mabd_newton.initial_angular_velocity_rad_s[2]
+        * config.mabd_newton.radius_m
+    )
+    if not np.isclose(expected_no_slip, 0.0, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "mabd_newton initial velocities must satisfy the no-slip diagnostic"
+        )
 
 
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
@@ -2225,6 +2382,8 @@ __all__ = [
     "ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT",
     "ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT",
     "ROLLING_SPINNING_RBD_THRESHOLD_KEYS",
+    "ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT",
+    "ROLLING_SPINNING_MABD_NEWTON_THRESHOLD_KEYS",
     "ROLLING_SPINNING_REQUIRED_MISSING_LANES",
     "ROLLING_SPINNING_TIMING_KEYS",
     "PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES",
@@ -2256,6 +2415,7 @@ __all__ = [
     "PhysicalPendulumRBDBaselineConfig",
     "PhysicalPendulumReferenceConfig",
     "PhysicalPendulumRunConfig",
+    "RollingSpinningMABDNewtonConfig",
     "RollingSpinningPerformanceConfig",
     "RollingSpinningRBDBaselineConfig",
     "RollingSpinningRunConfig",

@@ -74,6 +74,37 @@ rbd_explicit_baseline:
     max_relative_energy_drift: 1.0
     min_contact_count: 1.0
     max_runtime_wall_time_ms: 0.0
+mabd_newton:
+  output_report: reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json
+  radius_m: 0.5
+  half_height_m: 0.5
+  density_kg_m3: 1000.0
+  time_step_s: 0.01
+  step_count: 10000
+  sample_count: 7
+  rest_points_m:
+    - [0.5, 0.0, 0.5]
+    - [-0.5, 0.0, 0.5]
+    - [0.0, 0.5, -0.5]
+    - [0.0, -0.5, -0.5]
+  point_masses_kg:
+    - 196.34954084936209
+    - 196.34954084936209
+    - 196.34954084936209
+    - 196.34954084936209
+  volume_m3: 0.7853981633974483
+  rotation_mode: polar
+  initial_position_m: [0.0, 0.5, 0.0]
+  initial_linear_velocity_m_s: [1.0, 0.0, 0.0]
+  initial_angular_velocity_rad_s: [0.0, 0.0, -2.0]
+  gravity_m_s2: [0.0, -9.81, 0.0]
+  thresholds:
+    max_no_slip_residual_m_s: 1.0e-4
+    max_relative_energy_drift: 1.0
+    min_contact_count: 1.0
+    max_affine_shape_spread_m: 1.0
+    max_constraint_residual_norm: 1.0e-6
+    max_runtime_wall_time_ms: 0.0
 report:
   status: incomplete
   failure_reason: full paper claim requires paper-faithful rolling cylinder runtime benchmark plus implicit and explicit RBD baselines
