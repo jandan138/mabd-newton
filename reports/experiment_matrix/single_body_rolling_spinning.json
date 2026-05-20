@@ -1,0 +1,74 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "report_protocol",
+  "baseline_lane": "mabd_newton",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "benchmark_step_count": 10000,
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "requires rolling cylinder runtime benchmark and RBD baselines before pass",
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "required_metrics": [
+      "total_simulation_time_ms",
+      "linear_momentum_error",
+      "angular_momentum_error",
+      "energy_drift"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ],
+    "time_step_s": 0.01
+  },
+  "failure_reason": "full paper claim requires paper-faithful rolling cylinder runtime benchmark plus implicit and explicit RBD baselines",
+  "observed": {
+    "blocking_reasons": [
+      "rbd_baseline_adapter_missing",
+      "benchmark_protocol_not_recorded",
+      "rolling_cylinder_runtime_not_measured"
+    ],
+    "full_experiment_claim_passed": false,
+    "local_runtime_measured": false,
+    "paper_metric_statuses": {
+      "angular_momentum_error": "not_measured_by_phase73",
+      "energy_drift": "not_measured_by_phase73",
+      "linear_momentum_error": "not_measured_by_phase73",
+      "total_simulation_time_ms": "paper_reference_recorded_no_local_runtime"
+    },
+    "protocol_status": "paper_text_timing_only_no_local_runtime_measurement",
+    "required_lanes_missing": [
+      "rbd_implicit_baseline",
+      "rbd_explicit_baseline"
+    ]
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "rolling_spinning_protocol_audit",
+  "source_commit": "b7969bce4a9cd0d11979c58a4d325aa6eda55ef4",
+  "status": "incomplete",
+  "threshold": {
+    "angular_momentum_error": 0.0,
+    "energy_drift": 0.0,
+    "linear_momentum_error": 0.0,
+    "total_simulation_time_ms": 0.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "status": "not_measured"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

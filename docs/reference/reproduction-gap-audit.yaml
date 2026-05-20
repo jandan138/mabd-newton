@@ -55,9 +55,9 @@ remaining_experiment_claims:
       - rbd_baseline_adapter_missing
       - benchmark_protocol_not_recorded
     matrix_output_report: reports/experiment_matrix/single_body_rolling_spinning.json
-    committed_report_status: missing
-    committed_report_sha256: null
-    next_action: "Define Newton-only rolling/spinning benchmark protocol and add required RBD baselines."
+    committed_report_status: incomplete
+    committed_report_sha256: "63eec910b5bf7e451a43ce104131bc3bad5c8734d625a0e2ad913c31fcb676f9"
+    next_action: "Run a paper-faithful rolling cylinder benchmark protocol and add required RBD baselines before any pass gate."
   - claim_id: experiment.single_body.spinning_box
     scene_id: single_body_spinning_box
     claim_status: intended

@@ -928,6 +928,27 @@
   Newton-vs-paper curve agreement, comparison pass gate, rendered output
   inspection, runtime performance, full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 73 rolling/spinning protocol report lane
+  evidence after the Phase 73 record is created.
+- Phase 73 verifies that the rolling/spinning matrix output report
+  `reports/experiment_matrix/single_body_rolling_spinning.json` exists as an
+  incomplete protocol-only report, records paper timing values for 10K rolling
+  cylinder steps at `h = 0.01 sec` on `i7 CPU, single thread`, records
+  backend: `report_protocol`, records missing blockers
+  `rbd_baseline_adapter_missing`, `benchmark_protocol_not_recorded`, and
+  `rolling_cylinder_runtime_not_measured`, records per-metric
+  `paper_metric_statuses`, records `local_runtime_measured = false`, records
+  `full_experiment_claim_passed = false`, and keeps no experiment claim
+  passed.
+- Phase 73 does not verify rolling-cylinder dynamics, local runtime timing,
+  implicit/explicit RBD baselines, spinning-box momentum/energy agreement,
+  comparative baseline results, rendered output, a completed rolling/spinning
+  reproduction, full paper reproduction, or any passed `experiment.*` claim.
+- Phase 73 rolling/spinning protocol report lane evidence must not be
+  described as a completed rolling/spinning reproduction, runtime benchmark,
+  passed baseline, rolling-cylinder dynamics result, local runtime timing,
+  implicit/explicit RBD baselines, comparative baseline results, rendered
+  output, full paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1309,6 +1330,12 @@
   Newton-vs-paper curve agreement, not a comparison pass gate, not rendered
   output inspection, not runtime performance reproduction, not full paper
   reproduction, and not any passed `experiment.*` claim.
+- Phase 73 rolling/spinning protocol report lane evidence is not a completed
+  rolling/spinning reproduction, not a runtime benchmark, not a passed
+  baseline, not rolling-cylinder dynamics evidence, not local runtime timing,
+  not implicit/explicit RBD baseline evidence, not comparative baseline
+  results, not rendered-output evidence, not full paper reproduction, and not
+  any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

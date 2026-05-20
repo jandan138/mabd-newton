@@ -4701,6 +4701,118 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE72", text)
         self.assertNotIn("phase72-working-tree", text)
 
+    def test_phase73_rolling_spinning_report_lane_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 73",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 73 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 73 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 73 rolling/spinning protocol report lane evidence",
+        )
+
+        self.assertIn("rolling/spinning protocol report lane evidence", current)
+        self.assertIn("single_body_rolling_spinning.json", verified)
+        self.assertIn("i7 CPU, single thread", verified)
+        self.assertIn("paper_metric_statuses", verified)
+        self.assertIn("backend: `report_protocol`", verified)
+        self.assertIn("no experiment claim passed", verified)
+        for snippet in (
+            "rolling-cylinder dynamics",
+            "local runtime timing",
+            "implicit/explicit RBD baselines",
+            "comparative baseline results",
+            "rendered output",
+            "full paper reproduction",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+            self.assertIn(snippet, forbidden)
+
+        report = load_claim_report(ROOT / validate_docs.ROLLING_SPINNING_REPORT_PATH)
+        self.assertEqual(report.source_commit, validate_docs.PHASE73_ROLLING_SPINNING_REPORT_LANE_COMMIT)
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(report.scene_id, "single_body_rolling_spinning")
+        self.assertEqual(report.baseline_lane, "mabd_newton")
+        self.assertEqual(report.solver_mode, "rolling_spinning_protocol_audit")
+        self.assertEqual(report.backend, "report_protocol")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertFalse(report.expected["full_experiment_claim_passed"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertFalse(report.observed["local_runtime_measured"])
+        self.assertEqual(report.expected["benchmark_step_count"], 10000)
+        self.assertEqual(report.expected["time_step_s"], 0.01)
+        self.assertEqual(report.expected["paper_hardware_context"], "i7 CPU, single thread")
+        self.assertIn("rbd_implicit_baseline", report.observed["required_lanes_missing"])
+        self.assertIn("rbd_explicit_baseline", report.observed["required_lanes_missing"])
+        self.assertIn("rolling_cylinder_runtime_not_measured", report.observed["blocking_reasons"])
+        self.assertEqual(
+            report.observed["paper_metric_statuses"]["total_simulation_time_ms"],
+            "paper_reference_recorded_no_local_runtime",
+        )
+        self.assertEqual(report.timing_distribution["status"], "not_measured")
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+
+        actual_sha = validate_docs.sha256_file(ROOT / validate_docs.ROLLING_SPINNING_REPORT_PATH)
+        self.assertEqual(actual_sha, validate_docs.PHASE73_ROLLING_SPINNING_REPORT_SHA256)
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        rolling = next(
+            claim
+            for claim in data["claims"]
+            if claim["claim_id"] == "experiment.single_body.rolling_spinning"
+        )
+        self.assertEqual(rolling["reproduction_status"], "intended")
+        self.assertFalse(
+            any(
+                claim["claim_id"].startswith("experiment.")
+                and claim["reproduction_status"] == "passed"
+                for claim in data["claims"]
+            )
+        )
+        validate_docs.validate_phase73_record()
+
+    def test_phase73_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT
+            / "docs/records/2026-05-20-phase73-rolling-spinning-report-lane.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_rolling_spinning_report_lane",
+            validate_docs.PHASE73_ROLLING_SPINNING_REPORT_LANE_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "configs/experiments/single_body_rolling_spinning.yaml",
+            "reports/experiment_matrix/single_body_rolling_spinning.json",
+            validate_docs.PHASE73_ROLLING_SPINNING_REPORT_SHA256,
+            "backend: `report_protocol`",
+            "status: `incomplete`",
+            "paper_text_timing_only_no_local_runtime_measurement",
+            "local_runtime_measured=false",
+            "full_experiment_claim_passed=false",
+            "target_exists",
+            "ready_to_sync_existing",
+            "smoke_passed",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+            "No `experiment.*` claim is passed.",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE73", text)
+        self.assertNotIn("phase73-working-tree", text)
+
     def test_phase66_validator_rejects_passed_digitized_figure_agreement(self) -> None:
         import scripts.validate_docs as validate_docs
 
@@ -6474,7 +6586,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

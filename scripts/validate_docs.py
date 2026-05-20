@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-72 docs and provenance contracts."""
+"""Validate Phase 0-73 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -24,10 +24,12 @@ from mabd_reproduction.experiment_configs import (
     ExperimentRunConfigError,
     load_heavy_top_config,
     load_physical_pendulum_config,
+    load_rolling_spinning_config,
     load_spinning_box_config,
     load_t_handle_config,
     validate_heavy_top_config_against_matrix,
     validate_physical_pendulum_config_against_matrix,
+    validate_rolling_spinning_config_against_matrix,
     validate_spinning_box_config_against_matrix,
     validate_t_handle_config_against_matrix,
 )
@@ -165,6 +167,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-19-phase70-contacts-input-report-lane.md",
     "docs/records/2026-05-19-phase71-affine-box-static-plane-active-set.md",
     "docs/records/2026-05-20-phase72-spinning-box-figure-momentum-endpoint.md",
+    "docs/records/2026-05-20-phase73-rolling-spinning-report-lane.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -247,6 +250,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-19-mabd-phase71-affine-box-static-plane-active-set.md",
     "docs/superpowers/specs/2026-05-20-phase72-spinning-box-figure-momentum-endpoint-design.md",
     "docs/superpowers/plans/2026-05-20-mabd-phase72-spinning-box-figure-momentum-endpoint.md",
+    "docs/superpowers/specs/2026-05-20-phase73-rolling-spinning-report-lane-design.md",
+    "docs/superpowers/plans/2026-05-20-mabd-phase73-rolling-spinning-report-lane.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -258,6 +263,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
     "reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json",
     "reports/experiment_matrix/single_body_spinning_box_comparison.json",
+    "reports/experiment_matrix/single_body_rolling_spinning.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -277,6 +283,7 @@ REQUIRED_PATHS = (
     "assets/manifests/paper_asset_sources.yaml",
     "configs/experiments/README.md",
     "configs/experiments/paper_experiment_matrix.yaml",
+    "configs/experiments/single_body_rolling_spinning.yaml",
     "configs/experiments/single_body_physical_pendulum.yaml",
     "configs/experiments/single_body_heavy_top.yaml",
     "configs/experiments/single_body_spinning_box.yaml",
@@ -316,6 +323,10 @@ PHASE69_STATIC_CONTACT_REVIEW_FIX_COMMIT = "4659b13662df287a406d1cc1c4a652d2eb15
 PHASE70_CONTACTS_INPUT_REPORT_LANE_COMMIT = "493cc1ac9cb0eb11faac89b1540813b3dab4bcd1"
 PHASE71_AFFINE_STATIC_PLANE_CONTACTS_COMMIT = "de79f7a5da8a62064dc463ecd0a3ed874d43bf0e"
 PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT = "721cf0f9c059d0fbe7852d9ba0c86e015e7ed5c9"
+PHASE73_ROLLING_SPINNING_REPORT_LANE_COMMIT = "b7969bce4a9cd0d11979c58a4d325aa6eda55ef4"
+ROLLING_SPINNING_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_rolling_spinning.json"
+)
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -375,6 +386,9 @@ PHASE71_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_SHA256 = (
 )
 PHASE72_SPINNING_BOX_COMPARISON_SHA256 = (
     "1b8d2ab68f97c4e0035132fd8077271c4c2a68e40fa96f06fc9ba11983ea2e0f"
+)
+PHASE73_ROLLING_SPINNING_REPORT_SHA256 = (
+    "63eec910b5bf7e451a43ce104131bc3bad5c8734d625a0e2ad913c31fcb676f9"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -436,6 +450,11 @@ PLACEHOLDER_SOURCE_COMMITS = {
     "phase70-working-tree",
     "TO_BE_BACKFILLED_PHASE71",
     "phase71-working-tree",
+    "TO_BE_BACKFILLED_PHASE72",
+    "phase72-working-tree",
+    "TO_BE_BACKFILLED_PHASE73",
+    "TO_BE_BACKFILLED_PHASE73_REPORT_SHA256",
+    "phase73-working-tree",
 }
 
 
@@ -10501,6 +10520,7 @@ def validate_phase60_record() -> None:
         report_entries[path] = entry
 
     phase60_post_audit_reports = {
+        ROLLING_SPINNING_REPORT_PATH,
         SPINNING_BOX_CONTACT_RESPONSE_REPORT_PATH,
         SPINNING_BOX_NORMAL_CONSTRAINT_REPORT_PATH,
         SPINNING_BOX_MODEL_PLANE_CONSTRAINT_REPORT_PATH,
@@ -12649,6 +12669,273 @@ def validate_phase72_record() -> None:
             fail("Phase 72 must not pass experiment.* claims")
 
 
+def validate_phase73_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-20-phase73-rolling-spinning-report-lane.md"
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-20-phase73-rolling-spinning-report-lane-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/2026-05-20-mabd-phase73-rolling-spinning-report-lane.md"
+    )
+    config_path = ROOT / "configs/experiments/single_body_rolling_spinning.yaml"
+    matrix_path = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_rolling_spinning_report_lane",
+        PHASE73_ROLLING_SPINNING_REPORT_LANE_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        "configs/experiments/single_body_rolling_spinning.yaml",
+        "configs/experiments/paper_experiment_matrix.yaml",
+        ROLLING_SPINNING_REPORT_PATH,
+        PHASE73_ROLLING_SPINNING_REPORT_SHA256,
+        "backend: `report_protocol`",
+        "status: `incomplete`",
+        "paper_text_timing_only_no_local_runtime_measurement",
+        "local_runtime_measured=false",
+        "full_experiment_claim_passed=false",
+        "paper_metric_statuses",
+        "rbd_baseline_adapter_missing",
+        "benchmark_protocol_not_recorded",
+        "rolling_cylinder_runtime_not_measured",
+        "paper-claims.yaml` is unchanged",
+        "reproduction-gap-audit.yaml",
+        "target_exists",
+        "ready_to_sync_existing",
+        "smoke_passed",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "No `experiment.*` claim is passed.",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 73 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE73",
+        "TO_BE_BACKFILLED_PHASE73_REPORT_SHA256",
+        "phase73-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 73 record contains stale placeholder")
+    if PHASE73_ROLLING_SPINNING_REPORT_LANE_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 73 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "rolling/spinning reproduction passed",
+        "rolling spinning reproduction passed",
+        "runtime benchmark passed",
+        "local runtime timing measured",
+        "rbd baseline passed",
+        "comparative baseline passed",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 73 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 73")
+    verified = claim_boundary_bullet(boundary_text, "Phase 73 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 73 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text,
+        "Phase 73 rolling/spinning protocol report lane evidence",
+    )
+    for snippet in (
+        "rolling/spinning protocol report lane evidence",
+        "Phase 73 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 73 current boundary missing: {snippet}")
+    for snippet in (
+        ROLLING_SPINNING_REPORT_PATH,
+        "10K rolling cylinder steps",
+        "`h = 0.01 sec`",
+        "`i7 CPU, single thread`",
+        "backend: `report_protocol`",
+        "`rbd_baseline_adapter_missing`",
+        "`benchmark_protocol_not_recorded`",
+        "`rolling_cylinder_runtime_not_measured`",
+        "`paper_metric_statuses`",
+        "`local_runtime_measured = false`",
+        "`full_experiment_claim_passed = false`",
+        "no experiment claim passed",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 73 verified boundary missing: {snippet}")
+    for snippet in (
+        "rolling-cylinder dynamics",
+        "local runtime timing",
+        "implicit/explicit RBD baselines",
+        "comparative baseline results",
+        "rendered output",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 73 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 73 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 73 Rolling-Spinning Report Lane Design",
+        "protocol/evidence-surface",
+        "i7 CPU, single thread",
+        "per-metric statuses",
+        "`backend = report_protocol`",
+        "No passed `experiment.*` claim",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 73 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 73 Rolling-Spinning Report Lane Implementation Plan",
+        "rolling_spinning_protocol",
+        "write_rolling_spinning_protocol_report",
+        "paper_text_timing_only_no_local_runtime_measurement",
+        "backend = report_protocol",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 73 plan missing required boundary text: {snippet}")
+
+    config = load_rolling_spinning_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_rolling_spinning_config_against_matrix(config, matrix)
+
+    report = load_claim_report(ROOT / ROLLING_SPINNING_REPORT_PATH)
+    if report.source_commit != PHASE73_ROLLING_SPINNING_REPORT_LANE_COMMIT:
+        fail("Phase 73 report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 73 report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 73 report vendored Newton commit changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 73 report paper source version changed")
+    if report.claim_id != "experiment.single_body.rolling_spinning":
+        fail("Phase 73 report claim_id changed")
+    if report.scene_id != "single_body_rolling_spinning":
+        fail("Phase 73 report scene_id changed")
+    if report.baseline_lane != "mabd_newton":
+        fail("Phase 73 report baseline lane changed")
+    if report.solver_mode != "rolling_spinning_protocol_audit":
+        fail("Phase 73 report solver mode changed")
+    if report.backend != "report_protocol":
+        fail("Phase 73 report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 73 report must remain incomplete")
+    if report.asset_hashes != {
+        "primitive_cylinder": "not_applicable_procedural",
+        "primitive_cube": "not_applicable_procedural",
+    }:
+        fail("Phase 73 report asset hashes changed")
+    if report.threshold != config.thresholds:
+        fail("Phase 73 report thresholds must match config")
+
+    expected = report.expected
+    observed = report.observed
+    if expected.get("full_experiment_claim_passed") is not False:
+        fail("Phase 73 expected full experiment pass flag must be false")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 73 observed full experiment pass flag must be false")
+    if observed.get("local_runtime_measured") is not False:
+        fail("Phase 73 report must not claim local runtime measurement")
+    if expected.get("benchmark_body") != "rolling_cylinder":
+        fail("Phase 73 benchmark body changed")
+    if expected.get("benchmark_step_count") != 10000:
+        fail("Phase 73 benchmark step count changed")
+    if expected.get("time_step_s") != 0.01:
+        fail("Phase 73 time step changed")
+    if expected.get("paper_hardware_context") != "i7 CPU, single thread":
+        fail("Phase 73 paper hardware context changed")
+    if expected.get("source_lines") != list(config.source_lines):
+        fail("Phase 73 report source lines must match config")
+    if expected.get("required_metrics") != list(config.thresholds):
+        fail("Phase 73 report required metrics must match config thresholds")
+    if expected.get("paper_total_simulation_time_ms") != {
+        "vanilla_implicit_abd": 161.0,
+        "implicit_rbd": 44.0,
+        "explicit_rbd": 32.0,
+        "corotated_abd_with_polar": 34.0,
+        "corotated_abd_without_polar": 27.0,
+    }:
+        fail("Phase 73 paper timing values changed")
+    if observed.get("protocol_status") != "paper_text_timing_only_no_local_runtime_measurement":
+        fail("Phase 73 protocol status changed")
+    if observed.get("required_lanes_missing") != [
+        "rbd_implicit_baseline",
+        "rbd_explicit_baseline",
+    ]:
+        fail("Phase 73 missing lane list changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 73 blocking_reasons must be a list")
+    for blocker in (
+        "rbd_baseline_adapter_missing",
+        "benchmark_protocol_not_recorded",
+        "rolling_cylinder_runtime_not_measured",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 73 blocker missing: {blocker}")
+    if observed.get("paper_metric_statuses") != {
+        "total_simulation_time_ms": "paper_reference_recorded_no_local_runtime",
+        "linear_momentum_error": "not_measured_by_phase73",
+        "angular_momentum_error": "not_measured_by_phase73",
+        "energy_drift": "not_measured_by_phase73",
+    }:
+        fail("Phase 73 per-metric statuses changed")
+    if report.timing_distribution != {
+        "status": "not_measured",
+        "paper_comparable": False,
+    }:
+        fail("Phase 73 timing_distribution changed")
+
+    actual_hash = sha256_file(ROOT / ROLLING_SPINNING_REPORT_PATH)
+    if actual_hash != PHASE73_ROLLING_SPINNING_REPORT_SHA256:
+        fail("Phase 73 report sha256 changed")
+    record_hash = _record_sha256_for_artifact(text, ROLLING_SPINNING_REPORT_PATH)
+    if record_hash != actual_hash:
+        fail("Phase 73 report sha256 mismatch")
+
+    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
+    entries = audit.get("remaining_experiment_claims")
+    if not isinstance(entries, list):
+        fail("Phase 73 gap audit missing remaining_experiment_claims")
+    rolling_entry = next(
+        (
+            entry
+            for entry in entries
+            if isinstance(entry, dict)
+            and entry.get("claim_id") == "experiment.single_body.rolling_spinning"
+        ),
+        None,
+    )
+    if rolling_entry is None:
+        fail("Phase 73 gap audit missing rolling/spinning entry")
+    if rolling_entry.get("committed_report_status") != "incomplete":
+        fail("Phase 73 gap audit report status must be incomplete")
+    if rolling_entry.get("committed_report_sha256") != PHASE73_ROLLING_SPINNING_REPORT_SHA256:
+        fail("Phase 73 gap audit report sha changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.rolling_spinning":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 73 must keep rolling/spinning experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 73 must not pass experiment.* claims")
+
+
 def _phase67_model_plane_constraint_smoke() -> None:
     import newton
     import warp as wp
@@ -14554,13 +14841,14 @@ def main() -> int:
     validate_phase70_record()
     validate_phase71_record()
     validate_phase72_record()
+    validate_phase73_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73 "
         "docs/provenance validation passed"
     )
     return 0
