@@ -55,6 +55,19 @@ ROLLING_SPINNING_RBD_EXPLICIT_NEWTON_API = [
     "Model.collide",
     "SolverExplicitEuler",
 ]
+ROLLING_SPINNING_NO_SLIP_REQUIRED_REPRODUCTION_GAPS = [
+    "paper_faithful_explicit_rbd_baseline",
+    "paper_faithful_implicit_rbd_baseline",
+    "paper_faithful_mabd_rolling_cylinder",
+    "paper_comparable_timing",
+]
+ROLLING_SPINNING_NO_SLIP_BLOCKING_REASONS = [
+    "paper_faithful_explicit_rbd_baseline_missing",
+    "paper_faithful_implicit_rbd_baseline_missing",
+    "paper_faithful_mabd_collision_missing",
+    "paper_comparable_timing_missing",
+    "paper_rbd_solver_details_missing",
+]
 ROLLING_SPINNING_MABD_REQUIRED_MISSING_LANES = [
     "paper_comparable_timing",
 ]
@@ -117,6 +130,31 @@ class RollingCylinderRBDBaselineResult:
     max_center_penetration_m: float
     contact_count_summary: dict[str, int]
     contact_material: dict[str, float]
+    total_wall_time_ms: float
+    trajectory_samples: tuple[dict[str, object], ...]
+
+
+@dataclass(frozen=True)
+class RollingCylinderNoSlipReferenceResult:
+    status: EvidenceStatus
+    step_count: int
+    time_step_s: float
+    radius_m: float
+    half_height_m: float
+    density_kg_m3: float
+    mass_kg: float
+    inertia_diag_kg_m2: np.ndarray
+    initial_position_m: np.ndarray
+    final_position_m: np.ndarray
+    final_linear_velocity_m_s: np.ndarray
+    final_angular_velocity_rad_s: np.ndarray
+    initial_energy_j: float
+    final_energy_j: float
+    energy_drift_j: float
+    relative_energy_drift: float
+    no_slip_residual_m_s: float
+    center_height_drift_m: float
+    contact_count_summary: dict[str, int]
     total_wall_time_ms: float
     trajectory_samples: tuple[dict[str, object], ...]
 
@@ -390,6 +428,103 @@ def _rolling_cylinder_sample(
         ),
         "total_energy_j": energy,
     }
+
+
+def _rolling_cylinder_no_slip_sample(
+    *,
+    step_index: int,
+    config: RollingSpinningRBDBaselineConfig,
+    position_m: np.ndarray,
+    linear_velocity_m_s: np.ndarray,
+    angular_velocity_rad_s: np.ndarray,
+) -> dict[str, object]:
+    return {
+        "step_index": int(step_index),
+        "time_s": float(step_index * config.time_step_s),
+        "position_m": position_m.tolist(),
+        "linear_velocity_m_s": linear_velocity_m_s.tolist(),
+        "angular_velocity_rad_s": angular_velocity_rad_s.tolist(),
+        "no_slip_residual_m_s": float(
+            abs(linear_velocity_m_s[0] + angular_velocity_rad_s[2] * config.radius_m)
+        ),
+        "center_height_m": float(position_m[1]),
+    }
+
+
+def run_rolling_cylinder_rbd_no_slip_reference(
+    config: RollingSpinningRBDBaselineConfig,
+) -> RollingCylinderNoSlipReferenceResult:
+    mass_kg, inertia_diag_kg_m2 = _rolling_cylinder_mass_and_inertia(config)
+    duration_s = float(config.step_count * config.time_step_s)
+    final_position = np.asarray(
+        config.initial_position_m + config.initial_linear_velocity_m_s * duration_s,
+        dtype=float,
+    )
+    final_linear_velocity = np.asarray(config.initial_linear_velocity_m_s, dtype=float)
+    final_angular_velocity = np.asarray(config.initial_angular_velocity_rad_s, dtype=float)
+    initial_energy = _rolling_cylinder_energy(
+        mass_kg=mass_kg,
+        inertia_diag_kg_m2=inertia_diag_kg_m2,
+        gravity_m_s2=config.gravity_m_s2,
+        position_m=config.initial_position_m,
+        linear_velocity_m_s=config.initial_linear_velocity_m_s,
+        angular_velocity_rad_s=config.initial_angular_velocity_rad_s,
+    )
+    final_energy = _rolling_cylinder_energy(
+        mass_kg=mass_kg,
+        inertia_diag_kg_m2=inertia_diag_kg_m2,
+        gravity_m_s2=config.gravity_m_s2,
+        position_m=final_position,
+        linear_velocity_m_s=final_linear_velocity,
+        angular_velocity_rad_s=final_angular_velocity,
+    )
+    trajectory_samples = []
+    for step_index in sorted(_sample_indices(config.step_count, config.sample_count)):
+        position = np.asarray(
+            config.initial_position_m
+            + config.initial_linear_velocity_m_s * (step_index * config.time_step_s),
+            dtype=float,
+        )
+        trajectory_samples.append(
+            _rolling_cylinder_no_slip_sample(
+                step_index=step_index,
+                config=config,
+                position_m=position,
+                linear_velocity_m_s=final_linear_velocity,
+                angular_velocity_rad_s=final_angular_velocity,
+            )
+        )
+    energy_drift = abs(final_energy - initial_energy)
+    return RollingCylinderNoSlipReferenceResult(
+        status=EvidenceStatus.INCOMPLETE,
+        step_count=config.step_count,
+        time_step_s=config.time_step_s,
+        radius_m=config.radius_m,
+        half_height_m=config.half_height_m,
+        density_kg_m3=config.density_kg_m3,
+        mass_kg=mass_kg,
+        inertia_diag_kg_m2=inertia_diag_kg_m2,
+        initial_position_m=np.asarray(config.initial_position_m, dtype=float),
+        final_position_m=final_position,
+        final_linear_velocity_m_s=final_linear_velocity,
+        final_angular_velocity_rad_s=final_angular_velocity,
+        initial_energy_j=float(initial_energy),
+        final_energy_j=float(final_energy),
+        energy_drift_j=float(energy_drift),
+        relative_energy_drift=float(energy_drift / initial_energy),
+        no_slip_residual_m_s=float(
+            abs(final_linear_velocity[0] + final_angular_velocity[2] * config.radius_m)
+        ),
+        center_height_drift_m=float(abs(final_position[1] - config.initial_position_m[1])),
+        contact_count_summary={
+            "initial": 1,
+            "final": 1,
+            "min": 1,
+            "max": 1,
+        },
+        total_wall_time_ms=0.0,
+        trajectory_samples=tuple(trajectory_samples),
+    )
 
 
 def _run_rolling_cylinder_rbd_baseline(
@@ -969,6 +1104,118 @@ def write_rolling_spinning_rbd_explicit_baseline_report(
             "scope": "local_cpu_wall_clock_not_paper_comparable",
         },
         raw_outputs={"time_series": "not_written"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
+def write_rolling_spinning_rbd_no_slip_reference_report(
+    path: str | Path,
+    *,
+    config: RollingSpinningRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    lane_config = config.rbd_no_slip_reference
+    result = run_rolling_cylinder_rbd_no_slip_reference(lane_config)
+    thresholds = dict(lane_config.thresholds)
+    thresholds["max_center_height_drift_m"] = 1.0e-12
+    threshold_violations: list[str] = []
+    if result.no_slip_residual_m_s > thresholds["max_no_slip_residual_m_s"]:
+        threshold_violations.append("max_no_slip_residual_m_s")
+    if abs(result.relative_energy_drift) > thresholds["max_relative_energy_drift"]:
+        threshold_violations.append("max_relative_energy_drift")
+    if result.contact_count_summary["max"] < thresholds["min_contact_count"]:
+        threshold_violations.append("min_contact_count")
+    if result.center_height_drift_m > thresholds["max_center_height_drift_m"]:
+        threshold_violations.append("max_center_height_drift_m")
+
+    expected = {
+        "paper_claim_status": (
+            "analytic no-slip rolling-cylinder reference generated; this is not "
+            "paper-faithful RBD, M-ABD contact/friction, or paper-comparable timing"
+        ),
+        "source_lines": list(config.source_lines),
+        "config_path": ROLLING_SPINNING_CONFIG_PATH,
+        "canonical_python": CANONICAL_PYTHON,
+        "benchmark_body": config.performance.body,
+        "paper_total_simulation_time_ms": dict(
+            config.performance.paper_total_simulation_time_ms
+        ),
+        "paper_hardware_context": config.performance.paper_hardware_context,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "known_source_gaps": [
+            "paper does not specify cylinder dimensions, mass, or initial state",
+            "paper exact explicit and implicit RBD solver details are not available",
+            "paper affine rolling contact/friction solve is not yet implemented",
+            "paper-comparable i7 single-thread timing is not measured by this lane",
+        ],
+    }
+    observed = {
+        "reference_status": "analytic_no_slip_reference_generated",
+        "local_runtime_measured": False,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "required_reproduction_gaps_remaining": list(
+            ROLLING_SPINNING_NO_SLIP_REQUIRED_REPRODUCTION_GAPS
+        ),
+        "blocking_reasons": list(ROLLING_SPINNING_NO_SLIP_BLOCKING_REASONS),
+        "threshold_violations": threshold_violations,
+        "step_count": result.step_count,
+        "time_step_s": result.time_step_s,
+        "sample_count": len(result.trajectory_samples),
+        "radius_m": result.radius_m,
+        "half_height_m": result.half_height_m,
+        "density_kg_m3": result.density_kg_m3,
+        "mass_kg": result.mass_kg,
+        "inertia_diag_kg_m2": result.inertia_diag_kg_m2.tolist(),
+        "initial_position_m": result.initial_position_m.tolist(),
+        "final_position_m": result.final_position_m.tolist(),
+        "final_linear_velocity_m_s": result.final_linear_velocity_m_s.tolist(),
+        "final_angular_velocity_rad_s": result.final_angular_velocity_rad_s.tolist(),
+        "initial_energy_j": result.initial_energy_j,
+        "final_energy_j": result.final_energy_j,
+        "energy_drift_j": result.energy_drift_j,
+        "relative_energy_drift": result.relative_energy_drift,
+        "no_slip_residual_m_s": result.no_slip_residual_m_s,
+        "center_height_drift_m": result.center_height_drift_m,
+        "contact_count_summary": dict(result.contact_count_summary),
+        "contact_material": dict(lane_config.contact),
+        "trajectory_samples": list(result.trajectory_samples),
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={
+            "primitive_cylinder": "not_applicable_procedural",
+            "primitive_cube": "not_applicable_procedural",
+        },
+        solver_mode="analytic_no_slip_rolling_cylinder_reference",
+        backend="cpu_numpy_closed_form",
+        baseline_lane="rbd_no_slip_reference",
+        expected=expected,
+        observed=observed,
+        threshold=thresholds,
+        unit="json_report",
+        status=result.status,
+        failure_reason=(
+            "Analytic no-slip reference only; paper-faithful explicit RBD, implicit "
+            "RBD, M-ABD rolling-cylinder contact/friction, and paper-comparable "
+            "timing evidence remain missing"
+        ),
+        timing_distribution={
+            "status": "not_measured",
+            "step_count": result.step_count,
+            "paper_comparable": False,
+            "scope": "local_closed_form_reference_not_paper_comparable",
+        },
+        raw_outputs={},
         plot_paths={},
         source_commit=source_commit,
         vendored_newton_commit=vendored_newton_commit,

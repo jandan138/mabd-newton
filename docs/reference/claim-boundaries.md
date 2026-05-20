@@ -1055,6 +1055,24 @@
   rolling-cylinder result, paper-faithful explicit or implicit RBD result,
   comparative baseline pass, completed rolling/spinning reproduction, full
   paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 79 analytic no-slip rolling-cylinder reference
+  evidence with the Phase 79 record.
+- Phase 79 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_rbd_no_slip_reference.json`
+  exists as an incomplete closed-form CPU NumPy analytic reference, records
+  zero no-slip residual, zero center-height drift, zero relative energy drift,
+  `local_runtime_measured = false`, deterministic report hashing,
+  `paper_comparable = false`, and `full_experiment_claim_passed = false`.
+- Phase 79 does not verify paper-faithful explicit or implicit RBD,
+  paper-faithful M-ABD rolling-cylinder collision, rolling friction/no-slip
+  dynamics in Newton, paper-comparable timing, same-hardware paper timing,
+  co-rotated ABD timing, completed rolling/spinning reproduction, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 79 analytic no-slip reference evidence must not be described as a
+  paper-faithful RBD result, paper-faithful M-ABD rolling-cylinder result,
+  paper-comparable timing result, performance pass, comparative baseline pass,
+  completed rolling/spinning reproduction, full paper reproduction, or any
+  passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

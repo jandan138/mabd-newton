@@ -554,6 +554,121 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertFalse(loaded.timing_distribution["paper_comparable"])
         self.assertEqual(loaded.raw_outputs["time_series"], "not_written")
 
+    def test_run_rolling_spinning_rbd_no_slip_reference_writes_report(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_rolling_spinning_rbd_no_slip_reference,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_no_slip_reference.json"
+            second_output_path = (
+                Path(tmpdir) / "rolling_spinning_no_slip_reference_second.json"
+            )
+            result = run_rolling_spinning_rbd_no_slip_reference(
+                config_path=ROLLING_SPINNING_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            second_result = run_rolling_spinning_rbd_no_slip_reference(
+                config_path=ROLLING_SPINNING_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=second_output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+            first_payload = result.report_path.read_text(encoding="utf-8")
+            second_payload = second_result.report_path.read_text(encoding="utf-8")
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(first_payload, second_payload)
+        self.assertEqual(result.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.scene_id, "single_body_rolling_spinning")
+        self.assertEqual(loaded.baseline_lane, "rbd_no_slip_reference")
+        self.assertEqual(
+            loaded.solver_mode,
+            "analytic_no_slip_rolling_cylinder_reference",
+        )
+        self.assertEqual(loaded.backend, "cpu_numpy_closed_form")
+        self.assertFalse(loaded.expected["paper_comparable"])
+        self.assertFalse(loaded.expected["full_experiment_claim_passed"])
+        self.assertEqual(
+            loaded.observed["reference_status"],
+            "analytic_no_slip_reference_generated",
+        )
+        self.assertFalse(loaded.observed["local_runtime_measured"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(loaded.observed["threshold_violations"], [])
+        self.assertEqual(
+            loaded.observed["required_reproduction_gaps_remaining"],
+            [
+                "paper_faithful_explicit_rbd_baseline",
+                "paper_faithful_implicit_rbd_baseline",
+                "paper_faithful_mabd_rolling_cylinder",
+                "paper_comparable_timing",
+            ],
+        )
+        for blocker in (
+            "paper_faithful_explicit_rbd_baseline_missing",
+            "paper_faithful_implicit_rbd_baseline_missing",
+            "paper_faithful_mabd_collision_missing",
+            "paper_comparable_timing_missing",
+            "paper_rbd_solver_details_missing",
+        ):
+            self.assertIn(blocker, loaded.observed["blocking_reasons"])
+        self.assertEqual(loaded.observed["step_count"], 10000)
+        self.assertEqual(loaded.observed["time_step_s"], 0.01)
+        self.assertEqual(loaded.observed["sample_count"], 7)
+        self.assertAlmostEqual(loaded.observed["final_position_m"][0], 100.0)
+        self.assertAlmostEqual(loaded.observed["final_position_m"][1], 0.5)
+        self.assertAlmostEqual(loaded.observed["final_position_m"][2], 0.0)
+        self.assertEqual(loaded.observed["final_linear_velocity_m_s"], [1.0, 0.0, 0.0])
+        self.assertEqual(
+            loaded.observed["final_angular_velocity_rad_s"],
+            [0.0, 0.0, -2.0],
+        )
+        self.assertLessEqual(
+            loaded.observed["no_slip_residual_m_s"],
+            loaded.threshold["max_no_slip_residual_m_s"],
+        )
+        self.assertLessEqual(
+            loaded.observed["center_height_drift_m"],
+            loaded.threshold["max_center_height_drift_m"],
+        )
+        self.assertLessEqual(
+            abs(loaded.observed["relative_energy_drift"]),
+            loaded.threshold["max_relative_energy_drift"],
+        )
+        samples = loaded.observed["trajectory_samples"]
+        self.assertEqual(len(samples), 7)
+        self.assertEqual(samples[0]["step_index"], 0)
+        self.assertEqual(samples[-1]["step_index"], 10000)
+        self.assertAlmostEqual(samples[-1]["time_s"], 100.0)
+        for sample in samples:
+            self.assertEqual(
+                set(sample),
+                {
+                    "step_index",
+                    "time_s",
+                    "position_m",
+                    "linear_velocity_m_s",
+                    "angular_velocity_rad_s",
+                    "no_slip_residual_m_s",
+                    "center_height_m",
+                },
+            )
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(loaded.timing_distribution["status"], "not_measured")
+        self.assertNotIn("total_wall_time_ms", loaded.timing_distribution)
+        self.assertEqual(loaded.raw_outputs, {})
+        self.assertEqual(loaded.plot_paths, {})
+
     def test_run_rolling_spinning_mabd_newton_writes_diagnostic_report(
         self,
     ) -> None:
@@ -947,6 +1062,56 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
         self.assertEqual(payload["status"], "incomplete")
         self.assertEqual(payload["baseline_lane"], "mabd_newton")
+
+    def test_run_experiment_cli_runs_rolling_spinning_rbd_no_slip_reference_lane(
+        self,
+    ) -> None:
+        import json
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_no_slip_reference.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rolling_spinning_rbd_no_slip_reference",
+                    "--config",
+                    str(ROLLING_SPINNING_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "test-source",
+                    "--vendored-newton-commit",
+                    "test-newton",
+                ],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertEqual(payload["status"], "incomplete")
+        self.assertEqual(payload["baseline_lane"], "rbd_no_slip_reference")
+        self.assertEqual(
+            loaded.solver_mode,
+            "analytic_no_slip_rolling_cylinder_reference",
+        )
+        self.assertEqual(loaded.backend, "cpu_numpy_closed_form")
+        self.assertFalse(loaded.observed["local_runtime_measured"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(loaded.timing_distribution["status"], "not_measured")
+        self.assertNotIn("total_wall_time_ms", loaded.timing_distribution)
 
     def test_run_experiment_cli_runs_rolling_spinning_paper_timing_protocol_lane(
         self,

@@ -130,6 +130,7 @@ class RollingSpinningRunConfig:
     performance: RollingSpinningPerformanceConfig
     rbd_implicit_baseline: RollingSpinningRBDBaselineConfig
     rbd_explicit_baseline: RollingSpinningRBDBaselineConfig
+    rbd_no_slip_reference: RollingSpinningRBDBaselineConfig
     mabd_newton: RollingSpinningMABDNewtonConfig
     mabd_material_preflight: RollingSpinningMABDNewtonConfig
     paper_timing_protocol: RollingSpinningTimingProtocolConfig
@@ -380,6 +381,9 @@ ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT = (
 )
 ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json"
+)
+ROLLING_SPINNING_RBD_NO_SLIP_REFERENCE_OUTPUT_REPORT = (
+    "reports/experiment_matrix/single_body_rolling_spinning_rbd_no_slip_reference.json"
 )
 ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json"
@@ -1529,6 +1533,10 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
             data,
             "rbd_explicit_baseline",
         ),
+        rbd_no_slip_reference=_require_rolling_spinning_rbd_baseline(
+            data,
+            "rbd_no_slip_reference",
+        ),
         mabd_newton=_require_rolling_spinning_mabd_newton(
             data,
             "mabd_newton",
@@ -1662,6 +1670,66 @@ def validate_rolling_spinning_config_against_matrix(
             config.rbd_implicit_baseline.output_report,
         ),
     )
+    validate_rbd_baseline(
+        config.rbd_no_slip_reference,
+        field_name="rbd_no_slip_reference",
+        expected_output_report=ROLLING_SPINNING_RBD_NO_SLIP_REFERENCE_OUTPUT_REPORT,
+        disallowed_reports=(
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+        ),
+    )
+    reference = config.rbd_no_slip_reference
+    implicit = config.rbd_implicit_baseline
+    if not np.isclose(reference.time_step_s, 0.01, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError("rbd_no_slip_reference.time_step_s must be 0.01")
+    if reference.step_count != 10000:
+        raise ExperimentRunConfigError("rbd_no_slip_reference.step_count must be 10000")
+    if reference.sample_count < 3:
+        raise ExperimentRunConfigError("rbd_no_slip_reference.sample_count must be at least 3")
+    if not np.isclose(reference.initial_position_m[1], reference.radius_m, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "rbd_no_slip_reference.initial_position_m must place the cylinder center at radius height"
+        )
+    if not np.allclose(reference.initial_linear_velocity_m_s[1:], [0.0, 0.0], rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "rbd_no_slip_reference.initial_linear_velocity_m_s must have zero vertical and lateral velocity"
+        )
+    if not np.allclose(reference.initial_angular_velocity_rad_s[:2], [0.0, 0.0], rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "rbd_no_slip_reference.initial_angular_velocity_rad_s must have zero off-axis angular velocity"
+        )
+    if not np.isclose(
+        reference.initial_linear_velocity_m_s[0]
+        + reference.initial_angular_velocity_rad_s[2] * reference.radius_m,
+        0.0,
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_no_slip_reference velocities must satisfy the no-slip condition"
+        )
+    if not np.isclose(reference.radius_m, implicit.radius_m, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError("rbd_no_slip_reference.radius_m must match rbd_implicit_baseline")
+    if not np.isclose(
+        reference.half_height_m,
+        implicit.half_height_m,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_no_slip_reference.half_height_m must match rbd_implicit_baseline"
+        )
+    if not np.isclose(
+        reference.density_kg_m3,
+        implicit.density_kg_m3,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_no_slip_reference.density_kg_m3 must match rbd_implicit_baseline"
+        )
 
     mabd_report = config.mabd_newton.output_report
     mabd_report_path = Path(mabd_report)

@@ -27,6 +27,7 @@ from mabd_reproduction.experiment_runner import (
     run_rolling_spinning_protocol,
     run_rolling_spinning_rbd_explicit_baseline,
     run_rolling_spinning_rbd_implicit_baseline,
+    run_rolling_spinning_rbd_no_slip_reference,
     run_spinning_box_affine_static_plane_contacts,
     run_spinning_box_comparison,
     run_spinning_box_contacts_input,
@@ -75,6 +76,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "rolling_spinning_protocol",
             "rolling_spinning_rbd_explicit_baseline",
             "rolling_spinning_rbd_implicit_baseline",
+            "rolling_spinning_rbd_no_slip_reference",
             "spinning_box_affine_static_plane_contacts",
             "spinning_box_comparison",
             "spinning_box_contacts_input",
@@ -397,6 +399,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "rolling_spinning_rbd_explicit_baseline":
             result = run_rolling_spinning_rbd_explicit_baseline(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "rolling_spinning_rbd_no_slip_reference":
+            result = run_rolling_spinning_rbd_no_slip_reference(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

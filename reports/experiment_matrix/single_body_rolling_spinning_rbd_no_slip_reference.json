@@ -1,0 +1,278 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "cpu_numpy_closed_form",
+  "baseline_lane": "rbd_no_slip_reference",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "canonical_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "config_path": "configs/experiments/single_body_rolling_spinning.yaml",
+    "full_experiment_claim_passed": false,
+    "known_source_gaps": [
+      "paper does not specify cylinder dimensions, mass, or initial state",
+      "paper exact explicit and implicit RBD solver details are not available",
+      "paper affine rolling contact/friction solve is not yet implemented",
+      "paper-comparable i7 single-thread timing is not measured by this lane"
+    ],
+    "paper_claim_status": "analytic no-slip rolling-cylinder reference generated; this is not paper-faithful RBD, M-ABD contact/friction, or paper-comparable timing",
+    "paper_comparable": false,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ]
+  },
+  "failure_reason": "Analytic no-slip reference only; paper-faithful explicit RBD, implicit RBD, M-ABD rolling-cylinder contact/friction, and paper-comparable timing evidence remain missing",
+  "observed": {
+    "blocking_reasons": [
+      "paper_faithful_explicit_rbd_baseline_missing",
+      "paper_faithful_implicit_rbd_baseline_missing",
+      "paper_faithful_mabd_collision_missing",
+      "paper_comparable_timing_missing",
+      "paper_rbd_solver_details_missing"
+    ],
+    "center_height_drift_m": 0.0,
+    "contact_count_summary": {
+      "final": 1,
+      "initial": 1,
+      "max": 1,
+      "min": 1
+    },
+    "contact_material": {
+      "gap": 0.02,
+      "kd": 1000.0,
+      "ke": 100000.0,
+      "kf": 1000.0,
+      "mu": 1.0
+    },
+    "density_kg_m3": 1000.0,
+    "energy_drift_j": 0.0,
+    "final_angular_velocity_rad_s": [
+      0.0,
+      0.0,
+      -2.0
+    ],
+    "final_energy_j": 4441.42661401257,
+    "final_linear_velocity_m_s": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "final_position_m": [
+      100.0,
+      0.5,
+      0.0
+    ],
+    "full_experiment_claim_passed": false,
+    "half_height_m": 0.5,
+    "inertia_diag_kg_m2": [
+      114.53723216212785,
+      114.53723216212785,
+      98.17477042468103
+    ],
+    "initial_energy_j": 4441.42661401257,
+    "initial_position_m": [
+      0.0,
+      0.5,
+      0.0
+    ],
+    "local_runtime_measured": false,
+    "mass_kg": 785.3981633974482,
+    "no_slip_residual_m_s": 0.0,
+    "paper_comparable": false,
+    "radius_m": 0.5,
+    "reference_status": "analytic_no_slip_reference_generated",
+    "relative_energy_drift": 0.0,
+    "required_reproduction_gaps_remaining": [
+      "paper_faithful_explicit_rbd_baseline",
+      "paper_faithful_implicit_rbd_baseline",
+      "paper_faithful_mabd_rolling_cylinder",
+      "paper_comparable_timing"
+    ],
+    "sample_count": 7,
+    "step_count": 10000,
+    "threshold_violations": [],
+    "time_step_s": 0.01,
+    "trajectory_samples": [
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          0.0,
+          0.5,
+          0.0
+        ],
+        "step_index": 0,
+        "time_s": 0.0
+      },
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          16.67,
+          0.5,
+          0.0
+        ],
+        "step_index": 1667,
+        "time_s": 16.67
+      },
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          33.33,
+          0.5,
+          0.0
+        ],
+        "step_index": 3333,
+        "time_s": 33.33
+      },
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          50.0,
+          0.5,
+          0.0
+        ],
+        "step_index": 5000,
+        "time_s": 50.0
+      },
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          66.67,
+          0.5,
+          0.0
+        ],
+        "step_index": 6667,
+        "time_s": 66.67
+      },
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          83.33,
+          0.5,
+          0.0
+        ],
+        "step_index": 8333,
+        "time_s": 83.33
+      },
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          100.0,
+          0.5,
+          0.0
+        ],
+        "step_index": 10000,
+        "time_s": 100.0
+      }
+    ]
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "analytic_no_slip_rolling_cylinder_reference",
+  "source_commit": "72be0f998f46f52cf0ca67d1c8c19fd94769436c",
+  "status": "incomplete",
+  "threshold": {
+    "max_center_height_drift_m": 1e-12,
+    "max_no_slip_residual_m_s": 1e-12,
+    "max_relative_energy_drift": 1e-12,
+    "max_runtime_wall_time_ms": 0.0,
+    "min_contact_count": 1.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "local_closed_form_reference_not_paper_comparable",
+    "status": "not_measured",
+    "step_count": 10000
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}
