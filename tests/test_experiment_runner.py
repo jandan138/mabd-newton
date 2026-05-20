@@ -673,6 +673,82 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         self.assertEqual(loaded.raw_outputs["time_series"], "not_written")
 
+    def test_run_rolling_spinning_paper_timing_protocol_writes_report(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_rolling_spinning_paper_timing_protocol,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_timing_protocol.json"
+            result = run_rolling_spinning_paper_timing_protocol(
+                config_path=ROLLING_SPINNING_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(result.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "paper_timing_protocol")
+        self.assertEqual(
+            loaded.solver_mode,
+            "rolling_spinning_paper_timing_protocol_audit",
+        )
+        self.assertEqual(loaded.backend, "report_protocol")
+        self.assertEqual(loaded.expected["paper_comparable"], True)
+        self.assertFalse(loaded.expected["full_experiment_claim_passed"])
+        self.assertEqual(
+            loaded.expected["paper_total_simulation_time_ms"]["explicit_rbd"],
+            32.0,
+        )
+        self.assertEqual(
+            loaded.observed["timing_protocol_status"],
+            "paper_timing_protocol_incomplete",
+        )
+        self.assertTrue(loaded.observed["local_runtime_inputs_recorded"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(len(loaded.observed["input_reports"]), 5)
+        for input_report in loaded.observed["input_reports"]:
+            self.assertEqual(
+                set(input_report),
+                {
+                    "path",
+                    "status",
+                    "baseline_lane",
+                    "solver_mode",
+                    "paper_comparable",
+                    "total_wall_time_ms",
+                },
+            )
+        self.assertIn(
+            "paper_comparable_timing_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_hardware_mismatch",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_single_thread_protocol_not_enforced",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_faithful_mabd_collision_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(
+            loaded.timing_distribution["scope"],
+            "paper_timing_protocol_artifact_not_comparable",
+        )
+        self.assertEqual(loaded.raw_outputs, {})
+        self.assertEqual(loaded.plot_paths, {})
+
     def test_run_experiment_cli_runs_rolling_spinning_protocol_lane(self) -> None:
         import json
         import subprocess
@@ -871,6 +947,45 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
         self.assertEqual(payload["status"], "incomplete")
         self.assertEqual(payload["baseline_lane"], "mabd_newton")
+
+    def test_run_experiment_cli_runs_rolling_spinning_paper_timing_protocol_lane(
+        self,
+    ) -> None:
+        import json
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_timing_protocol.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rolling_spinning_paper_timing_protocol",
+                    "--config",
+                    str(ROLLING_SPINNING_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "test-source",
+                    "--vendored-newton-commit",
+                    "test-newton",
+                ],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertEqual(payload["status"], "incomplete")
+        self.assertEqual(payload["baseline_lane"], "paper_timing_protocol")
 
     def test_run_spinning_box_rbd_baseline_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_rbd_baseline

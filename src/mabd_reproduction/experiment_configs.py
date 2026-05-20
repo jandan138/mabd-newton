@@ -111,6 +111,13 @@ class RollingSpinningMABDNewtonConfig:
 
 
 @dataclass(frozen=True)
+class RollingSpinningTimingProtocolConfig:
+    output_report: str
+    input_reports: tuple[str, ...]
+    paper_comparable: bool
+
+
+@dataclass(frozen=True)
 class RollingSpinningRunConfig:
     schema_version: int
     claim_id: str
@@ -125,6 +132,7 @@ class RollingSpinningRunConfig:
     rbd_explicit_baseline: RollingSpinningRBDBaselineConfig
     mabd_newton: RollingSpinningMABDNewtonConfig
     mabd_material_preflight: RollingSpinningMABDNewtonConfig
+    paper_timing_protocol: RollingSpinningTimingProtocolConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -378,6 +386,16 @@ ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT = (
 )
 ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json"
+)
+ROLLING_SPINNING_TIMING_PROTOCOL_OUTPUT_REPORT = (
+    "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json"
+)
+ROLLING_SPINNING_TIMING_PROTOCOL_INPUT_REPORTS = (
+    "reports/experiment_matrix/single_body_rolling_spinning.json",
+    ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT,
+    ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT,
+    ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT,
+    ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_OUTPUT_REPORT,
 )
 ROLLING_SPINNING_RBD_CONTACT_KEYS = frozenset({"ke", "kd", "kf", "mu", "gap"})
 ROLLING_SPINNING_RBD_THRESHOLD_KEYS = frozenset(
@@ -969,6 +987,17 @@ def _require_rolling_spinning_mabd_newton(
     )
 
 
+def _require_rolling_spinning_timing_protocol(
+    data: dict[str, Any],
+) -> RollingSpinningTimingProtocolConfig:
+    section = _require_mapping(data, "paper_timing_protocol")
+    return RollingSpinningTimingProtocolConfig(
+        output_report=_require_str(section, "output_report"),
+        input_reports=_require_str_tuple(section, "input_reports"),
+        paper_comparable=_require_bool(section, "paper_comparable"),
+    )
+
+
 def _require_physical_pendulum_reference(
     data: dict[str, Any],
 ) -> PhysicalPendulumReferenceConfig:
@@ -1514,6 +1543,7 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
             default_poisson_ratio=0.3,
             default_zero_stiffness_diagnostic=False,
         ),
+        paper_timing_protocol=_require_rolling_spinning_timing_protocol(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1774,6 +1804,35 @@ def validate_rolling_spinning_config_against_matrix(
         raise ExperimentRunConfigError(
             "mabd_material_preflight.zero_stiffness_diagnostic must be false"
         )
+
+    timing = config.paper_timing_protocol
+    timing_report = timing.output_report
+    timing_report_path = Path(timing_report)
+    if (
+        timing_report_path.is_absolute()
+        or ".." in timing_report_path.parts
+        or timing_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or timing_report_path.suffix != ".json"
+        or timing_report != ROLLING_SPINNING_TIMING_PROTOCOL_OUTPUT_REPORT
+        or timing_report
+        in (
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.mabd_newton.output_report,
+            config.mabd_material_preflight.output_report,
+        )
+    ):
+        raise ExperimentRunConfigError(
+            "paper_timing_protocol.output_report must be the lane-specific "
+            "relative JSON report under reports/experiment_matrix"
+        )
+    if timing.input_reports != ROLLING_SPINNING_TIMING_PROTOCOL_INPUT_REPORTS:
+        raise ExperimentRunConfigError(
+            "paper_timing_protocol.input_reports must list the rolling/spinning evidence reports"
+        )
+    if timing.paper_comparable:
+        raise ExperimentRunConfigError("paper_timing_protocol.paper_comparable must be false")
 
 
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:

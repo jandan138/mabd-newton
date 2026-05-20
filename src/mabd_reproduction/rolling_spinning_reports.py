@@ -16,7 +16,7 @@ from .experiment_configs import (
     RollingSpinningRBDBaselineConfig,
     RollingSpinningRunConfig,
 )
-from .reporting import ClaimReport, EvidenceStatus, write_claim_report
+from .reporting import ClaimReport, EvidenceStatus, load_claim_report, write_claim_report
 
 
 CANONICAL_PYTHON = "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python"
@@ -75,6 +75,14 @@ ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_BLOCKING_REASONS = [
     "paper_faithful_explicit_rbd_baseline_missing",
     "paper_faithful_implicit_rbd_baseline_missing",
     "paper_comparable_timing_missing",
+]
+ROLLING_SPINNING_TIMING_PROTOCOL_BLOCKING_REASONS = [
+    "paper_comparable_timing_missing",
+    "paper_hardware_mismatch",
+    "paper_single_thread_protocol_not_enforced",
+    "paper_faithful_mabd_collision_missing",
+    "paper_faithful_explicit_rbd_baseline_missing",
+    "paper_faithful_implicit_rbd_baseline_missing",
 ]
 ROLLING_SPINNING_MABD_NEWTON_API = [
     "ModelBuilder.add_shape_cylinder",
@@ -1230,6 +1238,99 @@ def write_rolling_spinning_mabd_material_preflight_report(
     return report
 
 
+def _summarize_timing_input_report(report_path: str) -> dict[str, object]:
+    report = load_claim_report(report_path)
+    paper_comparable = report.observed.get(
+        "paper_comparable",
+        report.timing_distribution.get("paper_comparable", False),
+    )
+    return {
+        "path": report_path,
+        "status": report.status.value,
+        "baseline_lane": report.baseline_lane,
+        "solver_mode": report.solver_mode,
+        "paper_comparable": bool(paper_comparable),
+        "total_wall_time_ms": report.timing_distribution.get("total_wall_time_ms"),
+    }
+
+
+def write_rolling_spinning_paper_timing_protocol_report(
+    path: str | Path,
+    *,
+    config: RollingSpinningRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    timing_config = config.paper_timing_protocol
+    input_reports = [
+        _summarize_timing_input_report(report_path)
+        for report_path in timing_config.input_reports
+    ]
+    expected = {
+        "paper_claim_status": (
+            "paper timing table and local input report timings are recorded; full "
+            "claim requires a paper-comparable single-thread timing run and "
+            "paper-faithful RBD/M-ABD lanes"
+        ),
+        "source_lines": list(config.source_lines),
+        "config_path": ROLLING_SPINNING_CONFIG_PATH,
+        "canonical_python": CANONICAL_PYTHON,
+        "benchmark_body": config.performance.body,
+        "paper_step_count": config.performance.step_count,
+        "paper_time_step_s": config.performance.time_step_s,
+        "paper_total_simulation_time_ms": dict(
+            config.performance.paper_total_simulation_time_ms
+        ),
+        "paper_hardware_context": config.performance.paper_hardware_context,
+        "paper_comparable": True,
+        "full_experiment_claim_passed": False,
+    }
+    observed = {
+        "timing_protocol_status": "paper_timing_protocol_incomplete",
+        "local_runtime_inputs_recorded": True,
+        "paper_comparable": timing_config.paper_comparable,
+        "full_experiment_claim_passed": False,
+        "local_environment_python": CANONICAL_PYTHON,
+        "input_reports": input_reports,
+        "blocking_reasons": list(ROLLING_SPINNING_TIMING_PROTOCOL_BLOCKING_REASONS),
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={
+            "primitive_cylinder": "not_applicable_procedural",
+            "primitive_cube": "not_applicable_procedural",
+        },
+        solver_mode="rolling_spinning_paper_timing_protocol_audit",
+        backend="report_protocol",
+        baseline_lane="paper_timing_protocol",
+        expected=expected,
+        observed=observed,
+        threshold=dict(config.thresholds),
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason=(
+            "Paper timing protocol artifact only; paper-comparable hardware/threading "
+            "run plus paper-faithful M-ABD, explicit RBD, and implicit RBD lanes "
+            "remain missing"
+        ),
+        timing_distribution={
+            "paper_comparable": False,
+            "scope": "paper_timing_protocol_artifact_not_comparable",
+            "paper_hardware_context": config.performance.paper_hardware_context,
+            "local_input_report_count": len(input_reports),
+        },
+        raw_outputs={},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 __all__ = [
     "RollingCylinderMABDNewtonResult",
     "RollingCylinderRBDBaselineResult",
@@ -1238,6 +1339,7 @@ __all__ = [
     "run_rolling_cylinder_rbd_implicit_baseline",
     "write_rolling_spinning_mabd_material_preflight_report",
     "write_rolling_spinning_mabd_newton_report",
+    "write_rolling_spinning_paper_timing_protocol_report",
     "write_rolling_spinning_rbd_explicit_baseline_report",
     "write_rolling_spinning_protocol_report",
     "write_rolling_spinning_rbd_implicit_baseline_report",

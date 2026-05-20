@@ -490,6 +490,56 @@ class ExperimentRunConfigTests(unittest.TestCase):
                 ):
                     validate_rolling_spinning_config_against_matrix(invalid, matrix)
 
+    def test_rolling_spinning_paper_timing_protocol_is_fail_closed(
+        self,
+    ) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        self.assertEqual(
+            config.paper_timing_protocol.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json",
+        )
+        self.assertEqual(
+            config.paper_timing_protocol.input_reports,
+            (
+                "reports/experiment_matrix/single_body_rolling_spinning.json",
+                "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+                "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json",
+                "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json",
+                "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json",
+            ),
+        )
+        self.assertFalse(config.paper_timing_protocol.paper_comparable)
+        validate_rolling_spinning_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.mabd_newton.output_report,
+            config.mabd_material_preflight.output_report,
+            "/tmp/single_body_rolling_spinning_timing_protocol.json",
+            "reports/not_matrix/single_body_rolling_spinning_timing_protocol.json",
+            "../reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json",
+            "reports/experiment_matrix/not_the_rolling_spinning_timing_protocol.json",
+            "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    paper_timing_protocol=replace(
+                        config.paper_timing_protocol,
+                        output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "paper_timing_protocol.output_report",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
     def test_rolling_spinning_rbd_explicit_baseline_report_path_must_be_lane_specific(
         self,
     ) -> None:
