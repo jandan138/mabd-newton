@@ -9,6 +9,8 @@
 rolling-cylinder part of `experiment.single_body.rolling_spinning`, while
 keeping the full paper claim incomplete.
 
+No `experiment.*` claim is passed by this phase.
+
 **Architecture:** Extend the rolling/spinning config with an
 `rbd_implicit_baseline` section, build and step a procedural cylinder on a Y-up
 ground plane through vendored Newton, write a separate incomplete `ClaimReport`,
@@ -115,7 +117,7 @@ PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-
 
 ```bash
 SOURCE_COMMIT=$(git rev-parse HEAD)
-VENDORED_NEWTON_COMMIT=$(git -C vendor/newton rev-parse HEAD)
+VENDORED_NEWTON_COMMIT=96713fa965463b69c229a4d30582c733ff3526bb
 PYTHONPATH=src:vendor/newton /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python scripts/run_experiment.py --lane rolling_spinning_rbd_implicit_baseline --config configs/experiments/single_body_rolling_spinning.yaml --matrix configs/experiments/paper_experiment_matrix.yaml --output reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json --source-commit "$SOURCE_COMMIT" --vendored-newton-commit "$VENDORED_NEWTON_COMMIT"
 ```
 

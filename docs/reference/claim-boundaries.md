@@ -949,6 +949,29 @@
   passed baseline, rolling-cylinder dynamics result, local runtime timing,
   implicit/explicit RBD baselines, comparative baseline results, rendered
   output, full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 74 rolling-cylinder Newton RBD development
+  baseline evidence with the Phase 74 record.
+- Phase 74 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json`
+  exists as an incomplete Newton CPU `SolverSemiImplicit` rolling-cylinder
+  development baseline report, records `builder.finalize(device="cpu")`,
+  `ModelBuilder.add_shape_cylinder`, `ModelBuilder.add_ground_plane`,
+  `Model.contacts`, `Model.collide`, `SolverSemiImplicit`, 10000 steps at
+  `h = 0.01 sec`, local non-paper-comparable wall-clock timing, contact count
+  summary, contact material, maximum center penetration, no-slip residual,
+  `required_lanes_missing = [rbd_explicit_baseline, mabd_newton,
+  paper_comparable_timing]`, `full_experiment_claim_passed = false`, and keeps
+  no experiment claim passed.
+- Phase 74 does not verify paper-faithful implicit RBD, explicit RBD, M-ABD
+  rolling-cylinder dynamics, co-rotated ABD timing, same-hardware paper timing,
+  paper-comparable performance, a completed rolling/spinning reproduction, full
+  paper reproduction, or any passed `experiment.*` claim.
+- Phase 74 rolling-cylinder Newton RBD development baseline evidence must not
+  be described as a paper-faithful implicit RBD result, explicit RBD result,
+  M-ABD rolling-cylinder result, co-rotated ABD timing result,
+  paper-comparable timing result, completed rolling/spinning reproduction,
+  comparative baseline pass, full paper reproduction, or any passed
+  `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1336,6 +1359,12 @@
   not implicit/explicit RBD baseline evidence, not comparative baseline
   results, not rendered-output evidence, not full paper reproduction, and not
   any passed `experiment.*` claim.
+- Phase 74 rolling-cylinder Newton RBD development baseline evidence is not a
+  paper-faithful implicit RBD result, not an explicit RBD result, not M-ABD
+  rolling-cylinder evidence, not co-rotated ABD timing evidence, not
+  paper-comparable timing evidence, not a completed rolling/spinning
+  reproduction, not comparative baseline pass evidence, not full paper
+  reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

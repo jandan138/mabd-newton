@@ -1,0 +1,353 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "cpu_newton_warp",
+  "baseline_lane": "rbd_implicit_baseline",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "canonical_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "config_path": "configs/experiments/single_body_rolling_spinning.yaml",
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "requires explicit RBD, M-ABD rolling-cylinder, and paper-comparable timing before pass",
+    "paper_comparable": false,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ]
+  },
+  "failure_reason": "Newton SemiImplicit rolling-cylinder development baseline only; explicit RBD, M-ABD rolling-cylinder, and paper-comparable timing evidence remain missing",
+  "observed": {
+    "blocking_reasons": [
+      "rbd_explicit_baseline_missing",
+      "mabd_rolling_cylinder_lane_missing",
+      "paper_comparable_timing_missing",
+      "newton_semimplicit_not_paper_implicit_rbd_solver"
+    ],
+    "contact_count_summary": {
+      "final": 2,
+      "initial": 2,
+      "max": 2,
+      "min": 2
+    },
+    "contact_material": {
+      "gap": 0.02,
+      "kd": 1000.0,
+      "ke": 100000.0,
+      "kf": 1000.0,
+      "mu": 1.0
+    },
+    "cylinder_axis_world": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "density_kg_m3": 1000.0,
+    "energy_drift_j": 296.0902729183317,
+    "final_angular_velocity_rad_s": [
+      -5.430639430414885e-05,
+      1.0744970495579764e-06,
+      -2.0012409687042236
+    ],
+    "final_energy_j": 4145.336341094238,
+    "final_linear_velocity_m_s": [
+      1.0006166696548462,
+      4.5637016228283755e-06,
+      1.9564190552046057e-06
+    ],
+    "final_position_m": [
+      100.02139282226562,
+      0.4614759385585785,
+      6.888998905196786e-05
+    ],
+    "final_rotation_xyzw": [
+      -7.122737883946684e-07,
+      -1.1788961273850873e-06,
+      0.4830857217311859,
+      0.8755730390548706
+    ],
+    "full_experiment_claim_passed": false,
+    "half_height_m": 0.5,
+    "inertia_diag_kg_m2": [
+      114.53723216212785,
+      114.53723216212785,
+      98.17477042468103
+    ],
+    "initial_energy_j": 4441.42661401257,
+    "initial_position_m": [
+      0.0,
+      0.5,
+      0.0
+    ],
+    "local_runtime_measured": true,
+    "mass_kg": 785.3981633974482,
+    "max_center_penetration_m": 0.06853428483009338,
+    "min_center_height_m": 0.4314657151699066,
+    "newton_api": [
+      "ModelBuilder.add_shape_cylinder",
+      "ModelBuilder.add_ground_plane",
+      "Model.contacts",
+      "Model.collide",
+      "SolverSemiImplicit"
+    ],
+    "newton_device": "cpu",
+    "no_slip_residual_m_s": 3.814697265625e-06,
+    "paper_comparable": false,
+    "radius_m": 0.5,
+    "relative_energy_drift": 0.06666557812396937,
+    "required_lanes_missing": [
+      "rbd_explicit_baseline",
+      "mabd_newton",
+      "paper_comparable_timing"
+    ],
+    "solver_name": "newton.solvers.SolverSemiImplicit",
+    "solver_scope": "newton_development_baseline_not_paper_faithful_implicit_rbd",
+    "step_count": 10000,
+    "time_step_s": 0.01,
+    "trajectory_samples": [
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "center_penetration_m": 0.0,
+        "contact_count": 2,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          0.0,
+          0.5,
+          0.0
+        ],
+        "rotation_xyzw": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "step_index": 0,
+        "time_s": 0.0,
+        "total_energy_j": 4441.42661401257
+      },
+      {
+        "angular_velocity_rad_s": [
+          -7.533892130595632e-06,
+          6.740560820617247e-08,
+          -2.000225067138672
+        ],
+        "center_height_m": 0.46147575974464417,
+        "center_penetration_m": 0.038524240255355835,
+        "contact_count": 2,
+        "linear_velocity_m_s": [
+          1.000110387802124,
+          -5.240072368906112e-06,
+          1.5238023820529634e-07
+        ],
+        "no_slip_residual_m_s": 2.1457672119140625e-06,
+        "position_m": [
+          16.670957565307617,
+          0.46147575974464417,
+          -2.445840436848812e-06
+        ],
+        "rotation_xyzw": [
+          -1.1863397730849101e-07,
+          1.199855859113086e-07,
+          0.8205926418304443,
+          -0.5715135335922241
+        ],
+        "step_index": 1667,
+        "time_s": 16.67,
+        "total_energy_j": 4144.737640909509
+      },
+      {
+        "angular_velocity_rad_s": [
+          1.0720531236074748e-06,
+          -7.285629521902592e-08,
+          -2.0004024505615234
+        ],
+        "center_height_m": 0.46147674322128296,
+        "center_penetration_m": 0.03852325677871704,
+        "contact_count": 2,
+        "linear_velocity_m_s": [
+          1.0001994371414185,
+          -3.828641183645232e-06,
+          5.388742465584073e-07
+        ],
+        "no_slip_residual_m_s": 1.7881393432617188e-06,
+        "position_m": [
+          33.334129333496094,
+          0.46147674322128296,
+          1.885189817585342e-07
+        ],
+        "rotation_xyzw": [
+          2.0157202129666985e-07,
+          1.8210253927009035e-07,
+          -0.9408297538757324,
+          -0.33887988328933716
+        ],
+        "step_index": 3333,
+        "time_s": 33.33,
+        "total_energy_j": 4144.8500029885145
+      },
+      {
+        "angular_velocity_rad_s": [
+          1.90884147741599e-05,
+          -4.897365215583704e-07,
+          -2.000582456588745
+        ],
+        "center_height_m": 0.4614764153957367,
+        "center_penetration_m": 0.038523584604263306,
+        "contact_count": 2,
+        "linear_velocity_m_s": [
+          1.000288486480713,
+          2.282656350871548e-05,
+          5.161013518772961e-07
+        ],
+        "no_slip_residual_m_s": 2.7418136596679688e-06,
+        "position_m": [
+          50.0076904296875,
+          0.4614764153957367,
+          1.2199198863527272e-05
+        ],
+        "rotation_xyzw": [
+          -1.3287981914800184e-07,
+          -5.621155310109316e-07,
+          0.25662854313850403,
+          0.9665100574493408
+        ],
+        "step_index": 5000,
+        "time_s": 50.0,
+        "total_energy_j": 4144.952786445824
+      },
+      {
+        "angular_velocity_rad_s": [
+          8.260992217401508e-06,
+          -5.365631068343646e-07,
+          -2.0007779598236084
+        ],
+        "center_height_m": 0.46147602796554565,
+        "center_penetration_m": 0.038523972034454346,
+        "contact_count": 2,
+        "linear_velocity_m_s": [
+          1.0003862380981445,
+          6.547320936078904e-06,
+          -3.19430426998224e-07
+        ],
+        "no_slip_residual_m_s": 2.7418136596679688e-06,
+        "position_m": [
+          66.6812515258789,
+          0.46147602796554565,
+          2.3648068236070685e-05
+        ],
+        "rotation_xyzw": [
+          1.2508392899235332e-07,
+          5.673021519214672e-07,
+          0.6499997973442078,
+          -0.7599344253540039
+        ],
+        "step_index": 6667,
+        "time_s": 66.67,
+        "total_energy_j": 4145.065001053337
+      },
+      {
+        "angular_velocity_rad_s": [
+          -6.488250619440805e-06,
+          2.960234724014299e-08,
+          -2.0010194778442383
+        ],
+        "center_height_m": 0.4614764153957367,
+        "center_penetration_m": 0.038523584604263306,
+        "contact_count": 2,
+        "linear_velocity_m_s": [
+          1.0005079507827759,
+          4.046952017233707e-05,
+          1.5317662018787814e-06
+        ],
+        "no_slip_residual_m_s": 1.7881393432617188e-06,
+        "position_m": [
+          83.34481048583984,
+          0.4614764153957367,
+          3.89554443245288e-05
+        ],
+        "rotation_xyzw": [
+          6.738576416864817e-07,
+          -2.3240055213591404e-08,
+          -0.99541836977005,
+          -0.09561581909656525
+        ],
+        "step_index": 8333,
+        "time_s": 83.33,
+        "total_energy_j": 4145.211065654102
+      },
+      {
+        "angular_velocity_rad_s": [
+          -5.430639430414885e-05,
+          1.0744970495579764e-06,
+          -2.0012409687042236
+        ],
+        "center_height_m": 0.4614759385585785,
+        "center_penetration_m": 0.03852406144142151,
+        "contact_count": 2,
+        "linear_velocity_m_s": [
+          1.0006166696548462,
+          4.5637016228283755e-06,
+          1.9564190552046057e-06
+        ],
+        "no_slip_residual_m_s": 3.814697265625e-06,
+        "position_m": [
+          100.02139282226562,
+          0.4614759385585785,
+          6.888998905196786e-05
+        ],
+        "rotation_xyzw": [
+          -7.122737883946684e-07,
+          -1.1788961273850873e-06,
+          0.4830857217311859,
+          0.8755730390548706
+        ],
+        "step_index": 10000,
+        "time_s": 100.0,
+        "total_energy_j": 4145.336341094238
+      }
+    ]
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "time_series": "not_written"
+  },
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "newton_semimplicit_rolling_cylinder_rbd_cpu_development",
+  "source_commit": "415999bc3dea2becd183a7a21e94066bfdda528c",
+  "status": "incomplete",
+  "threshold": {
+    "max_no_slip_residual_m_s": 0.0001,
+    "max_relative_energy_drift": 1.0,
+    "max_runtime_wall_time_ms": 0.0,
+    "min_contact_count": 1.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "local_cpu_wall_clock_not_paper_comparable",
+    "step_count": 10000,
+    "total_wall_time_ms": 7107.024885714054
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

@@ -57,7 +57,14 @@ remaining_experiment_claims:
     matrix_output_report: reports/experiment_matrix/single_body_rolling_spinning.json
     committed_report_status: incomplete
     committed_report_sha256: "63eec910b5bf7e451a43ce104131bc3bad5c8734d625a0e2ad913c31fcb676f9"
-    next_action: "Run a paper-faithful rolling cylinder benchmark protocol and add required RBD baselines before any pass gate."
+    rbd_implicit_development_report: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json
+    rbd_implicit_development_report_status: incomplete
+    rbd_implicit_development_report_sha256: "c5a5263f4f98c087b5a689d5f46c59fdb1e7277fed0a105bebdb45fac5244da3"
+    remaining_missing_lanes_after_phase74:
+      - rbd_explicit_baseline
+      - mabd_newton
+      - paper_comparable_timing
+    next_action: "Add explicit RBD, M-ABD rolling-cylinder, and paper-comparable timing lanes before any rolling/spinning pass gate."
   - claim_id: experiment.single_body.spinning_box
     scene_id: single_body_spinning_box
     claim_status: intended
@@ -238,6 +245,9 @@ remaining_experiment_claims:
     committed_report_sha256: null
     next_action: "Source marker sequence and add IK keyframe reconstruction lane."
 current_evidence_reports:
+  - path: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json
+    status: incomplete
+    sha256: "c5a5263f4f98c087b5a689d5f46c59fdb1e7277fed0a105bebdb45fac5244da3"
   - path: reports/experiment_matrix/single_body_heavy_top_comparison.json
     status: incomplete
     sha256: "b7b006f8a86cf7a259ac641395e1011e7a08e10db41e7a42137221e5c5e705d9"
