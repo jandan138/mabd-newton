@@ -38,39 +38,39 @@
           "agreement_claim_status": "diagnostic_only_not_curve_agreement",
           "all_color_family_errors": {
             "blue": {
-              "abs_error": 97.58567931309314,
+              "abs_error": 2.414320686906862,
               "figure_value": 97.58567931456548,
-              "signed_error": -97.58567931309314
+              "signed_error": 2.414320686906862
             },
             "brown": {
-              "abs_error": 96.8115055064836,
+              "abs_error": 3.1884944935164015,
               "figure_value": 96.81150550795594,
-              "signed_error": -96.8115055064836
+              "signed_error": 3.1884944935164015
             },
             "gray": {
-              "abs_error": 97.71725826046156,
+              "abs_error": 2.2827417395384373,
               "figure_value": 97.7172582619339,
-              "signed_error": -97.71725826046156
+              "signed_error": 2.2827417395384373
             },
             "green": {
-              "abs_error": 97.50305997404786,
+              "abs_error": 2.496940025952142,
               "figure_value": 97.5030599755202,
-              "signed_error": -97.50305997404786
+              "signed_error": 2.496940025952142
             },
             "orange": {
-              "abs_error": 99.32680538408457,
+              "abs_error": 0.6731946159154347,
               "figure_value": 99.32680538555691,
-              "signed_error": -99.32680538408457
+              "signed_error": 0.6731946159154347
             }
           },
-          "best_abs_error": 96.8115055064836,
-          "best_color_family": "brown",
+          "best_abs_error": 0.6731946159154347,
+          "best_color_family": "orange",
           "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
-          "best_signed_error": -96.8115055064836,
+          "best_signed_error": 0.6731946159154347,
           "figure_time_s": 10.0,
           "lane": "mabd_newton",
-          "lane_value": 1.472344024477934e-09,
-          "lane_value_source": "angular_momentum_error",
+          "lane_value": 100.00000000147234,
+          "lane_value_source": "final_angular_momentum_norm",
           "metric": "angular_momentum",
           "status": "diagnostic_available_not_pass_gate"
         },
@@ -78,39 +78,39 @@
           "agreement_claim_status": "diagnostic_only_not_curve_agreement",
           "all_color_family_errors": {
             "blue": {
-              "abs_error": 97.58567931456548,
+              "abs_error": 2.414320685434518,
               "figure_value": 97.58567931456548,
-              "signed_error": -97.58567931456548
+              "signed_error": 2.414320685434518
             },
             "brown": {
-              "abs_error": 96.81150550795594,
+              "abs_error": 3.1884944920440574,
               "figure_value": 96.81150550795594,
-              "signed_error": -96.81150550795594
+              "signed_error": 3.1884944920440574
             },
             "gray": {
-              "abs_error": 97.7172582619339,
+              "abs_error": 2.2827417380660933,
               "figure_value": 97.7172582619339,
-              "signed_error": -97.7172582619339
+              "signed_error": 2.2827417380660933
             },
             "green": {
-              "abs_error": 97.5030599755202,
+              "abs_error": 2.496940024479798,
               "figure_value": 97.5030599755202,
-              "signed_error": -97.5030599755202
+              "signed_error": 2.496940024479798
             },
             "orange": {
-              "abs_error": 99.32680538555691,
+              "abs_error": 0.6731946144430907,
               "figure_value": 99.32680538555691,
-              "signed_error": -99.32680538555691
+              "signed_error": 0.6731946144430907
             }
           },
-          "best_abs_error": 96.81150550795594,
-          "best_color_family": "brown",
+          "best_abs_error": 0.6731946144430907,
+          "best_color_family": "orange",
           "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
-          "best_signed_error": -96.81150550795594,
+          "best_signed_error": 0.6731946144430907,
           "figure_time_s": 10.0,
           "lane": "rbd_implicit_baseline",
-          "lane_value": 0.0,
-          "lane_value_source": "angular_momentum_error",
+          "lane_value": 100.0,
+          "lane_value_source": "final_angular_momentum_norm",
           "metric": "angular_momentum",
           "status": "diagnostic_available_not_pass_gate"
         }
@@ -120,39 +120,39 @@
           "agreement_claim_status": "diagnostic_only_not_curve_agreement",
           "all_color_family_errors": {
             "blue": {
-              "abs_error": 99.51652386780898,
+              "abs_error": 0.48347613219087293,
               "figure_value": 99.51652386780906,
-              "signed_error": -99.51652386780898
+              "signed_error": 0.48347613219087293
             },
             "brown": {
-              "abs_error": 96.82986536107704,
+              "abs_error": 3.1701346389228178,
               "figure_value": 96.82986536107711,
-              "signed_error": -96.82986536107704
+              "signed_error": 3.1701346389228178
             },
             "gray": {
-              "abs_error": 96.80232558139528,
+              "abs_error": 3.197674418604578,
               "figure_value": 96.80232558139535,
-              "signed_error": -96.80232558139528
+              "signed_error": 3.197674418604578
             },
             "green": {
-              "abs_error": 97.53059975520189,
+              "abs_error": 2.469400244797967,
               "figure_value": 97.53059975520196,
-              "signed_error": -97.53059975520189
+              "signed_error": 2.469400244797967
             },
             "orange": {
-              "abs_error": 99.48898408812722,
+              "abs_error": 0.511015911872633,
               "figure_value": 99.4889840881273,
-              "signed_error": -99.48898408812722
+              "signed_error": 0.511015911872633
             }
           },
-          "best_abs_error": 96.80232558139528,
-          "best_color_family": "gray",
+          "best_abs_error": 0.48347613219087293,
+          "best_color_family": "blue",
           "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
-          "best_signed_error": -96.80232558139528,
+          "best_signed_error": 0.48347613219087293,
           "figure_time_s": 10.0,
           "lane": "mabd_newton",
-          "lane_value": 7.679322694214913e-14,
-          "lane_value_source": "linear_momentum_error",
+          "lane_value": 99.99999999999993,
+          "lane_value_source": "final_linear_momentum_norm",
           "metric": "linear_momentum",
           "status": "diagnostic_available_not_pass_gate"
         },
@@ -160,39 +160,39 @@
           "agreement_claim_status": "diagnostic_only_not_curve_agreement",
           "all_color_family_errors": {
             "blue": {
-              "abs_error": 99.51652386780906,
+              "abs_error": 0.483476132190944,
               "figure_value": 99.51652386780906,
-              "signed_error": -99.51652386780906
+              "signed_error": 0.483476132190944
             },
             "brown": {
-              "abs_error": 96.82986536107711,
+              "abs_error": 3.170134638922889,
               "figure_value": 96.82986536107711,
-              "signed_error": -96.82986536107711
+              "signed_error": 3.170134638922889
             },
             "gray": {
-              "abs_error": 96.80232558139535,
+              "abs_error": 3.197674418604649,
               "figure_value": 96.80232558139535,
-              "signed_error": -96.80232558139535
+              "signed_error": 3.197674418604649
             },
             "green": {
-              "abs_error": 97.53059975520196,
+              "abs_error": 2.469400244798038,
               "figure_value": 97.53059975520196,
-              "signed_error": -97.53059975520196
+              "signed_error": 2.469400244798038
             },
             "orange": {
-              "abs_error": 99.4889840881273,
+              "abs_error": 0.511015911872704,
               "figure_value": 99.4889840881273,
-              "signed_error": -99.4889840881273
+              "signed_error": 0.511015911872704
             }
           },
-          "best_abs_error": 96.80232558139535,
-          "best_color_family": "gray",
+          "best_abs_error": 0.483476132190944,
+          "best_color_family": "blue",
           "best_color_family_claim_status": "numeric_best_fit_not_legend_identity",
-          "best_signed_error": -96.80232558139535,
+          "best_signed_error": 0.483476132190944,
           "figure_time_s": 10.0,
           "lane": "rbd_implicit_baseline",
-          "lane_value": 0.0,
-          "lane_value_source": "linear_momentum_error",
+          "lane_value": 100.0,
+          "lane_value_source": "final_linear_momentum_norm",
           "metric": "linear_momentum",
           "status": "diagnostic_available_not_pass_gate"
         }
@@ -334,7 +334,7 @@
   },
   "scene_id": "single_body_spinning_box",
   "solver_mode": "spinning_box_multilane_comparison_development",
-  "source_commit": "27650c74cadb5008fdb3d69f1a3faed069da2757",
+  "source_commit": "721cf0f9c059d0fbe7852d9ba0c86e015e7ed5c9",
   "status": "incomplete",
   "threshold": {
     "paper_faithful_rbd_solver_mode": "paper_faithful_implicit_rbd",

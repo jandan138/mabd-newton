@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-71 docs and provenance contracts."""
+"""Validate Phase 0-72 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -164,6 +164,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-19-phase69-contacts-input-plane-constraints.md",
     "docs/records/2026-05-19-phase70-contacts-input-report-lane.md",
     "docs/records/2026-05-19-phase71-affine-box-static-plane-active-set.md",
+    "docs/records/2026-05-20-phase72-spinning-box-figure-momentum-endpoint.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -244,6 +245,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-19-mabd-phase70-contacts-input-report-lane.md",
     "docs/superpowers/specs/2026-05-19-phase71-affine-box-static-plane-active-set-design.md",
     "docs/superpowers/plans/2026-05-19-mabd-phase71-affine-box-static-plane-active-set.md",
+    "docs/superpowers/specs/2026-05-20-phase72-spinning-box-figure-momentum-endpoint-design.md",
+    "docs/superpowers/plans/2026-05-20-mabd-phase72-spinning-box-figure-momentum-endpoint.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -312,6 +315,7 @@ PHASE69_CONTACTS_INPUT_COMMIT = "674064f7558527da92be0f186361df4a7c71d4f7"
 PHASE69_STATIC_CONTACT_REVIEW_FIX_COMMIT = "4659b13662df287a406d1cc1c4a652d2eb156ab7"
 PHASE70_CONTACTS_INPUT_REPORT_LANE_COMMIT = "493cc1ac9cb0eb11faac89b1540813b3dab4bcd1"
 PHASE71_AFFINE_STATIC_PLANE_CONTACTS_COMMIT = "de79f7a5da8a62064dc463ecd0a3ed874d43bf0e"
+PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT = "721cf0f9c059d0fbe7852d9ba0c86e015e7ed5c9"
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
 )
@@ -368,6 +372,9 @@ PHASE70_SPINNING_BOX_CONTACTS_INPUT_SHA256 = (
 )
 PHASE71_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_SHA256 = (
     "e5f6babcf0c78c217757e13dd7afadc9963048226745528221d38213d2c7477d"
+)
+PHASE72_SPINNING_BOX_COMPARISON_SHA256 = (
+    "1b8d2ab68f97c4e0035132fd8077271c4c2a68e40fa96f06fc9ba11983ea2e0f"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -5301,8 +5308,36 @@ def _is_phase66_spinning_box_figure_agreement_report(report: Any) -> bool:
     )
 
 
+def _is_phase72_spinning_box_figure_momentum_endpoint_report(report: Any) -> bool:
+    diagnostics = report.observed.get("digitized_figure_curve_agreement_diagnostics")
+    if not isinstance(diagnostics, dict):
+        return False
+    linear = diagnostics.get("linear_momentum")
+    angular = diagnostics.get("angular_momentum")
+    if not isinstance(linear, dict) or not isinstance(angular, dict):
+        return False
+    linear_mabd = linear.get("mabd_newton")
+    angular_mabd = angular.get("mabd_newton")
+    if not isinstance(linear_mabd, dict) or not isinstance(angular_mabd, dict):
+        return False
+    blockers = report.observed.get("blocking_reasons")
+    return (
+        report.source_commit == PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT
+        and report.observed.get("digitized_figure_reference_available") is True
+        and report.observed.get("digitized_figure_curve_agreement_available") is True
+        and report.observed.get("digitized_figure_curve_agreement_passed") is False
+        and linear_mabd.get("lane_value_source") == "final_linear_momentum_norm"
+        and angular_mabd.get("lane_value_source") == "final_angular_momentum_norm"
+        and isinstance(blockers, list)
+        and "spinning_box_digitized_figure_curve_agreement_not_passed" in blockers
+    )
+
+
 def _is_phase66_spinning_box_comparison_report_version(report: Any) -> bool:
-    return report.source_commit == PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT
+    return report.source_commit in {
+        PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT,
+        PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT,
+    }
 
 
 def validate_phase42_record() -> None:
@@ -12188,8 +12223,14 @@ def validate_phase66_record() -> None:
             fail(f"Phase 66 plan missing required boundary text: {snippet}")
 
     report = load_claim_report(ROOT / SPINNING_BOX_COMPARISON_REPORT_PATH)
-    if report.source_commit != PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT:
-        fail("Phase 66 comparison report source_commit changed")
+    current_report_is_phase66 = (
+        report.source_commit == PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT
+    )
+    current_report_is_phase72 = (
+        report.source_commit == PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT
+    )
+    if not current_report_is_phase66 and not current_report_is_phase72:
+        fail("Phase 66 comparison report was superseded by an unknown version")
     if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
         fail("Phase 66 comparison report source_commit must not be a placeholder")
     if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
@@ -12260,10 +12301,18 @@ def validate_phase66_record() -> None:
     diagnostics = observed.get("digitized_figure_curve_agreement_diagnostics")
     if not isinstance(diagnostics, dict):
         fail("Phase 66 figure diagnostics must be a mapping")
-    for metric, lane_metric in (
-        ("linear_momentum", "linear_momentum_error"),
-        ("angular_momentum", "angular_momentum_error"),
-    ):
+    expected_lane_sources = (
+        {
+            "linear_momentum": "linear_momentum_error",
+            "angular_momentum": "angular_momentum_error",
+        }
+        if current_report_is_phase66
+        else {
+            "linear_momentum": "final_linear_momentum_norm",
+            "angular_momentum": "final_angular_momentum_norm",
+        }
+    )
+    for metric, lane_metric in expected_lane_sources.items():
         metric_diagnostics = diagnostics.get(metric)
         if not isinstance(metric_diagnostics, dict):
             fail(f"Phase 66 missing diagnostic metric: {metric}")
@@ -12313,11 +12362,15 @@ def validate_phase66_record() -> None:
                 )
 
     actual_hash = sha256_file(ROOT / SPINNING_BOX_COMPARISON_REPORT_PATH)
-    if actual_hash != PHASE66_SPINNING_BOX_COMPARISON_SHA256:
-        fail("Phase 66 comparison report sha256 changed")
     record_hash = _record_sha256_for_artifact(text, SPINNING_BOX_COMPARISON_REPORT_PATH)
-    if record_hash != actual_hash:
-        fail("Phase 66 comparison report sha256 mismatch")
+    if current_report_is_phase66:
+        if actual_hash != PHASE66_SPINNING_BOX_COMPARISON_SHA256:
+            fail("Phase 66 comparison report sha256 changed")
+        if record_hash != actual_hash:
+            fail("Phase 66 comparison report sha256 mismatch")
+    else:
+        if record_hash != PHASE66_SPINNING_BOX_COMPARISON_SHA256:
+            fail("Phase 66 historical comparison report sha256 mismatch")
 
     claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
     if not isinstance(claims, list):
@@ -12331,6 +12384,269 @@ def validate_phase66_record() -> None:
                 fail("Phase 66 must keep spinning-box experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 66 must not pass experiment.* claims")
+
+
+def validate_phase72_record() -> None:
+    record_path = (
+        ROOT
+        / "docs/records/2026-05-20-phase72-spinning-box-figure-momentum-endpoint.md"
+    )
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-20-phase72-spinning-box-figure-momentum-endpoint-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/2026-05-20-mabd-phase72-spinning-box-figure-momentum-endpoint.md"
+    )
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+
+    required_snippets = (
+        "## Status\n\npassed_for_spinning_box_figure_momentum_endpoint_diagnostic",
+        PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        SPINNING_BOX_COMPARISON_REPORT_PATH,
+        PHASE72_SPINNING_BOX_COMPARISON_SHA256,
+        SPINNING_BOX_FIGURE_CURVES_REPORT_PATH,
+        PHASE65_SPINNING_BOX_FIGURE_CURVES_SHA256,
+        "final_linear_momentum_norm",
+        "final_angular_momentum_norm",
+        "linear_momentum_error",
+        "angular_momentum_error",
+        "digitized_figure_curve_agreement_passed = false",
+        "spinning_box_digitized_figure_curve_agreement_not_passed",
+        "comparison pass gate remains disabled",
+        "No `experiment.*` claim is passed.",
+        "`paper-claims.yaml` is unchanged.",
+        "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"Phase 72 record missing required evidence field: {snippet}")
+    for placeholder in (
+        "TO_BE_BACKFILLED_PHASE72",
+        "TO_BE_BACKFILLED_PHASE72_REPORT_SHA256",
+        "phase72-working-tree",
+        "<implementation-commit>",
+    ):
+        if placeholder in text:
+            fail("Phase 72 record contains stale placeholder")
+    if PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 72 source commit constant must be backfilled")
+
+    lower_text = text.lower()
+    for snippet in (
+        "spinning-box experiment passed",
+        "passed spinning-box experiment",
+        "m-abd lane passed",
+        "curve agreement passed",
+        "newton-vs-paper curve agreement passed",
+        "comparison pass gate enabled",
+        "paper reference legend identity verified",
+        "full reproduction complete",
+    ):
+        if snippet in lower_text:
+            fail(f"Phase 72 record overclaims unsupported evidence: {snippet}")
+
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    current = claim_boundary_bullet(boundary_text, "This repository contains Phase 72")
+    verified = claim_boundary_bullet(boundary_text, "Phase 72 verifies")
+    non_claim = claim_boundary_bullet(boundary_text, "Phase 72 does not verify")
+    forbidden = claim_boundary_bullet(
+        boundary_text,
+        "Phase 72 spinning-box figure momentum endpoint diagnostics",
+    )
+    for snippet in (
+        "spinning-box paper-figure momentum endpoint diagnostic evidence",
+        "Phase 72 record",
+    ):
+        if snippet not in current:
+            fail(f"Phase 72 current boundary missing: {snippet}")
+    for snippet in (
+        "`final_linear_momentum_norm`",
+        "`final_angular_momentum_norm`",
+        "not `linear_momentum_error` or `angular_momentum_error`",
+        "`digitized_figure_curve_agreement_passed = false`",
+        "`spinning_box_digitized_figure_curve_agreement_not_passed`",
+        "comparison pass gate remains disabled",
+        "top-level report status: `incomplete`",
+        "no experiment claim passed",
+    ):
+        if snippet not in verified:
+            fail(f"Phase 72 verified boundary missing: {snippet}")
+    for snippet in (
+        "passed spinning-box experiment",
+        "M-ABD lane pass",
+        "paper reference legend-entry identity",
+        "solid/dashed line-style split",
+        "Newton-vs-paper curve agreement",
+        "comparison pass gate",
+        "rendered output inspection",
+        "runtime performance",
+        "full paper reproduction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in non_claim:
+            fail(f"Phase 72 non-claim boundary missing: {snippet}")
+        if snippet not in forbidden:
+            fail(f"Phase 72 forbidden boundary missing: {snippet}")
+
+    for snippet in (
+        "Phase 72 Spinning-Box Figure Momentum Endpoint Design",
+        "endpoint momentum magnitudes",
+        "final_linear_momentum_kg_m_s",
+        "mass_kg * linear_velocity_m_s",
+        "inertia_diag_kg_m2 * angular_velocity_rad_s",
+        "Keep `digitized_figure_curve_agreement_passed = false`",
+        "No passed `experiment.*` claim",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 72 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 72 Spinning-Box Figure Momentum Endpoint Implementation Plan",
+        "_spinning_box_lane_endpoint_momentum_value",
+        "final_linear_momentum_norm",
+        "final_angular_momentum_norm",
+        "--lane spinning_box_comparison",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 72 plan missing required boundary text: {snippet}")
+
+    report = load_claim_report(ROOT / SPINNING_BOX_COMPARISON_REPORT_PATH)
+    if report.source_commit != PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT:
+        fail("Phase 72 comparison report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 72 comparison report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 72 comparison report vendored Newton commit changed")
+    if report.claim_id != "experiment.single_body.spinning_box":
+        fail("Phase 72 comparison report claim_id changed")
+    if report.scene_id != "single_body_spinning_box":
+        fail("Phase 72 comparison report scene_id changed")
+    if report.baseline_lane != "spinning_box_comparison_protocol":
+        fail("Phase 72 comparison report lane changed")
+    if report.solver_mode != "spinning_box_multilane_comparison_development":
+        fail("Phase 72 comparison report solver mode changed")
+    if report.backend != "report_protocol":
+        fail("Phase 72 comparison report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 72 comparison report must remain incomplete")
+
+    observed = report.observed
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 72 comparison report must not pass the full experiment")
+    if observed.get("digitized_figure_reference_available") is not True:
+        fail("Phase 72 digitized figure reference must be available")
+    if observed.get("digitized_figure_curve_agreement_available") is not True:
+        fail("Phase 72 digitized figure diagnostics must be available")
+    if observed.get("digitized_figure_curve_agreement_passed") is not False:
+        fail("Phase 72 digitized figure agreement must remain unpassed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 72 blocking_reasons must be a list")
+    for blocker in (
+        "mabd_newton_report_incomplete",
+        "spinning_box_comparison_pass_gate_not_enabled",
+        "spinning_box_digitized_figure_curve_agreement_not_passed",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 72 comparison blocker missing: {blocker}")
+
+    raw_outputs = report.raw_outputs
+    if raw_outputs.get("figure_curve_report") != SPINNING_BOX_FIGURE_CURVES_REPORT_PATH:
+        fail("Phase 72 comparison report must reference the Phase 65 figure report")
+    provenance = observed.get("input_report_provenance")
+    if not isinstance(provenance, dict):
+        fail("Phase 72 comparison report input provenance must be a mapping")
+    paper_figure = provenance.get("paper_figure_curves")
+    if not isinstance(paper_figure, dict):
+        fail("Phase 72 comparison report missing paper figure provenance")
+    if paper_figure.get("path") != SPINNING_BOX_FIGURE_CURVES_REPORT_PATH:
+        fail("Phase 72 paper figure provenance path changed")
+    if paper_figure.get("sha256") != PHASE65_SPINNING_BOX_FIGURE_CURVES_SHA256:
+        fail("Phase 72 paper figure provenance sha changed")
+
+    diagnostics = observed.get("digitized_figure_curve_agreement_diagnostics")
+    if not isinstance(diagnostics, dict):
+        fail("Phase 72 figure diagnostics must be a mapping")
+    expected_sources = {
+        "linear_momentum": "final_linear_momentum_norm",
+        "angular_momentum": "final_angular_momentum_norm",
+    }
+    expected_colors = {"blue", "brown", "gray", "green", "orange"}
+    for metric, lane_source in expected_sources.items():
+        metric_diagnostics = diagnostics.get(metric)
+        if not isinstance(metric_diagnostics, dict):
+            fail(f"Phase 72 missing diagnostic metric: {metric}")
+        for lane in ("mabd_newton", "rbd_implicit_baseline"):
+            diagnostic = metric_diagnostics.get(lane)
+            if not isinstance(diagnostic, dict):
+                fail(f"Phase 72 missing diagnostic lane: {metric}.{lane}")
+            if diagnostic.get("status") != "diagnostic_available_not_pass_gate":
+                fail(f"Phase 72 diagnostic status changed: {metric}.{lane}")
+            if diagnostic.get("lane") != lane:
+                fail(f"Phase 72 diagnostic lane field changed: {metric}.{lane}")
+            if diagnostic.get("metric") != metric:
+                fail(f"Phase 72 diagnostic metric field changed: {metric}.{lane}")
+            if diagnostic.get("lane_value_source") != lane_source:
+                fail(f"Phase 72 diagnostic lane value source changed: {metric}.{lane}")
+            lane_value = _require_finite_scalar(
+                diagnostic.get("lane_value"),
+                f"Phase 72 {metric}.{lane} lane value",
+            )
+            if not 99.0 < lane_value < 101.0:
+                fail(f"Phase 72 endpoint momentum value out of expected range: {metric}.{lane}")
+            best_abs_error = _require_finite_scalar(
+                diagnostic.get("best_abs_error"),
+                f"Phase 72 {metric}.{lane} best abs error",
+            )
+            if best_abs_error >= 5.0:
+                fail(f"Phase 72 endpoint figure error regressed: {metric}.{lane}")
+            if diagnostic.get("agreement_claim_status") != "diagnostic_only_not_curve_agreement":
+                fail(f"Phase 72 diagnostic agreement claim changed: {metric}.{lane}")
+            if diagnostic.get("best_color_family") not in expected_colors:
+                fail(f"Phase 72 diagnostic best color changed: {metric}.{lane}")
+
+    lane_metrics = observed.get("lane_metrics")
+    if not isinstance(lane_metrics, dict):
+        fail("Phase 72 lane_metrics must be a mapping")
+    mabd_metrics = lane_metrics.get("mabd_newton")
+    if not isinstance(mabd_metrics, dict):
+        fail("Phase 72 M-ABD lane metrics missing")
+    _require_finite_scalar(
+        mabd_metrics.get("linear_momentum_error"),
+        "Phase 72 M-ABD linear momentum error",
+    )
+    _require_finite_scalar(
+        mabd_metrics.get("angular_momentum_error"),
+        "Phase 72 M-ABD angular momentum error",
+    )
+
+    actual_hash = sha256_file(ROOT / SPINNING_BOX_COMPARISON_REPORT_PATH)
+    if actual_hash != PHASE72_SPINNING_BOX_COMPARISON_SHA256:
+        fail("Phase 72 comparison report sha256 changed")
+    record_hash = _record_sha256_for_artifact(text, SPINNING_BOX_COMPARISON_REPORT_PATH)
+    if record_hash != actual_hash:
+        fail("Phase 72 comparison report sha256 mismatch")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.spinning_box":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 72 must keep spinning-box experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 72 must not pass experiment.* claims")
 
 
 def _phase67_model_plane_constraint_smoke() -> None:
@@ -14237,13 +14553,14 @@ def main() -> int:
     validate_phase69_record()
     validate_phase70_record()
     validate_phase71_record()
+    validate_phase72_record()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72 "
         "docs/provenance validation passed"
     )
     return 0

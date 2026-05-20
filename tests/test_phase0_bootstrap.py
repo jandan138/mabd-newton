@@ -4474,7 +4474,13 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, forbidden)
 
         report = load_claim_report(ROOT / validate_docs.SPINNING_BOX_COMPARISON_REPORT_PATH)
-        self.assertEqual(report.source_commit, validate_docs.PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT)
+        self.assertIn(
+            report.source_commit,
+            {
+                validate_docs.PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT,
+                validate_docs.PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT,
+            },
+        )
         self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
         self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
         self.assertEqual(report.scene_id, "single_body_spinning_box")
@@ -4508,7 +4514,12 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         self.assertEqual(
             diagnostics["linear_momentum"]["mabd_newton"]["lane_value_source"],
-            "linear_momentum_error",
+            (
+                "linear_momentum_error"
+                if report.source_commit
+                == validate_docs.PHASE66_SPINNING_BOX_FIGURE_AGREEMENT_COMMIT
+                else "final_linear_momentum_norm"
+            ),
         )
         self.assertEqual(
             diagnostics["linear_momentum"]["mabd_newton"]["agreement_claim_status"],
@@ -4519,7 +4530,13 @@ class Phase0BootstrapTests(unittest.TestCase):
             101,
         )
         actual_sha = validate_docs.sha256_file(ROOT / validate_docs.SPINNING_BOX_COMPARISON_REPORT_PATH)
-        self.assertEqual(actual_sha, validate_docs.PHASE66_SPINNING_BOX_COMPARISON_SHA256)
+        self.assertIn(
+            actual_sha,
+            {
+                validate_docs.PHASE66_SPINNING_BOX_COMPARISON_SHA256,
+                validate_docs.PHASE72_SPINNING_BOX_COMPARISON_SHA256,
+            },
+        )
 
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         spinning_box = next(
@@ -4563,6 +4580,126 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE66", text)
         self.assertNotIn("phase66-working-tree", text)
+
+    def test_phase72_spinning_box_figure_momentum_endpoint_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 72",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 72 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 72 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 72 spinning-box figure momentum endpoint diagnostics",
+        )
+
+        self.assertIn("spinning-box paper-figure momentum endpoint diagnostic evidence", current)
+        self.assertIn("final_linear_momentum_norm", verified)
+        self.assertIn("final_angular_momentum_norm", verified)
+        self.assertIn("not `linear_momentum_error` or `angular_momentum_error`", verified)
+        self.assertIn("digitized_figure_curve_agreement_passed = false", verified)
+        self.assertIn("comparison pass gate remains disabled", verified)
+        for snippet in (
+            "passed spinning-box experiment",
+            "M-ABD lane pass",
+            "paper reference legend-entry identity",
+            "solid/dashed line-style split",
+            "Newton-vs-paper curve agreement",
+            "comparison pass gate",
+            "rendered output inspection",
+            "runtime performance",
+            "full paper reproduction",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+            self.assertIn(snippet, forbidden)
+
+        report = load_claim_report(ROOT / validate_docs.SPINNING_BOX_COMPARISON_REPORT_PATH)
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(report.scene_id, "single_body_spinning_box")
+        self.assertEqual(report.baseline_lane, "spinning_box_comparison_protocol")
+        self.assertEqual(report.status.value, "incomplete")
+
+        observed = report.observed
+        self.assertFalse(observed["full_experiment_claim_passed"])
+        self.assertFalse(observed["digitized_figure_curve_agreement_passed"])
+        self.assertIn(
+            "spinning_box_digitized_figure_curve_agreement_not_passed",
+            observed["blocking_reasons"],
+        )
+        diagnostics = observed["digitized_figure_curve_agreement_diagnostics"]
+        linear_mabd = diagnostics["linear_momentum"]["mabd_newton"]
+        self.assertEqual(linear_mabd["lane_value_source"], "final_linear_momentum_norm")
+        self.assertGreater(linear_mabd["lane_value"], 99.0)
+        self.assertLess(linear_mabd["lane_value"], 101.0)
+        self.assertLess(linear_mabd["best_abs_error"], 5.0)
+        angular_mabd = diagnostics["angular_momentum"]["mabd_newton"]
+        self.assertEqual(angular_mabd["lane_value_source"], "final_angular_momentum_norm")
+        self.assertGreater(angular_mabd["lane_value"], 99.0)
+        self.assertLess(angular_mabd["lane_value"], 101.0)
+        self.assertLess(angular_mabd["best_abs_error"], 5.0)
+        self.assertIn("linear_momentum_error", observed["lane_metrics"]["mabd_newton"])
+        self.assertIn("angular_momentum_error", observed["lane_metrics"]["mabd_newton"])
+
+        actual_sha = validate_docs.sha256_file(ROOT / validate_docs.SPINNING_BOX_COMPARISON_REPORT_PATH)
+        self.assertEqual(actual_sha, validate_docs.PHASE72_SPINNING_BOX_COMPARISON_SHA256)
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        spinning_box = next(
+            claim
+            for claim in data["claims"]
+            if claim["claim_id"] == "experiment.single_body.spinning_box"
+        )
+        self.assertEqual(spinning_box["reproduction_status"], "intended")
+        self.assertFalse(
+            any(
+                claim["claim_id"].startswith("experiment.")
+                and claim["reproduction_status"] == "passed"
+                for claim in data["claims"]
+            )
+        )
+        validate_docs.validate_phase72_record()
+
+    def test_phase72_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT
+            / "docs/records/2026-05-20-phase72-spinning-box-figure-momentum-endpoint.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_spinning_box_figure_momentum_endpoint_diagnostic",
+            validate_docs.PHASE72_SPINNING_BOX_FIGURE_MOMENTUM_ENDPOINT_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "reports/experiment_matrix/single_body_spinning_box_comparison.json",
+            validate_docs.PHASE72_SPINNING_BOX_COMPARISON_SHA256,
+            "final_linear_momentum_norm",
+            "final_angular_momentum_norm",
+            "linear_momentum_error",
+            "angular_momentum_error",
+            "digitized_figure_curve_agreement_passed = false",
+            "spinning_box_digitized_figure_curve_agreement_not_passed",
+            "comparison pass gate remains disabled",
+            "No `experiment.*` claim is passed.",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE72", text)
+        self.assertNotIn("phase72-working-tree", text)
 
     def test_phase66_validator_rejects_passed_digitized_figure_agreement(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -6337,7 +6474,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72 "
                 "docs/provenance validation passed"
             ),
             result.stdout,

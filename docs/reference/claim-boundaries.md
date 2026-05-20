@@ -906,6 +906,28 @@
 - Phase 71 affine static-plane contact report lane evidence must not be
   described as generic collision detection, a contact solver, paper-faithful
   affine collision/contact, a passed experiment, or full paper reproduction.
+- This repository contains Phase 72 spinning-box paper-figure momentum endpoint
+  diagnostic evidence after the Phase 72 record is created.
+- Phase 72 verifies that the spinning-box digitized paper-figure endpoint
+  diagnostics compare paper momentum endpoint values against endpoint momentum
+  magnitudes from `final_linear_momentum_norm` and
+  `final_angular_momentum_norm`, not `linear_momentum_error` or
+  `angular_momentum_error`; it records small diagnostic endpoint best-fit
+  errors, keeps `digitized_figure_curve_agreement_passed = false`, keeps
+  `spinning_box_digitized_figure_curve_agreement_not_passed`, confirms the
+  comparison pass gate remains disabled, keeps top-level report status:
+  `incomplete`, and keeps no experiment claim passed.
+- Phase 72 does not verify a passed spinning-box experiment, M-ABD lane pass,
+  paper reference legend-entry identity, solid/dashed line-style split,
+  Newton-vs-paper curve agreement, comparison pass gate, rendered output
+  inspection, runtime performance, full paper reproduction, or any passed
+  `experiment.*` claim.
+- Phase 72 spinning-box figure momentum endpoint diagnostics must not be
+  described as a passed spinning-box experiment, M-ABD lane pass, paper
+  reference legend-entry identity, solid/dashed line-style split,
+  Newton-vs-paper curve agreement, comparison pass gate, rendered output
+  inspection, runtime performance, full paper reproduction, or any passed
+  `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1281,6 +1303,12 @@
   not a comparison pass gate, not rendered-output evidence, not runtime
   performance evidence, not a full paper reproduction, and not any passed
   `experiment.*` claim.
+- Phase 72 spinning-box figure momentum endpoint diagnostics are not a passed
+  spinning-box experiment, not a passed M-ABD lane, not paper reference
+  legend-entry identity, not solid/dashed line-style split, not
+  Newton-vs-paper curve agreement, not a comparison pass gate, not rendered
+  output inspection, not runtime performance reproduction, not full paper
+  reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
