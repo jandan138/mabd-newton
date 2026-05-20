@@ -328,6 +328,6 @@ current_evidence_reports:
     status: incomplete
     sha256: "0a0f1be3ffbfced0dd4ef463ee3419c119775a46ddde17807748d1b957c5b1b3"
 next_recommended_phase:
-  phase_id: phase61-spinning-box-contact-mabd-lane
-  claim_id: experiment.single_body.spinning_box
-  rationale: "Newton-only contact/MABD lane work is the shortest path to converting current diagnostics into a real pass-gate candidate without introducing non-Newton solver dependencies."
+  phase_id: phase77-rolling-spinning-paper-faithful-pass-gate
+  claim_id: experiment.single_body.rolling_spinning
+  rationale: "Newton-only next work should replace the rolling/spinning diagnostics with paper-faithful M-ABD rolling-cylinder contact/friction evidence, paper-faithful explicit RBD evidence, and paper-comparable timing before any pass gate."

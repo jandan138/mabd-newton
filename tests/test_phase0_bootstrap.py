@@ -3659,8 +3659,9 @@ class Phase0BootstrapTests(unittest.TestCase):
                 self.assertEqual(entry["committed_report_status"], "missing")
 
         recommended = audit["next_recommended_phase"]
-        self.assertEqual(recommended["claim_id"], "experiment.single_body.spinning_box")
-        self.assertIn("contact", recommended["phase_id"])
+        self.assertEqual(recommended["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertIn("phase77", recommended["phase_id"])
+        self.assertIn("paper-faithful M-ABD rolling-cylinder", recommended["rationale"])
         self.assertIn("Newton-only", recommended["rationale"])
 
         record_text = (
@@ -5327,6 +5328,40 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE76", text)
         self.assertNotIn("phase76-working-tree", text)
+
+    def test_phase77_completion_audit_selects_rolling_spinning_pass_gate(
+        self,
+    ) -> None:
+        import scripts.validate_docs as validate_docs
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        recommended = audit["next_recommended_phase"]
+        self.assertEqual(
+            recommended["phase_id"],
+            "phase77-rolling-spinning-paper-faithful-pass-gate",
+        )
+        self.assertEqual(recommended["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertIn("paper-faithful M-ABD rolling-cylinder", recommended["rationale"])
+        self.assertIn("paper-comparable timing", recommended["rationale"])
+        self.assertIn("Newton-only", recommended["rationale"])
+
+        record_text = (
+            ROOT / "docs/records/2026-05-20-after-phase76-completion-audit.md"
+        ).read_text()
+        for snippet in (
+            "## Status\n\nnot_complete_after_phase76",
+            "Prompt-to-artifact checklist",
+            "A: implement the paper method",
+            "B: reproduce the paper evidence",
+            "experiment_claims_passed = `0`",
+            "remaining_experiment_claims = `15`",
+            "phase77-rolling-spinning-paper-faithful-pass-gate",
+            "No `experiment.*` claim is passed.",
+            "Do not call `update_goal(status=\"complete\")`",
+        ):
+            self.assertIn(snippet, record_text)
+        self.assertNotIn("TO_BE_BACKFILLED", record_text)
+        validate_docs.validate_after_phase76_completion_audit()
 
     def test_phase66_validator_rejects_passed_digitized_figure_agreement(self) -> None:
         import scripts.validate_docs as validate_docs

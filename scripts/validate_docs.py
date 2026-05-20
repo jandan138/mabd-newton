@@ -171,6 +171,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-20-phase74-rolling-cylinder-rbd-baseline.md",
     "docs/records/2026-05-20-phase75-newton-explicit-rbd-baseline.md",
     "docs/records/2026-05-20-phase76-rolling-cylinder-mabd-newton.md",
+    "docs/records/2026-05-20-after-phase76-completion-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
     "docs/superpowers/specs/2026-05-17-phase32-gravity-force-mapping-design.md",
@@ -10627,12 +10628,21 @@ def validate_phase60_record() -> None:
     recommendation = audit.get("next_recommended_phase")
     if not isinstance(recommendation, dict):
         fail("Phase 60 audit missing next_recommended_phase")
-    if recommendation.get("phase_id") != "phase61-spinning-box-contact-mabd-lane":
+    if (
+        recommendation.get("phase_id")
+        != "phase77-rolling-spinning-paper-faithful-pass-gate"
+    ):
         fail("Phase 60 audit next phase id changed")
-    if recommendation.get("claim_id") != "experiment.single_body.spinning_box":
+    if recommendation.get("claim_id") != "experiment.single_body.rolling_spinning":
         fail("Phase 60 audit next phase claim changed")
-    if "Newton-only" not in str(recommendation.get("rationale", "")):
-        fail("Phase 60 audit next phase rationale must preserve Newton-only scope")
+    rationale = str(recommendation.get("rationale", ""))
+    for snippet in (
+        "Newton-only",
+        "paper-faithful M-ABD rolling-cylinder",
+        "paper-comparable timing",
+    ):
+        if snippet not in rationale:
+            fail("Phase 60 audit next phase rationale changed")
 
 
 def validate_phase61_record() -> None:
@@ -14186,6 +14196,76 @@ def validate_phase76_record() -> None:
             fail("Phase 76 must not pass experiment.* claims")
 
 
+def validate_after_phase76_completion_audit() -> None:
+    record_path = ROOT / "docs/records/2026-05-20-after-phase76-completion-audit.md"
+    text = record_path.read_text(encoding="utf-8")
+    required_snippets = (
+        "## Status\n\nnot_complete_after_phase76",
+        "Prompt-to-artifact checklist",
+        "A: implement the paper method",
+        "B: reproduce the paper evidence",
+        "experiment_claims_passed = `0`",
+        "remaining_experiment_claims = `15`",
+        "phase77-rolling-spinning-paper-faithful-pass-gate",
+        "paper-faithful M-ABD rolling-cylinder contact/friction evidence",
+        "paper-faithful explicit RBD baseline evidence",
+        "paper-comparable timing protocol and result",
+        "No `experiment.*` claim is passed.",
+        'Do not call `update_goal(status="complete")`',
+    )
+    for snippet in required_snippets:
+        if snippet not in text:
+            fail(f"After Phase 76 completion audit missing: {snippet}")
+    for forbidden in (
+        "TO_BE_BACKFILLED",
+        "full reproduction complete",
+        "experiment_claims_passed = `1`",
+    ):
+        if forbidden in text:
+            fail(f"After Phase 76 completion audit overclaims or has placeholder: {forbidden}")
+
+    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
+    global_status = audit.get("global_status")
+    if not isinstance(global_status, dict):
+        fail("After Phase 76 audit missing global_status")
+    if global_status.get("full_reproduction_complete") is not False:
+        fail("After Phase 76 audit must keep full_reproduction_complete=false")
+    if global_status.get("experiment_claims_passed") != 0:
+        fail("After Phase 76 audit must keep experiment_claims_passed=0")
+    if global_status.get("remaining_experiment_claims") != 15:
+        fail("After Phase 76 audit must keep 15 remaining experiment claims")
+
+    recommendation = audit.get("next_recommended_phase")
+    if not isinstance(recommendation, dict):
+        fail("After Phase 76 audit missing next_recommended_phase")
+    if (
+        recommendation.get("phase_id")
+        != "phase77-rolling-spinning-paper-faithful-pass-gate"
+    ):
+        fail("After Phase 76 audit next phase must be Phase 77 pass gate")
+    if recommendation.get("claim_id") != "experiment.single_body.rolling_spinning":
+        fail("After Phase 76 audit next claim must be rolling/spinning")
+    rationale = str(recommendation.get("rationale", ""))
+    for snippet in (
+        "Newton-only",
+        "paper-faithful M-ABD rolling-cylinder",
+        "paper-comparable timing",
+    ):
+        if snippet not in rationale:
+            fail("After Phase 76 audit next phase rationale changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    if any(
+        isinstance(claim, dict)
+        and str(claim.get("claim_id", "")).startswith("experiment.")
+        and claim.get("reproduction_status") == "passed"
+        for claim in claims
+    ):
+        fail("After Phase 76 audit must not pass experiment.* claims")
+
+
 def _phase67_model_plane_constraint_smoke() -> None:
     import newton
     import warp as wp
@@ -16095,6 +16175,7 @@ def main() -> int:
     validate_phase74_record()
     validate_phase75_record()
     validate_phase76_record()
+    validate_after_phase76_completion_audit()
     validate_paper_claims()
     validate_experiment_contracts()
     validate_phase13_config()
