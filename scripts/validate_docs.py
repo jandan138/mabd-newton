@@ -13409,6 +13409,17 @@ def validate_phase75_record() -> None:
         "mabd_rolling_cylinder_lane_missing",
         "paper_comparable_timing_missing",
         "newton_explicit_euler_not_paper_explicit_rbd_solver",
+        "paper_faithful_explicit_rbd_baseline",
+        "remaining_reproduction_gaps_after_phase75",
+        "PYTHONPATH=src:vendor/newton",
+        "-m unittest discover -s tests",
+        "Ran 591 tests",
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75 docs/provenance validation passed",
+        "-m ruff check .",
+        "git diff --check",
+        "smoke_passed",
+        "target_exists",
+        "ready_to_sync_existing",
         "No `experiment.*` claim is passed.",
         "mutates_reference_environment=false",
         "uses_reference_python=false",
@@ -13717,11 +13728,20 @@ def validate_phase75_record() -> None:
         != PHASE75_ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_SHA256
     ):
         fail("Phase 75 gap audit explicit RBD development report sha changed")
-    if rolling_entry.get("remaining_missing_lanes_after_phase75") != [
+    if rolling_entry.get("remaining_report_artifacts_missing_after_phase75") != [
         "mabd_newton",
         "paper_comparable_timing",
     ]:
-        fail("Phase 75 gap audit missing lane list changed")
+        fail("Phase 75 gap audit missing report-artifact list changed")
+    if rolling_entry.get("remaining_reproduction_gaps_after_phase75") != [
+        "paper_faithful_explicit_rbd_baseline",
+        "mabd_newton",
+        "paper_comparable_timing",
+    ]:
+        fail("Phase 75 gap audit reproduction gap list changed")
+    next_action = str(rolling_entry.get("next_action", ""))
+    if "paper-faithful explicit RBD" not in next_action:
+        fail("Phase 75 gap audit next_action must keep paper-faithful explicit RBD gap")
 
     report_entries = audit.get("current_evidence_reports")
     if not isinstance(report_entries, list):

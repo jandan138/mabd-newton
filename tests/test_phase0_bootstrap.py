@@ -5072,6 +5072,24 @@ class Phase0BootstrapTests(unittest.TestCase):
             if claim["claim_id"] == "experiment.single_body.rolling_spinning"
         )
         self.assertEqual(rolling["reproduction_status"], "intended")
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        gap_entry = next(
+            entry
+            for entry in audit["remaining_experiment_claims"]
+            if entry["claim_id"] == "experiment.single_body.rolling_spinning"
+        )
+        self.assertEqual(
+            gap_entry["remaining_report_artifacts_missing_after_phase75"],
+            ["mabd_newton", "paper_comparable_timing"],
+        )
+        self.assertEqual(
+            gap_entry["remaining_reproduction_gaps_after_phase75"],
+            [
+                "paper_faithful_explicit_rbd_baseline",
+                "mabd_newton",
+                "paper_comparable_timing",
+            ],
+        )
         self.assertFalse(
             any(
                 claim["claim_id"].startswith("experiment.")
@@ -5113,6 +5131,16 @@ class Phase0BootstrapTests(unittest.TestCase):
             "mabd_rolling_cylinder_lane_missing",
             "paper_comparable_timing_missing",
             "newton_explicit_euler_not_paper_explicit_rbd_solver",
+            "paper_faithful_explicit_rbd_baseline",
+            "remaining_reproduction_gaps_after_phase75",
+            "-m unittest discover -s tests",
+            "Ran 591 tests",
+            "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75 docs/provenance validation passed",
+            "-m ruff check .",
+            "git diff --check",
+            "smoke_passed",
+            "target_exists",
+            "ready_to_sync_existing",
             "paper_comparable=false",
             "full_experiment_claim_passed=false",
             "No `experiment.*` claim is passed.",

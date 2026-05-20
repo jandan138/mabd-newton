@@ -111,6 +111,9 @@ Result summary:
 development baseline report as committed incomplete evidence. The overall
 rolling/spinning matrix output remains incomplete, and `paper-claims.yaml` keeps
 `experiment.single_body.rolling_spinning` at `intended`.
+The gap audit still keeps `paper_faithful_explicit_rbd_baseline` in
+`remaining_reproduction_gaps_after_phase75` because this lane is explicitly a
+Newton development diagnostic, not the paper's explicit RBD solver.
 
 raw artifacts: no videos, run directories, raw logs, or raw paper assets are
 committed. The committed artifact is the small JSON report above.
@@ -168,18 +171,47 @@ PYTHONPATH=src:vendor/newton \
 
 Observed: `Ran 147 tests`, `OK`.
 
-Focused static verification:
+Plan Task 5 targeted verification:
 
 ```bash
 PYTHONPATH=src:vendor/newton \
   /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
-  -m ruff check \
-  src/mabd_reproduction/experiment_configs.py \
-  src/mabd_reproduction/rolling_spinning_reports.py \
-  src/mabd_reproduction/experiment_runner.py \
-  scripts/run_experiment.py \
-  tests/test_experiment_run_configs.py \
-  tests/test_experiment_runner.py
+  -m unittest \
+  tests.test_newton_explicit_euler_solver \
+  tests.test_experiment_run_configs \
+  tests.test_experiment_runner \
+  tests.test_phase0_bootstrap
+```
+
+Observed: `Ran 330 tests`, `OK`.
+
+Plan Task 5 full test discovery:
+
+```bash
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  -m unittest discover -s tests
+```
+
+Observed: `Ran 591 tests`, `OK`.
+
+Plan Task 5 docs/provenance validation:
+
+```bash
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  scripts/validate_docs.py
+```
+
+Observed:
+`Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75 docs/provenance validation passed`.
+
+Plan Task 5 full static verification:
+
+```bash
+PYTHONPATH=src:vendor/newton \
+  /cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python \
+  -m ruff check .
 
 git diff --check
 ```
@@ -211,6 +243,11 @@ Environment isolation fields:
 - mutates_reference_environment=false
 - uses_reference_python=false
 - uses_ambient_python=false
+- readiness check: `smoke_passed`
+- clone dry-run: `target_exists` with `executed=false`
+- sync-existing dry-run: `ready_to_sync_existing` with `executed=false`
+- vendored import:
+  `/cpfs/user/zhuzihou/dev/mabd-newton/.worktrees/phase68-model-plane-report-lane/vendor/newton/newton/__init__.py`
 
 ## Claim Boundaries
 

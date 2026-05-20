@@ -67,10 +67,14 @@ remaining_experiment_claims:
       - rbd_explicit_baseline
       - mabd_newton
       - paper_comparable_timing
-    remaining_missing_lanes_after_phase75:
+    remaining_report_artifacts_missing_after_phase75:
       - mabd_newton
       - paper_comparable_timing
-    next_action: "Add M-ABD rolling-cylinder and paper-comparable timing lanes before any rolling/spinning pass gate."
+    remaining_reproduction_gaps_after_phase75:
+      - paper_faithful_explicit_rbd_baseline
+      - mabd_newton
+      - paper_comparable_timing
+    next_action: "Add paper-faithful explicit RBD, M-ABD rolling-cylinder, and paper-comparable timing lanes before any rolling/spinning pass gate."
   - claim_id: experiment.single_body.spinning_box
     scene_id: single_body_spinning_box
     claim_status: intended
