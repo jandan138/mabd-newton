@@ -402,6 +402,7 @@ See the `DiffSim examples on GitHub`_ for the current reference workflows.
 # solver types
 from ._src.solvers import (
     SolverBase,
+    SolverExplicitEuler,
     SolverFeatherstone,
     SolverImplicitMPM,
     SolverKamino,
@@ -420,6 +421,7 @@ from ._src.solvers.flags import SolverNotifyFlags
 
 __all__ = [
     "SolverBase",
+    "SolverExplicitEuler",
     "SolverFeatherstone",
     "SolverImplicitMPM",
     "SolverKamino",

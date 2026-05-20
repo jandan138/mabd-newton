@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from . import mabd
+from .explicit_euler import SolverExplicitEuler
 from .featherstone import SolverFeatherstone
 from .flags import SolverNotifyFlags
 from .implicit_mpm import SolverImplicitMPM
@@ -16,6 +17,7 @@ from .xpbd import SolverXPBD
 
 __all__ = [
     "SolverBase",
+    "SolverExplicitEuler",
     "SolverFeatherstone",
     "SolverImplicitMPM",
     "SolverKamino",
