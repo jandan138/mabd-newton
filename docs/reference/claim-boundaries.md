@@ -972,6 +972,26 @@
   paper-comparable timing result, completed rolling/spinning reproduction,
   comparative baseline pass, full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 75 rolling-cylinder Newton ExplicitEuler
+  development baseline evidence with the Phase 75 record.
+- Phase 75 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json`
+  exists as an incomplete Newton CPU `SolverExplicitEuler` rolling-cylinder
+  development baseline report, records 10000 steps at `h = 0.01 sec`, local
+  non-paper-comparable wall-clock timing, contact count summary, contact
+  material, maximum center penetration, no-slip residual,
+  `required_lanes_missing = [mabd_newton, paper_comparable_timing]`,
+  `full_experiment_claim_passed = false`, and keeps no experiment claim
+  passed.
+- Phase 75 does not verify paper-faithful explicit RBD, M-ABD
+  rolling-cylinder dynamics, co-rotated ABD timing, same-hardware paper
+  timing, paper-comparable performance, a completed rolling/spinning
+  reproduction, full paper reproduction, or any passed `experiment.*` claim.
+- Phase 75 rolling-cylinder Newton ExplicitEuler development baseline evidence
+  must not be described as a paper-faithful explicit RBD result, M-ABD
+  rolling-cylinder result, co-rotated ABD timing result, paper-comparable
+  timing result, completed rolling/spinning reproduction, comparative baseline
+  pass, full paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1365,6 +1385,12 @@
   paper-comparable timing evidence, not a completed rolling/spinning
   reproduction, not comparative baseline pass evidence, not full paper
   reproduction, and not any passed `experiment.*` claim.
+- Phase 75 rolling-cylinder Newton ExplicitEuler development baseline evidence
+  is not a paper-faithful explicit RBD result, not M-ABD rolling-cylinder
+  evidence, not co-rotated ABD timing evidence, not paper-comparable timing
+  evidence, not a completed rolling/spinning reproduction, not comparative
+  baseline pass evidence, not full paper reproduction, and not any passed
+  `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

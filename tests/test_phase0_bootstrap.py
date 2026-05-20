@@ -4968,6 +4968,162 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertNotIn("TO_BE_BACKFILLED_PHASE74", text)
         self.assertNotIn("phase74-working-tree", text)
 
+    def test_phase75_rolling_cylinder_explicit_rbd_baseline_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 75",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 75 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 75 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 75 rolling-cylinder Newton ExplicitEuler development baseline evidence",
+        )
+
+        self.assertIn("rolling-cylinder Newton ExplicitEuler development baseline evidence", current)
+        self.assertIn("single_body_rolling_spinning_rbd_explicit_baseline.json", verified)
+        self.assertIn("SolverExplicitEuler", verified)
+        self.assertIn("required_lanes_missing", verified)
+        self.assertIn("no experiment claim passed", verified)
+        for snippet in (
+            "paper-faithful explicit RBD",
+            "M-ABD rolling-cylinder dynamics",
+            "co-rotated ABD timing",
+            "paper-comparable performance",
+            "completed rolling/spinning reproduction",
+            "full paper reproduction",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "paper-faithful explicit RBD result",
+            "M-ABD rolling-cylinder result",
+            "paper-comparable timing result",
+            "comparative baseline pass",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        report = load_claim_report(
+            ROOT / validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_REPORT_PATH
+        )
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE75_ROLLING_CYLINDER_RBD_EXPLICIT_BASELINE_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(report.scene_id, "single_body_rolling_spinning")
+        self.assertEqual(report.baseline_lane, "rbd_explicit_baseline")
+        self.assertEqual(
+            report.solver_mode,
+            "newton_explicit_euler_rolling_cylinder_rbd_cpu_development",
+        )
+        self.assertEqual(report.backend, "cpu_newton_warp")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertFalse(report.expected["full_experiment_claim_passed"])
+        self.assertFalse(report.expected["paper_comparable"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertFalse(report.observed["paper_comparable"])
+        self.assertTrue(report.observed["local_runtime_measured"])
+        self.assertEqual(report.observed["newton_device"], "cpu")
+        self.assertEqual(report.observed["cylinder_axis_world"], [0.0, 0.0, 1.0])
+        self.assertEqual(report.observed["step_count"], 10000)
+        self.assertEqual(report.observed["time_step_s"], 0.01)
+        self.assertEqual(
+            report.observed["required_lanes_missing"],
+            ["mabd_newton", "paper_comparable_timing"],
+        )
+        self.assertIn(
+            "newton_explicit_euler_not_paper_explicit_rbd_solver",
+            report.observed["blocking_reasons"],
+        )
+        self.assertIn("SolverExplicitEuler", report.observed["newton_api"])
+        contact_summary = report.observed["contact_count_summary"]
+        for key in ("initial", "final", "min", "max"):
+            self.assertIsInstance(contact_summary[key], int)
+            self.assertGreaterEqual(contact_summary[key], 0)
+        self.assertGreaterEqual(contact_summary["max"], 1)
+        self.assertGreaterEqual(report.observed["max_center_penetration_m"], 0.0)
+        self.assertTrue(math.isfinite(report.observed["no_slip_residual_m_s"]))
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+        self.assertGreater(report.timing_distribution["total_wall_time_ms"], 0.0)
+        self.assertEqual(report.raw_outputs, {"time_series": "not_written"})
+        self.assertEqual(report.plot_paths, {})
+
+        actual_sha = validate_docs.sha256_file(
+            ROOT / validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_REPORT_PATH
+        )
+        self.assertEqual(
+            actual_sha,
+            validate_docs.PHASE75_ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_SHA256,
+        )
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        rolling = next(
+            claim
+            for claim in data["claims"]
+            if claim["claim_id"] == "experiment.single_body.rolling_spinning"
+        )
+        self.assertEqual(rolling["reproduction_status"], "intended")
+        self.assertFalse(
+            any(
+                claim["claim_id"].startswith("experiment.")
+                and claim["reproduction_status"] == "passed"
+                for claim in data["claims"]
+            )
+        )
+        validate_docs.validate_phase75_record()
+
+    def test_phase75_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT
+            / "docs/records/2026-05-20-phase75-newton-explicit-rbd-baseline.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\npassed_for_rolling_cylinder_explicit_rbd_development_baseline_lane",
+            validate_docs.PHASE75_NEWTON_EXPLICIT_EULER_SOLVER_COMMIT,
+            validate_docs.PHASE75_ROLLING_CYLINDER_RBD_EXPLICIT_BASELINE_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "configs/experiments/single_body_rolling_spinning.yaml",
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json",
+            validate_docs.PHASE75_ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_SHA256,
+            "vendor/newton/newton/_src/solvers/explicit_euler/solver_explicit_euler.py",
+            "backend: `cpu_newton_warp`",
+            "status: `incomplete`",
+            "newton_explicit_euler_rolling_cylinder_rbd_cpu_development",
+            "newton_development_baseline_not_paper_faithful_explicit_rbd",
+            "builder.finalize(device=\"cpu\")",
+            "ModelBuilder.ShapeConfig",
+            "Model.contacts",
+            "Model.collide",
+            "SolverExplicitEuler",
+            "contact_count_summary",
+            "max_center_penetration_m",
+            "no_slip_residual_m_s",
+            "mabd_rolling_cylinder_lane_missing",
+            "paper_comparable_timing_missing",
+            "newton_explicit_euler_not_paper_explicit_rbd_solver",
+            "paper_comparable=false",
+            "full_experiment_claim_passed=false",
+            "No `experiment.*` claim is passed.",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE75", text)
+        self.assertNotIn("phase75-working-tree", text)
+
     def test_phase66_validator_rejects_passed_digitized_figure_agreement(self) -> None:
         import scripts.validate_docs as validate_docs
 
@@ -6741,8 +6897,8 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74 "
-                "docs/provenance validation passed"
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74"
+                "/75 docs/provenance validation passed"
             ),
             result.stdout,
         )

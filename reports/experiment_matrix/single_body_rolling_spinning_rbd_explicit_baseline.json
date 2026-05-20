@@ -1,0 +1,351 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "cpu_newton_warp",
+  "baseline_lane": "rbd_explicit_baseline",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "canonical_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "config_path": "configs/experiments/single_body_rolling_spinning.yaml",
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "requires M-ABD rolling-cylinder and paper-comparable timing before pass; this explicit RBD lane is a Newton development baseline",
+    "paper_comparable": false,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ]
+  },
+  "failure_reason": "Newton ExplicitEuler rolling-cylinder development baseline only; M-ABD rolling-cylinder and paper-comparable timing evidence remain missing",
+  "observed": {
+    "blocking_reasons": [
+      "mabd_rolling_cylinder_lane_missing",
+      "paper_comparable_timing_missing",
+      "newton_explicit_euler_not_paper_explicit_rbd_solver"
+    ],
+    "contact_count_summary": {
+      "final": 0,
+      "initial": 2,
+      "max": 3,
+      "min": 0
+    },
+    "contact_material": {
+      "gap": 0.02,
+      "kd": 1000.0,
+      "ke": 100000.0,
+      "kf": 1000.0,
+      "mu": 1.0
+    },
+    "cylinder_axis_world": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "density_kg_m3": 1000.0,
+    "energy_drift_j": 4357903.167963444,
+    "final_angular_velocity_rad_s": [
+      -107.67684936523438,
+      -7.700799942016602,
+      42.594749450683594
+    ],
+    "final_energy_j": 4362344.594577457,
+    "final_linear_velocity_m_s": [
+      -4.360170364379883,
+      88.9393081665039,
+      -35.111083984375
+    ],
+    "final_position_m": [
+      18.21781349182129,
+      1.0370094776153564,
+      -1166.875
+    ],
+    "final_rotation_xyzw": [
+      0.5462471842765808,
+      0.5999979376792908,
+      0.49079379439353943,
+      0.3173923194408417
+    ],
+    "full_experiment_claim_passed": false,
+    "half_height_m": 0.5,
+    "inertia_diag_kg_m2": [
+      114.53723216212785,
+      114.53723216212785,
+      98.17477042468103
+    ],
+    "initial_energy_j": 4441.42661401257,
+    "initial_position_m": [
+      0.0,
+      0.5,
+      0.0
+    ],
+    "local_runtime_measured": true,
+    "mass_kg": 785.3981633974482,
+    "max_center_penetration_m": 4.060969352722168,
+    "min_center_height_m": -3.560969352722168,
+    "newton_api": [
+      "ModelBuilder.add_shape_cylinder",
+      "ModelBuilder.add_ground_plane",
+      "Model.contacts",
+      "Model.collide",
+      "SolverExplicitEuler"
+    ],
+    "newton_device": "cpu",
+    "no_slip_residual_m_s": 16.937204360961914,
+    "paper_comparable": false,
+    "radius_m": 0.5,
+    "relative_energy_drift": 981.1944554514057,
+    "required_lanes_missing": [
+      "mabd_newton",
+      "paper_comparable_timing"
+    ],
+    "solver_name": "newton.solvers.SolverExplicitEuler",
+    "solver_scope": "newton_development_baseline_not_paper_faithful_explicit_rbd",
+    "step_count": 10000,
+    "time_step_s": 0.01,
+    "trajectory_samples": [
+      {
+        "angular_velocity_rad_s": [
+          0.0,
+          0.0,
+          -2.0
+        ],
+        "center_height_m": 0.5,
+        "center_penetration_m": 0.0,
+        "contact_count": 2,
+        "linear_velocity_m_s": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "no_slip_residual_m_s": 0.0,
+        "position_m": [
+          0.0,
+          0.5,
+          0.0
+        ],
+        "rotation_xyzw": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "step_index": 0,
+        "time_s": 0.0,
+        "total_energy_j": 4441.42661401257
+      },
+      {
+        "angular_velocity_rad_s": [
+          0.459340363740921,
+          0.027214929461479187,
+          0.03016120195388794
+        ],
+        "center_height_m": 3.7512128353118896,
+        "center_penetration_m": 0.0,
+        "contact_count": 0,
+        "linear_velocity_m_s": [
+          0.6384794116020203,
+          -7.003017425537109,
+          -0.06961055099964142
+        ],
+        "no_slip_residual_m_s": 0.6535600125789642,
+        "position_m": [
+          15.879964828491211,
+          3.7512128353118896,
+          -0.18350151181221008
+        ],
+        "rotation_xyzw": [
+          -0.17556758224964142,
+          0.3349648118019104,
+          -0.8012765645980835,
+          -0.46360599994659424
+        ],
+        "step_index": 1667,
+        "time_s": 16.67,
+        "total_energy_j": 48335.186653469485
+      },
+      {
+        "angular_velocity_rad_s": [
+          -0.2632308006286621,
+          -0.14101871848106384,
+          -5.604947090148926
+        ],
+        "center_height_m": 10.00376033782959,
+        "center_penetration_m": 0.0,
+        "contact_count": 0,
+        "linear_velocity_m_s": [
+          1.3665635585784912,
+          -15.71859359741211,
+          -2.1983726024627686
+        ],
+        "no_slip_residual_m_s": 1.4359099864959717,
+        "position_m": [
+          4.832879066467285,
+          10.00376033782959,
+          -9.17013931274414
+        ],
+        "rotation_xyzw": [
+          -0.5797445178031921,
+          0.37359657883644104,
+          0.30910974740982056,
+          -0.6548076868057251
+        ],
+        "step_index": 3333,
+        "time_s": 33.33,
+        "total_energy_j": 178280.76278759033
+      },
+      {
+        "angular_velocity_rad_s": [
+          -50.6037483215332,
+          -1.5965690612792969,
+          1.9225975275039673
+        ],
+        "center_height_m": 53.7772216796875,
+        "center_penetration_m": 0.0,
+        "contact_count": 0,
+        "linear_velocity_m_s": [
+          0.8301799893379211,
+          -12.327847480773926,
+          -9.870186805725098
+        ],
+        "no_slip_residual_m_s": 1.7914787530899048,
+        "position_m": [
+          27.762813568115234,
+          53.7772216796875,
+          -101.10446166992188
+        ],
+        "rotation_xyzw": [
+          -0.4822639524936676,
+          0.5351585149765015,
+          -0.44781988859176636,
+          0.5296074748039246
+        ],
+        "step_index": 5000,
+        "time_s": 50.0,
+        "total_energy_j": 659526.1834925914
+      },
+      {
+        "angular_velocity_rad_s": [
+          -45.57406997680664,
+          -0.38027095794677734,
+          2.3838253021240234
+        ],
+        "center_height_m": 133.6794891357422,
+        "center_penetration_m": 0.0,
+        "contact_count": 0,
+        "linear_velocity_m_s": [
+          0.061166416853666306,
+          -2.5064330101013184,
+          -17.419885635375977
+        ],
+        "no_slip_residual_m_s": 1.253079067915678,
+        "position_m": [
+          34.4764404296875,
+          133.6794891357422,
+          -348.13519287109375
+        ],
+        "rotation_xyzw": [
+          -0.6307511329650879,
+          -0.3581479489803314,
+          -0.6014370322227478,
+          -0.3348976969718933
+        ],
+        "step_index": 6667,
+        "time_s": 66.67,
+        "total_energy_j": 1270835.7192262108
+      },
+      {
+        "angular_velocity_rad_s": [
+          -77.12432861328125,
+          1.0499649047851562,
+          2.161311149597168
+        ],
+        "center_height_m": 64.94168853759766,
+        "center_penetration_m": 0.0,
+        "contact_count": 0,
+        "linear_velocity_m_s": [
+          -0.29578131437301636,
+          -51.01631546020508,
+          -20.411823272705078
+        ],
+        "no_slip_residual_m_s": 0.7848742604255676,
+        "position_m": [
+          31.3425235748291,
+          64.94168853759766,
+          -672.9659423828125
+        ],
+        "rotation_xyzw": [
+          -0.24852274358272552,
+          -0.6724891066551208,
+          -0.23273274302482605,
+          -0.6571380496025085
+        ],
+        "step_index": 8333,
+        "time_s": 83.33,
+        "total_energy_j": 2027008.7389422476
+      },
+      {
+        "angular_velocity_rad_s": [
+          -107.67684936523438,
+          -7.700799942016602,
+          42.594749450683594
+        ],
+        "center_height_m": 1.0370094776153564,
+        "center_penetration_m": 0.0,
+        "contact_count": 0,
+        "linear_velocity_m_s": [
+          -4.360170364379883,
+          88.9393081665039,
+          -35.111083984375
+        ],
+        "no_slip_residual_m_s": 16.937204360961914,
+        "position_m": [
+          18.21781349182129,
+          1.0370094776153564,
+          -1166.875
+        ],
+        "rotation_xyzw": [
+          0.5462471842765808,
+          0.5999979376792908,
+          0.49079379439353943,
+          0.3173923194408417
+        ],
+        "step_index": 10000,
+        "time_s": 100.0,
+        "total_energy_j": 4362344.594577457
+      }
+    ]
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "time_series": "not_written"
+  },
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "newton_explicit_euler_rolling_cylinder_rbd_cpu_development",
+  "source_commit": "a84eb12",
+  "status": "incomplete",
+  "threshold": {
+    "max_no_slip_residual_m_s": 0.0001,
+    "max_relative_energy_drift": 1.0,
+    "max_runtime_wall_time_ms": 0.0,
+    "min_contact_count": 1.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "local_cpu_wall_clock_not_paper_comparable",
+    "step_count": 10000,
+    "total_wall_time_ms": 7072.187442332506
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}
