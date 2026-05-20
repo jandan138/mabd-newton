@@ -171,6 +171,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-20-phase74-rolling-cylinder-rbd-baseline.md",
     "docs/records/2026-05-20-phase75-newton-explicit-rbd-baseline.md",
     "docs/records/2026-05-20-phase76-rolling-cylinder-mabd-newton.md",
+    "docs/records/2026-05-20-phase77-rolling-cylinder-material-preflight.md",
     "docs/records/2026-05-20-after-phase76-completion-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
@@ -262,6 +263,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-20-mabd-phase75-newton-explicit-rbd-baseline.md",
     "docs/superpowers/specs/2026-05-20-phase76-rolling-cylinder-mabd-newton-design.md",
     "docs/superpowers/plans/2026-05-20-mabd-phase76-rolling-cylinder-mabd-newton.md",
+    "docs/superpowers/specs/2026-05-20-phase77-rolling-spinning-paper-faithful-pass-gate-design.md",
+    "docs/superpowers/plans/2026-05-20-mabd-phase77-rolling-spinning-paper-faithful-pass-gate.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -277,6 +280,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json",
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json",
+    "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -346,6 +350,9 @@ PHASE75_ROLLING_CYLINDER_RBD_EXPLICIT_BASELINE_COMMIT = "a84eb12"
 PHASE76_ROLLING_CYLINDER_MABD_NEWTON_COMMIT = (
     "83e103a26bbfbb84190e21d9e5ad74787d0391e0"
 )
+PHASE77_ROLLING_CYLINDER_MATERIAL_PREFLIGHT_COMMIT = (
+    "825eba871eec65b37429cbc2222f170d5636160b"
+)
 ROLLING_SPINNING_REPORT_PATH = (
     "reports/experiment_matrix/single_body_rolling_spinning.json"
 )
@@ -357,6 +364,9 @@ ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_REPORT_PATH = (
 )
 ROLLING_SPINNING_MABD_NEWTON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json"
+)
+ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json"
 )
 SPINNING_BOX_PAPER_HORIZON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json"
@@ -429,6 +439,9 @@ PHASE75_ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_SHA256 = (
 )
 PHASE76_ROLLING_SPINNING_MABD_NEWTON_SHA256 = (
     "12dd1d7452ebefed43f40893095affd60ddca419262f5b7e58e542794a33a2fe"
+)
+PHASE77_ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_SHA256 = (
+    "7bc5cba071e17a52f890ca2e808c6c6e45d3e219d481a7a544dbd6ab6c5e5a3a"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -5294,6 +5307,76 @@ def _require_finite_vector3(value: Any, context: str) -> list[float]:
         _require_finite_scalar(component, f"{context}[{index}]")
         for index, component in enumerate(value)
     ]
+
+
+def _require_phase77_explicit_material_preflight_config(config_path: Path) -> None:
+    raw_config = read_yaml(config_path)
+    section = raw_config.get("mabd_material_preflight")
+    if not isinstance(section, dict):
+        fail("Phase 77 config missing mabd_material_preflight section")
+    expected_fields = {
+        "young_modulus_pa": 1.0e9,
+        "poisson_ratio": 0.3,
+        "zero_stiffness_diagnostic": False,
+    }
+    for key, expected_value in expected_fields.items():
+        if key not in section:
+            fail(f"Phase 77 explicit material field missing: {key}")
+        if section[key] != expected_value:
+            fail(f"Phase 77 explicit material field changed: {key}")
+
+
+def _phase77_material_preflight_threshold_violations(
+    *,
+    observed: dict[str, Any],
+    threshold: dict[str, Any],
+    timing_distribution: dict[str, Any],
+) -> list[str]:
+    violations: list[str] = []
+    scalar_thresholds = (
+        ("max_affine_shape_spread_m", "max_affine_shape_spread_m"),
+        ("max_constraint_residual_norm", "max_constraint_residual_norm"),
+        ("max_no_slip_residual_m_s", "no_slip_residual_m_s"),
+        ("max_relative_energy_drift", "relative_energy_drift"),
+    )
+    for threshold_key, observed_key in scalar_thresholds:
+        limit = _require_finite_scalar(
+            threshold.get(threshold_key),
+            f"Phase 77 threshold {threshold_key}",
+        )
+        value = _require_finite_scalar(
+            observed.get(observed_key),
+            f"Phase 77 observed {observed_key}",
+        )
+        if value > limit:
+            violations.append(threshold_key)
+
+    runtime_limit = _require_finite_scalar(
+        threshold.get("max_runtime_wall_time_ms"),
+        "Phase 77 threshold max_runtime_wall_time_ms",
+    )
+    runtime_value = _require_finite_scalar(
+        timing_distribution.get("total_wall_time_ms"),
+        "Phase 77 timing total_wall_time_ms",
+    )
+    if runtime_value > runtime_limit:
+        violations.append("max_runtime_wall_time_ms")
+
+    contact_summary = observed.get("contact_count_summary")
+    if not isinstance(contact_summary, dict):
+        fail("Phase 77 contact_count_summary must be a mapping")
+    contact_min = _require_finite_scalar(
+        threshold.get("min_contact_count"),
+        "Phase 77 threshold min_contact_count",
+    )
+    max_contact_count = _require_finite_scalar(
+        contact_summary.get("max"),
+        "Phase 77 contact_count_summary.max",
+    )
+    if max_contact_count < contact_min:
+        violations.append("min_contact_count")
+
+    return violations
 
 
 def _record_sha256_for_artifact(text: str, artifact_path: str) -> str:
@@ -14196,6 +14279,302 @@ def validate_phase76_record() -> None:
             fail("Phase 76 must not pass experiment.* claims")
 
 
+def validate_phase77_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-20-phase77-rolling-cylinder-material-preflight.md"
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-20-phase77-rolling-spinning-paper-faithful-pass-gate-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/2026-05-20-mabd-phase77-rolling-spinning-paper-faithful-pass-gate.md"
+    )
+    report_path = ROOT / ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REPORT_PATH
+    config_path = ROOT / "configs/experiments/single_body_rolling_spinning.yaml"
+    matrix_path = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
+
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary = " ".join(boundary_text.split())
+
+    for snippet in (
+        "incomplete_material_preflight_recorded",
+        PHASE77_ROLLING_CYLINDER_MATERIAL_PREFLIGHT_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        str(MABD_PYTHON),
+        "mutates_reference_environment=false",
+        ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REPORT_PATH,
+        PHASE77_ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_SHA256,
+        "zero_stiffness_diagnostic = false",
+        "full_experiment_claim_passed = false",
+        "paper_comparable = false",
+        "does not prove paper-faithful affine collision",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in text:
+            fail(f"Phase 77 record missing required evidence field: {snippet}")
+    for forbidden in (
+        "full paper reproduction complete",
+        "experiment.single_body.rolling_spinning passed",
+        "paper-faithful M-ABD result passed",
+    ):
+        if forbidden in text:
+            fail(f"Phase 77 record overclaims unsupported evidence: {forbidden}")
+
+    for snippet in (
+        "Phase 77 Rolling/Spinning Paper-Faithful Pass Gate Design",
+        "mabd_material_preflight",
+        "young_modulus_pa = 1.0e9",
+        "zero_stiffness_diagnostic = false",
+        "This phase must remain incomplete",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 77 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 77 Rolling/Spinning Material Preflight Plan",
+        "run_rolling_spinning_mabd_material_preflight",
+        "rolling_spinning_mabd_material_preflight",
+        "Do not overwrite Phase 73-76 reports",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 77 plan missing required boundary text: {snippet}")
+
+    for snippet in (
+        "Phase 77 rolling-cylinder finite-stiffness",
+        "young_modulus_pa = 1.0e9",
+        "zero_stiffness_diagnostic = false",
+        "does not verify paper-faithful M-ABD rolling-cylinder collision",
+        "not paper-faithful affine collision/contact",
+        "not any passed `experiment.*` claim",
+    ):
+        if snippet not in normalized_boundary:
+            fail(f"Phase 77 claim boundary missing: {snippet}")
+
+    config = load_rolling_spinning_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_rolling_spinning_config_against_matrix(config, matrix)
+    _require_phase77_explicit_material_preflight_config(config_path)
+    lane = config.mabd_material_preflight
+    if lane.output_report != ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REPORT_PATH:
+        fail("Phase 77 config output report changed")
+    if lane.young_modulus_pa != 1.0e9:
+        fail("Phase 77 material Young modulus changed")
+    if lane.poisson_ratio != 0.3:
+        fail("Phase 77 material Poisson ratio changed")
+    if lane.zero_stiffness_diagnostic is not False:
+        fail("Phase 77 zero_stiffness_diagnostic must remain false")
+
+    report = load_claim_report(report_path)
+    if report.source_commit != PHASE77_ROLLING_CYLINDER_MATERIAL_PREFLIGHT_COMMIT:
+        fail("Phase 77 report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 77 report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 77 report vendored Newton commit changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 77 report paper source version changed")
+    if report.claim_id != "experiment.single_body.rolling_spinning":
+        fail("Phase 77 report claim_id changed")
+    if report.scene_id != "single_body_rolling_spinning":
+        fail("Phase 77 report scene_id changed")
+    if report.baseline_lane != "mabd_newton":
+        fail("Phase 77 report baseline lane changed")
+    if report.solver_mode != "mabd_cpu_oracle_rolling_cylinder_material_preflight":
+        fail("Phase 77 report solver mode changed")
+    if report.backend != "cpu_numpy_newton_solver_mabd_static_plane_contacts":
+        fail("Phase 77 report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 77 report must remain incomplete")
+    if report.threshold != lane.thresholds:
+        fail("Phase 77 report thresholds must match config")
+
+    expected = report.expected
+    observed = report.observed
+    if expected.get("full_experiment_claim_passed") is not False:
+        fail("Phase 77 expected full experiment pass flag must be false")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 77 observed full experiment pass flag must be false")
+    if expected.get("paper_comparable") is not False:
+        fail("Phase 77 expected paper_comparable must be false")
+    if observed.get("paper_comparable") is not False:
+        fail("Phase 77 observed paper_comparable must be false")
+    if observed.get("material_preflight_status") != "finite_stiffness_preflight_incomplete":
+        fail("Phase 77 material preflight status changed")
+    if observed.get("young_modulus_pa") != lane.young_modulus_pa:
+        fail("Phase 77 observed Young modulus changed")
+    if observed.get("poisson_ratio") != lane.poisson_ratio:
+        fail("Phase 77 observed Poisson ratio changed")
+    if observed.get("zero_stiffness_diagnostic") is not False:
+        fail("Phase 77 observed zero_stiffness_diagnostic must remain false")
+    if observed.get("step_count") != lane.step_count:
+        fail("Phase 77 step count changed")
+    if observed.get("time_step_s") != lane.time_step_s:
+        fail("Phase 77 time step changed")
+    if observed.get("solver_name") != "newton.solvers.SolverMABD":
+        fail("Phase 77 solver name changed")
+    if observed.get("solver_scope") != "mabd_affine_cylinder_material_preflight_not_paper_faithful":
+        fail("Phase 77 solver scope changed")
+    if observed.get("required_lanes_missing") != [
+        "paper_comparable_timing",
+        "paper_faithful_implicit_rbd_baseline",
+        "paper_faithful_explicit_rbd_baseline",
+    ]:
+        fail("Phase 77 missing lane list changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 77 blocking_reasons must be a list")
+    for blocker in (
+        "mabd_material_preflight_incomplete",
+        "paper_faithful_mabd_collision_missing",
+        "paper_faithful_explicit_rbd_baseline_missing",
+        "paper_faithful_implicit_rbd_baseline_missing",
+        "paper_comparable_timing_missing",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 77 blocker missing: {blocker}")
+    for field in (
+        "max_support_penetration_m",
+        "min_support_height_m",
+        "no_slip_residual_m_s",
+        "relative_energy_drift",
+        "max_affine_shape_spread_m",
+        "max_constraint_residual_norm",
+    ):
+        _require_finite_scalar(observed.get(field), f"Phase 77 {field}")
+    samples = observed.get("trajectory_samples")
+    if not isinstance(samples, list) or len(samples) != lane.sample_count:
+        fail("Phase 77 trajectory sample count changed")
+
+    timing = report.timing_distribution
+    if timing.get("paper_comparable") is not False:
+        fail("Phase 77 timing_distribution must be non-paper-comparable")
+    if timing.get("scope") != "local_cpu_wall_clock_not_paper_comparable":
+        fail("Phase 77 timing scope changed")
+    if timing.get("step_count") != lane.step_count:
+        fail("Phase 77 timing step count changed")
+    if _require_finite_scalar(timing.get("total_wall_time_ms"), "Phase 77 wall time") <= 0.0:
+        fail("Phase 77 wall time must be positive")
+    computed_violations = _phase77_material_preflight_threshold_violations(
+        observed=observed,
+        threshold=report.threshold,
+        timing_distribution=timing,
+    )
+    if observed.get("threshold_violations") != computed_violations:
+        fail("Phase 77 threshold_violations must match recomputed report metrics")
+    if report.raw_outputs != {"time_series": "not_written"}:
+        fail("Phase 77 raw output contract changed")
+    if report.plot_paths != {}:
+        fail("Phase 77 must not commit plot artifacts")
+
+    actual_hash = sha256_file(report_path)
+    if actual_hash != PHASE77_ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_SHA256:
+        fail("Phase 77 material preflight report sha256 changed")
+    if PHASE77_ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_SHA256 not in text:
+        fail("Phase 77 record report sha256 mismatch")
+
+    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
+    entries = audit.get("remaining_experiment_claims")
+    if not isinstance(entries, list):
+        fail("Phase 77 gap audit missing remaining_experiment_claims")
+    rolling_entry = next(
+        (
+            entry
+            for entry in entries
+            if isinstance(entry, dict)
+            and entry.get("claim_id") == "experiment.single_body.rolling_spinning"
+        ),
+        None,
+    )
+    if rolling_entry is None:
+        fail("Phase 77 gap audit missing rolling/spinning entry")
+    if rolling_entry.get("mabd_material_preflight_report") != (
+        ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REPORT_PATH
+    ):
+        fail("Phase 77 gap audit missing material preflight report path")
+    if rolling_entry.get("mabd_material_preflight_report_status") != "incomplete":
+        fail("Phase 77 gap audit material preflight report status changed")
+    if rolling_entry.get("mabd_material_preflight_report_sha256") != (
+        PHASE77_ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_SHA256
+    ):
+        fail("Phase 77 gap audit material preflight report sha changed")
+    if rolling_entry.get("remaining_report_artifacts_missing_after_phase77") != [
+        "paper_comparable_timing",
+    ]:
+        fail("Phase 77 gap audit missing report-artifact list changed")
+    if rolling_entry.get("remaining_reproduction_gaps_after_phase77") != [
+        "paper_faithful_explicit_rbd_baseline",
+        "paper_faithful_implicit_rbd_baseline",
+        "paper_faithful_mabd_rolling_cylinder",
+        "paper_comparable_timing",
+    ]:
+        fail("Phase 77 gap audit reproduction gap list changed")
+    next_action = str(rolling_entry.get("next_action", ""))
+    for snippet in (
+        "paper-faithful explicit RBD",
+        "implicit RBD",
+        "M-ABD rolling-cylinder contact/friction evidence",
+        "paper-comparable timing",
+    ):
+        if snippet not in next_action:
+            fail(f"Phase 77 gap audit next_action missing: {snippet}")
+
+    latest_update = audit.get("latest_update")
+    if not isinstance(latest_update, dict):
+        fail("Phase 77 gap audit missing latest_update provenance")
+    expected_latest_update = {
+        "phase_id": "phase77_rolling_cylinder_material_preflight",
+        "update_date": "2026-05-20",
+        "source_commit": PHASE77_ROLLING_CYLINDER_MATERIAL_PREFLIGHT_COMMIT,
+        "report": ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REPORT_PATH,
+        "report_sha256": PHASE77_ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_SHA256,
+        "status": "incomplete",
+    }
+    for key, expected_value in expected_latest_update.items():
+        if latest_update.get(key) != expected_value:
+            fail(f"Phase 77 gap audit latest_update {key} changed")
+    if "Initial Phase 60 audit source commit" not in str(
+        audit.get("source_commit_scope", "")
+    ):
+        fail("Phase 77 gap audit must scope the historical Phase 60 source_commit")
+
+    report_entries = audit.get("current_evidence_reports")
+    if not isinstance(report_entries, list):
+        fail("Phase 77 gap audit missing current_evidence_reports")
+    material_report_entry = next(
+        (
+            entry
+            for entry in report_entries
+            if isinstance(entry, dict)
+            and entry.get("path") == ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REPORT_PATH
+        ),
+        None,
+    )
+    if material_report_entry is None:
+        fail("Phase 77 gap audit missing material preflight evidence entry")
+    if material_report_entry.get("status") != "incomplete":
+        fail("Phase 77 gap audit material report entry status changed")
+    if (
+        material_report_entry.get("sha256")
+        != PHASE77_ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_SHA256
+    ):
+        fail("Phase 77 gap audit material report entry sha changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.rolling_spinning":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 77 must keep rolling/spinning experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 77 must not pass experiment.* claims")
+
+
 def validate_after_phase76_completion_audit() -> None:
     record_path = ROOT / "docs/records/2026-05-20-after-phase76-completion-audit.md"
     text = record_path.read_text(encoding="utf-8")
@@ -16175,6 +16554,7 @@ def main() -> int:
     validate_phase74_record()
     validate_phase75_record()
     validate_phase76_record()
+    validate_phase77_record()
     validate_after_phase76_completion_audit()
     validate_paper_claims()
     validate_experiment_contracts()
@@ -16182,7 +16562,7 @@ def main() -> int:
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77 "
         "docs/provenance validation passed"
     )
     return 0

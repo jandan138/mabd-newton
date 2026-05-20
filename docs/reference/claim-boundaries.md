@@ -1014,6 +1014,27 @@
   result, co-rotated ABD timing result, paper-comparable timing result,
   completed rolling/spinning reproduction, comparative baseline pass, full
   paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 77 rolling-cylinder finite-stiffness
+  SolverMABD material preflight evidence with the Phase 77 record.
+- Phase 77 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json`
+  exists as an incomplete Newton CPU `SolverMABD` rolling-cylinder material
+  preflight report, records the paper-sourced `young_modulus_pa = 1.0e9` and
+  `poisson_ratio = 0.3`, keeps `zero_stiffness_diagnostic = false`, records
+  local non-paper-comparable wall-clock timing, and keeps
+  `full_experiment_claim_passed = false`.
+- Phase 77 does not verify paper-faithful M-ABD rolling-cylinder collision,
+  paper-faithful rolling friction/no-slip dynamics, paper-faithful explicit or
+  implicit RBD, co-rotated ABD timing, same-hardware paper timing,
+  paper-comparable performance, a completed rolling/spinning reproduction, full
+  paper reproduction, or any passed `experiment.*` claim.
+- Phase 77 rolling-cylinder finite-stiffness material preflight evidence must
+  not be described as a paper-faithful M-ABD rolling-cylinder result,
+  paper-faithful collision result, rolling friction result, paper-faithful
+  explicit or implicit RBD result, co-rotated ABD timing result,
+  paper-comparable timing result, completed rolling/spinning reproduction,
+  comparative baseline pass, full paper reproduction, or any passed
+  `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1413,6 +1434,13 @@
   evidence, not a completed rolling/spinning reproduction, not comparative
   baseline pass evidence, not full paper reproduction, and not any passed
   `experiment.*` claim.
+- Phase 77 rolling-cylinder finite-stiffness material preflight evidence is not
+  a paper-faithful M-ABD rolling-cylinder result, not paper-faithful affine
+  collision/contact, not rolling friction/no-slip evidence, not paper-faithful
+  explicit or implicit RBD evidence, not co-rotated ABD timing evidence, not
+  paper-comparable timing evidence, not a completed rolling/spinning
+  reproduction, not comparative baseline pass evidence, not full paper
+  reproduction, and not any passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.
