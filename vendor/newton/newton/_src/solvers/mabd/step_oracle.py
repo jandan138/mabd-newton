@@ -77,6 +77,7 @@ class MABDCPUOracleConfig:
     topology: str = "dense"
     graph_schedule: tuple[tuple[int, ...], ...] | None = None
     residual_correction: bool = True
+    contact_constraint_mode: str = "plane"
 
 
 @dataclass(frozen=True)
@@ -175,6 +176,8 @@ def _validate_config(config: MABDCPUOracleConfig, body_count: int) -> tuple[MABD
             raise TypeError(f"config.bodies[{body_id}].precompute must be SingleBodyABDPrecompute")
         if body.rotation_mode not in {"none", "polar", "no_polar"}:
             raise ValueError("rotation_mode must be one of 'none', 'polar', or 'no_polar'")
+    if str(config.contact_constraint_mode) not in {"plane", "world"}:
+        raise ValueError("contact_constraint_mode must be one of 'plane' or 'world'")
     constraints = tuple(config.constraints)
     for constraint_id, constraint in enumerate(constraints):
         if not 0 <= int(constraint.body_a) < body_count or not 0 <= int(constraint.body_b) < body_count:
@@ -407,6 +410,28 @@ def _assemble_dense_dual_inputs_with_world_constraints(
     lower_blocks = []
     edge_slices: list[slice] = []
     row_start = 0
+
+    def row_increases_rank(row: np.ndarray) -> bool:
+        if not rows:
+            return True
+        before = np.linalg.matrix_rank(np.vstack(rows), tol=1.0e-10)
+        after = np.linalg.matrix_rank(np.vstack([*rows, row]), tol=1.0e-10)
+        return bool(after > before)
+
+    def append_independent_rows(row: np.ndarray, lower_rhs: np.ndarray) -> int:
+        nonlocal row_start
+        accepted_count = 0
+        for row_values, rhs_value in zip(row, lower_rhs, strict=True):
+            row_block = row_values.reshape(1, -1)
+            if not row_increases_rank(row_block):
+                continue
+            rows.append(row_block)
+            lower_blocks.append(np.array([float(rhs_value)], dtype=float))
+            edge_slices.append(slice(row_start, row_start + 1))
+            row_start += 1
+            accepted_count += 1
+        return accepted_count
+
     for (body_a, body_b), (grad_a, grad_b), lower_rhs in zip(
         body_edges,
         body_gradients,
@@ -430,17 +455,7 @@ def _assemble_dense_dual_inputs_with_world_constraints(
         rank = gradient.shape[0]
         row = np.zeros((rank, dim * len(hessians)), dtype=float)
         row[:, dim * body : dim * body + dim] = gradient @ increment_maps[body]
-        rows.append(row)
-        lower_blocks.append(lower_rhs)
-        edge_slices.append(slice(row_start, row_start + rank))
-        row_start += rank
-
-    def plane_row_increases_rank(row: np.ndarray) -> bool:
-        if not rows:
-            return True
-        before = np.linalg.matrix_rank(np.vstack(rows), tol=1.0e-10)
-        after = np.linalg.matrix_rank(np.vstack([*rows, row]), tol=1.0e-10)
-        return bool(after > before)
+        append_independent_rows(row, lower_rhs)
 
     accepted_plane_count = 0
     skipped_plane_count = 0
@@ -453,13 +468,10 @@ def _assemble_dense_dual_inputs_with_world_constraints(
         rank = gradient.shape[0]
         row = np.zeros((rank, dim * len(hessians)), dtype=float)
         row[:, dim * body : dim * body + dim] = gradient @ increment_maps[body]
-        if not plane_row_increases_rank(row):
+        accepted_rows = append_independent_rows(row, lower_rhs)
+        if accepted_rows == 0:
             skipped_plane_count += 1
             continue
-        rows.append(row)
-        lower_blocks.append(lower_rhs)
-        edge_slices.append(slice(row_start, row_start + rank))
-        row_start += rank
         accepted_plane_count += 1
     J = np.vstack(rows)
     lower_rhs = np.concatenate(lower_blocks)

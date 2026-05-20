@@ -861,6 +861,13 @@
   contact solver, collision detection, paper-faithful affine collision/contact,
   generic inequality-constrained M-ABD KKT, a passed experiment, or full paper
   reproduction.
+- Later local Newton patches add an opt-in
+  `MABDCPUOracleConfig.contact_constraint_mode = "world"` path that maps
+  supported static-geometry contact rows to point/world sticking constraints
+  for diagnostics. This mode is not a validated rolling friction/no-slip
+  method, not a paper-faithful affine contact solve, and not evidence for a
+  passed rolling-cylinder experiment unless a later dated report and pass gate
+  prove those claims.
 - This repository contains Phase 70 SolverMABD Contacts input spinning-box
   diagnostic report lane evidence after the Phase 70 record is created.
 - Phase 70 verifies that the spinning-box diagnostic runner can build

@@ -45,6 +45,8 @@ class MABDContactsInputSummary:
     skipped_contact_count: int
     source: str
     scope: str
+    generated_world_constraint_count: int = 0
+    contact_constraint_mode: str = "plane"
 
 
 @dataclass(frozen=True)
@@ -321,13 +323,21 @@ class SolverMABD(SolverBase):
             mapping[body_id] = row
         return mapping
 
-    def _plane_constraints_from_contacts(self, contacts: Contacts) -> tuple[MABDCPUOraclePlaneConstraint, ...]:
+    def _constraints_from_contacts(
+        self,
+        contacts: Contacts,
+        mode: str,
+    ) -> tuple[tuple[MABDCPUOracleWorldConstraint, ...], tuple[MABDCPUOraclePlaneConstraint, ...]]:
         reported_count = max(0, int(contacts.rigid_contact_count.numpy()[0]))
         capacity = int(contacts.rigid_contact_max)
         rows_read = min(reported_count, capacity)
         overflow_count = max(0, reported_count - capacity)
-        generated: list[MABDCPUOraclePlaneConstraint] = []
+        generated_world: list[MABDCPUOracleWorldConstraint] = []
+        generated_plane: list[MABDCPUOraclePlaneConstraint] = []
         skipped_count = overflow_count
+        contact_mode = str(mode)
+        if contact_mode not in {"plane", "world"}:
+            raise ValueError("contact_constraint_mode must be one of 'plane' or 'world'")
 
         if rows_read > 0:
             if self.model.shape_body is None:
@@ -379,27 +389,52 @@ class SolverMABD(SolverBase):
                     plane_normal = -normal
                     plane_point = point0
 
-                generated.append(
-                    MABDCPUOraclePlaneConstraint(
-                        body=int(body),
-                        rest_point=np.asarray(rest_point, dtype=float),
-                        plane_normal=np.asarray(plane_normal, dtype=float),
-                        plane_offset=float(np.dot(plane_normal, plane_point)),
+                if contact_mode == "world":
+                    generated_world.append(
+                        MABDCPUOracleWorldConstraint(
+                            body=int(body),
+                            rest_point=np.asarray(rest_point, dtype=float),
+                            world_point=np.asarray(plane_point, dtype=float),
+                        )
                     )
-                )
+                else:
+                    generated_plane.append(
+                        MABDCPUOraclePlaneConstraint(
+                            body=int(body),
+                            rest_point=np.asarray(rest_point, dtype=float),
+                            plane_normal=np.asarray(plane_normal, dtype=float),
+                            plane_offset=float(np.dot(plane_normal, plane_point)),
+                        )
+                    )
 
+        policy = (
+            "rigid_contacts_to_point_world_constraints_diagnostic"
+            if contact_mode == "world"
+            else "rigid_contacts_to_point_plane_constraints_diagnostic"
+        )
+        scope = (
+            "diagnostic_only_static_geometry_world_constraints"
+            if contact_mode == "world"
+            else "diagnostic_only_static_geometry_plane_constraints"
+        )
         self.last_contacts_input_summary = MABDContactsInputSummary(
-            policy="rigid_contacts_to_point_plane_constraints_diagnostic",
+            policy=policy,
             rigid_contact_count=reported_count,
             rigid_contact_capacity=capacity,
             rigid_contact_overflow_count=overflow_count,
             rigid_contact_rows_read=rows_read,
-            generated_plane_constraint_count=len(generated),
+            generated_plane_constraint_count=len(generated_plane),
             skipped_contact_count=skipped_count,
             source="newton.Contacts.rigid_contact_*",
-            scope="diagnostic_only_static_geometry_plane_constraints",
+            scope=scope,
+            generated_world_constraint_count=len(generated_world),
+            contact_constraint_mode=contact_mode,
         )
-        return tuple(generated)
+        return tuple(generated_world), tuple(generated_plane)
+
+    def _plane_constraints_from_contacts(self, contacts: Contacts) -> tuple[MABDCPUOraclePlaneConstraint, ...]:
+        _world_constraints, plane_constraints = self._constraints_from_contacts(contacts, "plane")
+        return plane_constraints
 
     def _cpu_oracle_config_with_contacts(
         self,
@@ -410,11 +445,15 @@ class SolverMABD(SolverBase):
             self.last_contacts_input_summary = None
             return config
 
-        contact_plane_constraints = self._plane_constraints_from_contacts(contacts)
-        if not contact_plane_constraints:
+        contact_world_constraints, contact_plane_constraints = self._constraints_from_contacts(
+            contacts,
+            str(config.contact_constraint_mode),
+        )
+        if not contact_world_constraints and not contact_plane_constraints:
             return config
         return replace(
             config,
+            world_constraints=tuple(config.world_constraints) + contact_world_constraints,
             plane_constraints=tuple(config.plane_constraints) + contact_plane_constraints,
         )
 
@@ -574,16 +613,15 @@ class SolverMABD(SolverBase):
         for box_shape, mabd_body, rest_corners, _box_transform in mabd_box_shapes:
             A, t = unpack_q(q[mabd_body])
             for plane_shape, normal, plane_offset in static_planes:
-                plane_point = normal * plane_offset
                 for rest_corner in rest_corners:
                     world_point = A @ rest_corner + t
                     signed_distance = float(np.dot(normal, world_point) - plane_offset)
                     if signed_distance < 0.0:
-                        candidates.append((box_shape, plane_shape, rest_corner, plane_point, normal))
+                        projected_point = world_point - signed_distance * normal
+                        candidates.append((box_shape, plane_shape, rest_corner, projected_point, normal))
         for cylinder_shape, mabd_body, scale, transform in mabd_cylinder_shapes:
             A, t = unpack_q(q[mabd_body])
             for plane_shape, normal, plane_offset in static_planes:
-                plane_point = normal * plane_offset
                 affine_direction = A.T @ normal
                 local_direction = self._inverse_transform_direction(transform, affine_direction)
                 local_support = self._cylinder_support_point(scale, local_direction)
@@ -591,7 +629,8 @@ class SolverMABD(SolverBase):
                 world_point = A @ rest_point + t
                 signed_distance = float(np.dot(normal, world_point) - plane_offset)
                 if signed_distance < 0.0:
-                    candidates.append((cylinder_shape, plane_shape, rest_point, plane_point, normal))
+                    projected_point = world_point - signed_distance * normal
+                    candidates.append((cylinder_shape, plane_shape, rest_point, projected_point, normal))
 
         candidate_count = len(candidates)
         if max_contacts is None:

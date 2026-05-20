@@ -6,6 +6,7 @@ import numpy as np
 import warp as wp
 
 import newton
+from newton._src.solvers.mabd import step_oracle as mabd_step_oracle
 from newton.solvers import SolverMABD, mabd
 
 
@@ -898,6 +899,67 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertGreater(float(np.linalg.norm(result.q[0][:9] - q[:9])), 1.0e-6)
         np.testing.assert_allclose(pinned, world_point, atol=1.0e-10)
 
+    def test_dense_cpu_step_rank_filters_dependent_world_anchor_rows(self) -> None:
+        q = _identity_q((0.2, -0.1, 0.05))
+        rest_point = np.array([0.25, -0.5, 0.0], dtype=float)
+        world_point = np.array([0.25, 0.0, 0.0], dtype=float)
+        duplicate_anchor = mabd.MABDCPUOracleWorldConstraint(
+            body=0,
+            rest_point=rest_point,
+            world_point=world_point,
+        )
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[np.zeros(12)],
+            dt=0.05,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body()],
+                world_constraints=[duplicate_anchor, duplicate_anchor],
+                topology="dense",
+            ),
+        )
+
+        pinned = mabd.point_jacobian(rest_point) @ result.q[0]
+        np.testing.assert_allclose(pinned, world_point, atol=1.0e-10)
+        self.assertLess(result.constraint_residual_norm, 1.0e-10)
+        self.assertTrue(np.all(np.isfinite(result.q[0])))
+
+    def test_dense_cpu_assembler_filters_partially_dependent_world_rows(self) -> None:
+        dim = 12
+        world_gradient = mabd.point_jacobian(np.zeros(3))
+        prior_row = world_gradient[:1]
+
+        inputs, accepted_plane_count, skipped_plane_count = mabd_step_oracle._assemble_dense_dual_inputs_with_world_constraints(
+            hessians=(np.eye(dim), np.eye(dim)),
+            body_edges=[(0, 1)],
+            body_gradients=[(prior_row, np.zeros((1, dim)))],
+            body_forces=(np.zeros(dim), np.zeros(dim)),
+            body_lower_rhs_blocks=[np.array([0.0])],
+            world_bodies=[0],
+            world_gradients=[world_gradient],
+            world_lower_rhs_blocks=[np.array([0.0, 0.2, -0.1])],
+            plane_bodies=[],
+            plane_gradients=[],
+            plane_lower_rhs_blocks=[],
+            increment_maps=(np.eye(dim), np.eye(dim)),
+        )
+
+        self.assertEqual(accepted_plane_count, 0)
+        self.assertEqual(skipped_plane_count, 0)
+        self.assertEqual(inputs.J.shape, (3, 2 * dim))
+        self.assertEqual(inputs.lower_rhs.shape, (3,))
+        self.assertEqual(np.linalg.matrix_rank(inputs.J, tol=1.0e-10), inputs.J.shape[0])
+        np.testing.assert_allclose(inputs.lower_rhs, np.array([0.0, 0.2, -0.1]))
+
+    def test_cpu_oracle_config_preserves_external_forces_positional_argument(self) -> None:
+        force = np.zeros(12)
+        config = mabd.MABDCPUOracleConfig([_body()], [], [], [], [force])
+
+        self.assertEqual(config.contact_constraint_mode, "plane")
+        self.assertEqual(len(config.external_forces), 1)
+        np.testing.assert_allclose(config.external_forces[0], force)
+
     def test_dense_cpu_step_plane_constraint_preserves_tangent_motion(self) -> None:
         q = _identity_q((0.2, -0.3, 0.1))
         qd = np.zeros(12)
@@ -1645,6 +1707,71 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
             "rigid_contacts_to_point_plane_constraints_diagnostic",
         )
 
+    def test_solver_step_can_convert_contacts_to_sticking_world_constraints(self) -> None:
+        model, box_shape, plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        solver.configure_cpu_oracle(
+            mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                contact_constraint_mode="world",
+                topology="dense",
+            )
+        )
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.5, -1.0, 0.25])
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        rest_point = np.array([0.25, 0.0, 0.0], dtype=float)
+        world_point = np.array([0.25, 0.0, 0.0], dtype=float)
+        contacts = _contacts_with_one_rigid_row(
+            shape0=box_shape,
+            shape1=plane_shape,
+            point0=rest_point,
+            point1=world_point,
+            normal=(0.0, 1.0, 0.0),
+        )
+        dt = 0.05
+
+        solver.step(state, state, None, contacts, dt)
+
+        expected = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                world_constraints=[
+                    mabd.MABDCPUOracleWorldConstraint(
+                        body=0,
+                        rest_point=rest_point,
+                        world_point=world_point,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+        q_next, qd_next = _read_mabd_state(state)
+        np.testing.assert_allclose(q_next[0], expected.q[0], atol=1.0e-7)
+        np.testing.assert_allclose(qd_next[0], expected.qd[0], atol=1.0e-7)
+        np.testing.assert_allclose(
+            mabd.point_jacobian(rest_point) @ q_next[0],
+            world_point,
+            atol=1.0e-7,
+        )
+        self.assertEqual(solver.last_step_result.plane_constraint_requested_count, 0)
+        self.assertEqual(solver.last_contacts_input_summary.generated_plane_constraint_count, 0)
+        self.assertEqual(solver.last_contacts_input_summary.generated_world_constraint_count, 1)
+        self.assertEqual(solver.last_contacts_input_summary.skipped_contact_count, 0)
+        self.assertEqual(
+            solver.last_contacts_input_summary.policy,
+            "rigid_contacts_to_point_world_constraints_diagnostic",
+        )
+        self.assertEqual(
+            solver.last_contacts_input_summary.scope,
+            "diagnostic_only_static_geometry_world_constraints",
+        )
+
     def test_solver_step_flips_contact_normal_when_mabd_body_is_shape1(self) -> None:
         model, box_shape, plane_shape = _mabd_model_with_box_and_static_plane()
         solver = SolverMABD(model)
@@ -1768,7 +1895,22 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
             np.tile(np.array([0.0, 1.0, 0.0], dtype=np.float32), (4, 1)),
             atol=1.0e-7,
         )
-        np.testing.assert_allclose(contacts.rigid_contact_point1.numpy()[:4], np.zeros((4, 3)))
+        point1 = contacts.rigid_contact_point1.numpy()[:4]
+        expected_projected_points = np.array(
+            [
+                [-0.5, 0.0, -0.5],
+                [-0.5, 0.0, 0.5],
+                [0.5, 0.0, -0.5],
+                [0.5, 0.0, 0.5],
+            ],
+            dtype=np.float32,
+        )
+        order = np.lexsort((point1[:, 2], point1[:, 0]))
+        np.testing.assert_allclose(
+            point1[order],
+            expected_projected_points,
+            atol=1.0e-7,
+        )
         np.testing.assert_allclose(
             np.sort(contacts.rigid_contact_point0.numpy()[:4, 1]),
             np.full(4, -0.5),
