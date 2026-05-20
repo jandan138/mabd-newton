@@ -37,6 +37,22 @@ ROLLING_SPINNING_RBD_NEWTON_API = [
     "Model.collide",
     "SolverSemiImplicit",
 ]
+ROLLING_SPINNING_RBD_EXPLICIT_REQUIRED_MISSING_LANES = [
+    "mabd_newton",
+    "paper_comparable_timing",
+]
+ROLLING_SPINNING_RBD_EXPLICIT_BLOCKING_REASONS = [
+    "mabd_rolling_cylinder_lane_missing",
+    "paper_comparable_timing_missing",
+    "newton_explicit_euler_not_paper_explicit_rbd_solver",
+]
+ROLLING_SPINNING_RBD_EXPLICIT_NEWTON_API = [
+    "ModelBuilder.add_shape_cylinder",
+    "ModelBuilder.add_ground_plane",
+    "Model.contacts",
+    "Model.collide",
+    "SolverExplicitEuler",
+]
 
 
 @dataclass(frozen=True)
@@ -137,8 +153,10 @@ def _rolling_cylinder_sample(
     }
 
 
-def run_rolling_cylinder_rbd_implicit_baseline(
+def _run_rolling_cylinder_rbd_baseline(
     config: RollingSpinningRBDBaselineConfig,
+    *,
+    solver_kind: str,
 ) -> RollingCylinderRBDBaselineResult:
     mass_kg, inertia_diag_kg_m2 = _rolling_cylinder_mass_and_inertia(config)
     contact_counts: list[int] = []
@@ -164,7 +182,7 @@ def run_rolling_cylinder_rbd_implicit_baseline(
                 wp.vec3(*config.initial_position_m.tolist()),
                 wp.quat_identity(),
             ),
-            label="rolling_cylinder_rbd_implicit_baseline",
+            label=f"rolling_cylinder_rbd_{solver_kind}_baseline",
         )
         builder.add_shape_cylinder(
             body,
@@ -193,7 +211,12 @@ def run_rolling_cylinder_rbd_implicit_baseline(
         ).astype(np.float32)
         state_in.body_qd.assign(body_qd)
 
-        solver = newton.solvers.SolverSemiImplicit(model, angular_damping=0.0)
+        if solver_kind == "implicit":
+            solver = newton.solvers.SolverSemiImplicit(model, angular_damping=0.0)
+        elif solver_kind == "explicit":
+            solver = newton.solvers.SolverExplicitEuler(model, angular_damping=0.0)
+        else:
+            raise ValueError(f"unknown rolling-cylinder RBD solver kind: {solver_kind}")
 
         def record(step_index: int) -> None:
             contact_count = int(contacts.rigid_contact_count.numpy()[0])
@@ -278,6 +301,18 @@ def run_rolling_cylinder_rbd_implicit_baseline(
         total_wall_time_ms=total_wall_time_ms,
         trajectory_samples=tuple(trajectory_samples),
     )
+
+
+def run_rolling_cylinder_rbd_implicit_baseline(
+    config: RollingSpinningRBDBaselineConfig,
+) -> RollingCylinderRBDBaselineResult:
+    return _run_rolling_cylinder_rbd_baseline(config, solver_kind="implicit")
+
+
+def run_rolling_cylinder_rbd_explicit_baseline(
+    config: RollingSpinningRBDBaselineConfig,
+) -> RollingCylinderRBDBaselineResult:
+    return _run_rolling_cylinder_rbd_baseline(config, solver_kind="explicit")
 
 
 def write_rolling_spinning_protocol_report(
@@ -444,9 +479,107 @@ def write_rolling_spinning_rbd_implicit_baseline_report(
     return report
 
 
+def write_rolling_spinning_rbd_explicit_baseline_report(
+    path: str | Path,
+    *,
+    config: RollingSpinningRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    result = run_rolling_cylinder_rbd_explicit_baseline(config.rbd_explicit_baseline)
+    expected = {
+        "paper_claim_status": (
+            "requires M-ABD rolling-cylinder and paper-comparable timing before pass; "
+            "this explicit RBD lane is a Newton development baseline"
+        ),
+        "source_lines": list(config.source_lines),
+        "config_path": ROLLING_SPINNING_CONFIG_PATH,
+        "canonical_python": CANONICAL_PYTHON,
+        "benchmark_body": config.performance.body,
+        "paper_total_simulation_time_ms": dict(
+            config.performance.paper_total_simulation_time_ms
+        ),
+        "paper_hardware_context": config.performance.paper_hardware_context,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+    }
+    observed = {
+        "local_runtime_measured": True,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "required_lanes_missing": list(
+            ROLLING_SPINNING_RBD_EXPLICIT_REQUIRED_MISSING_LANES
+        ),
+        "blocking_reasons": list(ROLLING_SPINNING_RBD_EXPLICIT_BLOCKING_REASONS),
+        "newton_api": list(ROLLING_SPINNING_RBD_EXPLICIT_NEWTON_API),
+        "newton_device": "cpu",
+        "cylinder_axis_world": [0.0, 0.0, 1.0],
+        "solver_name": "newton.solvers.SolverExplicitEuler",
+        "solver_scope": "newton_development_baseline_not_paper_faithful_explicit_rbd",
+        "step_count": result.step_count,
+        "time_step_s": result.time_step_s,
+        "radius_m": result.radius_m,
+        "half_height_m": result.half_height_m,
+        "density_kg_m3": result.density_kg_m3,
+        "mass_kg": result.mass_kg,
+        "inertia_diag_kg_m2": result.inertia_diag_kg_m2.tolist(),
+        "initial_position_m": result.initial_position_m.tolist(),
+        "final_position_m": result.final_position_m.tolist(),
+        "final_rotation_xyzw": result.final_rotation_xyzw.tolist(),
+        "final_linear_velocity_m_s": result.final_linear_velocity_m_s.tolist(),
+        "final_angular_velocity_rad_s": result.final_angular_velocity_rad_s.tolist(),
+        "initial_energy_j": result.initial_energy_j,
+        "final_energy_j": result.final_energy_j,
+        "energy_drift_j": result.energy_drift_j,
+        "relative_energy_drift": result.relative_energy_drift,
+        "no_slip_residual_m_s": result.no_slip_residual_m_s,
+        "min_center_height_m": result.center_height_min_m,
+        "max_center_penetration_m": result.max_center_penetration_m,
+        "contact_count_summary": dict(result.contact_count_summary),
+        "contact_material": dict(result.contact_material),
+        "trajectory_samples": list(result.trajectory_samples),
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={
+            "primitive_cylinder": "not_applicable_procedural",
+            "primitive_cube": "not_applicable_procedural",
+        },
+        solver_mode="newton_explicit_euler_rolling_cylinder_rbd_cpu_development",
+        backend="cpu_newton_warp",
+        baseline_lane="rbd_explicit_baseline",
+        expected=expected,
+        observed=observed,
+        threshold=dict(config.rbd_explicit_baseline.thresholds),
+        unit="json_report",
+        status=result.status,
+        failure_reason=(
+            "Newton ExplicitEuler rolling-cylinder development baseline only; M-ABD "
+            "rolling-cylinder and paper-comparable timing evidence remain missing"
+        ),
+        timing_distribution={
+            "total_wall_time_ms": result.total_wall_time_ms,
+            "step_count": result.step_count,
+            "paper_comparable": False,
+            "scope": "local_cpu_wall_clock_not_paper_comparable",
+        },
+        raw_outputs={"time_series": "not_written"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 __all__ = [
     "RollingCylinderRBDBaselineResult",
+    "run_rolling_cylinder_rbd_explicit_baseline",
     "run_rolling_cylinder_rbd_implicit_baseline",
+    "write_rolling_spinning_rbd_explicit_baseline_report",
     "write_rolling_spinning_protocol_report",
     "write_rolling_spinning_rbd_implicit_baseline_report",
 ]

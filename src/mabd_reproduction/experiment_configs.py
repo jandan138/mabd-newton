@@ -99,6 +99,7 @@ class RollingSpinningRunConfig:
     paper_values: dict[str, Any]
     performance: RollingSpinningPerformanceConfig
     rbd_implicit_baseline: RollingSpinningRBDBaselineConfig
+    rbd_explicit_baseline: RollingSpinningRBDBaselineConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -343,6 +344,9 @@ ROLLING_SPINNING_REQUIRED_MISSING_LANES = (
 )
 ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json"
+)
+ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT = (
+    "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json"
 )
 ROLLING_SPINNING_RBD_CONTACT_KEYS = frozenset({"ke", "kd", "kf", "mu", "gap"})
 ROLLING_SPINNING_RBD_THRESHOLD_KEYS = frozenset(
@@ -784,29 +788,31 @@ def _require_rolling_spinning_performance(
     )
 
 
-def _require_rolling_spinning_rbd_implicit_baseline(
+def _require_rolling_spinning_rbd_baseline(
     data: dict[str, Any],
+    key: str,
 ) -> RollingSpinningRBDBaselineConfig:
-    baseline = _require_mapping(data, "rbd_implicit_baseline")
+    section_key = key
+    baseline = _require_mapping(data, key)
     contact = _require_float_mapping(baseline, "contact")
     if set(contact) != ROLLING_SPINNING_RBD_CONTACT_KEYS:
         raise ExperimentRunConfigError(
-            "rbd_implicit_baseline.contact keys must match Newton shape material fields"
+            f"{section_key}.contact keys must match Newton shape material fields"
         )
-    for key, value in contact.items():
+    for contact_key, value in contact.items():
         if value < 0.0:
             raise ExperimentRunConfigError(
-                f"rbd_implicit_baseline.contact.{key} must be non-negative"
+                f"{section_key}.contact.{contact_key} must be non-negative"
             )
     thresholds = _require_float_mapping(baseline, "thresholds")
     if set(thresholds) != ROLLING_SPINNING_RBD_THRESHOLD_KEYS:
         raise ExperimentRunConfigError(
-            "rbd_implicit_baseline.thresholds keys must match Phase 74 metrics"
+            f"{section_key}.thresholds keys must match rolling-cylinder RBD metrics"
         )
-    for key, value in thresholds.items():
+    for threshold_key, value in thresholds.items():
         if value < 0.0:
             raise ExperimentRunConfigError(
-                f"rbd_implicit_baseline.thresholds.{key} must be non-negative"
+                f"{section_key}.thresholds.{threshold_key} must be non-negative"
             )
     return RollingSpinningRBDBaselineConfig(
         output_report=_require_str(baseline, "output_report"),
@@ -1354,7 +1360,14 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
         required_missing_lanes=_require_str_tuple(data, "required_missing_lanes"),
         paper_values=_require_mapping(data, "paper_values"),
         performance=_require_rolling_spinning_performance(data),
-        rbd_implicit_baseline=_require_rolling_spinning_rbd_implicit_baseline(data),
+        rbd_implicit_baseline=_require_rolling_spinning_rbd_baseline(
+            data,
+            "rbd_implicit_baseline",
+        ),
+        rbd_explicit_baseline=_require_rolling_spinning_rbd_baseline(
+            data,
+            "rbd_explicit_baseline",
+        ),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1407,50 +1420,72 @@ def validate_rolling_spinning_config_against_matrix(
         )
     if config.performance.step_count != 10000:
         raise ExperimentRunConfigError("performance.step_count must match paper 10K steps")
-    rbd_report = config.rbd_implicit_baseline.output_report
-    rbd_report_path = Path(rbd_report)
-    if (
-        rbd_report_path.is_absolute()
-        or ".." in rbd_report_path.parts
-        or rbd_report_path.parent.as_posix() != "reports/experiment_matrix"
-        or rbd_report_path.suffix != ".json"
-        or rbd_report != ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT
-        or rbd_report == config.output_report
-    ):
-        raise ExperimentRunConfigError(
-            "rbd_implicit_baseline.output_report must be the lane-specific "
-            "relative JSON report under reports/experiment_matrix"
+    def validate_rbd_baseline(
+        baseline: RollingSpinningRBDBaselineConfig,
+        *,
+        field_name: str,
+        expected_output_report: str,
+        disallowed_reports: tuple[str, ...],
+    ) -> None:
+        rbd_report = baseline.output_report
+        rbd_report_path = Path(rbd_report)
+        if (
+            rbd_report_path.is_absolute()
+            or ".." in rbd_report_path.parts
+            or rbd_report_path.parent.as_posix() != "reports/experiment_matrix"
+            or rbd_report_path.suffix != ".json"
+            or rbd_report != expected_output_report
+            or rbd_report in disallowed_reports
+        ):
+            raise ExperimentRunConfigError(
+                f"{field_name}.output_report must be the lane-specific "
+                "relative JSON report under reports/experiment_matrix"
+            )
+        if baseline.time_step_s != config.performance.time_step_s:
+            raise ExperimentRunConfigError(
+                f"{field_name}.time_step_s must match performance.time_step_s"
+            )
+        if baseline.step_count > config.performance.step_count:
+            raise ExperimentRunConfigError(
+                f"{field_name}.step_count must not exceed performance.step_count"
+            )
+        if baseline.sample_count < 2:
+            raise ExperimentRunConfigError(
+                f"{field_name}.sample_count must include initial and final samples"
+            )
+        if not np.isclose(
+            baseline.initial_position_m[1],
+            baseline.radius_m,
+            rtol=0.0,
+            atol=1.0e-12,
+        ):
+            raise ExperimentRunConfigError(
+                f"{field_name}.initial_position_m must place the cylinder on the plane"
+            )
+        expected_no_slip = (
+            baseline.initial_linear_velocity_m_s[0]
+            + baseline.initial_angular_velocity_rad_s[2] * baseline.radius_m
         )
-    if config.rbd_implicit_baseline.time_step_s != config.performance.time_step_s:
-        raise ExperimentRunConfigError(
-            "rbd_implicit_baseline.time_step_s must match performance.time_step_s"
-        )
-    if config.rbd_implicit_baseline.step_count > config.performance.step_count:
-        raise ExperimentRunConfigError(
-            "rbd_implicit_baseline.step_count must not exceed performance.step_count"
-        )
-    if config.rbd_implicit_baseline.sample_count < 2:
-        raise ExperimentRunConfigError(
-            "rbd_implicit_baseline.sample_count must include initial and final samples"
-        )
-    if not np.isclose(
-        config.rbd_implicit_baseline.initial_position_m[1],
-        config.rbd_implicit_baseline.radius_m,
-        rtol=0.0,
-        atol=1.0e-12,
-    ):
-        raise ExperimentRunConfigError(
-            "rbd_implicit_baseline.initial_position_m must place the cylinder on the plane"
-        )
-    expected_no_slip = (
-        config.rbd_implicit_baseline.initial_linear_velocity_m_s[0]
-        + config.rbd_implicit_baseline.initial_angular_velocity_rad_s[2]
-        * config.rbd_implicit_baseline.radius_m
+        if not np.isclose(expected_no_slip, 0.0, rtol=0.0, atol=1.0e-12):
+            raise ExperimentRunConfigError(
+                f"{field_name} initial velocities must satisfy the no-slip diagnostic"
+            )
+
+    validate_rbd_baseline(
+        config.rbd_implicit_baseline,
+        field_name="rbd_implicit_baseline",
+        expected_output_report=ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT,
+        disallowed_reports=(config.output_report,),
     )
-    if not np.isclose(expected_no_slip, 0.0, rtol=0.0, atol=1.0e-12):
-        raise ExperimentRunConfigError(
-            "rbd_implicit_baseline initial velocities must satisfy the no-slip diagnostic"
-        )
+    validate_rbd_baseline(
+        config.rbd_explicit_baseline,
+        field_name="rbd_explicit_baseline",
+        expected_output_report=ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT,
+        disallowed_reports=(
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+        ),
+    )
 
 
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
@@ -2187,6 +2222,7 @@ __all__ = [
     "HEAVY_TOP_THRESHOLD_KEYS",
     "PAPER_HORIZON_THRESHOLD_KEYS",
     "ROLLING_SPINNING_RBD_CONTACT_KEYS",
+    "ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT",
     "ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT",
     "ROLLING_SPINNING_RBD_THRESHOLD_KEYS",
     "ROLLING_SPINNING_REQUIRED_MISSING_LANES",
