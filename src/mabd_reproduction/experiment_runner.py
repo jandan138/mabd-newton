@@ -14,10 +14,12 @@ from .comparison_reports import (
 from .experiment_configs import (
     load_heavy_top_config,
     load_physical_pendulum_config,
+    load_rolling_spinning_config,
     load_spinning_box_config,
     load_t_handle_config,
     validate_heavy_top_config_against_matrix,
     validate_physical_pendulum_config_against_matrix,
+    validate_rolling_spinning_config_against_matrix,
     validate_spinning_box_config_against_matrix,
     validate_t_handle_config_against_matrix,
 )
@@ -36,6 +38,7 @@ from .physical_pendulum_reports import (
 )
 from .reporting import ClaimReport, EvidenceStatus
 from .rigid_baselines import write_spinning_box_paper_rbd_baseline_report
+from .rolling_spinning_reports import write_rolling_spinning_protocol_report
 from .single_body_reports import (
     write_spinning_box_affine_static_plane_contacts_report,
     write_spinning_box_contacts_input_report,
@@ -88,6 +91,44 @@ def _resolve_output_path(
             raise ValueError("output_report must stay within output_root")
         return Path(output_root) / configured
     return configured
+
+
+def run_rolling_spinning_protocol(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    config = load_rolling_spinning_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_rolling_spinning_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError(
+            "Phase 73 rolling/spinning protocol runner requires incomplete report status"
+        )
+    report_path = _resolve_output_path(
+        config.output_report,
+        output_path=output_path,
+        output_root=output_root,
+    )
+    report = write_rolling_spinning_protocol_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
 
 
 def run_spinning_box_experiment(
@@ -1057,6 +1098,7 @@ __all__ = [
     "run_physical_pendulum_mabd_development",
     "run_physical_pendulum_mabd_newton",
     "run_physical_pendulum_rbd_baseline",
+    "run_rolling_spinning_protocol",
     "run_spinning_box_comparison",
     "run_spinning_box_contact_response",
     "run_spinning_box_decoupled_twist",

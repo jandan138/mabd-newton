@@ -13,10 +13,12 @@ from mabd_reproduction.experiment_configs import (
     ExperimentRunConfigError,
     load_heavy_top_config,
     load_physical_pendulum_config,
+    load_rolling_spinning_config,
     load_spinning_box_config,
     load_t_handle_config,
     validate_heavy_top_config_against_matrix,
     validate_physical_pendulum_config_against_matrix,
+    validate_rolling_spinning_config_against_matrix,
     validate_spinning_box_config_against_matrix,
     validate_t_handle_config_against_matrix,
 )
@@ -27,6 +29,7 @@ from mabd_reproduction.reporting import EvidenceStatus
 ROOT = Path(__file__).resolve().parents[1]
 HEAVY_TOP_CONFIG_PATH = ROOT / "configs/experiments/single_body_heavy_top.yaml"
 PHYSICAL_PENDULUM_CONFIG_PATH = ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+ROLLING_SPINNING_CONFIG_PATH = ROOT / "configs/experiments/single_body_rolling_spinning.yaml"
 T_HANDLE_CONFIG_PATH = ROOT / "configs/experiments/single_body_t_handle.yaml"
 
 
@@ -170,6 +173,53 @@ class ExperimentRunConfigTests(unittest.TestCase):
         np.testing.assert_allclose(properties.angular_momentum_kg_m2_s, [0.0, 100.0, 0.0])
         self.assertIn("linear_momentum_error", config.thresholds)
         self.assertIn("angular_momentum_error", config.thresholds)
+
+    def test_rolling_spinning_config_is_machine_checkable(self) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+
+        self.assertEqual(config.schema_version, 1)
+        self.assertEqual(config.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(config.scene_id, "single_body_rolling_spinning")
+        self.assertEqual(config.asset_ids, ("primitive_cylinder", "primitive_cube"))
+        self.assertEqual(config.baseline_lane, "mabd_newton")
+        self.assertEqual(
+            config.required_missing_lanes,
+            ("rbd_implicit_baseline", "rbd_explicit_baseline"),
+        )
+        self.assertEqual(config.report_status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(config.performance.time_step_s, 0.01)
+        self.assertEqual(config.performance.step_count, 10000)
+        self.assertEqual(config.performance.paper_hardware_context, "i7 CPU, single thread")
+        self.assertEqual(
+            config.performance.paper_total_simulation_time_ms["vanilla_implicit_abd"],
+            161.0,
+        )
+        self.assertEqual(
+            config.performance.paper_total_simulation_time_ms["implicit_rbd"],
+            44.0,
+        )
+        self.assertEqual(
+            config.performance.paper_total_simulation_time_ms["explicit_rbd"],
+            32.0,
+        )
+        self.assertEqual(
+            config.performance.paper_total_simulation_time_ms["corotated_abd_with_polar"],
+            34.0,
+        )
+        self.assertEqual(
+            config.performance.paper_total_simulation_time_ms["corotated_abd_without_polar"],
+            27.0,
+        )
+        self.assertIn("total_simulation_time_ms", config.thresholds)
+        self.assertIn("energy_drift", config.thresholds)
+        self.assertIn("linear_momentum_error", config.thresholds)
+        self.assertIn("angular_momentum_error", config.thresholds)
+
+    def test_rolling_spinning_config_matches_matrix(self) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        validate_rolling_spinning_config_against_matrix(config, matrix)
 
     def test_physical_pendulum_config_is_machine_checkable(self) -> None:
         config = load_physical_pendulum_config(PHYSICAL_PENDULUM_CONFIG_PATH)

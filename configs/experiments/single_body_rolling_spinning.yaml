@@ -1,0 +1,39 @@
+schema_version: 1
+claim_id: experiment.single_body.rolling_spinning
+scene_id: single_body_rolling_spinning
+source_lines:
+  - /tmp/mabd-paper/source/sections/singleabd.tex:162-172
+  - /tmp/mabd-paper/source/sections/experiment.tex:48-55
+asset_ids:
+  - primitive_cylinder
+  - primitive_cube
+baseline_lane: mabd_newton
+required_missing_lanes:
+  - rbd_implicit_baseline
+  - rbd_explicit_baseline
+paper_values:
+  h: "10 ms for rolling performance figure; additional step sizes in single-body comparisons"
+  duration: "10K steps for rolling cylinder performance figure"
+  material_E: "1E9 Pa for cube single-body benchmark"
+  density: "1E3 kg/m^3 for cube single-body benchmark"
+performance:
+  body: rolling_cylinder
+  time_step_s: 0.01
+  step_count: 10000
+  paper_hardware_context: i7 CPU, single thread
+  protocol_status: paper_text_timing_only_no_local_runtime_measurement
+  paper_total_simulation_time_ms:
+    vanilla_implicit_abd: 161.0
+    implicit_rbd: 44.0
+    explicit_rbd: 32.0
+    corotated_abd_with_polar: 34.0
+    corotated_abd_without_polar: 27.0
+report:
+  status: incomplete
+  failure_reason: full paper claim requires paper-faithful rolling cylinder runtime benchmark plus implicit and explicit RBD baselines
+  output_report: reports/experiment_matrix/single_body_rolling_spinning.json
+  thresholds:
+    total_simulation_time_ms: 0.0
+    linear_momentum_error: 0.0
+    angular_momentum_error: 0.0
+    energy_drift: 0.0

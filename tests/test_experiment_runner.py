@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "configs/experiments/single_body_spinning_box.yaml"
 HEAVY_TOP_CONFIG_PATH = ROOT / "configs/experiments/single_body_heavy_top.yaml"
 PHYSICAL_PENDULUM_CONFIG_PATH = ROOT / "configs/experiments/single_body_physical_pendulum.yaml"
+ROLLING_SPINNING_CONFIG_PATH = ROOT / "configs/experiments/single_body_rolling_spinning.yaml"
 T_HANDLE_CONFIG_PATH = ROOT / "configs/experiments/single_body_t_handle.yaml"
 MATRIX_PATH = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
 PHYSICAL_PENDULUM_TIMING_SOURCE_LINES = [
@@ -318,6 +319,105 @@ class ExperimentRunnerTests(unittest.TestCase):
                     vendored_newton_commit="test-newton",
                 )
             self.assertFalse(Path(output_report).exists())
+
+    def test_run_rolling_spinning_protocol_writes_configured_report(self) -> None:
+        from mabd_reproduction.experiment_runner import run_rolling_spinning_protocol
+
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            result = run_rolling_spinning_protocol(
+                config_path=ROLLING_SPINNING_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_root=root,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(
+            result.report_path,
+            root / "reports/experiment_matrix/single_body_rolling_spinning.json",
+        )
+        self.assertEqual(result.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(loaded.solver_mode, "rolling_spinning_protocol_audit")
+        self.assertEqual(loaded.backend, "report_protocol")
+        self.assertFalse(loaded.observed["local_runtime_measured"])
+        self.assertIn("rbd_implicit_baseline", loaded.observed["required_lanes_missing"])
+        self.assertIn("rbd_explicit_baseline", loaded.observed["required_lanes_missing"])
+        self.assertIn("rolling_cylinder_runtime_not_measured", loaded.observed["blocking_reasons"])
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["total_simulation_time_ms"],
+            "paper_reference_recorded_no_local_runtime",
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["linear_momentum_error"],
+            "not_measured_by_phase73",
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["angular_momentum_error"],
+            "not_measured_by_phase73",
+        )
+        self.assertEqual(
+            loaded.observed["paper_metric_statuses"]["energy_drift"],
+            "not_measured_by_phase73",
+        )
+        self.assertEqual(loaded.timing_distribution["status"], "not_measured")
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(loaded.threshold["total_simulation_time_ms"], 0.0)
+
+    def test_run_rolling_spinning_protocol_rejects_ambiguous_output_selection(self) -> None:
+        from mabd_reproduction.experiment_runner import run_rolling_spinning_protocol
+
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            with self.assertRaisesRegex(ValueError, "output_path and output_root"):
+                run_rolling_spinning_protocol(
+                    config_path=ROLLING_SPINNING_CONFIG_PATH,
+                    matrix_path=MATRIX_PATH,
+                    output_path=root / "report.json",
+                    output_root=root,
+                    source_commit="test-source",
+                    vendored_newton_commit="test-newton",
+                )
+
+    def test_run_experiment_cli_runs_rolling_spinning_protocol_lane(self) -> None:
+        import json
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rolling_spinning_protocol",
+                    "--config",
+                    str(ROLLING_SPINNING_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "test-source",
+                    "--vendored-newton-commit",
+                    "test-newton",
+                ],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertEqual(payload["status"], "incomplete")
+        self.assertEqual(payload["baseline_lane"], "mabd_newton")
 
     def test_run_spinning_box_rbd_baseline_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_rbd_baseline

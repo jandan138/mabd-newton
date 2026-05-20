@@ -61,6 +61,33 @@ class SpinningBoxRunConfig:
 
 
 @dataclass(frozen=True)
+class RollingSpinningPerformanceConfig:
+    body: str
+    time_step_s: float
+    step_count: int
+    paper_hardware_context: str
+    protocol_status: str
+    paper_total_simulation_time_ms: dict[str, float]
+
+
+@dataclass(frozen=True)
+class RollingSpinningRunConfig:
+    schema_version: int
+    claim_id: str
+    scene_id: str
+    source_lines: tuple[str, ...]
+    asset_ids: tuple[str, ...]
+    baseline_lane: str
+    required_missing_lanes: tuple[str, ...]
+    paper_values: dict[str, Any]
+    performance: RollingSpinningPerformanceConfig
+    report_status: EvidenceStatus
+    failure_reason: str
+    output_report: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class PhysicalPendulumReferenceConfig:
     release_angle_rad: float
     initial_angle_rad: float
@@ -282,6 +309,19 @@ PAPER_HORIZON_THRESHOLD_KEYS = frozenset(
         "max_affine_orthogonality_error",
         "max_residual_norm",
     }
+)
+ROLLING_SPINNING_TIMING_KEYS = frozenset(
+    {
+        "vanilla_implicit_abd",
+        "implicit_rbd",
+        "explicit_rbd",
+        "corotated_abd_with_polar",
+        "corotated_abd_without_polar",
+    }
+)
+ROLLING_SPINNING_REQUIRED_MISSING_LANES = (
+    "rbd_implicit_baseline",
+    "rbd_explicit_baseline",
 )
 
 PHYSICAL_PENDULUM_THRESHOLD_KEYS = frozenset(
@@ -679,6 +719,38 @@ def _require_paper_horizon(data: dict[str, Any]) -> SpinningBoxPaperHorizonConfi
         figure_pdf_sha256=_require_str(horizon, "figure_pdf_sha256"),
         figure_text_source=_require_str(horizon, "figure_text_source"),
         thresholds=thresholds,
+    )
+
+
+def _require_rolling_spinning_performance(
+    data: dict[str, Any],
+) -> RollingSpinningPerformanceConfig:
+    performance = _require_mapping(data, "performance")
+    paper_timing = _require_float_mapping(performance, "paper_total_simulation_time_ms")
+    if set(paper_timing) != ROLLING_SPINNING_TIMING_KEYS:
+        raise ExperimentRunConfigError(
+            "paper_total_simulation_time_ms keys must match paper timing modes"
+        )
+    if _require_str(performance, "body") != "rolling_cylinder":
+        raise ExperimentRunConfigError("performance.body must be rolling_cylinder")
+    if (
+        _require_str(performance, "protocol_status")
+        != "paper_text_timing_only_no_local_runtime_measurement"
+    ):
+        raise ExperimentRunConfigError(
+            "performance.protocol_status must record no local runtime measurement"
+        )
+    if _require_str(performance, "paper_hardware_context") != "i7 CPU, single thread":
+        raise ExperimentRunConfigError(
+            "performance.paper_hardware_context must match the paper timing context"
+        )
+    return RollingSpinningPerformanceConfig(
+        body="rolling_cylinder",
+        time_step_s=_require_positive_float(performance, "time_step_s"),
+        step_count=_require_positive_int(performance, "step_count"),
+        paper_hardware_context="i7 CPU, single thread",
+        protocol_status="paper_text_timing_only_no_local_runtime_measurement",
+        paper_total_simulation_time_ms=paper_timing,
     )
 
 
@@ -1173,6 +1245,90 @@ def _require_heavy_top_figure_curves(data: dict[str, Any]) -> HeavyTopFigureCurv
     return HeavyTopFigureCurvesConfig(
         output_report=_require_str(figure_curves, "output_report"),
     )
+
+
+def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
+    data = _read_mapping(Path(path))
+    if not isinstance(data.get("schema_version"), int) or isinstance(
+        data.get("schema_version"), bool
+    ):
+        raise ExperimentRunConfigError("schema_version must be 1")
+    if data.get("schema_version") != 1:
+        raise ExperimentRunConfigError("schema_version must be 1")
+    claim_id = _require_str(data, "claim_id")
+    if claim_id != "experiment.single_body.rolling_spinning":
+        raise ExperimentRunConfigError(
+            "rolling-spinning config must target experiment.single_body.rolling_spinning"
+        )
+    report = _require_mapping(data, "report")
+    try:
+        status = EvidenceStatus(_require_str(report, "status"))
+    except ValueError as exc:
+        raise ExperimentRunConfigError("report.status is not a known EvidenceStatus") from exc
+    if status == EvidenceStatus.PASSED:
+        raise ExperimentRunConfigError("passed experiment configs require a dedicated evidence gate")
+    return RollingSpinningRunConfig(
+        schema_version=1,
+        claim_id=claim_id,
+        scene_id=_require_str(data, "scene_id"),
+        source_lines=_require_str_tuple(data, "source_lines"),
+        asset_ids=_require_str_tuple(data, "asset_ids"),
+        baseline_lane=_require_str(data, "baseline_lane"),
+        required_missing_lanes=_require_str_tuple(data, "required_missing_lanes"),
+        paper_values=_require_mapping(data, "paper_values"),
+        performance=_require_rolling_spinning_performance(data),
+        report_status=status,
+        failure_reason=_require_str(report, "failure_reason"),
+        output_report=_require_str(report, "output_report"),
+        thresholds=_require_float_mapping(report, "thresholds"),
+    )
+
+
+def validate_rolling_spinning_config_against_matrix(
+    config: RollingSpinningRunConfig,
+    matrix: ExperimentMatrix,
+) -> None:
+    matches = [entry for entry in matrix.experiments if entry.claim_id == config.claim_id]
+    if len(matches) != 1:
+        raise ExperimentRunConfigError(f"{config.claim_id} must have exactly one matrix entry")
+    entry = matches[0]
+    if config.scene_id != entry.scene_id:
+        raise ExperimentRunConfigError("scene_id must match experiment matrix")
+    if config.source_lines != entry.source_lines:
+        raise ExperimentRunConfigError("source_lines must match experiment matrix")
+    if config.asset_ids != entry.asset_ids:
+        raise ExperimentRunConfigError("asset_ids must match experiment matrix")
+    if config.paper_values != entry.paper_values:
+        raise ExperimentRunConfigError("paper_values must match experiment matrix")
+    if config.output_report != entry.output_report:
+        raise ExperimentRunConfigError("output_report must match experiment matrix")
+    if config.baseline_lane not in entry.required_lanes:
+        raise ExperimentRunConfigError("baseline_lane must be listed in required_lanes")
+    if config.required_missing_lanes != ROLLING_SPINNING_REQUIRED_MISSING_LANES:
+        raise ExperimentRunConfigError(
+            "required_missing_lanes must match rolling/spinning baseline blockers"
+        )
+    for lane in config.required_missing_lanes:
+        if lane not in entry.required_lanes:
+            raise ExperimentRunConfigError("required_missing_lanes must be listed in required_lanes")
+    for reason in ("rbd_baseline_adapter_missing", "benchmark_protocol_not_recorded"):
+        if reason not in entry.blocking_reasons:
+            raise ExperimentRunConfigError(
+                "matrix blocking_reasons must keep rolling/spinning blockers"
+            )
+    if entry.reproduction_status != "blocked_by_baselines":
+        raise ExperimentRunConfigError("matrix reproduction_status must remain blocked_by_baselines")
+    for metric in entry.metrics:
+        if metric not in config.thresholds:
+            raise ExperimentRunConfigError(
+                "matrix metrics must be present in report.thresholds"
+            )
+    if config.performance.time_step_s != 0.01:
+        raise ExperimentRunConfigError(
+            "performance.time_step_s must match paper h = 0.01 sec"
+        )
+    if config.performance.step_count != 10000:
+        raise ExperimentRunConfigError("performance.step_count must match paper 10K steps")
 
 
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
@@ -1908,6 +2064,8 @@ __all__ = [
     "HEAVY_TOP_REQUIRED_MISSING_LANES",
     "HEAVY_TOP_THRESHOLD_KEYS",
     "PAPER_HORIZON_THRESHOLD_KEYS",
+    "ROLLING_SPINNING_REQUIRED_MISSING_LANES",
+    "ROLLING_SPINNING_TIMING_KEYS",
     "PHYSICAL_PENDULUM_REQUIRED_MISSING_LANES",
     "PHYSICAL_PENDULUM_COMPARISON_DIAGNOSTIC_LANES",
     "PHYSICAL_PENDULUM_COMPARISON_REQUIRED_LANES",
@@ -1937,6 +2095,8 @@ __all__ = [
     "PhysicalPendulumRBDBaselineConfig",
     "PhysicalPendulumReferenceConfig",
     "PhysicalPendulumRunConfig",
+    "RollingSpinningPerformanceConfig",
+    "RollingSpinningRunConfig",
     "SpinningBoxPaperHorizonConfig",
     "SpinningBoxRunConfig",
     "THandleComparisonConfig",
@@ -1945,11 +2105,13 @@ __all__ = [
     "THandleReferenceConfig",
     "THandleRunConfig",
     "load_physical_pendulum_config",
+    "load_rolling_spinning_config",
     "load_spinning_box_config",
     "load_t_handle_config",
     "load_heavy_top_config",
     "validate_heavy_top_config_against_matrix",
     "validate_physical_pendulum_config_against_matrix",
+    "validate_rolling_spinning_config_against_matrix",
     "validate_spinning_box_config_against_matrix",
     "validate_t_handle_config_against_matrix",
 ]
