@@ -323,7 +323,10 @@ class SpinningBoxComparisonTests(unittest.TestCase):
         diagnostics = loaded.observed["digitized_figure_curve_agreement_diagnostics"]
         linear_mabd = diagnostics["linear_momentum"]["mabd_newton"]
         self.assertEqual(linear_mabd["status"], "diagnostic_available_not_pass_gate")
-        self.assertEqual(linear_mabd["lane_value_source"], "linear_momentum_error")
+        self.assertEqual(linear_mabd["lane_value_source"], "final_linear_momentum_norm")
+        self.assertGreater(linear_mabd["lane_value"], 99.0)
+        self.assertLess(linear_mabd["lane_value"], 101.0)
+        self.assertLess(linear_mabd["best_abs_error"], 5.0)
         self.assertEqual(linear_mabd["figure_time_s"], 10.0)
         self.assertIn(
             linear_mabd["best_color_family"],
@@ -338,8 +341,25 @@ class SpinningBoxComparisonTests(unittest.TestCase):
             "diagnostic_only_not_curve_agreement",
         )
         self.assertIn("blue", linear_mabd["all_color_family_errors"])
-        self.assertIn("angular_momentum", diagnostics)
-        self.assertIn("rbd_implicit_baseline", diagnostics["angular_momentum"])
+        angular_mabd = diagnostics["angular_momentum"]["mabd_newton"]
+        self.assertEqual(
+            angular_mabd["lane_value_source"],
+            "final_angular_momentum_norm",
+        )
+        self.assertGreater(angular_mabd["lane_value"], 99.0)
+        self.assertLess(angular_mabd["lane_value"], 101.0)
+        self.assertLess(angular_mabd["best_abs_error"], 5.0)
+        linear_rbd = diagnostics["linear_momentum"]["rbd_implicit_baseline"]
+        self.assertEqual(linear_rbd["lane_value_source"], "final_linear_momentum_norm")
+        self.assertGreater(linear_rbd["lane_value"], 99.0)
+        self.assertLess(linear_rbd["lane_value"], 101.0)
+        angular_rbd = diagnostics["angular_momentum"]["rbd_implicit_baseline"]
+        self.assertEqual(
+            angular_rbd["lane_value_source"],
+            "final_angular_momentum_norm",
+        )
+        self.assertGreater(angular_rbd["lane_value"], 99.0)
+        self.assertLess(angular_rbd["lane_value"], 101.0)
         self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
 
     def test_spinning_box_comparison_ignores_invalid_figure_curve_report(self) -> None:

@@ -438,6 +438,14 @@ def _finite_vector3(value: Any) -> list[float] | None:
     return result
 
 
+def _vector3_norm(value: Any) -> float | None:
+    vector = _finite_vector3(value)
+    if vector is None:
+        return None
+    result = sqrt(sum(component * component for component in vector))
+    return result if isfinite(result) else None
+
+
 def _finite_difference(lhs: float, rhs: float) -> float | None:
     difference = lhs - rhs
     return difference if isfinite(difference) else None
@@ -1160,6 +1168,45 @@ def _spinning_box_figure_endpoint_value(
     return None
 
 
+def _spinning_box_lane_endpoint_momentum_value(
+    report: ClaimReport,
+    *,
+    metric: str,
+) -> tuple[float | None, str]:
+    if metric == "linear_momentum":
+        value = _vector3_norm(report.observed.get("final_linear_momentum_kg_m_s"))
+        if value is not None:
+            return value, "final_linear_momentum_norm"
+        mass = _finite_scalar(report.observed.get("mass_kg"))
+        velocity = _finite_vector3(report.observed.get("linear_velocity_m_s"))
+        if mass is not None and velocity is not None:
+            momentum = [mass * component for component in velocity]
+            value = sqrt(sum(component * component for component in momentum))
+            return (value if isfinite(value) else None), "final_linear_momentum_norm"
+        return None, "final_linear_momentum_norm"
+
+    if metric == "angular_momentum":
+        value = _vector3_norm(report.observed.get("final_angular_momentum_kg_m2_s"))
+        if value is not None:
+            return value, "final_angular_momentum_norm"
+        inertia = _finite_vector3(report.observed.get("inertia_diag_kg_m2"))
+        angular_velocity = _finite_vector3(report.observed.get("angular_velocity_rad_s"))
+        if inertia is not None and angular_velocity is not None:
+            momentum = [
+                inertia_component * omega_component
+                for inertia_component, omega_component in zip(
+                    inertia,
+                    angular_velocity,
+                    strict=True,
+                )
+            ]
+            value = sqrt(sum(component * component for component in momentum))
+            return (value if isfinite(value) else None), "final_angular_momentum_norm"
+        return None, "final_angular_momentum_norm"
+
+    raise ValueError(f"unsupported spinning-box figure metric: {metric}")
+
+
 def _spinning_box_figure_metric_diagnostic(
     report: ClaimReport,
     figure_report: ClaimReport,
@@ -1168,8 +1215,10 @@ def _spinning_box_figure_metric_diagnostic(
     metric: str,
 ) -> dict[str, Any]:
     metric_config = SPINNING_BOX_FIGURE_METRICS[metric]
-    lane_metric = metric_config["lane_metric"]
-    lane_value = _finite_scalar(report.observed.get(lane_metric))
+    lane_value, lane_metric = _spinning_box_lane_endpoint_momentum_value(
+        report,
+        metric=metric,
+    )
     all_color_errors: dict[str, dict[str, float | None]] = {}
     for color_family in SPINNING_BOX_FIGURE_COLOR_FAMILIES:
         figure_value = _spinning_box_figure_endpoint_value(
