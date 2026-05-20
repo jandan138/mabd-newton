@@ -1,0 +1,110 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "report_protocol",
+  "baseline_lane": "paper_timing_protocol",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "canonical_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "config_path": "configs/experiments/single_body_rolling_spinning.yaml",
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "paper timing table and local input report timings are recorded; full claim requires a paper-comparable single-thread timing run and paper-faithful RBD/M-ABD lanes",
+    "paper_comparable": true,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_step_count": 10000,
+    "paper_time_step_s": 0.01,
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ]
+  },
+  "failure_reason": "Paper timing protocol artifact only; paper-comparable hardware/threading run plus paper-faithful M-ABD, explicit RBD, and implicit RBD lanes remain missing",
+  "observed": {
+    "blocking_reasons": [
+      "paper_comparable_timing_missing",
+      "paper_hardware_mismatch",
+      "paper_single_thread_protocol_not_enforced",
+      "paper_faithful_mabd_collision_missing",
+      "paper_faithful_explicit_rbd_baseline_missing",
+      "paper_faithful_implicit_rbd_baseline_missing"
+    ],
+    "full_experiment_claim_passed": false,
+    "input_reports": [
+      {
+        "baseline_lane": "mabd_newton",
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning.json",
+        "solver_mode": "rolling_spinning_protocol_audit",
+        "status": "incomplete",
+        "total_wall_time_ms": null
+      },
+      {
+        "baseline_lane": "rbd_implicit_baseline",
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+        "solver_mode": "newton_semimplicit_rolling_cylinder_rbd_cpu_development",
+        "status": "incomplete",
+        "total_wall_time_ms": 7107.024885714054
+      },
+      {
+        "baseline_lane": "rbd_explicit_baseline",
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json",
+        "solver_mode": "newton_explicit_euler_rolling_cylinder_rbd_cpu_development",
+        "status": "incomplete",
+        "total_wall_time_ms": 7072.187442332506
+      },
+      {
+        "baseline_lane": "mabd_newton",
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json",
+        "solver_mode": "mabd_cpu_oracle_rolling_cylinder_newton_lane",
+        "status": "incomplete",
+        "total_wall_time_ms": 11564.692983403802
+      },
+      {
+        "baseline_lane": "mabd_newton",
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json",
+        "solver_mode": "mabd_cpu_oracle_rolling_cylinder_material_preflight",
+        "status": "incomplete",
+        "total_wall_time_ms": 11527.899712324142
+      }
+    ],
+    "local_environment_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "local_runtime_inputs_recorded": true,
+    "paper_comparable": false,
+    "timing_protocol_status": "paper_timing_protocol_incomplete"
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "rolling_spinning_paper_timing_protocol_audit",
+  "source_commit": "2087017f8cc9104e2ddac600aa7282e301b4f33a",
+  "status": "incomplete",
+  "threshold": {
+    "angular_momentum_error": 0.0,
+    "energy_drift": 0.0,
+    "linear_momentum_error": 0.0,
+    "total_simulation_time_ms": 0.0
+  },
+  "timing_distribution": {
+    "local_input_report_count": 5,
+    "paper_comparable": false,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "scope": "paper_timing_protocol_artifact_not_comparable"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

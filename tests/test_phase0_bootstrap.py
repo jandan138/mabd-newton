@@ -5077,12 +5077,12 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(
             audit["latest_update"],
             {
-                "phase_id": "phase77_rolling_cylinder_material_preflight",
+                "phase_id": "phase78_rolling_spinning_timing_protocol",
                 "update_date": "2026-05-20",
-                "source_commit": validate_docs.PHASE77_ROLLING_CYLINDER_MATERIAL_PREFLIGHT_COMMIT,
-                "report": validate_docs.ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REPORT_PATH,
+                "source_commit": validate_docs.PHASE78_ROLLING_SPINNING_TIMING_PROTOCOL_COMMIT,
+                "report": validate_docs.ROLLING_SPINNING_TIMING_PROTOCOL_REPORT_PATH,
                 "report_sha256": (
-                    validate_docs.PHASE77_ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_SHA256
+                    validate_docs.PHASE78_ROLLING_SPINNING_TIMING_PROTOCOL_SHA256
                 ),
                 "status": "incomplete",
             },
@@ -5484,6 +5484,139 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE77", text)
         self.assertNotIn("phase77-working-tree", text)
+
+    def test_phase78_rolling_spinning_timing_protocol_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 78",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 78 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 78 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 78 rolling/spinning timing protocol evidence",
+        )
+
+        self.assertIn("timing protocol", current)
+        self.assertIn("single_body_rolling_spinning_timing_protocol.json", verified)
+        self.assertIn("paper_comparable = false", verified)
+        self.assertIn("paper_comparable_timing_missing", verified)
+        for snippet in (
+            "paper-comparable timing result",
+            "same-hardware paper timing",
+            "paper-faithful explicit or implicit RBD",
+            "completed rolling/spinning reproduction",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "paper-comparable timing result",
+            "performance pass",
+            "comparative baseline pass",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        report = load_claim_report(
+            ROOT / validate_docs.ROLLING_SPINNING_TIMING_PROTOCOL_REPORT_PATH
+        )
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE78_ROLLING_SPINNING_TIMING_PROTOCOL_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(report.baseline_lane, "paper_timing_protocol")
+        self.assertEqual(
+            report.solver_mode,
+            "rolling_spinning_paper_timing_protocol_audit",
+        )
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertTrue(report.expected["paper_comparable"])
+        self.assertFalse(report.expected["full_experiment_claim_passed"])
+        self.assertFalse(report.observed["paper_comparable"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(
+            report.observed["timing_protocol_status"],
+            "paper_timing_protocol_incomplete",
+        )
+        self.assertEqual(len(report.observed["input_reports"]), 5)
+        self.assertIn("paper_comparable_timing_missing", report.observed["blocking_reasons"])
+        self.assertIn("paper_hardware_mismatch", report.observed["blocking_reasons"])
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+        self.assertEqual(
+            report.timing_distribution["scope"],
+            "paper_timing_protocol_artifact_not_comparable",
+        )
+        self.assertEqual(report.raw_outputs, {})
+        self.assertEqual(report.plot_paths, {})
+
+        actual_sha = validate_docs.sha256_file(
+            ROOT / validate_docs.ROLLING_SPINNING_TIMING_PROTOCOL_REPORT_PATH
+        )
+        self.assertEqual(
+            actual_sha,
+            validate_docs.PHASE78_ROLLING_SPINNING_TIMING_PROTOCOL_SHA256,
+        )
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        gap_entry = next(
+            entry
+            for entry in audit["remaining_experiment_claims"]
+            if entry["claim_id"] == "experiment.single_body.rolling_spinning"
+        )
+        self.assertEqual(
+            gap_entry["timing_protocol_report_sha256"],
+            validate_docs.PHASE78_ROLLING_SPINNING_TIMING_PROTOCOL_SHA256,
+        )
+        self.assertEqual(gap_entry["remaining_report_artifacts_missing_after_phase78"], [])
+        self.assertEqual(
+            gap_entry["remaining_reproduction_gaps_after_phase78"],
+            [
+                "paper_faithful_explicit_rbd_baseline",
+                "paper_faithful_implicit_rbd_baseline",
+                "paper_faithful_mabd_rolling_cylinder",
+                "paper_comparable_timing",
+            ],
+        )
+        self.assertIn("paper-comparable timing run", gap_entry["next_action"])
+        validate_docs.validate_phase78_record()
+
+    def test_phase78_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT / "docs/records/2026-05-20-phase78-rolling-spinning-timing-protocol.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\nincomplete_timing_protocol_recorded",
+            validate_docs.PHASE78_ROLLING_SPINNING_TIMING_PROTOCOL_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "rolling_spinning_paper_timing_protocol",
+            validate_docs.ROLLING_SPINNING_TIMING_PROTOCOL_REPORT_PATH,
+            validate_docs.PHASE78_ROLLING_SPINNING_TIMING_PROTOCOL_SHA256,
+            "rolling_spinning_paper_timing_protocol_audit",
+            "status = incomplete",
+            "paper_comparable = false",
+            "paper_comparable_timing_missing",
+            "paper_hardware_mismatch",
+            "paper_single_thread_protocol_not_enforced",
+            "does not prove a paper-comparable timing result",
+            "any passed `experiment.*` claim",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE78", text)
+        self.assertNotIn("phase78-working-tree", text)
 
     def test_phase77_validator_requires_explicit_material_preflight_fields(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -7347,7 +7480,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn(
             (
                 "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74"
-                "/75/76/77 docs/provenance validation passed"
+                "/75/76/77/78 docs/provenance validation passed"
             ),
             result.stdout,
         )

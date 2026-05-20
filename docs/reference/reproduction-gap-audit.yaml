@@ -6,11 +6,11 @@ source_commit: "f83889adbec6402e0baa1b4c55db5962a224808d"
 source_commit_scope: "Initial Phase 60 audit source commit; later entries carry per-phase report commits and checksums."
 vendored_newton_commit: "96713fa965463b69c229a4d30582c733ff3526bb"
 latest_update:
-  phase_id: phase77_rolling_cylinder_material_preflight
+  phase_id: phase78_rolling_spinning_timing_protocol
   update_date: "2026-05-20"
-  source_commit: "825eba871eec65b37429cbc2222f170d5636160b"
-  report: reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json
-  report_sha256: "7bc5cba071e17a52f890ca2e808c6c6e45d3e219d481a7a544dbd6ab6c5e5a3a"
+  source_commit: "2087017f8cc9104e2ddac600aa7282e301b4f33a"
+  report: reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json
+  report_sha256: "db8ca921ae393177b7df363fb0cceaa1ce9a84b72c7221f9c27793f676fc5c08"
   status: incomplete
 paper:
   arxiv_id: "2603.08079"
@@ -78,6 +78,9 @@ remaining_experiment_claims:
     mabd_material_preflight_report: reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json
     mabd_material_preflight_report_status: incomplete
     mabd_material_preflight_report_sha256: "7bc5cba071e17a52f890ca2e808c6c6e45d3e219d481a7a544dbd6ab6c5e5a3a"
+    timing_protocol_report: reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json
+    timing_protocol_report_status: incomplete
+    timing_protocol_report_sha256: "db8ca921ae393177b7df363fb0cceaa1ce9a84b72c7221f9c27793f676fc5c08"
     remaining_missing_lanes_after_phase74:
       - rbd_explicit_baseline
       - mabd_newton
@@ -102,7 +105,13 @@ remaining_experiment_claims:
       - paper_faithful_implicit_rbd_baseline
       - paper_faithful_mabd_rolling_cylinder
       - paper_comparable_timing
-    next_action: "Replace development diagnostics with paper-faithful explicit RBD, implicit RBD, and M-ABD rolling-cylinder contact/friction evidence, then add paper-comparable timing before any rolling/spinning pass gate."
+    remaining_report_artifacts_missing_after_phase78: []
+    remaining_reproduction_gaps_after_phase78:
+      - paper_faithful_explicit_rbd_baseline
+      - paper_faithful_implicit_rbd_baseline
+      - paper_faithful_mabd_rolling_cylinder
+      - paper_comparable_timing
+    next_action: "Replace development diagnostics with paper-faithful explicit RBD, implicit RBD, and M-ABD rolling-cylinder contact/friction evidence, then run a paper-comparable timing run before any rolling/spinning pass gate."
   - claim_id: experiment.single_body.spinning_box
     scene_id: single_body_spinning_box
     claim_status: intended
@@ -283,6 +292,9 @@ remaining_experiment_claims:
     committed_report_sha256: null
     next_action: "Source marker sequence and add IK keyframe reconstruction lane."
 current_evidence_reports:
+  - path: reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json
+    status: incomplete
+    sha256: "db8ca921ae393177b7df363fb0cceaa1ce9a84b72c7221f9c27793f676fc5c08"
   - path: reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json
     status: incomplete
     sha256: "12dd1d7452ebefed43f40893095affd60ddca419262f5b7e58e542794a33a2fe"

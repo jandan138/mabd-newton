@@ -1035,6 +1035,26 @@
   paper-comparable timing result, completed rolling/spinning reproduction,
   comparative baseline pass, full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 78 rolling/spinning timing protocol evidence
+  with the Phase 78 record.
+- Phase 78 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json`
+  exists as an incomplete report-protocol artifact, records the paper timing
+  table for the rolling cylinder benchmark, records Phase 73 through Phase 77
+  input reports, keeps `paper_comparable = false`, records
+  `paper_comparable_timing_missing`, and keeps
+  `full_experiment_claim_passed = false`.
+- Phase 78 does not verify a paper-comparable timing result, same-hardware
+  paper timing, single-thread runtime enforcement, paper-faithful M-ABD
+  rolling-cylinder collision, paper-faithful rolling friction/no-slip dynamics,
+  paper-faithful explicit or implicit RBD, co-rotated ABD timing, completed
+  rolling/spinning reproduction, full paper reproduction, or any passed
+  `experiment.*` claim.
+- Phase 78 rolling/spinning timing protocol evidence must not be described as a
+  paper-comparable timing result, performance pass, paper-faithful M-ABD
+  rolling-cylinder result, paper-faithful explicit or implicit RBD result,
+  comparative baseline pass, completed rolling/spinning reproduction, full
+  paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
