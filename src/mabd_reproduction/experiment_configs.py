@@ -898,14 +898,18 @@ def _require_rolling_spinning_mabd_newton(
     rotation_mode = _require_str(section, "rotation_mode")
     if rotation_mode != "polar":
         raise ExperimentRunConfigError("mabd_newton.rotation_mode must be polar")
+    step_count = _require_positive_int(section, "step_count")
+    sample_count = _require_positive_int(section, "sample_count")
+    if sample_count > step_count + 1:
+        raise ExperimentRunConfigError("mabd_newton.sample_count must be at most step_count + 1")
     return RollingSpinningMABDNewtonConfig(
         output_report=_require_str(section, "output_report"),
         radius_m=_require_positive_float(section, "radius_m"),
         half_height_m=_require_positive_float(section, "half_height_m"),
         density_kg_m3=_require_positive_float(section, "density_kg_m3"),
         time_step_s=_require_positive_float(section, "time_step_s"),
-        step_count=_require_positive_int(section, "step_count"),
-        sample_count=_require_positive_int(section, "sample_count"),
+        step_count=step_count,
+        sample_count=sample_count,
         rest_points_m=rest_points,
         point_masses_kg=point_masses,
         volume_m3=_require_positive_float(section, "volume_m3"),

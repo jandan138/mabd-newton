@@ -979,6 +979,8 @@ def write_rolling_spinning_mabd_newton_report(
         threshold_violations.append("max_affine_shape_spread_m")
     if result.max_constraint_residual_norm > thresholds["max_constraint_residual_norm"]:
         threshold_violations.append("max_constraint_residual_norm")
+    if result.total_wall_time_ms > thresholds["max_runtime_wall_time_ms"]:
+        threshold_violations.append("max_runtime_wall_time_ms")
 
     expected = {
         "paper_claim_status": (

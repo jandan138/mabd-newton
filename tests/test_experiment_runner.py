@@ -608,6 +608,10 @@ class ExperimentRunnerTests(unittest.TestCase):
             "mabd_affine_cylinder_static_plane_support_diagnostic",
         )
         self.assertEqual(loaded.observed["static_plane_cylinder_shape_count"], 1)
+        self.assertIn(
+            "max_runtime_wall_time_ms",
+            loaded.observed["threshold_violations"],
+        )
         self.assertGreaterEqual(loaded.observed["max_affine_shape_spread_m"], 0.0)
         self.assertGreater(loaded.timing_distribution["total_wall_time_ms"], 0.0)
         self.assertFalse(loaded.timing_distribution["paper_comparable"])

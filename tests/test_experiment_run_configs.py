@@ -382,6 +382,19 @@ class ExperimentRunConfigTests(unittest.TestCase):
                 ):
                     validate_rolling_spinning_config_against_matrix(invalid, matrix)
 
+    def test_rolling_spinning_config_rejects_mabd_sample_count_beyond_step_grid(
+        self,
+    ) -> None:
+        source = yaml.safe_load(ROLLING_SPINNING_CONFIG_PATH.read_text(encoding="utf-8"))
+        source["mabd_newton"]["step_count"] = 4
+        source["mabd_newton"]["sample_count"] = 6
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "single_body_rolling_spinning.yaml"
+            path.write_text(yaml.safe_dump(source), encoding="utf-8")
+
+            with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.sample_count"):
+                load_rolling_spinning_config(path)
+
     def test_rolling_spinning_rbd_explicit_baseline_report_path_must_be_lane_specific(
         self,
     ) -> None:
