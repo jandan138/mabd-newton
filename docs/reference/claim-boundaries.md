@@ -884,6 +884,28 @@
   described as a contact solver, collision detection, paper-faithful affine
   collision/contact, generic inequality-constrained M-ABD KKT, a passed
   experiment, or full paper reproduction.
+- This repository contains Phase 71 affine static-plane active-set diagnostic
+  report lane evidence after the Phase 71 record is created.
+- Phase 71 verifies that `SolverMABD.detect_static_plane_contacts` can
+  generate a bounded active set from M-ABD affine box corners against world
+  static infinite planes, feed generated `newton.Contacts` into
+  `SolverMABD.step(..., contacts=...)`, record
+  `paper_horizon.affine_static_plane_contacts_output_report`, emit
+  `reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts.json`,
+  record `contacts_input_summary_source = last_contacts_input_summary`,
+  record reduced free-predicted penetration, and keep no experiment claim
+  passed.
+- Phase 71 does not verify generic collision detection, broadphase or
+  narrowphase correctness, finite-plane clipping, mesh/SDF/sphere/capsule/
+  cylinder collision, body-body affine contact, dynamic non-M-ABD body
+  contact, contact solver behavior, IPC, friction, complementarity, continuous
+  collision detection, generic inequality-constrained M-ABD KKT,
+  paper-faithful affine collision/contact, paper-faithful M-ABD stepping,
+  comparison pass gate, rendered-output agreement, runtime performance, any
+  passed `experiment.*` claim, or full paper reproduction.
+- Phase 71 affine static-plane contact report lane evidence must not be
+  described as generic collision detection, a contact solver, paper-faithful
+  affine collision/contact, a passed experiment, or full paper reproduction.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

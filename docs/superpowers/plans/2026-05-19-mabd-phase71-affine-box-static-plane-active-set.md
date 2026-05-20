@@ -4,7 +4,7 @@
 
 **Goal:** Move the spinning-box static-plane active-set generation into vendored/local Newton by adding a bounded affine box vs static infinite plane contact detector for `SolverMABD`.
 
-**Architecture:** `SolverMABD.detect_static_plane_contacts(state, max_contacts=None)` reads M-ABD affine state and Newton model shape metadata, emits a `newton.Contacts` buffer, and records `last_static_plane_collision_summary`. The report lane calls this detector, passes the returned contacts into the existing Phase 69 `SolverMABD.step(..., contacts=...)` path, and records incomplete diagnostic evidence.
+**Architecture:** `SolverMABD.detect_static_plane_contacts(state, max_contacts=None)` reads M-ABD affine state and Newton model shape metadata, emits a `newton.Contacts` buffer, and records `last_static_plane_collision_summary`. The report lane calls this detector, passes the returned contacts into the existing Phase 69 `SolverMABD.step(..., contacts=...)` path, records `last_contacts_input_summary`, and records incomplete diagnostic evidence.
 
 **Tech Stack:** Python 3.10, `unittest`, NumPy, Warp arrays, vendored Newton, `newton.Contacts`, YAML configs, JSON claim reports.
 
@@ -16,7 +16,7 @@
 - Modify `tests/test_mabd_phase4_solver_step.py`: add TDD coverage for detector behavior and solver-step parity.
 - Modify `configs/experiments/single_body_spinning_box.yaml`: add `paper_horizon.affine_static_plane_contacts_output_report`.
 - Modify `src/mabd_reproduction/experiment_configs.py`: parse and validate the new report path.
-- Modify `src/mabd_reproduction/single_body_reports.py`: add constants, solver-generated contacts step helper, report writer, and report contract fields.
+- Modify `src/mabd_reproduction/single_body_reports.py`: add constants, solver-generated contacts step helper, `write_spinning_box_affine_static_plane_contacts_report`, and report contract fields.
 - Modify `src/mabd_reproduction/experiment_runner.py`: expose `run_spinning_box_affine_static_plane_contacts`.
 - Modify `scripts/run_experiment.py`: add CLI lane `spinning_box_affine_static_plane_contacts`.
 - Modify tests:
@@ -160,6 +160,8 @@ Expected: FAIL because the runner lane, committed report, and validator checks a
 - [ ] **Step 3: Implement runner/artifact/docs**
 
 Add the runner function, CLI dispatch, committed report, Phase71 record, claim-boundary bullets, and docs validator checks. Keep all `experiment.*` claims `intended`.
+
+No `experiment.*` claim is passed.
 
 - [ ] **Step 4: Verify GREEN**
 

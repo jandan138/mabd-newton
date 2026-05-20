@@ -32,6 +32,8 @@ REPORTS = {
     / "reports/experiment_matrix/single_body_spinning_box_model_plane_constraint.json",
     "contacts_input": ROOT
     / "reports/experiment_matrix/single_body_spinning_box_contacts_input.json",
+    "affine_static_plane_contacts": ROOT
+    / "reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts.json",
 }
 
 
@@ -335,6 +337,72 @@ class SpinningBoxReportArtifactTests(unittest.TestCase):
         self.assertIn("collision_detection_not_enabled_for_contacts_input", blockers)
         self.assertIn("spinning_box_comparison_pass_gate_not_enabled", blockers)
         self.assertIn("mabd_kinematic_feasibility_blocker_recorded", blockers)
+        self.assertEqual(report.raw_outputs["time_series"], "compact_samples_only")
+
+    def test_affine_static_plane_contacts_report_records_solver_generated_active_set_only(
+        self,
+    ) -> None:
+        report = self._load_reports()["affine_static_plane_contacts"]
+
+        self.assertEqual(report.baseline_lane, "mabd_newton")
+        self.assertEqual(
+            report.solver_mode,
+            "solver_mabd_affine_static_plane_contacts_diagnostic",
+        )
+        self.assertEqual(
+            report.backend,
+            "cpu_numpy_newton_solver_mabd_affine_static_plane_contacts_diagnostic",
+        )
+        self.assertIn("bounded diagnostic active-set path", report.failure_reason)
+        observed = report.observed
+        self.assertEqual(
+            observed["affine_static_plane_contact_policy"],
+            "solver_mabd_detect_affine_box_static_plane_contacts",
+        )
+        self.assertEqual(
+            observed["affine_static_plane_contact_source"],
+            "SolverMABD.detect_static_plane_contacts",
+        )
+        self.assertEqual(
+            observed["affine_static_plane_contact_scope"],
+            "diagnostic_affine_box_corners_vs_static_infinite_planes_no_lane_gate",
+        )
+        self.assertEqual(observed["contacts_input_summary_source"], "last_contacts_input_summary")
+        self.assertNotIn("lane_gate_status", observed)
+        self.assertTrue(observed["affine_static_plane_contacts_reduced_free_predicted_penetration"])
+        self.assertGreater(
+            _finite_scalar(observed["max_free_predicted_contact_penetration_m"]),
+            _finite_scalar(observed["max_constrained_contact_penetration_m"]),
+        )
+        self.assertEqual(observed["max_affine_static_plane_box_shape_count"], 1)
+        self.assertEqual(observed["max_affine_static_plane_static_plane_shape_count"], 1)
+        self.assertEqual(observed["max_affine_static_plane_candidate_contact_count"], 4)
+        self.assertEqual(observed["max_affine_static_plane_rows_written"], 4)
+        self.assertEqual(observed["max_affine_static_plane_skipped_shape_pair_count"], 0)
+        self.assertEqual(observed["max_contacts_input_generated_plane_constraint_count"], 4)
+        self.assertEqual(observed["max_contacts_input_overflow_count"], 0)
+        self.assertLess(
+            _finite_scalar(observed["max_contacts_input_constraint_residual_norm"]),
+            1.0e-12,
+        )
+        self.assertEqual(len(observed["affine_static_plane_contacts_results"]), 2)
+        for result in observed["affine_static_plane_contacts_results"]:
+            self.assertEqual(
+                result["affine_static_plane_contact_source"],
+                "SolverMABD.detect_static_plane_contacts",
+            )
+            self.assertEqual(result["contacts_input_summary_source"], "last_contacts_input_summary")
+            self.assertGreaterEqual(result["affine_static_plane_candidate_contact_count"], 0)
+            self.assertGreaterEqual(result["contacts_input_generated_plane_constraint_count"], 0)
+            self.assertEqual(result["contacts_input_overflow_count"], 0)
+            self.assertTrue(math.isfinite(result["max_contacts_input_constraint_residual_norm"]))
+        blockers = observed["blocking_reasons"]
+        self.assertIn("mabd_newton_report_incomplete", blockers)
+        self.assertIn("mabd_paper_horizon_diagnostic_thresholds_violated", blockers)
+        self.assertIn("spinning_box_affine_static_plane_contacts_not_paper_faithful", blockers)
+        self.assertIn("spinning_box_comparison_pass_gate_not_enabled", blockers)
+        self.assertIn("mabd_kinematic_feasibility_blocker_recorded", blockers)
+        self.assertNotIn("collision_detection_not_enabled_for_contacts_input", blockers)
         self.assertEqual(report.raw_outputs["time_series"], "compact_samples_only")
 
     def test_matrix_retains_spinning_box_blocked_status(self) -> None:

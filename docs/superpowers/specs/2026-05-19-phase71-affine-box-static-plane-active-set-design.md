@@ -61,6 +61,9 @@ Phase 71 adds:
   `SolverMABD.step(..., contacts=contacts)`;
 - committed diagnostic report and Phase71 claim-boundary/validator evidence.
 
+The supported active-set scope is explicitly affine box corners against static
+infinite planes.
+
 ## Non-Scope
 
 Phase 71 does not implement or verify:
@@ -101,7 +104,11 @@ side point as a rest point for `MABDCPUOraclePlaneConstraint`.
 
 ## Report Contract
 
-The new diagnostic lane records:
+The new diagnostic lane is written by
+`write_spinning_box_affine_static_plane_contacts_report`, emits
+`reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts.json`,
+and calls `SolverMABD.step(..., contacts=contacts)` with the
+solver-generated `newton.Contacts` buffer. It records:
 
 ```text
 solver_mode = solver_mabd_affine_static_plane_contacts_diagnostic

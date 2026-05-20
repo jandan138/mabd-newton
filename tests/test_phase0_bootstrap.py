@@ -5365,6 +5365,132 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         validate_docs.validate_phase70_record()
 
+    def test_phase71_affine_static_plane_contacts_report_lane_is_bounded(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        self.assertEqual(
+            validate_docs.PHASE71_AFFINE_STATIC_PLANE_CONTACTS_COMMIT,
+            "de79f7a5da8a62064dc463ecd0a3ed874d43bf0e",
+        )
+        self.assertEqual(
+            validate_docs.PHASE71_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_SHA256,
+            "e5f6babcf0c78c217757e13dd7afadc9963048226745528221d38213d2c7477d",
+        )
+
+        text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = claim_boundary_bullet(text, "This repository contains Phase 71")
+        verified = claim_boundary_bullet(text, "Phase 71 verifies")
+        non_claim = claim_boundary_bullet(text, "Phase 71 does not verify")
+        forbidden = claim_boundary_bullet(
+            text,
+            "Phase 71 affine static-plane contact report lane evidence",
+        )
+
+        self.assertIn("affine static-plane active-set diagnostic report lane", current)
+        self.assertIn("SolverMABD.detect_static_plane_contacts", verified)
+        self.assertIn("affine box corners", verified)
+        self.assertIn("static infinite planes", verified)
+        self.assertIn("paper_horizon.affine_static_plane_contacts_output_report", verified)
+        self.assertIn(validate_docs.SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_REPORT_PATH, verified)
+        self.assertIn("contacts_input_summary_source = last_contacts_input_summary", verified)
+        self.assertIn("reduced free-predicted penetration", verified)
+        for snippet in (
+            "generic collision detection",
+            "broadphase or narrowphase",
+            "body-body affine contact",
+            "finite-plane clipping",
+            "contact solver",
+            "IPC",
+            "friction",
+            "complementarity",
+            "continuous collision detection",
+            "generic inequality-constrained M-ABD KKT",
+            "paper-faithful affine collision/contact",
+            "comparison pass gate",
+            "rendered-output agreement",
+            "runtime performance",
+            "any passed `experiment.*` claim",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "generic collision detection",
+            "contact solver",
+            "paper-faithful affine collision/contact",
+            "passed experiment",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        report = load_claim_report(
+            ROOT / validate_docs.SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_REPORT_PATH
+        )
+        self.assertEqual(report.source_commit, validate_docs.PHASE71_AFFINE_STATIC_PLANE_CONTACTS_COMMIT)
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(report.scene_id, "single_body_spinning_box")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.baseline_lane, "mabd_newton")
+        self.assertEqual(
+            report.solver_mode,
+            "solver_mabd_affine_static_plane_contacts_diagnostic",
+        )
+        self.assertEqual(
+            report.backend,
+            "cpu_numpy_newton_solver_mabd_affine_static_plane_contacts_diagnostic",
+        )
+        observed = report.observed
+        self.assertNotIn("lane_gate_status", observed)
+        self.assertEqual(
+            observed["affine_static_plane_contact_policy"],
+            "solver_mabd_detect_affine_box_static_plane_contacts",
+        )
+        self.assertEqual(
+            observed["affine_static_plane_contact_source"],
+            "SolverMABD.detect_static_plane_contacts",
+        )
+        self.assertEqual(observed["contacts_input_summary_source"], "last_contacts_input_summary")
+        self.assertTrue(observed["affine_static_plane_contacts_reduced_free_predicted_penetration"])
+        self.assertGreater(
+            observed["max_free_predicted_contact_penetration_m"],
+            observed["max_constrained_contact_penetration_m"],
+        )
+        self.assertEqual(observed["max_affine_static_plane_candidate_contact_count"], 4)
+        self.assertEqual(observed["max_affine_static_plane_rows_written"], 4)
+        self.assertEqual(observed["max_contacts_input_generated_plane_constraint_count"], 4)
+        self.assertEqual(observed["max_contacts_input_overflow_count"], 0)
+        self.assertLess(observed["max_contacts_input_constraint_residual_norm"], 1.0e-12)
+        self.assertEqual(len(observed["affine_static_plane_contacts_results"]), 2)
+        for result in observed["affine_static_plane_contacts_results"]:
+            self.assertEqual(
+                result["affine_static_plane_contact_source"],
+                "SolverMABD.detect_static_plane_contacts",
+            )
+            self.assertEqual(result["contacts_input_summary_source"], "last_contacts_input_summary")
+            self.assertEqual(result["contacts_input_overflow_count"], 0)
+            self.assertGreaterEqual(result["affine_static_plane_candidate_contact_count"], 0)
+            self.assertGreaterEqual(result["contacts_input_generated_plane_constraint_count"], 0)
+            self.assertTrue(math.isfinite(result["max_contacts_input_constraint_residual_norm"]))
+        blockers = observed["blocking_reasons"]
+        self.assertIn("spinning_box_affine_static_plane_contacts_not_paper_faithful", blockers)
+        self.assertNotIn("collision_detection_not_enabled_for_contacts_input", blockers)
+        self.assertEqual(
+            validate_docs.sha256_file(
+                ROOT / validate_docs.SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_REPORT_PATH
+            ),
+            validate_docs.PHASE71_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_SHA256,
+        )
+
+        data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
+        self.assertFalse(
+            any(
+                claim["claim_id"].startswith("experiment.")
+                and claim["reproduction_status"] == "passed"
+                for claim in data["claims"]
+            )
+        )
+        validate_docs.validate_phase71_record()
+
     def test_phase49_heavy_top_rk4_reference_is_bounded(self) -> None:
         data = yaml.safe_load((ROOT / "docs/reference/paper-claims.yaml").read_text())
         heavy_top_claim = next(
@@ -6211,7 +6337,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
         self.assertIn(
             (
-                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70 "
+                "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71 "
                 "docs/provenance validation passed"
             ),
             result.stdout,
