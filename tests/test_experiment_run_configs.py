@@ -340,6 +340,54 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("max_affine_shape_spread_m", config.mabd_newton.thresholds)
         self.assertIn("max_constraint_residual_norm", config.mabd_newton.thresholds)
         self.assertIn("max_runtime_wall_time_ms", config.mabd_newton.thresholds)
+        self.assertEqual(
+            config.mabd_material_preflight.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json",
+        )
+        self.assertEqual(config.mabd_material_preflight.radius_m, config.mabd_newton.radius_m)
+        self.assertEqual(
+            config.mabd_material_preflight.half_height_m,
+            config.mabd_newton.half_height_m,
+        )
+        self.assertEqual(
+            config.mabd_material_preflight.density_kg_m3,
+            config.mabd_newton.density_kg_m3,
+        )
+        self.assertEqual(
+            config.mabd_material_preflight.time_step_s,
+            config.mabd_newton.time_step_s,
+        )
+        self.assertEqual(
+            config.mabd_material_preflight.step_count,
+            config.mabd_newton.step_count,
+        )
+        self.assertEqual(
+            config.mabd_material_preflight.sample_count,
+            config.mabd_newton.sample_count,
+        )
+        self.assertEqual(config.mabd_material_preflight.young_modulus_pa, 1.0e9)
+        self.assertEqual(config.mabd_material_preflight.poisson_ratio, 0.3)
+        self.assertFalse(config.mabd_material_preflight.zero_stiffness_diagnostic)
+        np.testing.assert_allclose(
+            config.mabd_material_preflight.rest_points_m,
+            config.mabd_newton.rest_points_m,
+        )
+        np.testing.assert_allclose(
+            config.mabd_material_preflight.point_masses_kg,
+            config.mabd_newton.point_masses_kg,
+        )
+        np.testing.assert_allclose(
+            config.mabd_material_preflight.initial_position_m,
+            config.mabd_newton.initial_position_m,
+        )
+        np.testing.assert_allclose(
+            config.mabd_material_preflight.initial_linear_velocity_m_s,
+            config.mabd_newton.initial_linear_velocity_m_s,
+        )
+        np.testing.assert_allclose(
+            config.mabd_material_preflight.initial_angular_velocity_rad_s,
+            config.mabd_newton.initial_angular_velocity_rad_s,
+        )
 
     def test_rolling_spinning_config_matches_matrix(self) -> None:
         config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
@@ -394,6 +442,53 @@ class ExperimentRunConfigTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ExperimentRunConfigError, "mabd_newton.sample_count"):
                 load_rolling_spinning_config(path)
+
+    def test_rolling_spinning_mabd_material_preflight_is_fail_closed(
+        self,
+    ) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        validate_rolling_spinning_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            config.mabd_newton.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            "/tmp/single_body_rolling_spinning_mabd_material_preflight.json",
+            "reports/not_matrix/single_body_rolling_spinning_mabd_material_preflight.json",
+            "../reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json",
+            "reports/experiment_matrix/not_the_rolling_spinning_mabd_material_preflight.json",
+            "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    mabd_material_preflight=replace(
+                        config.mabd_material_preflight,
+                        output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "mabd_material_preflight.output_report",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        for invalid_material in (
+            replace(config.mabd_material_preflight, young_modulus_pa=0.0),
+            replace(config.mabd_material_preflight, zero_stiffness_diagnostic=True),
+            replace(config.mabd_material_preflight, poisson_ratio=0.5),
+        ):
+            with self.subTest(invalid_material=invalid_material):
+                invalid = replace(config, mabd_material_preflight=invalid_material)
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "mabd_material_preflight",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
 
     def test_rolling_spinning_rbd_explicit_baseline_report_path_must_be_lane_specific(
         self,

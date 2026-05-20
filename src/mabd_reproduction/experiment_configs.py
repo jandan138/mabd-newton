@@ -93,6 +93,9 @@ class RollingSpinningMABDNewtonConfig:
     radius_m: float
     half_height_m: float
     density_kg_m3: float
+    young_modulus_pa: float
+    poisson_ratio: float
+    zero_stiffness_diagnostic: bool
     time_step_s: float
     step_count: int
     sample_count: int
@@ -121,6 +124,7 @@ class RollingSpinningRunConfig:
     rbd_implicit_baseline: RollingSpinningRBDBaselineConfig
     rbd_explicit_baseline: RollingSpinningRBDBaselineConfig
     mabd_newton: RollingSpinningMABDNewtonConfig
+    mabd_material_preflight: RollingSpinningMABDNewtonConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -371,6 +375,9 @@ ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT = (
 )
 ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json"
+)
+ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_OUTPUT_REPORT = (
+    "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json"
 )
 ROLLING_SPINNING_RBD_CONTACT_KEYS = frozenset({"ke", "kd", "kf", "mu", "gap"})
 ROLLING_SPINNING_RBD_THRESHOLD_KEYS = frozenset(
@@ -632,6 +639,13 @@ def _require_finite_number(data: dict[str, Any], key: str) -> float:
     return result
 
 
+def _require_bool(data: dict[str, Any], key: str) -> bool:
+    value = data.get(key)
+    if not isinstance(value, bool):
+        raise ExperimentRunConfigError(f"{key} must be a boolean")
+    return value
+
+
 def _require_unit_interval_float(data: dict[str, Any], key: str) -> float:
     result = _require_finite_number(data, key)
     if result <= 0.0 or result >= 1.0:
@@ -873,22 +887,27 @@ def _require_rolling_spinning_rbd_baseline(
 
 def _require_rolling_spinning_mabd_newton(
     data: dict[str, Any],
+    key: str,
+    *,
+    default_young_modulus_pa: float,
+    default_poisson_ratio: float,
+    default_zero_stiffness_diagnostic: bool,
 ) -> RollingSpinningMABDNewtonConfig:
-    section = _require_mapping(data, "mabd_newton")
+    section = _require_mapping(data, key)
     thresholds = _require_float_mapping(section, "thresholds")
     if set(thresholds) != ROLLING_SPINNING_MABD_NEWTON_THRESHOLD_KEYS:
         raise ExperimentRunConfigError(
-            "mabd_newton.thresholds keys must match rolling-cylinder M-ABD metrics"
+            f"{key}.thresholds keys must match rolling-cylinder M-ABD metrics"
         )
     for threshold_key, value in thresholds.items():
         if value < 0.0:
             raise ExperimentRunConfigError(
-                f"mabd_newton.thresholds.{threshold_key} must be non-negative"
+                f"{key}.thresholds.{threshold_key} must be non-negative"
             )
     rest_points = _require_points(section, "rest_points_m")
     if rest_points.shape != (4, 3):
         raise ExperimentRunConfigError(
-            "mabd_newton.rest_points_m must contain exactly 4 diagnostic points"
+            f"{key}.rest_points_m must contain exactly 4 diagnostic points"
         )
     point_masses = _require_positive_mass_vector(
         section,
@@ -897,16 +916,38 @@ def _require_rolling_spinning_mabd_newton(
     )
     rotation_mode = _require_str(section, "rotation_mode")
     if rotation_mode != "polar":
-        raise ExperimentRunConfigError("mabd_newton.rotation_mode must be polar")
+        raise ExperimentRunConfigError(f"{key}.rotation_mode must be polar")
     step_count = _require_positive_int(section, "step_count")
     sample_count = _require_positive_int(section, "sample_count")
     if sample_count > step_count + 1:
-        raise ExperimentRunConfigError("mabd_newton.sample_count must be at most step_count + 1")
+        raise ExperimentRunConfigError(f"{key}.sample_count must be at most step_count + 1")
+    young_modulus_pa = (
+        _require_finite_number(section, "young_modulus_pa")
+        if "young_modulus_pa" in section
+        else default_young_modulus_pa
+    )
+    if young_modulus_pa < 0.0 or not isfinite(young_modulus_pa):
+        raise ExperimentRunConfigError(f"{key}.young_modulus_pa must be finite and non-negative")
+    poisson_ratio = (
+        _require_finite_number(section, "poisson_ratio")
+        if "poisson_ratio" in section
+        else default_poisson_ratio
+    )
+    if poisson_ratio <= -1.0 or poisson_ratio >= 0.5:
+        raise ExperimentRunConfigError(f"{key}.poisson_ratio must be in (-1, 0.5)")
+    zero_stiffness_diagnostic = (
+        _require_bool(section, "zero_stiffness_diagnostic")
+        if "zero_stiffness_diagnostic" in section
+        else default_zero_stiffness_diagnostic
+    )
     return RollingSpinningMABDNewtonConfig(
         output_report=_require_str(section, "output_report"),
         radius_m=_require_positive_float(section, "radius_m"),
         half_height_m=_require_positive_float(section, "half_height_m"),
         density_kg_m3=_require_positive_float(section, "density_kg_m3"),
+        young_modulus_pa=young_modulus_pa,
+        poisson_ratio=poisson_ratio,
+        zero_stiffness_diagnostic=zero_stiffness_diagnostic,
         time_step_s=_require_positive_float(section, "time_step_s"),
         step_count=step_count,
         sample_count=sample_count,
@@ -1459,7 +1500,20 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
             data,
             "rbd_explicit_baseline",
         ),
-        mabd_newton=_require_rolling_spinning_mabd_newton(data),
+        mabd_newton=_require_rolling_spinning_mabd_newton(
+            data,
+            "mabd_newton",
+            default_young_modulus_pa=0.0,
+            default_poisson_ratio=0.25,
+            default_zero_stiffness_diagnostic=True,
+        ),
+        mabd_material_preflight=_require_rolling_spinning_mabd_newton(
+            data,
+            "mabd_material_preflight",
+            default_young_modulus_pa=1.0e9,
+            default_poisson_ratio=0.3,
+            default_zero_stiffness_diagnostic=False,
+        ),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -1646,6 +1700,79 @@ def validate_rolling_spinning_config_against_matrix(
     if not np.isclose(expected_no_slip, 0.0, rtol=0.0, atol=1.0e-12):
         raise ExperimentRunConfigError(
             "mabd_newton initial velocities must satisfy the no-slip diagnostic"
+        )
+
+    material = config.mabd_material_preflight
+    material_report = material.output_report
+    material_report_path = Path(material_report)
+    if (
+        material_report_path.is_absolute()
+        or ".." in material_report_path.parts
+        or material_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or material_report_path.suffix != ".json"
+        or material_report != ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_OUTPUT_REPORT
+        or material_report
+        in (
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.mabd_newton.output_report,
+        )
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.output_report must be the lane-specific "
+            "relative JSON report under reports/experiment_matrix"
+        )
+    if material.time_step_s != config.performance.time_step_s:
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.time_step_s must match performance.time_step_s"
+        )
+    if material.step_count > config.performance.step_count:
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.step_count must not exceed performance.step_count"
+        )
+    if material.sample_count < 2:
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.sample_count must include initial and final samples"
+        )
+    expected_volume = np.pi * material.radius_m**2 * (2.0 * material.half_height_m)
+    if not np.isclose(material.volume_m3, expected_volume, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.volume_m3 must match the configured cylinder volume"
+        )
+    expected_mass = material.density_kg_m3 * material.volume_m3
+    if not np.isclose(
+        float(np.sum(material.point_masses_kg)),
+        expected_mass,
+        rtol=0.0,
+        atol=1.0e-9,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.point_masses_kg must sum to cylinder mass"
+        )
+    if not np.isclose(material.initial_position_m[1], material.radius_m, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.initial_position_m must place the cylinder on the plane"
+        )
+    expected_no_slip = (
+        material.initial_linear_velocity_m_s[0]
+        + material.initial_angular_velocity_rad_s[2] * material.radius_m
+    )
+    if not np.isclose(expected_no_slip, 0.0, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight initial velocities must satisfy the no-slip diagnostic"
+        )
+    if material.young_modulus_pa <= 0.0:
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.young_modulus_pa must be positive"
+        )
+    if material.poisson_ratio <= -1.0 or material.poisson_ratio >= 0.5:
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.poisson_ratio must be in (-1, 0.5)"
+        )
+    if material.zero_stiffness_diagnostic:
+        raise ExperimentRunConfigError(
+            "mabd_material_preflight.zero_stiffness_diagnostic must be false"
         )
 
 
@@ -2386,6 +2513,7 @@ __all__ = [
     "ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT",
     "ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT",
     "ROLLING_SPINNING_RBD_THRESHOLD_KEYS",
+    "ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_OUTPUT_REPORT",
     "ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT",
     "ROLLING_SPINNING_MABD_NEWTON_THRESHOLD_KEYS",
     "ROLLING_SPINNING_REQUIRED_MISSING_LANES",

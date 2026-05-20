@@ -21,6 +21,7 @@ from mabd_reproduction.experiment_runner import (
     run_physical_pendulum_mabd_development,
     run_physical_pendulum_mabd_newton,
     run_physical_pendulum_rbd_baseline,
+    run_rolling_spinning_mabd_material_preflight,
     run_rolling_spinning_mabd_newton,
     run_rolling_spinning_protocol,
     run_rolling_spinning_rbd_explicit_baseline,
@@ -67,6 +68,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "physical_pendulum_mabd_development",
             "physical_pendulum_mabd_newton",
             "rbd_implicit_baseline",
+            "rolling_spinning_mabd_material_preflight",
             "rolling_spinning_mabd_newton",
             "rolling_spinning_protocol",
             "rolling_spinning_rbd_explicit_baseline",
@@ -403,6 +405,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "rolling_spinning_mabd_newton":
             result = run_rolling_spinning_mabd_newton(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "rolling_spinning_mabd_material_preflight":
+            result = run_rolling_spinning_mabd_material_preflight(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

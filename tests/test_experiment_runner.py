@@ -85,6 +85,14 @@ class ExperimentRunnerTests(unittest.TestCase):
         path.write_text(yaml.safe_dump(config), encoding="utf-8")
         return path
 
+    def _write_short_rolling_spinning_mabd_material_preflight_config(self, tmpdir: str) -> Path:
+        config = yaml.safe_load(ROLLING_SPINNING_CONFIG_PATH.read_text(encoding="utf-8"))
+        config["mabd_material_preflight"]["step_count"] = 1
+        config["mabd_material_preflight"]["sample_count"] = 2
+        path = Path(tmpdir) / "single_body_rolling_spinning_short_mabd_material.yaml"
+        path.write_text(yaml.safe_dump(config), encoding="utf-8")
+        return path
+
     def _write_matrix_with_output_report(self, tmpdir: str, output_report: str) -> Path:
         matrix = yaml.safe_load(MATRIX_PATH.read_text(encoding="utf-8"))
         for entry in matrix["experiments"]:
@@ -617,6 +625,54 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertFalse(loaded.timing_distribution["paper_comparable"])
         self.assertEqual(loaded.raw_outputs["time_series"], "not_written")
 
+    def test_run_rolling_spinning_mabd_material_preflight_writes_report(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_rolling_spinning_mabd_material_preflight,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_rolling_spinning_mabd_material_preflight_config(
+                tmpdir
+            )
+            output_path = Path(tmpdir) / "rolling_spinning_mabd_material_preflight.json"
+            result = run_rolling_spinning_mabd_material_preflight(
+                config_path=config_path,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(result.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "mabd_newton")
+        self.assertEqual(
+            loaded.solver_mode,
+            "mabd_cpu_oracle_rolling_cylinder_material_preflight",
+        )
+        self.assertEqual(loaded.backend, "cpu_numpy_newton_solver_mabd_static_plane_contacts")
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertEqual(loaded.observed["young_modulus_pa"], 1.0e9)
+        self.assertEqual(loaded.observed["poisson_ratio"], 0.3)
+        self.assertFalse(loaded.observed["zero_stiffness_diagnostic"])
+        self.assertEqual(
+            loaded.observed["material_preflight_status"],
+            "finite_stiffness_preflight_incomplete",
+        )
+        self.assertIn(
+            "mabd_material_preflight_incomplete",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_faithful_implicit_rbd_baseline_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertEqual(loaded.raw_outputs["time_series"], "not_written")
+
     def test_run_experiment_cli_runs_rolling_spinning_protocol_lane(self) -> None:
         import json
         import subprocess
@@ -750,6 +806,48 @@ class ExperimentRunnerTests(unittest.TestCase):
                     "scripts/run_experiment.py",
                     "--lane",
                     "rolling_spinning_mabd_newton",
+                    "--config",
+                    str(config_path),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "test-source",
+                    "--vendored-newton-commit",
+                    "test-newton",
+                ],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertEqual(payload["status"], "incomplete")
+        self.assertEqual(payload["baseline_lane"], "mabd_newton")
+
+    def test_run_experiment_cli_runs_rolling_spinning_mabd_material_preflight_lane(
+        self,
+    ) -> None:
+        import json
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_rolling_spinning_mabd_material_preflight_config(
+                tmpdir
+            )
+            output_path = Path(tmpdir) / "rolling_spinning_mabd_material_preflight.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rolling_spinning_mabd_material_preflight",
                     "--config",
                     str(config_path),
                     "--matrix",

@@ -64,6 +64,18 @@ ROLLING_SPINNING_MABD_BLOCKING_REASONS = [
     "paper_faithful_explicit_rbd_baseline_missing",
     "paper_comparable_timing_missing",
 ]
+ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REQUIRED_MISSING_LANES = [
+    "paper_comparable_timing",
+    "paper_faithful_implicit_rbd_baseline",
+    "paper_faithful_explicit_rbd_baseline",
+]
+ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_BLOCKING_REASONS = [
+    "mabd_material_preflight_incomplete",
+    "paper_faithful_mabd_collision_missing",
+    "paper_faithful_explicit_rbd_baseline_missing",
+    "paper_faithful_implicit_rbd_baseline_missing",
+    "paper_comparable_timing_missing",
+]
 ROLLING_SPINNING_MABD_NEWTON_API = [
     "ModelBuilder.add_shape_cylinder",
     "ModelBuilder.add_ground_plane",
@@ -548,8 +560,8 @@ def _rolling_cylinder_mabd_solver_model(
         builder.add_custom_values(
             **{
                 "mabd:body_index": body_id,
-                "mabd:young_modulus": 0.0,
-                "mabd:poisson_ratio": 0.25,
+                "mabd:young_modulus": float(config.young_modulus_pa),
+                "mabd:poisson_ratio": float(config.poisson_ratio),
                 "mabd:density": config.density_kg_m3,
                 "mabd:polar_mode": 1,
                 "mabd:rest_point0": _vec3(config.rest_points_m[0], wp),
@@ -561,7 +573,7 @@ def _rolling_cylinder_mabd_solver_model(
                 "mabd:point_mass2": float(config.point_masses_kg[2]),
                 "mabd:point_mass3": float(config.point_masses_kg[3]),
                 "mabd:volume": float(config.volume_m3),
-                "mabd:zero_stiffness_diagnostic": 1,
+                "mabd:zero_stiffness_diagnostic": int(config.zero_stiffness_diagnostic),
             }
         )
         builder.add_custom_values(
@@ -1086,12 +1098,145 @@ def write_rolling_spinning_mabd_newton_report(
     return report
 
 
+def write_rolling_spinning_mabd_material_preflight_report(
+    path: str | Path,
+    *,
+    config: RollingSpinningRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    material_config = config.mabd_material_preflight
+    result = run_rolling_cylinder_mabd_newton(material_config)
+    thresholds = material_config.thresholds
+    threshold_violations: list[str] = []
+    if result.no_slip_residual_m_s > thresholds["max_no_slip_residual_m_s"]:
+        threshold_violations.append("max_no_slip_residual_m_s")
+    if result.relative_energy_drift > thresholds["max_relative_energy_drift"]:
+        threshold_violations.append("max_relative_energy_drift")
+    if result.contact_count_summary["max"] < thresholds["min_contact_count"]:
+        threshold_violations.append("min_contact_count")
+    if result.max_affine_shape_spread_m > thresholds["max_affine_shape_spread_m"]:
+        threshold_violations.append("max_affine_shape_spread_m")
+    if result.max_constraint_residual_norm > thresholds["max_constraint_residual_norm"]:
+        threshold_violations.append("max_constraint_residual_norm")
+    if result.total_wall_time_ms > thresholds["max_runtime_wall_time_ms"]:
+        threshold_violations.append("max_runtime_wall_time_ms")
+
+    expected = {
+        "paper_claim_status": (
+            "finite-stiffness M-ABD rolling-cylinder preflight only; full paper "
+            "claim requires paper-faithful contact/friction, RBD baselines, and timing"
+        ),
+        "source_lines": list(config.source_lines),
+        "config_path": ROLLING_SPINNING_CONFIG_PATH,
+        "canonical_python": CANONICAL_PYTHON,
+        "benchmark_body": config.performance.body,
+        "paper_total_simulation_time_ms": dict(
+            config.performance.paper_total_simulation_time_ms
+        ),
+        "paper_hardware_context": config.performance.paper_hardware_context,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "known_source_gaps": [
+            "paper affine-cylinder contact manifold details are not yet implemented",
+            "paper rolling friction/no-slip solve is not yet implemented",
+            "paper-faithful explicit and implicit RBD baselines are not yet recorded",
+            "paper-comparable i7 single-thread timing protocol is not yet measured",
+        ],
+    }
+    observed = {
+        "material_preflight_status": "finite_stiffness_preflight_incomplete",
+        "lane_status": "incomplete_material_preflight_generated",
+        "local_runtime_measured": True,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "required_lanes_missing": list(
+            ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_REQUIRED_MISSING_LANES
+        ),
+        "blocking_reasons": list(ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_BLOCKING_REASONS),
+        "threshold_violations": threshold_violations,
+        "newton_api": list(ROLLING_SPINNING_MABD_NEWTON_API),
+        "newton_device": "cpu",
+        "solver_name": "newton.solvers.SolverMABD",
+        "solver_scope": "mabd_affine_cylinder_material_preflight_not_paper_faithful",
+        "young_modulus_pa": material_config.young_modulus_pa,
+        "poisson_ratio": material_config.poisson_ratio,
+        "zero_stiffness_diagnostic": material_config.zero_stiffness_diagnostic,
+        "step_count": result.step_count,
+        "time_step_s": result.time_step_s,
+        "radius_m": result.radius_m,
+        "half_height_m": result.half_height_m,
+        "density_kg_m3": result.density_kg_m3,
+        "mass_kg": result.mass_kg,
+        "volume_m3": result.volume_m3,
+        "rotation_mode": result.rotation_mode,
+        "rest_points_m": result.rest_points_m.tolist(),
+        "point_masses_kg": result.point_masses_kg.tolist(),
+        "initial_position_m": result.initial_position_m.tolist(),
+        "final_center_of_mass_m": result.final_center_of_mass_m.tolist(),
+        "final_linear_velocity_m_s": result.final_linear_velocity_m_s.tolist(),
+        "final_angular_velocity_rad_s": result.final_angular_velocity_rad_s.tolist(),
+        "initial_energy_j": result.initial_energy_j,
+        "final_energy_j": result.final_energy_j,
+        "energy_drift_j": result.energy_drift_j,
+        "relative_energy_drift": result.relative_energy_drift,
+        "no_slip_residual_m_s": result.no_slip_residual_m_s,
+        "min_support_height_m": result.min_support_height_m,
+        "max_support_penetration_m": result.max_support_penetration_m,
+        "max_affine_shape_spread_m": result.max_affine_shape_spread_m,
+        "max_constraint_residual_norm": result.max_constraint_residual_norm,
+        "contact_count_summary": dict(result.contact_count_summary),
+        "static_plane_collision_policy": result.static_plane_collision_policy,
+        "static_plane_collision_scope": result.static_plane_collision_scope,
+        "static_plane_candidate_count": result.static_plane_candidate_count,
+        "static_plane_cylinder_shape_count": result.static_plane_cylinder_shape_count,
+        "static_plane_plane_shape_count": result.static_plane_plane_shape_count,
+        "trajectory_samples": list(result.trajectory_samples),
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={
+            "primitive_cylinder": "not_applicable_procedural",
+            "primitive_cube": "not_applicable_procedural",
+        },
+        solver_mode="mabd_cpu_oracle_rolling_cylinder_material_preflight",
+        backend="cpu_numpy_newton_solver_mabd_static_plane_contacts",
+        baseline_lane="mabd_newton",
+        expected=expected,
+        observed=observed,
+        threshold=dict(thresholds),
+        unit="json_report",
+        status=result.status,
+        failure_reason=(
+            "Finite-stiffness SolverMABD rolling-cylinder material preflight only; "
+            "paper-faithful M-ABD contact/friction, RBD baselines, and "
+            "paper-comparable timing evidence remain missing"
+        ),
+        timing_distribution={
+            "total_wall_time_ms": result.total_wall_time_ms,
+            "step_count": result.step_count,
+            "paper_comparable": False,
+            "scope": "local_cpu_wall_clock_not_paper_comparable",
+        },
+        raw_outputs={"time_series": "not_written"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 __all__ = [
     "RollingCylinderMABDNewtonResult",
     "RollingCylinderRBDBaselineResult",
     "run_rolling_cylinder_mabd_newton",
     "run_rolling_cylinder_rbd_explicit_baseline",
     "run_rolling_cylinder_rbd_implicit_baseline",
+    "write_rolling_spinning_mabd_material_preflight_report",
     "write_rolling_spinning_mabd_newton_report",
     "write_rolling_spinning_rbd_explicit_baseline_report",
     "write_rolling_spinning_protocol_report",
