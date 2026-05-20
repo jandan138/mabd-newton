@@ -63,6 +63,9 @@ remaining_experiment_claims:
     rbd_explicit_development_report: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json
     rbd_explicit_development_report_status: incomplete
     rbd_explicit_development_report_sha256: "f4367249a44a22df0a1450e6a49c8389054dad7b95cb3843f3dc3e0f96739633"
+    mabd_newton_development_report: reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json
+    mabd_newton_development_report_status: incomplete
+    mabd_newton_development_report_sha256: "12dd1d7452ebefed43f40893095affd60ddca419262f5b7e58e542794a33a2fe"
     remaining_missing_lanes_after_phase74:
       - rbd_explicit_baseline
       - mabd_newton
@@ -74,7 +77,13 @@ remaining_experiment_claims:
       - paper_faithful_explicit_rbd_baseline
       - mabd_newton
       - paper_comparable_timing
-    next_action: "Add paper-faithful explicit RBD, M-ABD rolling-cylinder, and paper-comparable timing lanes before any rolling/spinning pass gate."
+    remaining_report_artifacts_missing_after_phase76:
+      - paper_comparable_timing
+    remaining_reproduction_gaps_after_phase76:
+      - paper_faithful_explicit_rbd_baseline
+      - paper_faithful_mabd_rolling_cylinder
+      - paper_comparable_timing
+    next_action: "Replace development diagnostics with paper-faithful explicit RBD and M-ABD rolling-cylinder contact/friction evidence, then add paper-comparable timing before any rolling/spinning pass gate."
   - claim_id: experiment.single_body.spinning_box
     scene_id: single_body_spinning_box
     claim_status: intended
@@ -255,6 +264,9 @@ remaining_experiment_claims:
     committed_report_sha256: null
     next_action: "Source marker sequence and add IK keyframe reconstruction lane."
 current_evidence_reports:
+  - path: reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json
+    status: incomplete
+    sha256: "12dd1d7452ebefed43f40893095affd60ddca419262f5b7e58e542794a33a2fe"
   - path: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json
     status: incomplete
     sha256: "f4367249a44a22df0a1450e6a49c8389054dad7b95cb3843f3dc3e0f96739633"

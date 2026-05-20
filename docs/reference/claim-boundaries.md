@@ -992,6 +992,28 @@
   rolling-cylinder result, co-rotated ABD timing result, paper-comparable
   timing result, completed rolling/spinning reproduction, comparative baseline
   pass, full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 76 rolling-cylinder SolverMABD diagnostic
+  evidence with the Phase 76 record.
+- Phase 76 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json`
+  exists as an incomplete Newton CPU `SolverMABD` rolling-cylinder diagnostic
+  report, records 10000 steps at `h = 0.01 sec`, local non-paper-comparable
+  wall-clock timing, `SolverMABD.detect_static_plane_contacts`,
+  `SolverMABD.step`, the bounded affine-cylinder static-plane diagnostic
+  policy, contact count summary, support penetration, no-slip residual,
+  affine shape spread, `required_lanes_missing = [paper_comparable_timing]`,
+  `full_experiment_claim_passed = false`, and keeps no experiment claim passed.
+- Phase 76 does not verify paper-faithful M-ABD rolling-cylinder collision,
+  paper-faithful rolling friction/no-slip dynamics, paper-faithful explicit
+  RBD, co-rotated ABD timing, same-hardware paper timing, paper-comparable
+  performance, a completed rolling/spinning reproduction, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 76 rolling-cylinder SolverMABD diagnostic evidence must not be
+  described as a paper-faithful M-ABD rolling-cylinder result, paper-faithful
+  collision result, rolling friction result, paper-faithful explicit RBD
+  result, co-rotated ABD timing result, paper-comparable timing result,
+  completed rolling/spinning reproduction, comparative baseline pass, full
+  paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
