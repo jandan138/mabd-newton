@@ -1269,6 +1269,29 @@
   baseline, comparison pass gate, paper-comparable timing result, completed
   spinning-box reproduction, full paper reproduction, or any passed
   `experiment.*` claim.
+- This repository contains Phase 88 spinning-box affine static-plane contacts
+  rollout candidate evidence with the Phase 88 record.
+- Phase 88 verifies that
+  `reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json`
+  exists as an incomplete development-only Newton `SolverMABD` rollout
+  candidate report, records `SolverMABD.detect_static_plane_contacts`,
+  `newton.Contacts`, `SolverMABD.step(..., contacts=...)`,
+  `last_static_plane_collision_summary`, `last_contacts_input_summary`,
+  free-predicted penetration, constrained penetration, generated plane
+  constraints, 101 compact trajectory samples over 10 seconds, and keeps
+  `paper_faithful = false`, `paper_comparable = false`, and
+  `full_experiment_claim_passed = false`.
+- Phase 88 does not verify paper-faithful affine contact/collision, finite-plane
+  clipping, body-body affine contact, a generic contact solver, complementarity,
+  barriers, CCD, friction, paper-faithful M-ABD spinning-box dynamics,
+  paper-faithful RBD spinning-box baseline behavior, paper-comparable timing,
+  comparison pass gates, completed spinning-box reproduction, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 88 spinning-box affine static-plane contacts rollout candidate evidence
+  must not be described as a paper-faithful affine collision result, contact
+  solver validation, passed M-ABD lane, passed RBD baseline, comparison pass
+  gate, paper-comparable timing result, completed spinning-box reproduction,
+  full paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

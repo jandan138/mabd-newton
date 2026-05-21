@@ -36,6 +36,9 @@ REPORTS = {
     / "reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts.json",
     "development_comparison": ROOT
     / "reports/experiment_matrix/single_body_spinning_box_development_comparison.json",
+    "affine_static_plane_contacts_rollout_candidate": ROOT
+    / "reports/experiment_matrix/"
+    "single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json",
 }
 
 
@@ -459,6 +462,81 @@ class SpinningBoxReportArtifactTests(unittest.TestCase):
         self.assertNotIn("lane_gate_status", report.observed)
         self.assertEqual(report.raw_outputs["trajectory"], "embedded_compact_samples")
         self.assertEqual(report.raw_outputs["energy_curve"], "embedded_energy_curve_samples")
+        self.assertEqual(report.plot_paths, {})
+
+    def test_affine_static_plane_contacts_rollout_candidate_report_records_10s_persistent_contacts(
+        self,
+    ) -> None:
+        report = self._load_reports()["affine_static_plane_contacts_rollout_candidate"]
+
+        self.assertEqual(
+            report.baseline_lane,
+            "spinning_box_affine_static_plane_contacts_rollout_candidate",
+        )
+        self.assertEqual(
+            report.solver_mode,
+            "solver_mabd_affine_static_plane_contacts_rollout_candidate",
+        )
+        self.assertEqual(
+            report.backend,
+            "cpu_newton_solver_mabd_affine_static_plane_contacts_rollout_candidate",
+        )
+        self.assertEqual(
+            report.observed["candidate_status"],
+            "affine_static_plane_contacts_rollout_candidate_recorded",
+        )
+        self.assertFalse(report.observed["paper_faithful"])
+        self.assertFalse(report.observed["paper_comparable"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(report.observed["rollout_scope"], "development_only")
+        self.assertEqual(
+            report.observed["contact_constraint_policy"],
+            "free_predict_detect_static_plane_contacts_then_constrained_step",
+        )
+        self.assertEqual(
+            report.observed["contact_detection_source"],
+            "SolverMABD.detect_static_plane_contacts",
+        )
+        self.assertEqual(
+            report.observed["solver_step_api"],
+            "SolverMABD.step(..., contacts=...)",
+        )
+        self.assertEqual(report.observed["newton_contacts_api"], "newton.Contacts")
+        self.assertEqual(report.observed["contact_constraint_mode"], "plane")
+        self.assertEqual(report.observed["duration_s"], 10.0)
+        self.assertEqual(report.observed["time_step_s"], 0.01)
+        self.assertEqual(report.observed["step_count"], 1000)
+        self.assertEqual(report.observed["sample_count"], 101)
+        self.assertEqual(len(report.observed["trajectory_samples"]), 101)
+        self.assertGreater(
+            report.observed["max_free_predicted_contact_penetration_m"],
+            report.observed["max_constrained_contact_penetration_m"],
+        )
+        self.assertEqual(report.observed["max_affine_static_plane_candidate_contact_count"], 4)
+        self.assertEqual(
+            report.observed["max_contacts_input_generated_plane_constraint_count"],
+            4,
+        )
+        _finite_scalar(report.observed["max_constraint_residual_norm"])
+        self.assertIn(
+            "max_relative_total_energy_drift",
+            report.observed["threshold_violations"],
+        )
+        self.assertIn(
+            "spinning_box_affine_static_plane_contacts_rollout_candidate_not_paper_faithful",
+            report.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_faithful_affine_collision_missing",
+            report.observed["blocking_reasons"],
+        )
+        self.assertNotIn("lane_gate_status", report.observed)
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+        self.assertEqual(
+            report.timing_distribution["scope"],
+            "local_cpu_wall_clock_not_paper_comparable",
+        )
+        self.assertEqual(report.raw_outputs["trajectory"], "embedded_compact_samples")
         self.assertEqual(report.plot_paths, {})
 
     def test_matrix_retains_spinning_box_blocked_status(self) -> None:

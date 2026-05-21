@@ -90,13 +90,19 @@ artifacts, and docs/provenance validators.
 - Modify: `tests/test_phase0_bootstrap.py`
 - Modify: `tests/test_spinning_box_report_artifacts.py`
 
-- [ ] Generate the report from the implementation source commit.
-- [ ] Record the report SHA256.
-- [ ] Add an artifact test requiring a 10 second rollout, 101 samples, generated
+- [x] Generate the report from the implementation source commit.
+- [x] Record the report SHA256.
+- [x] Add an artifact test requiring a 10 second rollout, 101 samples, generated
   affine static-plane contact telemetry, and incomplete non-claim status.
-- [ ] Add `validate_phase88_record()` and include the report in
+- [x] Add `validate_phase88_record()` and include the report in
   `REQUIRED_PATHS`.
-- [ ] Update claim boundaries and gap audit without passing any
+- [x] Update claim boundaries and gap audit without passing any
   `experiment.*` claim.
-- [ ] Run docs/provenance validation, targeted tests, full tests, whitespace,
+- [x] Run docs/provenance validation, targeted tests, full tests, whitespace,
   and vendored Newton import checks.
+
+Phase88 implementation source commit:
+`e96ff6d726019a3b974d54dbad2fe82c0698d6d0`
+
+Phase88 report SHA256:
+`04b6057cfc02df5c690785645d3e3ee95821153796931a4c39ce3c434a29c4a2`

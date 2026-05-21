@@ -41,6 +41,8 @@ The report may claim only that the Newton M-ABD candidate path generated and
 consumed affine box/static-plane contact rows over a persistent rollout and
 measured free-predicted vs constrained penetration.
 
+No `experiment.*` claim is passed.
+
 ## Report Contract
 
 New lane:

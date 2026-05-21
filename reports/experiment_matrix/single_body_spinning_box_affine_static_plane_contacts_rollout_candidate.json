@@ -1,0 +1,2727 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural"
+  },
+  "backend": "cpu_newton_solver_mabd_affine_static_plane_contacts_rollout_candidate",
+  "baseline_lane": "spinning_box_affine_static_plane_contacts_rollout_candidate",
+  "claim_id": "experiment.single_body.spinning_box",
+  "expected": {
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "affine static-plane contacts rollout candidate only; no lane gate",
+    "paper_comparable": false,
+    "paper_faithful": false,
+    "rollout_scope": "development_only",
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/experiment.tex:40-55"
+    ]
+  },
+  "failure_reason": "affine static-plane contacts rollout candidate recorded; this is not a paper-faithful contact solver, collision pipeline, or comparison pass",
+  "observed": {
+    "blocking_reasons": [
+      "spinning_box_affine_static_plane_contacts_rollout_candidate_not_paper_faithful",
+      "affine_static_plane_contacts_rollout_candidate_thresholds_violated",
+      "paper_faithful_gate_not_evaluated",
+      "spinning_box_comparison_pass_gate_not_enabled",
+      "paper_faithful_affine_collision_missing"
+    ],
+    "candidate_status": "affine_static_plane_contacts_rollout_candidate_recorded",
+    "contact_constraint_mode": "plane",
+    "contact_constraint_policy": "free_predict_detect_static_plane_contacts_then_constrained_step",
+    "contact_count_summary": {
+      "final": 0,
+      "initial": 4,
+      "max": 4,
+      "min": 0
+    },
+    "contact_detection_source": "SolverMABD.detect_static_plane_contacts",
+    "contacts_input_summary_source": "last_contacts_input_summary",
+    "duration_s": 10.0,
+    "final_angular_momentum_kg_m2_s": [
+      -6.108363410763377e-18,
+      0.003333336817773064,
+      3.300134837679284e-18
+    ],
+    "final_energy_j": 0.10018364826930534,
+    "final_linear_momentum_kg_m_s": [
+      0.2000000029802323,
+      2.5925312456820397e-06,
+      -1.0066529180325844e-15
+    ],
+    "final_position_m": [
+      1.99998140335083,
+      0.050026025623083115,
+      -5.994969281332982e-15
+    ],
+    "full_experiment_claim_passed": false,
+    "initial_energy_j": 0.028333333333333335,
+    "max_affine_static_plane_candidate_contact_count": 4,
+    "max_constrained_contact_penetration_m": 1.490116135094592e-09,
+    "max_constraint_residual_norm": 8.735868072852438e-20,
+    "max_contacts_input_generated_plane_constraint_count": 4,
+    "max_contacts_input_overflow_count": 0,
+    "max_free_predicted_contact_penetration_m": 0.000999997556209567,
+    "newton_contacts_api": "newton.Contacts",
+    "paper_comparable": false,
+    "paper_faithful": false,
+    "relative_total_energy_drift": 2.5358934683284238,
+    "rollout_scope": "development_only",
+    "sample_count": 101,
+    "solver_step_api": "SolverMABD.step(..., contacts=...)",
+    "static_plane_collision_summary_source": "last_static_plane_collision_summary",
+    "step_count": 1000,
+    "threshold_violations": [
+      "max_relative_total_energy_drift"
+    ],
+    "time_step_s": 0.01,
+    "trajectory_samples": [
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666666667,
+        "angular_momentum_kg_m2_s": [
+          0.0,
+          0.0033333333333333344,
+          0.0
+        ],
+        "elastic_energy_j": 0.0,
+        "kinetic_energy_j": 0.0283333340783914,
+        "linear_momentum_error": 99.8000500972091,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          -0.10000000149011615,
+          0.0
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.0,
+          0.05000000074505806,
+          0.0
+        ],
+        "step_index": 0,
+        "time_s": 0.0,
+        "total_energy_j": 0.0283333340783914
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666686204,
+        "angular_momentum_kg_m2_s": [
+          5.987426336883998e-22,
+          0.003333333137954706,
+          3.320378768175594e-19
+        ],
+        "elastic_energy_j": 0.0768324892185257,
+        "kinetic_energy_j": 0.02333233436174094,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -3.0265382628409247e-18
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.020000001415610313,
+          0.050000209361314774,
+          1.951553570716251e-18
+        ],
+        "step_index": 10,
+        "time_s": 0.1,
+        "total_energy_j": 0.10016482358026664
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666663138,
+        "angular_momentum_kg_m2_s": [
+          1.2923934720403104e-19,
+          0.0033333333686092824,
+          6.636818427100639e-19
+        ],
+        "elastic_energy_j": 0.07685826663441468,
+        "kinetic_energy_j": 0.023332334561618203,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -5.01460048386797e-19
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.04000000283122063,
+          0.050000470131635666,
+          1.5089581762605653e-18
+        ],
+        "step_index": 20,
+        "time_s": 0.2,
+        "total_energy_j": 0.10019060119603289
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666662849,
+        "angular_momentum_kg_m2_s": [
+          7.545653215954754e-20,
+          0.0033333333715124297,
+          5.22853872596103e-19
+        ],
+        "elastic_energy_j": 0.07685281372647258,
+        "kinetic_energy_j": 0.02333233472965907,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.241179612226592e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.06000000610947609,
+          0.05000073090195656,
+          -7.700866214411476e-18
+        ],
+        "step_index": 30,
+        "time_s": 0.3,
+        "total_energy_j": 0.10018514845613165
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666691277,
+        "angular_momentum_kg_m2_s": [
+          -3.8779575502181835e-19,
+          0.0033333330872324053,
+          -1.322854898008774e-19
+        ],
+        "elastic_energy_j": 0.0768589046686767,
+        "kinetic_energy_j": 0.02333233407823367,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          2.2575585331364647e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.07999997586011887,
+          0.05000099167227745,
+          -5.8134956553747455e-18
+        ],
+        "step_index": 40,
+        "time_s": 0.4,
+        "total_energy_j": 0.10019123874691037
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666695613,
+        "angular_momentum_kg_m2_s": [
+          -9.910119581425622e-19,
+          0.0033333330438683256,
+          -6.435082313008041e-19
+        ],
+        "elastic_energy_j": 0.07684511664906778,
+        "kinetic_energy_j": 0.023332334159178625,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          2.4881087252804685e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.09999994188547134,
+          0.05000125244259834,
+          2.161431543279432e-17
+        ],
+        "step_index": 50,
+        "time_s": 0.5,
+        "total_energy_j": 0.1001774508082464
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666703182,
+        "angular_momentum_kg_m2_s": [
+          -1.3025969426775485e-18,
+          0.003333332968182912,
+          -8.413112418245886e-19
+        ],
+        "elastic_energy_j": 0.07686475018693056,
+        "kinetic_energy_j": 0.023332333713924812,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          2.688217612091337e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.11999990791082382,
+          0.050001513212919235,
+          4.4762763043021335e-17
+        ],
+        "step_index": 60,
+        "time_s": 0.6,
+        "total_energy_j": 0.10019708390085538
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666687979,
+        "angular_momentum_kg_m2_s": [
+          4.837423780527322e-19,
+          0.0033333331202123127,
+          -2.0879402031591155e-19
+        ],
+        "elastic_energy_j": 0.07686109549156354,
+        "kinetic_energy_j": 0.023332334125885687,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          4.1299815083704438e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.13999992609024048,
+          0.05000177398324013,
+          8.146042246942204e-17
+        ],
+        "step_index": 70,
+        "time_s": 0.7000000000000001,
+        "total_energy_j": 0.10019342961744923
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666699657,
+        "angular_momentum_kg_m2_s": [
+          -9.863301686641346e-19,
+          0.003333333003431896,
+          -4.2011604027915257e-19
+        ],
+        "elastic_energy_j": 0.07682834249392723,
+        "kinetic_energy_j": 0.02333233405275066,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          2.4709218973850867e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.15999996662139893,
+          0.05000203475356102,
+          1.1187226032041594e-16
+        ],
+        "step_index": 80,
+        "time_s": 0.8,
+        "total_energy_j": 0.10016067654667789
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666654555,
+        "angular_momentum_kg_m2_s": [
+          1.5487404061884658e-19,
+          0.003333333454450673,
+          -5.145355936413262e-19
+        ],
+        "elastic_energy_j": 0.07685931659816365,
+        "kinetic_energy_j": 0.023332334749435253,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          2.168478195656098e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.18000000715255737,
+          0.05000229552388191,
+          1.3412577460847694e-16
+        ],
+        "step_index": 90,
+        "time_s": 0.9,
+        "total_energy_j": 0.10019165134759891
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666665878,
+        "angular_momentum_kg_m2_s": [
+          1.3134977325488049e-19,
+          0.0033333333412106005,
+          -5.268904480020288e-19
+        ],
+        "elastic_energy_j": 0.07685736641325781,
+        "kinetic_energy_j": 0.023332334582749813,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          3.8047515615691304e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.20000004768371582,
+          0.050002556294202805,
+          1.6584604675240721e-16
+        ],
+        "step_index": 100,
+        "time_s": 1.0,
+        "total_energy_j": 0.10018970099600763
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666659294,
+        "angular_momentum_kg_m2_s": [
+          -8.879456776175705e-19,
+          0.003333333407049822,
+          -6.94682795097606e-20
+        ],
+        "elastic_energy_j": 0.0768192260396274,
+        "kinetic_energy_j": 0.023332334946505866,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -6.492192550326953e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.22000008821487427,
+          0.0500028170645237,
+          1.7802268799966962e-16
+        ],
+        "step_index": 110,
+        "time_s": 1.1,
+        "total_energy_j": 0.10015156098613327
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666664148,
+        "angular_momentum_kg_m2_s": [
+          -1.0014706155521574e-18,
+          0.0033333335851963982,
+          2.0597578153630945e-19
+        ],
+        "elastic_energy_j": 0.07685410443718196,
+        "kinetic_energy_j": 0.023332335183415084,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.03803477659448e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.24000012874603271,
+          0.05000307783484459,
+          1.7110794776964894e-16
+        ],
+        "step_index": 120,
+        "time_s": 1.2,
+        "total_energy_j": 0.10018643962059705
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666660114,
+        "angular_momentum_kg_m2_s": [
+          -1.0115881278998641e-18,
+          0.003333333988602382,
+          1.9680430390094086e-19
+        ],
+        "elastic_energy_j": 0.07685840698744169,
+        "kinetic_energy_j": 0.023332335838540354,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.251110066604201e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.26000016927719116,
+          0.05000333860516548,
+          1.6831119056160305e-16
+        ],
+        "step_index": 130,
+        "time_s": 1.3,
+        "total_energy_j": 0.10019074282598205
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666597167,
+        "angular_momentum_kg_m2_s": [
+          -1.2723850589228836e-18,
+          0.003333334028321283,
+          6.683247438928956e-19
+        ],
+        "elastic_energy_j": 0.0768362195907704,
+        "kinetic_energy_j": 0.023332336119638922,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.003575488516532e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.2800002098083496,
+          0.050003599375486374,
+          1.5842329851227077e-16
+        ],
+        "step_index": 140,
+        "time_s": 1.4000000000000001,
+        "total_energy_j": 0.10016855571040932
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666604884,
+        "angular_momentum_kg_m2_s": [
+          -1.2049524617292949e-18,
+          0.0033333339511585256,
+          4.989367175919562e-19
+        ],
+        "elastic_energy_j": 0.07682719672697856,
+        "kinetic_energy_j": 0.023332336002141605,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.981952112724346e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.30000025033950806,
+          0.050003860145807266,
+          1.4809300380156553e-16
+        ],
+        "step_index": 150,
+        "time_s": 1.5,
+        "total_energy_j": 0.10015953272912016
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666654046,
+        "angular_momentum_kg_m2_s": [
+          -1.1960670370222338e-18,
+          0.0033333345953984483,
+          4.495718285647348e-19
+        ],
+        "elastic_energy_j": 0.0768615481326676,
+        "kinetic_energy_j": 0.023332337072155103,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.14886940106463e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.3200002908706665,
+          0.05000412091612816,
+          1.4088239761004688e-16
+        ],
+        "step_index": 160,
+        "time_s": 1.6,
+        "total_energy_j": 0.1001938852048227
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666528186,
+        "angular_momentum_kg_m2_s": [
+          -1.2319045717340997e-18,
+          0.0033333347181418184,
+          2.005138116313296e-19
+        ],
+        "elastic_energy_j": 0.07684018447449381,
+        "kinetic_energy_j": 0.023332337498647167,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -6.436282420107759e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.34000033140182495,
+          0.05000438168644905,
+          1.3414566664784761e-16
+        ],
+        "step_index": 170,
+        "time_s": 1.7,
+        "total_energy_j": 0.10017252197314097
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666546976,
+        "angular_momentum_kg_m2_s": [
+          -1.5787154514475063e-18,
+          0.003333334530235017,
+          -6.597398274266048e-19
+        ],
+        "elastic_energy_j": 0.07683972719800086,
+        "kinetic_energy_j": 0.023332337128208626,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          1.0141923351350378e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.3600003719329834,
+          0.05000464245676994,
+          1.2907980081833606e-16
+        ],
+        "step_index": 180,
+        "time_s": 1.8,
+        "total_energy_j": 0.10017206432620948
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666523098,
+        "angular_momentum_kg_m2_s": [
+          -1.522690697937998e-18,
+          0.0033333347690308332,
+          -7.577431216761088e-19
+        ],
+        "elastic_energy_j": 0.07686300108300637,
+        "kinetic_energy_j": 0.02333233736351661,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.654544761852998e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.38000041246414185,
+          0.050004903227090836,
+          1.2416248339194923e-16
+        ],
+        "step_index": 190,
+        "time_s": 1.9000000000000001,
+        "total_energy_j": 0.10019533844652298
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666645673,
+        "angular_momentum_kg_m2_s": [
+          -1.710858949872495e-18,
+          0.0033333354326980343,
+          -9.516421386847708e-19
+        ],
+        "elastic_energy_j": 0.0768784550620269,
+        "kinetic_energy_j": 0.02333233851141819,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.999491948855485e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.4000004529953003,
+          0.05000516399741173,
+          1.1701797224009602e-16
+        ],
+        "step_index": 200,
+        "time_s": 2.0,
+        "total_energy_j": 0.10021079357344509
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666454895,
+        "angular_momentum_kg_m2_s": [
+          -2.4864306350098787e-18,
+          0.003333335451047078,
+          -1.5082923500864866e-18
+        ],
+        "elastic_energy_j": 0.07685647563957236,
+        "kinetic_energy_j": 0.02333233882824767,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -4.2312134599214596e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.42000049352645874,
+          0.05000542476773262,
+          1.114035731678985e-16
+        ],
+        "step_index": 210,
+        "time_s": 2.1,
+        "total_energy_j": 0.10018881446782003
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666454006,
+        "angular_momentum_kg_m2_s": [
+          -2.1993995939167445e-18,
+          0.003333335459935941,
+          -1.3630999608054803e-18
+        ],
+        "elastic_energy_j": 0.0768431473494537,
+        "kinetic_energy_j": 0.023332338864725112,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -2.438425461820063e-18
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.4400005340576172,
+          0.05000568553805351,
+          1.0703972559809334e-16
+        ],
+        "step_index": 220,
+        "time_s": 2.2,
+        "total_energy_j": 0.10017548621417882
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666448105,
+        "angular_momentum_kg_m2_s": [
+          -1.698617116907357e-18,
+          0.0033333355189394415,
+          -1.1764948108291119e-18
+        ],
+        "elastic_energy_j": 0.07682745967083345,
+        "kinetic_energy_j": 0.023332339134794555,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.140832677756559e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.46000057458877563,
+          0.050005946308374405,
+          9.730378993600951e-17
+        ],
+        "step_index": 230,
+        "time_s": 2.3000000000000003,
+        "total_energy_j": 0.100159798805628
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666379431,
+        "angular_momentum_kg_m2_s": [
+          -9.546667736999576e-19,
+          0.003333336205685168,
+          -1.1140077991313123e-18
+        ],
+        "elastic_energy_j": 0.07686381006885407,
+        "kinetic_energy_j": 0.02333234016876994,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          8.47258602125405e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.4800006151199341,
+          0.0500062070786953,
+          1.0661037915550892e-16
+        ],
+        "step_index": 240,
+        "time_s": 2.4,
+        "total_energy_j": 0.100196150237624
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666363503,
+        "angular_momentum_kg_m2_s": [
+          -3.2467227315727334e-18,
+          0.0033333363649699177,
+          -6.788993786135904e-19
+        ],
+        "elastic_energy_j": 0.07683240368408592,
+        "kinetic_energy_j": 0.023332340810904965,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -5.667125549675121e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.5000006556510925,
+          0.05000646784901619,
+          1.0926109597204735e-16
+        ],
+        "step_index": 250,
+        "time_s": 2.5,
+        "total_energy_j": 0.10016474449499088
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666303203,
+        "angular_momentum_kg_m2_s": [
+          -4.5461462955620815e-18,
+          0.0033333369679725256,
+          -2.148541113218179e-19
+        ],
+        "elastic_energy_j": 0.07687361939349112,
+        "kinetic_energy_j": 0.02333234164039953,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.2307855915214956e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.5200003981590271,
+          0.05000672861933708,
+          1.0132071133946502e-16
+        ],
+        "step_index": 260,
+        "time_s": 2.6,
+        "total_energy_j": 0.10020596103389065
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666297644,
+        "angular_momentum_kg_m2_s": [
+          -5.029172641468669e-18,
+          0.0033333370235640804,
+          3.2881275164521804e-20
+        ],
+        "elastic_energy_j": 0.07687413849292972,
+        "kinetic_energy_j": 0.02333234183841256,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -2.337271745011383e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.5400001406669617,
+          0.050006989389657974,
+          7.917086594321407e-17
+        ],
+        "step_index": 270,
+        "time_s": 2.7,
+        "total_energy_j": 0.10020648033134227
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666303635,
+        "angular_momentum_kg_m2_s": [
+          -5.556708097709206e-18,
+          0.0033333369636425313,
+          5.607564757915938e-19
+        ],
+        "elastic_energy_j": 0.07684502392315937,
+        "kinetic_energy_j": 0.023332342013619577,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.995996479560011e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.5599998831748962,
+          0.05000725015997887,
+          5.644092209210213e-17
+        ],
+        "step_index": 280,
+        "time_s": 2.8000000000000003,
+        "total_energy_j": 0.10017736593677895
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666356414,
+        "angular_momentum_kg_m2_s": [
+          -5.003689015057864e-18,
+          0.0033333364358569353,
+          -2.8763035075853825e-19
+        ],
+        "elastic_energy_j": 0.07682649624689948,
+        "kinetic_energy_j": 0.023332341067283994,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.5274436611740434e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.5799996256828308,
+          0.05000751093029976,
+          4.378465836462433e-17
+        ],
+        "step_index": 290,
+        "time_s": 2.9,
+        "total_energy_j": 0.10015883731418347
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666351982,
+        "angular_momentum_kg_m2_s": [
+          -5.101686210357359e-18,
+          0.003333336480184461,
+          2.46792198721188e-19
+        ],
+        "elastic_energy_j": 0.07685697702503241,
+        "kinetic_energy_j": 0.023332340924801024,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.364117180097693e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.5999993681907654,
+          0.05000777170062065,
+          3.09898418845439e-17
+        ],
+        "step_index": 300,
+        "time_s": 3.0,
+        "total_energy_j": 0.10018931794983343
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666357884,
+        "angular_momentum_kg_m2_s": [
+          -5.1186712183843224e-18,
+          0.003333336421166461,
+          -8.908460135847106e-21
+        ],
+        "elastic_energy_j": 0.07683558752864103,
+        "kinetic_energy_j": 0.02333234089832323,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.4574972685765593e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.6199991106987,
+          0.050008032470941544,
+          1.668244789943268e-17
+        ],
+        "step_index": 310,
+        "time_s": 3.1,
+        "total_energy_j": 0.10016792842696426
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666370749,
+        "angular_momentum_kg_m2_s": [
+          -5.1274597089684376e-18,
+          0.0033333362925108767,
+          -3.210632612832878e-19
+        ],
+        "elastic_energy_j": 0.07686584828149443,
+        "kinetic_energy_j": 0.02333234047746581,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.447602467914751e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.6399988532066345,
+          0.050008293241262436,
+          2.7970508571633467e-18
+        ],
+        "step_index": 320,
+        "time_s": 3.2,
+        "total_energy_j": 0.10019818875896024
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666639475,
+        "angular_momentum_kg_m2_s": [
+          -4.920274245693704e-18,
+          0.003333336052502236,
+          1.4785178799897615e-18
+        ],
+        "elastic_energy_j": 0.07686054716255224,
+        "kinetic_energy_j": 0.0233323399483212,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -2.2784603945989447e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.6599985957145691,
+          0.05000855401158333,
+          -1.5419042010321236e-17
+        ],
+        "step_index": 330,
+        "time_s": 3.3000000000000003,
+        "total_energy_j": 0.10019288711087343
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666458255,
+        "angular_momentum_kg_m2_s": [
+          -5.34900371537576e-18,
+          0.0033333354174474483,
+          4.315825414255227e-19
+        ],
+        "elastic_energy_j": 0.07685308690937771,
+        "kinetic_energy_j": 0.023332338828187804,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.335937950954723e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.6799983382225037,
+          0.05000881478190422,
+          -3.843354757267999e-17
+        ],
+        "step_index": 340,
+        "time_s": 3.4,
+        "total_energy_j": 0.10018542573756552
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666444921,
+        "angular_momentum_kg_m2_s": [
+          -5.491717304331586e-18,
+          0.0033333355507863525,
+          1.6841885100220493e-19
+        ],
+        "elastic_energy_j": 0.07683521440946345,
+        "kinetic_energy_j": 0.023332339223967262,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.174352153759576e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.6999980807304382,
+          0.05000907555222511,
+          -4.533223057264979e-17
+        ],
+        "step_index": 350,
+        "time_s": 3.5,
+        "total_energy_j": 0.10016755363343072
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666446186,
+        "angular_momentum_kg_m2_s": [
+          -5.80502602650317e-18,
+          0.0033333355381391302,
+          -1.3303020874439257e-19
+        ],
+        "elastic_energy_j": 0.07685058583453479,
+        "kinetic_energy_j": 0.023332339048775026,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.0270633812716487e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.7199978232383728,
+          0.050009336322546005,
+          -5.492215562172822e-17
+        ],
+        "step_index": 360,
+        "time_s": 3.6,
+        "total_energy_j": 0.10018292488330982
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666468522,
+        "angular_momentum_kg_m2_s": [
+          -7.892060575567554e-18,
+          0.0033333353147741,
+          -1.5485935240301516e-18
+        ],
+        "elastic_energy_j": 0.07684933160652005,
+        "kinetic_energy_j": 0.023332338664266806,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.4621589938111122e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.7399975657463074,
+          0.0500095970928669,
+          -6.172927965405575e-17
+        ],
+        "step_index": 370,
+        "time_s": 3.7,
+        "total_energy_j": 0.10018167027078685
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666475233,
+        "angular_momentum_kg_m2_s": [
+          -7.809830219565023e-18,
+          0.00333333524767916,
+          -1.5653465399742985e-18
+        ],
+        "elastic_energy_j": 0.07685647340822206,
+        "kinetic_energy_j": 0.02333233849101401,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          2.4813568800741168e-17
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.7599973082542419,
+          0.05000985786318779,
+          -6.307526794680204e-17
+        ],
+        "step_index": 380,
+        "time_s": 3.8000000000000003,
+        "total_energy_j": 0.10018881189923606
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666439524,
+        "angular_momentum_kg_m2_s": [
+          -7.54892308379981e-18,
+          0.0033333356047675973,
+          -1.4343928831032698e-18
+        ],
+        "elastic_energy_j": 0.07686606026265917,
+        "kinetic_energy_j": 0.02333233896297523,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.9182174144805887e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.7799970507621765,
+          0.05001011863350868,
+          -7.34855146267942e-17
+        ],
+        "step_index": 390,
+        "time_s": 3.9,
+        "total_energy_j": 0.1001983992256344
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666448576,
+        "angular_momentum_kg_m2_s": [
+          -7.158664885352827e-18,
+          0.0033333355142396047,
+          -1.569875766417013e-18
+        ],
+        "elastic_energy_j": 0.07685572744227909,
+        "kinetic_energy_j": 0.023332339022286718,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.856307114621282e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.7999967932701111,
+          0.050010379403829575,
+          -9.714011405384242e-17
+        ],
+        "step_index": 400,
+        "time_s": 4.0,
+        "total_energy_j": 0.10018806646456581
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666468792,
+        "angular_momentum_kg_m2_s": [
+          -7.056279319932598e-18,
+          0.003333335312076572,
+          -1.70468574453403e-18
+        ],
+        "elastic_energy_j": 0.07684433681756271,
+        "kinetic_energy_j": 0.02333233862109482,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -6.932701034271617e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.8199965357780457,
+          0.05001064017415047,
+          -1.464407866286072e-16
+        ],
+        "step_index": 410,
+        "time_s": 4.1,
+        "total_energy_j": 0.10017667543865753
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666645292,
+        "angular_momentum_kg_m2_s": [
+          -7.766953602509648e-18,
+          0.003333335470794174,
+          -1.3470179077271172e-18
+        ],
+        "elastic_energy_j": 0.07685337024808779,
+        "kinetic_energy_j": 0.02333233885328667,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -6.533764927378194e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.8399962782859802,
+          0.05001090094447136,
+          -2.1356757859824908e-16
+        ],
+        "step_index": 420,
+        "time_s": 4.2,
+        "total_energy_j": 0.10018570910137446
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666435179,
+        "angular_momentum_kg_m2_s": [
+          -7.318930840559331e-18,
+          0.003333335648200613,
+          -1.6057273355573948e-18
+        ],
+        "elastic_energy_j": 0.0768371021541356,
+        "kinetic_energy_j": 0.02333233939247336,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.212546426363453e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.8599960207939148,
+          0.05001116171479225,
+          -2.8343072373888576e-16
+        ],
+        "step_index": 430,
+        "time_s": 4.3,
+        "total_energy_j": 0.10016944154660895
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666642983,
+        "angular_momentum_kg_m2_s": [
+          -8.0879577826004e-18,
+          0.003333335701695078,
+          -7.542858541688575e-19
+        ],
+        "elastic_energy_j": 0.07686344335537991,
+        "kinetic_energy_j": 0.02333233926937374,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.665755110561011e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.8799957633018494,
+          0.050011422485113144,
+          -3.588867744906834e-16
+        ],
+        "step_index": 440,
+        "time_s": 4.4,
+        "total_energy_j": 0.10019578262475365
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666439916,
+        "angular_momentum_kg_m2_s": [
+          -9.290249271475781e-18,
+          0.00333333560084376,
+          9.726821760284234e-19
+        ],
+        "elastic_energy_j": 0.0768700913208642,
+        "kinetic_energy_j": 0.0233323390588053,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.89669197687293e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.8999955058097839,
+          0.050011683255434036,
+          -4.449416426323557e-16
+        ],
+        "step_index": 450,
+        "time_s": 4.5,
+        "total_energy_j": 0.1002024303796695
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666428348,
+        "angular_momentum_kg_m2_s": [
+          -9.110269310287494e-18,
+          0.0033333357165184563,
+          1.7918799483446364e-19
+        ],
+        "elastic_energy_j": 0.0768464105091883,
+        "kinetic_energy_j": 0.023332339493490936,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.442854586097767e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.9199952483177185,
+          0.05001194402575493,
+          -5.354020614815956e-16
+        ],
+        "step_index": 460,
+        "time_s": 4.6000000000000005,
+        "total_energy_j": 0.10017875000267924
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666387536,
+        "angular_momentum_kg_m2_s": [
+          -8.98287995837583e-18,
+          0.003333336124645785,
+          -4.309115615297965e-19
+        ],
+        "elastic_energy_j": 0.07684967520795276,
+        "kinetic_energy_j": 0.023332340169564883,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.65900574753404e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.9399949908256531,
+          0.05001220479607582,
+          -6.300991273747647e-16
+        ],
+        "step_index": 470,
+        "time_s": 4.7,
+        "total_energy_j": 0.10018201537751764
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666380729,
+        "angular_momentum_kg_m2_s": [
+          -9.053930690031402e-18,
+          0.0033333361927115916,
+          -2.4325458285523145e-18
+        ],
+        "elastic_energy_j": 0.07686433922901642,
+        "kinetic_energy_j": 0.023332340308247768,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.68592657218015e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.9599947333335876,
+          0.05001246556639671,
+          -7.266735888559637e-16
+        ],
+        "step_index": 480,
+        "time_s": 4.8,
+        "total_energy_j": 0.10019667953726419
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666330893,
+        "angular_momentum_kg_m2_s": [
+          -8.68951347924356e-18,
+          0.0033333366910699444,
+          -6.190698646215719e-19
+        ],
+        "elastic_energy_j": 0.07686534834538647,
+        "kinetic_energy_j": 0.023332341192831896,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.0084551923861048e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.9799944758415222,
+          0.050012726336717606,
+          -8.273471074667223e-16
+        ],
+        "step_index": 490,
+        "time_s": 4.9,
+        "total_energy_j": 0.10019768953821837
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666336493,
+        "angular_momentum_kg_m2_s": [
+          -8.002167305477826e-18,
+          0.003333336635059445,
+          5.818058373326485e-19
+        ],
+        "elastic_energy_j": 0.07686978094452382,
+        "kinetic_energy_j": 0.023332341145825667,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.63596856895109e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          0.9999942183494568,
+          0.0500129871070385,
+          -9.22073184238335e-16
+        ],
+        "step_index": 500,
+        "time_s": 5.0,
+        "total_energy_j": 0.10020212209034948
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666302217,
+        "angular_momentum_kg_m2_s": [
+          -9.197261991716657e-18,
+          0.0033333369778308737,
+          -1.0552984365652603e-18
+        ],
+        "elastic_energy_j": 0.07683798913002099,
+        "kinetic_energy_j": 0.02333234197513072,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.0013554681013376e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.0199940204620361,
+          0.05001324787735939,
+          -1.0150180036614309e-15
+        ],
+        "step_index": 510,
+        "time_s": 5.1000000000000005,
+        "total_energy_j": 0.10017033110515171
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666309253,
+        "angular_momentum_kg_m2_s": [
+          -9.357829484910129e-18,
+          0.003333336907469332,
+          -1.18371149972278e-18
+        ],
+        "elastic_energy_j": 0.07683459850365272,
+        "kinetic_energy_j": 0.02333234179679154,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.1599946806058194e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.0399937629699707,
+          0.05001350864768028,
+          -1.1206281891074652e-15
+        ],
+        "step_index": 520,
+        "time_s": 5.2,
+        "total_energy_j": 0.10016694030044426
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666322675,
+        "angular_momentum_kg_m2_s": [
+          -1.0193813490569076e-17,
+          0.0033333367732564776,
+          -1.7013744511819574e-18
+        ],
+        "elastic_energy_j": 0.07685890992765791,
+        "kinetic_energy_j": 0.023332341458336518,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.0406373621840846e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.0599935054779053,
+          0.050013769418001175,
+          -1.226143506863407e-15
+        ],
+        "step_index": 530,
+        "time_s": 5.3,
+        "total_energy_j": 0.10019125138599443
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666341626,
+        "angular_momentum_kg_m2_s": [
+          -1.0347729131657114e-17,
+          0.003333336583738773,
+          -1.5373275246786883e-18
+        ],
+        "elastic_energy_j": 0.0768551774824822,
+        "kinetic_energy_j": 0.02333234107867614,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.307008500808306e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.0799932479858398,
+          0.05001403018832207,
+          -1.3338477695132907e-15
+        ],
+        "step_index": 540,
+        "time_s": 5.4,
+        "total_energy_j": 0.10018751856115835
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666637103,
+        "angular_momentum_kg_m2_s": [
+          -1.0951761763173762e-17,
+          0.0033333362897036496,
+          -1.5899094585167148e-18
+        ],
+        "elastic_energy_j": 0.07681110144662477,
+        "kinetic_energy_j": 0.023332340885194505,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.380548215298786e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.0999929904937744,
+          0.05001429095864296,
+          -1.4178065222780842e-15
+        ],
+        "step_index": 550,
+        "time_s": 5.5,
+        "total_energy_j": 0.10014344233181928
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666389601,
+        "angular_momentum_kg_m2_s": [
+          -1.0268251418396237e-17,
+          0.003333336103989513,
+          -1.6359022026577669e-18
+        ],
+        "elastic_energy_j": 0.07682852760429595,
+        "kinetic_energy_j": 0.023332340364647416,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.585215727552658e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.119992733001709,
+          0.05001455172896385,
+          -1.5082162779691665e-15
+        ],
+        "step_index": 560,
+        "time_s": 5.6000000000000005,
+        "total_energy_j": 0.10016086796894337
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666375249,
+        "angular_momentum_kg_m2_s": [
+          -1.000664511251579e-17,
+          0.0033333362475112763,
+          -1.740645629684405e-18
+        ],
+        "elastic_energy_j": 0.07685939536954904,
+        "kinetic_energy_j": 0.023332340419848014,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.957596822154066e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.1399924755096436,
+          0.050014812499284744,
+          -1.5952141849487084e-15
+        ],
+        "step_index": 570,
+        "time_s": 5.7,
+        "total_energy_j": 0.10019173578939705
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666404022,
+        "angular_momentum_kg_m2_s": [
+          -9.881119181231376e-18,
+          0.003333335959787269,
+          -1.7688276704766968e-18
+        ],
+        "elastic_energy_j": 0.07682300842007177,
+        "kinetic_energy_j": 0.023332340112567778,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.272305659583428e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.1599922180175781,
+          0.05001507326960564,
+          -1.6795163036944952e-15
+        ],
+        "step_index": 580,
+        "time_s": 5.8,
+        "total_energy_j": 0.10015534853263955
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666400661,
+        "angular_momentum_kg_m2_s": [
+          -1.0401469611387012e-17,
+          0.0033333359933889295,
+          -1.4087780115132292e-18
+        ],
+        "elastic_energy_j": 0.07684577467800154,
+        "kinetic_energy_j": 0.023332340023676762,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.773892845949146e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.1799919605255127,
+          0.05001533403992653,
+          -1.7639389128770288e-15
+        ],
+        "step_index": 590,
+        "time_s": 5.9,
+        "total_energy_j": 0.1001781147016783
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666642107,
+        "angular_momentum_kg_m2_s": [
+          -1.1411410600871204e-17,
+          0.0033333357893103976,
+          -1.6042025362020722e-19
+        ],
+        "elastic_energy_j": 0.07684540278087244,
+        "kinetic_energy_j": 0.023332339647933485,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.572231241866842e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.1999917030334473,
+          0.05001559481024742,
+          -1.8487618510062585e-15
+        ],
+        "step_index": 600,
+        "time_s": 6.0,
+        "total_energy_j": 0.10017774242880592
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666405383,
+        "angular_momentum_kg_m2_s": [
+          -1.0995440115719787e-17,
+          0.0033333359461655723,
+          -9.32552848626734e-19
+        ],
+        "elastic_energy_j": 0.07684786062982298,
+        "kinetic_energy_j": 0.02333233979159399,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.29787621145999e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.2199914455413818,
+          0.050015855580568314,
+          -1.933114685849762e-15
+        ],
+        "step_index": 610,
+        "time_s": 6.1000000000000005,
+        "total_energy_j": 0.10018020042141697
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666430511,
+        "angular_momentum_kg_m2_s": [
+          -1.0859961102748077e-17,
+          0.003333335694884304,
+          -1.3404402933408338e-18
+        ],
+        "elastic_energy_j": 0.07683114817294767,
+        "kinetic_energy_j": 0.02333233942212787,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.384019246810022e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.2399911880493164,
+          0.050016116350889206,
+          -2.0101639791055654e-15
+        ],
+        "step_index": 620,
+        "time_s": 6.2,
+        "total_energy_j": 0.10016348759507554
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666428976,
+        "angular_momentum_kg_m2_s": [
+          -1.0952942964616096e-17,
+          0.0033333357102312794,
+          9.907712128812037e-21
+        ],
+        "elastic_energy_j": 0.07683146531907276,
+        "kinetic_energy_j": 0.023332339632631285,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.395690302032002e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.259990930557251,
+          0.0500163771212101,
+          -2.0847598414296467e-15
+        ],
+        "step_index": 630,
+        "time_s": 6.3,
+        "total_energy_j": 0.10016380495170404
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666444803,
+        "angular_momentum_kg_m2_s": [
+          -1.0881025639436613e-17,
+          0.0033333355519743904,
+          7.687295290137998e-19
+        ],
+        "elastic_energy_j": 0.07685136842068263,
+        "kinetic_energy_j": 0.023332339056497398,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.457764582175941e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.2799906730651855,
+          0.05001663789153099,
+          -2.1582871716907667e-15
+        ],
+        "step_index": 640,
+        "time_s": 6.4,
+        "total_energy_j": 0.10018370747718003
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666453234,
+        "angular_momentum_kg_m2_s": [
+          -1.0741305164623724e-17,
+          0.003333335467654416,
+          9.069290750939076e-19
+        ],
+        "elastic_energy_j": 0.07685817762054696,
+        "kinetic_energy_j": 0.023332338844021302,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.964030880793916e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.2999904155731201,
+          0.05001689866185188,
+          -2.235091037150103e-15
+        ],
+        "step_index": 650,
+        "time_s": 6.5,
+        "total_energy_j": 0.10019051646456827
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666469439,
+        "angular_momentum_kg_m2_s": [
+          -9.505465649409788e-18,
+          0.003333335305616578,
+          3.094772881098023e-18
+        ],
+        "elastic_energy_j": 0.07683320369913475,
+        "kinetic_energy_j": 0.023332338704476097,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.271618504104968e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.3199901580810547,
+          0.050017159432172775,
+          -2.318324729712047e-15
+        ],
+        "step_index": 660,
+        "time_s": 6.6000000000000005,
+        "total_energy_j": 0.10016554240361085
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666454715,
+        "angular_momentum_kg_m2_s": [
+          -9.043226662820458e-18,
+          0.0033333354528468475,
+          3.5788171925393734e-18
+        ],
+        "elastic_energy_j": 0.0768379463957477,
+        "kinetic_energy_j": 0.023332338993296384,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.555885408181472e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.3399899005889893,
+          0.05001742020249367,
+          -2.3907680695589182e-15
+        ],
+        "step_index": 670,
+        "time_s": 6.7,
+        "total_energy_j": 0.10017028538904409
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666435098,
+        "angular_momentum_kg_m2_s": [
+          -1.0049602335863633e-17,
+          0.0033333356490242503,
+          2.89461433138218e-18
+        ],
+        "elastic_energy_j": 0.07683235517078883,
+        "kinetic_energy_j": 0.023332339430538224,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.212884710146763e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.3599896430969238,
+          0.05001768097281456,
+          -2.466998917229437e-15
+        ],
+        "step_index": 680,
+        "time_s": 6.8,
+        "total_energy_j": 0.10016469460132706
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666404424,
+        "angular_momentum_kg_m2_s": [
+          -1.0453654385504093e-17,
+          0.003333335955752345,
+          2.6765803414191984e-18
+        ],
+        "elastic_energy_j": 0.07686563158385085,
+        "kinetic_energy_j": 0.023332339656950276,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -6.113733994328995e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.3799893856048584,
+          0.05001794174313545,
+          -2.528776629962719e-15
+        ],
+        "step_index": 690,
+        "time_s": 6.9,
+        "total_energy_j": 0.10019797124080113
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666391923,
+        "angular_momentum_kg_m2_s": [
+          -9.262302510077929e-18,
+          0.0033333360807664145,
+          3.016064987929692e-18
+        ],
+        "elastic_energy_j": 0.07684546653399238,
+        "kinetic_energy_j": 0.02333234009906293,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.219386432798262e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.399989128112793,
+          0.050018202513456345,
+          -2.605885639041304e-15
+        ],
+        "step_index": 700,
+        "time_s": 7.0,
+        "total_energy_j": 0.10017780663305531
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666414309,
+        "angular_momentum_kg_m2_s": [
+          -8.81029827538405e-18,
+          0.003333335856914517,
+          2.7614730724048594e-18
+        ],
+        "elastic_energy_j": 0.07685213107994456,
+        "kinetic_energy_j": 0.023332339744183722,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.026135551872332e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.4199888706207275,
+          0.05001846328377724,
+          -2.6985169503947973e-15
+        ],
+        "step_index": 710,
+        "time_s": 7.1000000000000005,
+        "total_energy_j": 0.10018447082412828
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666424928,
+        "angular_momentum_kg_m2_s": [
+          -1.040540281260535e-17,
+          0.003333335750727418,
+          3.0232016794164688e-18
+        ],
+        "elastic_energy_j": 0.07684134680552883,
+        "kinetic_energy_j": 0.02333233945635648,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -7.902609874810547e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.439988613128662,
+          0.05001872405409813,
+          -2.780544679798088e-15
+        ],
+        "step_index": 720,
+        "time_s": 7.2,
+        "total_energy_j": 0.1001736862618853
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666441298,
+        "angular_momentum_kg_m2_s": [
+          -9.803292441488087e-18,
+          0.0033333355870191384,
+          2.7188169265709367e-18
+        ],
+        "elastic_energy_j": 0.07684235352112116,
+        "kinetic_energy_j": 0.023332339192675165,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.657584104983698e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.4599883556365967,
+          0.05001898482441902,
+          -2.873795383994261e-15
+        ],
+        "step_index": 730,
+        "time_s": 7.3,
+        "total_energy_j": 0.10017469271379632
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666452842,
+        "angular_momentum_kg_m2_s": [
+          -1.0554606698338761e-17,
+          0.0033333354715763984,
+          3.2351053439641413e-18
+        ],
+        "elastic_energy_j": 0.07684418205291087,
+        "kinetic_energy_j": 0.023332338873584393,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.63588259147945e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.4799880981445312,
+          0.050019245594739914,
+          -2.9629926120213488e-15
+        ],
+        "step_index": 740,
+        "time_s": 7.4,
+        "total_energy_j": 0.10017652092649526
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666421444,
+        "angular_momentum_kg_m2_s": [
+          -1.1637179544271393e-17,
+          0.003333335785555108,
+          4.253620892845498e-18
+        ],
+        "elastic_energy_j": 0.07686423117585867,
+        "kinetic_energy_j": 0.023332339529096812,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.301317812203803e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.4999878406524658,
+          0.050019506365060806,
+          -3.04292626422079e-15
+        ],
+        "step_index": 750,
+        "time_s": 7.5,
+        "total_energy_j": 0.10019657070495548
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666374421,
+        "angular_momentum_kg_m2_s": [
+          -1.1050553564467919e-17,
+          0.0033333362557953876,
+          3.5969388911342175e-18
+        ],
+        "elastic_energy_j": 0.07686918250548311,
+        "kinetic_energy_j": 0.023332340230475916,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.0640079541108965e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.5199875831604004,
+          0.0500197671353817,
+          -3.1392294634006307e-15
+        ],
+        "step_index": 760,
+        "time_s": 7.6000000000000005,
+        "total_energy_j": 0.10020152273595903
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666386686,
+        "angular_momentum_kg_m2_s": [
+          -1.1081178971560631e-17,
+          0.0033333361331333825,
+          3.726114693963602e-18
+        ],
+        "elastic_energy_j": 0.07682609860919495,
+        "kinetic_energy_j": 0.02333234046469168,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.95251462447054e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.539987325668335,
+          0.05002002790570259,
+          -3.238486689984021e-15
+        ],
+        "step_index": 770,
+        "time_s": 7.7,
+        "total_energy_j": 0.10015843907388663
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666383318,
+        "angular_momentum_kg_m2_s": [
+          -1.1190094548473793e-17,
+          0.0033333361668154617,
+          3.8034689357453914e-18
+        ],
+        "elastic_energy_j": 0.07682929567001084,
+        "kinetic_energy_j": 0.023332340518050925,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.060141807122224e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.5599870681762695,
+          0.05002028867602348,
+          -3.331003651889635e-15
+        ],
+        "step_index": 780,
+        "time_s": 7.8,
+        "total_energy_j": 0.10016163618806177
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666417593,
+        "angular_momentum_kg_m2_s": [
+          -1.1183187570268423e-17,
+          0.0033333358240617388,
+          4.394553520821683e-18
+        ],
+        "elastic_energy_j": 0.07686182421560442,
+        "kinetic_energy_j": 0.023332339590384246,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.276871068544998e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.579986810684204,
+          0.050020549446344376,
+          -3.423226481604315e-15
+        ],
+        "step_index": 790,
+        "time_s": 7.9,
+        "total_energy_j": 0.10019416380598867
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666420715,
+        "angular_momentum_kg_m2_s": [
+          -1.1115380716429089e-17,
+          0.0033333357928448503,
+          4.601302925148994e-18
+        ],
+        "elastic_energy_j": 0.07684850109378091,
+        "kinetic_energy_j": 0.023332339598152854,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -9.630381327872764e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.5999865531921387,
+          0.05002081021666527,
+          -3.517567952478315e-15
+        ],
+        "step_index": 800,
+        "time_s": 8.0,
+        "total_energy_j": 0.10018084069193377
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666423894,
+        "angular_momentum_kg_m2_s": [
+          -1.1864998603751245e-17,
+          0.00333333576105134,
+          2.5045920127162034e-18
+        ],
+        "elastic_energy_j": 0.07685313878613415,
+        "kinetic_energy_j": 0.023332339404528432,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.003949294744067e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.6199862957000732,
+          0.05002107098698616,
+          -3.614152366596644e-15
+        ],
+        "step_index": 810,
+        "time_s": 8.1,
+        "total_energy_j": 0.10018547819066258
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.996666664099,
+        "angular_momentum_kg_m2_s": [
+          -1.1598119605280636e-17,
+          0.0033333359010103447,
+          2.642561151698442e-18
+        ],
+        "elastic_energy_j": 0.07687434643071314,
+        "kinetic_energy_j": 0.02333233951178979,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.0545759246058646e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.6399860382080078,
+          0.05002133175730705,
+          -3.7209793148714095e-15
+        ],
+        "step_index": 820,
+        "time_s": 8.2,
+        "total_energy_j": 0.10020668594250293
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666405237,
+        "angular_momentum_kg_m2_s": [
+          -1.205810023453311e-17,
+          0.003333335947633909,
+          2.067380418115783e-18
+        ],
+        "elastic_energy_j": 0.07684381567311521,
+        "kinetic_energy_j": 0.023332339841593993,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -8.892798801689112e-16
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.6599857807159424,
+          0.050021592527627945,
+          -3.818085713043484e-15
+        ],
+        "step_index": 830,
+        "time_s": 8.3,
+        "total_energy_j": 0.10017615551470921
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666407217,
+        "angular_momentum_kg_m2_s": [
+          -1.2598568755502254e-17,
+          0.0033333359278317253,
+          1.5870015854138444e-18
+        ],
+        "elastic_energy_j": 0.07685026489228175,
+        "kinetic_energy_j": 0.02333233985196574,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.0963775299484564e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.679985523223877,
+          0.05002185329794884,
+          -3.9193523135359985e-15
+        ],
+        "step_index": 840,
+        "time_s": 8.4,
+        "total_energy_j": 0.10018260474424749
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666639497,
+        "angular_momentum_kg_m2_s": [
+          -1.2447923013517766e-17,
+          0.0033333360502974516,
+          1.6683020366472639e-18
+        ],
+        "elastic_energy_j": 0.07683096998736626,
+        "kinetic_energy_j": 0.023332340284691905,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.314677296334558e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.6999852657318115,
+          0.05002211406826973,
+          -4.037879327911187e-15
+        ],
+        "step_index": 850,
+        "time_s": 8.5,
+        "total_energy_j": 0.10016331027205816
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666368566,
+        "angular_momentum_kg_m2_s": [
+          -1.2072329087873797e-17,
+          0.0033333363143346856,
+          1.7436377821858718e-18
+        ],
+        "elastic_energy_j": 0.07684693407561578,
+        "kinetic_energy_j": 0.023332340598377885,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.2966502117555e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.719985008239746,
+          0.05002237483859062,
+          -4.167856110150886e-15
+        ],
+        "step_index": 860,
+        "time_s": 8.6,
+        "total_energy_j": 0.10017927467399367
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666373496,
+        "angular_momentum_kg_m2_s": [
+          -1.072545003594485e-17,
+          0.003333336265050485,
+          1.670631389677862e-18
+        ],
+        "elastic_energy_j": 0.07683809423041219,
+        "kinetic_energy_j": 0.02333234059394207,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.3032151406131944e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.7399847507476807,
+          0.050022635608911514,
+          -4.296169319682177e-15
+        ],
+        "step_index": 870,
+        "time_s": 8.700000000000001,
+        "total_energy_j": 0.10017043482435425
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666414993,
+        "angular_momentum_kg_m2_s": [
+          -9.457016664449083e-18,
+          0.003333335850066657,
+          1.4025216428783323e-18
+        ],
+        "elastic_energy_j": 0.07683673024240002,
+        "kinetic_energy_j": 0.023332339744270954,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.2889345886389605e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.7599844932556152,
+          0.05002289637923241,
+          -4.4233966329750886e-15
+        ],
+        "step_index": 880,
+        "time_s": 8.8,
+        "total_energy_j": 0.10016906998667098
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666412018,
+        "angular_momentum_kg_m2_s": [
+          -9.157457383062953e-18,
+          0.003333335879814396,
+          1.3100888882844819e-18
+        ],
+        "elastic_energy_j": 0.07683492229623867,
+        "kinetic_energy_j": 0.023332339855987344,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.2480378262422732e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.7799842357635498,
+          0.0500231571495533,
+          -4.546791122181674e-15
+        ],
+        "step_index": 890,
+        "time_s": 8.9,
+        "total_energy_j": 0.10016726215222602
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666410683,
+        "angular_momentum_kg_m2_s": [
+          -9.152353871267052e-18,
+          0.0033333358931787547,
+          1.273774779260079e-18
+        ],
+        "elastic_energy_j": 0.07685451486523294,
+        "kinetic_energy_j": 0.023332339701132486,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.2090983452284537e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.7999839782714844,
+          0.05002341791987419,
+          -4.669912019746297e-15
+        ],
+        "step_index": 900,
+        "time_s": 9.0,
+        "total_energy_j": 0.10018685456636542
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666370727,
+        "angular_momentum_kg_m2_s": [
+          -7.773009351039783e-18,
+          0.003333336292724336,
+          -1.3499132714282547e-19
+        ],
+        "elastic_energy_j": 0.07686768303516084,
+        "kinetic_energy_j": 0.023332340335284866,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.4526110002016454e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.819983720779419,
+          0.050023678690195084,
+          -4.7968750587596646e-15
+        ],
+        "step_index": 910,
+        "time_s": 9.1,
+        "total_energy_j": 0.1002000233704457
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666379908,
+        "angular_momentum_kg_m2_s": [
+          -7.870460253741898e-18,
+          0.0033333362009193845,
+          -1.972068570330881e-20
+        ],
+        "elastic_energy_j": 0.07686082166040284,
+        "kinetic_energy_j": 0.023332340248760183,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.4969388813094231e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.8399834632873535,
+          0.050023939460515976,
+          -4.94170371669652e-15
+        ],
+        "step_index": 920,
+        "time_s": 9.200000000000001,
+        "total_energy_j": 0.10019316190916303
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666378168,
+        "angular_momentum_kg_m2_s": [
+          -7.462444377995173e-18,
+          0.003333336218319232,
+          -1.0493713954655703e-18
+        ],
+        "elastic_energy_j": 0.0768674557575372,
+        "kinetic_energy_j": 0.023332340178938857,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.4570589819659146e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.859983205795288,
+          0.05002420023083687,
+          -5.0836884615129696e-15
+        ],
+        "step_index": 930,
+        "time_s": 9.3,
+        "total_energy_j": 0.10019979593647606
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666639211,
+        "angular_momentum_kg_m2_s": [
+          -7.648602287541228e-18,
+          0.0033333360788976385,
+          7.093947252025123e-19
+        ],
+        "elastic_energy_j": 0.07685659084693147,
+        "kinetic_energy_j": 0.023332340029444523,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.4639225958166346e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.8799829483032227,
+          0.05002446100115776,
+          -5.230809614121569e-15
+        ],
+        "step_index": 940,
+        "time_s": 9.4,
+        "total_energy_j": 0.100188930876376
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666307947,
+        "angular_momentum_kg_m2_s": [
+          -7.621742364467786e-18,
+          0.003333336920540804,
+          2.78115001911102e-18
+        ],
+        "elastic_energy_j": 0.07683884419351043,
+        "kinetic_energy_j": 0.02333234191397153,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.458601534841983e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.8999826908111572,
+          0.05002472177147865,
+          -5.3767402619228025e-15
+        ],
+        "step_index": 950,
+        "time_s": 9.5,
+        "total_energy_j": 0.10017118610748196
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666633215,
+        "angular_momentum_kg_m2_s": [
+          -7.342904447912727e-18,
+          0.003333336678492524,
+          3.3839469401135534e-18
+        ],
+        "elastic_energy_j": 0.07684183724693605,
+        "kinetic_energy_j": 0.023332341456957673,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.4595850459728637e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.9199824333190918,
+          0.050024982541799545,
+          -5.520460577248176e-15
+        ],
+        "step_index": 960,
+        "time_s": 9.6,
+        "total_energy_j": 0.10017417870389372
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666323881,
+        "angular_momentum_kg_m2_s": [
+          -7.667450370214261e-18,
+          0.0033333367611804486,
+          2.7793435440156566e-18
+        ],
+        "elastic_energy_j": 0.07684503617831746,
+        "kinetic_energy_j": 0.023332341542338098,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.299284801858816e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.9399821758270264,
+          0.05002524331212044,
+          -5.6568371169208546e-15
+        ],
+        "step_index": 970,
+        "time_s": 9.700000000000001,
+        "total_energy_j": 0.10017737772065556
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.9966666630525,
+        "angular_momentum_kg_m2_s": [
+          -8.213203231446686e-18,
+          0.0033333369475089126,
+          1.9347685346668047e-18
+        ],
+        "elastic_energy_j": 0.07685393377708072,
+        "kinetic_energy_j": 0.02333234181528957,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.2443034697360658e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.959981918334961,
+          0.05002550408244133,
+          -5.7785421989141415e-15
+        ],
+        "step_index": 980,
+        "time_s": 9.8,
+        "total_energy_j": 0.10018627559237028
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666312685,
+        "angular_momentum_kg_m2_s": [
+          -7.949093682003784e-18,
+          0.0033333368731598167,
+          2.0935650324491523e-18
+        ],
+        "elastic_energy_j": 0.07684521538436703,
+        "kinetic_energy_j": 0.02333234166144807,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.1419788192133125e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.9799816608428955,
+          0.05002576485276222,
+          -5.8887166213964556e-15
+        ],
+        "step_index": 990,
+        "time_s": 9.9,
+        "total_energy_j": 0.1001775570458151
+      },
+      {
+        "active_contact_count": 0,
+        "angular_momentum_error": 99.99666666318222,
+        "angular_momentum_kg_m2_s": [
+          -6.108363410763377e-18,
+          0.003333336817773064,
+          3.300134837679284e-18
+        ],
+        "elastic_energy_j": 0.07685130668324963,
+        "kinetic_energy_j": 0.023332341586055707,
+        "linear_momentum_error": 99.79999999701981,
+        "linear_momentum_kg_m_s": [
+          0.2000000029802323,
+          2.5925312456820397e-06,
+          -1.0066529180325844e-15
+        ],
+        "max_penetration_depth_m": 0.0,
+        "position_m": [
+          1.99998140335083,
+          0.050026025623083115,
+          -5.994969281332982e-15
+        ],
+        "step_index": 1000,
+        "time_s": 10.0,
+        "total_energy_j": 0.10018364826930534
+      }
+    ]
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {
+    "trajectory": "embedded_compact_samples"
+  },
+  "scene_id": "single_body_spinning_box",
+  "solver_mode": "solver_mabd_affine_static_plane_contacts_rollout_candidate",
+  "source_commit": "e96ff6d726019a3b974d54dbad2fe82c0698d6d0",
+  "status": "incomplete",
+  "threshold": {
+    "max_constraint_residual_norm": 1e-06,
+    "max_contacts_input_overflow_count": 0.0,
+    "max_relative_total_energy_drift": 0.1,
+    "max_runtime_wall_time_ms": 60000.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "local_cpu_wall_clock_not_paper_comparable",
+    "total_wall_time_ms": 4639.989947900176
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}
