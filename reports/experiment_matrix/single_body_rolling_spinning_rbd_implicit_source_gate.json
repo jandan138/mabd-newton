@@ -1,0 +1,283 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "paper_source_audit",
+  "baseline_lane": "rbd_implicit_source_gate",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "canonical_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "config_path": "configs/experiments/single_body_rolling_spinning.yaml",
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "fail-closed source gate only; the paper source must disclose the rolling-cylinder implicit RBD setup before this can be treated as a paper-faithful baseline",
+    "paper_comparable": false,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_step_count": 10000,
+    "paper_time_step_s": 0.01,
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "required_gate": "paper_faithful_implicit_rbd_baseline",
+    "required_gate_status": "passed",
+    "required_source_parameters": [
+      "rolling_cylinder_geometry",
+      "rolling_cylinder_mass_or_density",
+      "rolling_cylinder_initial_state",
+      "rolling_cylinder_contact_friction_model",
+      "implicit_rbd_integrator_details",
+      "implicit_rbd_collision_parameters"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ]
+  },
+  "failure_reason": "Paper source audit only; public source does not provide enough rolling-cylinder implicit RBD setup details to pass the paper-faithful implicit RBD baseline gate",
+  "observed": {
+    "blocking_reasons": [
+      "rolling_cylinder_geometry_parameters_missing_from_public_source",
+      "rolling_cylinder_initial_state_missing_from_public_source",
+      "rolling_cylinder_contact_friction_model_missing_from_public_source",
+      "paper_implicit_rbd_solver_details_missing_from_public_source",
+      "paper_implicit_rbd_collision_parameters_missing_from_public_source",
+      "paper_faithful_implicit_rbd_baseline_missing",
+      "paper_faithful_explicit_rbd_baseline_missing",
+      "paper_faithful_mabd_collision_missing",
+      "paper_comparable_timing_missing"
+    ],
+    "current_evidence_reports": {
+      "rbd_implicit_baseline": "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json"
+    },
+    "current_evidence_summaries": {
+      "rbd_implicit_baseline": {
+        "baseline_lane": "rbd_implicit_baseline",
+        "full_experiment_claim_passed": false,
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+        "solver_mode": "newton_semimplicit_rolling_cylinder_rbd_cpu_development",
+        "status": "incomplete"
+      }
+    },
+    "full_experiment_claim_passed": false,
+    "missing_parameters": [
+      "rolling_cylinder_geometry",
+      "rolling_cylinder_mass_or_density",
+      "rolling_cylinder_initial_state",
+      "rolling_cylinder_contact_friction_model",
+      "implicit_rbd_integrator_details",
+      "implicit_rbd_collision_parameters"
+    ],
+    "paper_comparable": false,
+    "paper_faithful_gate_passed": false,
+    "required_reproduction_gaps_remaining": [
+      "paper_faithful_explicit_rbd_baseline",
+      "paper_faithful_implicit_rbd_baseline",
+      "paper_faithful_mabd_rolling_cylinder",
+      "paper_comparable_timing"
+    ],
+    "source_audit": {
+      "absence_findings": {
+        "rolling_spinning_implicit_rbd_parameter_search": {
+          "candidate_hits": [
+            "sections/singleabd.tex:42: $h$ is the time step size. $\\bm{M}$ is the fullspace mass matrix. $\\hat{\\bm{x}}$ is a known vector depending on the kinematic state of the system from the previous time step. For instance if the implicit Euler is used, $\\hat{\\bm{x}} = \\bm{x}^n + h\\dot{\\bm{x}}^n + h^2 \\bm{M}^{-1}\\bm{f}_{ext}$ with $\\bm{f}_{ext}$ being the external force."
+          ],
+          "context_hits": [
+            "sections/experiment.tex:44: We compare ABD (solid curves) against an implicit RBD baseline (dashed curves) for a cube with initial $\\bm p_0=[100, 0, 0]^\\top~{kg\\,m/s}$ and $\\bm L_0=[0, 100, 0]^\\top~{kg\\,m^2/s}$. Co-rotated ABD formulation closely matches the behavior of an implicit RBD.}",
+            "sections/experiment.tex:51: In Fig.~\\ref{fig:cube}, we compare our co-rotated ABD with a standard implicit RBD baseline using a single cube moving on a frictionless surface. The size of the cube is $0.1~m$ ($\\rho=10^3 \\text{ kg/m}^3, E=10^9 \\text{ Pa}, \\nu=0.3$) with initial momenta $\\bm p_0=[100, 0, 0]^\\top$ and $\\bm L_0=[0, 100, 0]^\\top$. To initialize the motion, we compute the target spatial twist $\\bm V_0 = [\\bm\\omega_0^\\top, \\bm v_0^\\top]^\\top$ and map it to ABD generalized velocities via Eq.~\\eqref{eq:module1-G-twist}. Similarly, external spatial wrenches $\\bm W_{ext} = [\\bm{\\tau}_{ext}^\\top, \\bm f_{ext}^\\top]^\\top$ are converted to ABD generalized forces $\\bm f_{A, ext}$ using Eq.~\\eqref{eq:module1-wrench-map}. Following the principle of virtual work, the equivalent spatial wrench can be obtained as:",
+            "sections/experiment.tex:69: We simulate a standard heavy top with a fixed pivot under gravity. The model is initialized with an angular speed of $10~{rad/s}$ and a $5^\\circ$ tilt. We plot the precession velocity and the nutation angle over time using our method and implicit RBD under different time step sizes. Our method captures the expected coupling between spin and nutation, and the slight inertia asymmetry induces small oscillations in the nutation angle.}",
+            "sections/experiment.tex:73: In another benchmark shown in Fig.~\\ref{fig:T-handle}, we use a T-handle model to evaluate how well the co-rotated ABD formulation captures the coupling among rotational DOFs. In a zero-gravity environment, we initialize the body with a nonzero angular velocity aligned with its intermediate principal axis. According to the intermediate-axis theorem~\\cite{goldstein1950classical}, the T-handle should undergo periodic flipping. We set the initial angular speed to $\\omega_0=3~{rad/s}$ and introduce a subtle asymmetry in the mass distribution. The motion is simulated using various time step sizes and compared against the reference, which is the result obtained with the implicit RBD solver using fourth-order Runge-Kutta (RK4) integration at $h=10^{-4}~s$. Similar to Fig.~\\ref{fig:spinning_top}, the co-rotation ABD formula closely matches implicit RBD simulations. Yet, our method is over $30\\%$ faster.",
+            "sections/experiment.tex:75: In Fig.~\\ref{fig:spinning_top}, we test a heavy top with a fixed pivot to see if our ABD method captures classic gyroscopic effects like precession and nutation. The motion is driven by gravity, with the top initialized with a $5^\\circ$ tilt and an angular speed of $10~rad/s$. As in Fig~\\ref{fig:T-handle}, the reference is from a high-accuracy RK4 integration ($h=10^{-4}~s$). ABD accurately reproduces the expected motion and converges to the reference as $h$ decreases. Notably, ABD shows less sensitivity to the time step size than the implicit RBD baseline, which suffers from more significant waveform distortion at coarser steps.",
+            "sections/experiment.tex:86: In Fig.~\\ref{fig:pendulum}, we simulate a physical pendulum starting from a horizontal position. The pendulum swings freely under gravity, and we compare our ABD method and an implicit RBD baseline against the analytic solution based on elliptic integrals of:",
+            "sections/experiment.tex:91: Our method tracks the analytic reference more closely than the implicit RBD baseline and provides more stable results for both the motion and joint forces.",
+            "sections/introduction.tex:2: Rigid bodies and articulated multibody systems are central to computer graphics, robotics, fabrication, and control. Multibody dynamics is formulated based on the representation of individual rigid bodies and the mathematical modeling of their joint constraints. In the traditional rigid body dynamics (RBD) framework~\\cite{baraff1997introduction,erleben2005physics}, a rigid object is defined by a minimal set of six degrees of freedom (DOFs), representing its global translation and rotation. This formulation assumes that the body's local geometry remains undeformed under any external forces or joint interactions. The material is therefore considered infinitely stiff. A hidden drawback of RBD is that the relation between the spatial coordinates, i.e., $x$, $y$, $z$ coordinates, and RBD coordinates, i.e., a certain parameterization of the rotation and translation vector, is nonlinear. This nonlinearity may be of less importance for a single body. However, in the context of a multibody system, the time-varying constraint Jacobian leads to a time-varying system matrix if the joint constraints need to be exactly enforced, e.g., via KKT (Karush-Kuhn-Tucker) systems~\\cite{boyd2004convex}. Existing methods often rely on explicit integration with highly conservative time steps or employ penalty methods to approximate constraints, while fully implicit RBD-multibody simulation is less common. As the system scales up, these methods fail to enforce joint constraints, leading to numerical instability and constraint drift.",
+            "sections/singleabd.tex:127: As the system matrix is pre-factorized, the polar decomposition that extracts the rotation component from the affine coordinate $\\bm{q}$ i.e., Eq.~\\eqref{eq:polar} becomes a major computational hurdle. We want to remind that simulating ABD using Eq.~\\eqref{eq:abd_final} is already highly efficient and much faster than implicit RBD. Nevertheless, we can further push the performance by skipping Eq.~\\eqref{eq:polar} and replacing it with a simple normalization operation. As the object is highly stiff, $\\bm{A} \\approx \\bm{R}$ is already close to a rotation matrix, when $\\bm{R}\\bm{a}$ rotates a vector $\\bm{a}$, instead of computing $\\bm{R}$ out of $\\bm{A}(\\bm{q})$, we only enforce $\\|\\bm{A} \\bm{a}\\| = \\| \\bm{a}\\|$ to make sure $\\bm{A}$ preserves the length of $\\bm{a}$ such that:",
+            "sections/singleabd.tex:131: By skipping the polar decomposition with Eq.~\\eqref{eq:len_preserving}, the ABD simulation procedure only involves lightweight level 1 and 2 BLAS operations, making implicit ABD outperform both implicit and explicit RBD. The pseudo code for one Newton iteration of a single object ABD is summarized in Alg.~\\ref{alg:abd}.",
+            "sections/singleabd.tex:162: \\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}",
+            "sections/singleabd.tex:172: A simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$."
+          ],
+          "query_terms": [
+            "rolling cylinder geometry",
+            "rolling cylinder radius",
+            "rolling cylinder half height",
+            "rolling cylinder density",
+            "rolling cylinder mass",
+            "rolling cylinder initial position",
+            "rolling cylinder initial linear velocity",
+            "rolling cylinder initial angular velocity",
+            "rolling cylinder contact friction model",
+            "rolling cylinder collision parameters",
+            "no-slip",
+            "implicit RBD integrator",
+            "implicit Euler",
+            "backward Euler",
+            "Newton iterations",
+            "collision parameters",
+            "ke kd kf mu"
+          ],
+          "scanned_text_path_count": 12,
+          "searched_source_path_count": 37,
+          "status": "no_paper_faithful_implicit_rbd_source_parameters_found",
+          "usable_parameter_disclosures": []
+        }
+      },
+      "blockers": [
+        "rolling_cylinder_geometry_parameters_missing_from_public_source",
+        "rolling_cylinder_initial_state_missing_from_public_source",
+        "rolling_cylinder_contact_friction_model_missing_from_public_source",
+        "paper_implicit_rbd_solver_details_missing_from_public_source",
+        "paper_implicit_rbd_collision_parameters_missing_from_public_source"
+      ],
+      "file_hashes": {
+        "sections/experiment.tex": "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f",
+        "sections/singleabd.tex": "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d"
+      },
+      "missing_parameters": [
+        "rolling_cylinder_geometry",
+        "rolling_cylinder_mass_or_density",
+        "rolling_cylinder_initial_state",
+        "rolling_cylinder_contact_friction_model",
+        "implicit_rbd_integrator_details",
+        "implicit_rbd_collision_parameters"
+      ],
+      "positive_findings": {
+        "hardware_thread_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "hardware_thread_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "implicit_rbd_timing_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "implicit_rbd_timing_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "rolling_cylinder_benchmark": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "rolling_cylinder_benchmark",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "rolling_cylinder_step_count": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "rolling_cylinder_step_count",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "rolling_cylinder_time_step": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "rolling_cylinder_time_step",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "single_body_cube_not_rolling_source_context": {
+          "evidence_text": "\\subsection{Single-body comparison}\nWe first quantitatively analyze the accuracy and reliability of the co-rotated ABD model for single stiff object simulation. We monitor the linear momentum, angular momentum, and total energy to validate that our method matches expected physical results under several standard benchmarks.\n\nIn Fig.~\\ref{fig:cube}, we compare our co-rotated ABD with a standard implicit RBD baseline using a single cube moving on a frictionless surface. The size of the cube is $0.1~m$ ($\\rho=10^3 \\text{ kg/m}^3, E=10^9 \\text{ Pa}, \\nu=0.3$) with initial momenta $\\bm p_0=[100, 0, 0]^\\top$ and $\\bm L_0=[0, 100, 0]^\\top$. To initialize the motion, we compute the target spatial twist $\\bm V_0 = [\\bm\\omega_0^\\top, \\bm v_0^\\top]^\\top$ and map it to ABD generalized velocities via Eq.~\\eqref{eq:module1-G-twist}. Similarly, external spatial wrenches $\\bm W_{ext} = [\\bm{\\tau}_{ext}^\\top, \\bm f_{ext}^\\top]^\\top$ are converted to ABD generalized forces $\\bm f_{A, ext}$ using Eq.~\\eqref{eq:module1-wrench-map}. Following the principle of virtual work, the equivalent spatial wrench can be obtained as:\n\\begin{equation}\n\\bm W_{ext}=\\bm E(\\bm A)^\\top \\bm f_{A,ext}.\n\\end{equation}\nThe variations of the momentum are plotted in the figure. We observe that linear momentum is preserved for all step sizes, while angular momentum shows dissipation that increases with $h$. Our ABD method matches the RBD baseline, and the conservation improves as $h$ decreases. This confirms that affine linearization does not violate the D'Alembert principle. The error mainly comes from the numerical damping of the time integrator.",
+          "key": "single_body_cube_not_rolling_source_context",
+          "line_end": 55,
+          "line_start": 48,
+          "path": "sections/experiment.tex",
+          "present": true
+        }
+      },
+      "scanned_tex_paths": [
+        "arxiv.tex",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "scanned_text_paths": [
+        "00README.json",
+        "ACM-Reference-Format.bst",
+        "acmart.cls",
+        "arxiv.tex",
+        "ref.bib",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "source_root": "/tmp/mabd-paper/source",
+      "source_tree_paths": [
+        "00README.json",
+        "ACM-Reference-Format.bst",
+        "acm-jdslogo.png",
+        "acmart.cls",
+        "arxiv.tex",
+        "images/Performance/performance.pdf",
+        "images/T-handle/T-handle.pdf",
+        "images/arm/arm_compressed.pdf",
+        "images/armadillo/armadillo.pdf",
+        "images/chain/chain.pdf",
+        "images/cp/cp.pdf",
+        "images/cube/roll_cube.pdf",
+        "images/dual_mat/dual_mat.pdf",
+        "images/end_mass/hammer.pdf",
+        "images/hinge/hinge.pdf",
+        "images/hinge/hinge2.pdf",
+        "images/hinge/translation.pdf",
+        "images/hinge/universal.pdf",
+        "images/joints/joints.pdf",
+        "images/large_net.pdf",
+        "images/net_cloth/net_cloth.pdf",
+        "images/net_cylinder.pdf",
+        "images/net_hang/net_hang.pdf",
+        "images/protein/protein.pdf",
+        "images/ragdolls/ragdolls.pdf",
+        "images/simple_pendulum/simple_pendulum.pdf",
+        "images/spinning_top/spinning_top.pdf",
+        "images/teaser/teaser2.pdf",
+        "images/willow/willow.pdf",
+        "ref.bib",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "status": "implicit_rbd_source_requirements_incomplete"
+    },
+    "source_audit_status": "implicit_rbd_source_requirements_incomplete"
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "rolling_spinning_implicit_rbd_source_gate",
+  "source_commit": "b1fafc7",
+  "status": "incomplete",
+  "threshold": {
+    "required_source_parameter_count": 6.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "source_gate_no_runtime",
+    "status": "not_measured"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

@@ -241,6 +241,17 @@ rbd_explicit_source_gate:
   current_evidence_reports:
     rbd_explicit_baseline: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_baseline.json
     rbd_explicit_no_slip_candidate: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json
+rbd_implicit_source_gate:
+  output_report: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json
+  required_source_parameters:
+    - rolling_cylinder_geometry
+    - rolling_cylinder_mass_or_density
+    - rolling_cylinder_initial_state
+    - rolling_cylinder_contact_friction_model
+    - implicit_rbd_integrator_details
+    - implicit_rbd_collision_parameters
+  current_evidence_reports:
+    rbd_implicit_baseline: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json
 paper_faithful_gate_ledger:
   output_report: reports/experiment_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.json
   required_gates:

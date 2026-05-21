@@ -1173,6 +1173,29 @@
   result, paper-comparable timing result, performance pass, comparative
   baseline pass, completed rolling/spinning reproduction, full paper
   reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 84 rolling/spinning implicit RBD source gate
+  evidence with the Phase 84 record.
+- Phase 84 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json`
+  exists as an incomplete report-only paper source audit, records
+  `rolling_spinning_implicit_rbd_source_gate`,
+  `source_audit_status = implicit_rbd_source_requirements_incomplete`,
+  `paper_faithful_gate_passed = false`, `paper_comparable = false`, all six
+  missing implicit RBD source parameters, the blocker
+  `paper_implicit_rbd_solver_details_missing_from_public_source`, all four
+  remaining rolling/spinning reproduction gaps, and
+  `full_experiment_claim_passed = false`.
+- Phase 84 does not verify paper-faithful implicit RBD, paper-faithful explicit
+  RBD, paper-faithful affine M-ABD rolling contact/friction, paper-faithful
+  M-ABD rolling-cylinder collision, paper-comparable timing, same-hardware
+  paper timing, co-rotated ABD timing, completed rolling/spinning
+  reproduction, full paper reproduction, or any passed `experiment.*` claim.
+- Phase 84 rolling/spinning implicit RBD source gate evidence must not be
+  described as a passed implicit RBD gate, paper-faithful implicit RBD result,
+  paper-faithful explicit RBD result, paper-faithful M-ABD rolling-cylinder
+  result, paper-comparable timing result, performance pass, comparative
+  baseline pass, completed rolling/spinning reproduction, full paper
+  reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1588,6 +1611,13 @@
 - Phase 83 rolling/spinning explicit RBD source gate evidence is not a passed
   explicit RBD gate, not a paper-faithful explicit RBD result, not a
   paper-faithful implicit RBD result, not a paper-faithful M-ABD
+  rolling-cylinder result, not paper-comparable timing evidence, not a
+  completed rolling/spinning reproduction, not comparative baseline pass
+  evidence, not full paper reproduction, and not any passed `experiment.*`
+  claim.
+- Phase 84 rolling/spinning implicit RBD source gate evidence is not a passed
+  implicit RBD gate, not a paper-faithful implicit RBD result, not a
+  paper-faithful explicit RBD result, not a paper-faithful M-ABD
   rolling-cylinder result, not paper-comparable timing evidence, not a
   completed rolling/spinning reproduction, not comparative baseline pass
   evidence, not full paper reproduction, and not any passed `experiment.*`

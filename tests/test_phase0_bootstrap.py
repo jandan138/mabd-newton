@@ -5077,16 +5077,16 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(
             audit["latest_update"],
             {
-                "phase_id": "phase83_rolling_explicit_rbd_source_gate",
+                "phase_id": "phase84_rolling_implicit_rbd_source_gate",
                 "update_date": "2026-05-21",
                 "source_commit": (
-                    validate_docs.PHASE83_ROLLING_EXPLICIT_RBD_SOURCE_GATE_COMMIT
+                    validate_docs.PHASE84_ROLLING_IMPLICIT_RBD_SOURCE_GATE_COMMIT
                 ),
                 "report": (
-                    validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_SOURCE_GATE_REPORT_PATH
+                    validate_docs.ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_REPORT_PATH
                 ),
                 "report_sha256": (
-                    validate_docs.PHASE83_ROLLING_SPINNING_RBD_EXPLICIT_SOURCE_GATE_SHA256
+                    validate_docs.PHASE84_ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_SHA256
                 ),
                 "status": "incomplete",
             },
@@ -6018,7 +6018,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
         self.assertEqual(
             audit["latest_update"]["phase_id"],
-            "phase83_rolling_explicit_rbd_source_gate",
+            "phase84_rolling_implicit_rbd_source_gate",
         )
         gap_entry = next(
             entry
@@ -6155,7 +6155,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
         self.assertEqual(
             audit["latest_update"]["phase_id"],
-            "phase83_rolling_explicit_rbd_source_gate",
+            "phase84_rolling_implicit_rbd_source_gate",
         )
         self.assertEqual(audit["global_status"]["experiment_claims_passed"], 0)
         gap_entry = next(
@@ -6289,7 +6289,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
         self.assertEqual(
             audit["latest_update"]["phase_id"],
-            "phase83_rolling_explicit_rbd_source_gate",
+            "phase84_rolling_implicit_rbd_source_gate",
         )
         self.assertEqual(audit["global_status"]["experiment_claims_passed"], 0)
         gap_entry = next(
@@ -6306,6 +6306,140 @@ class Phase0BootstrapTests(unittest.TestCase):
             required_gaps,
         )
         validate_docs.validate_phase83_record()
+
+    def test_phase84_rolling_implicit_rbd_source_gate_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        required_parameters = [
+            "rolling_cylinder_geometry",
+            "rolling_cylinder_mass_or_density",
+            "rolling_cylinder_initial_state",
+            "rolling_cylinder_contact_friction_model",
+            "implicit_rbd_integrator_details",
+            "implicit_rbd_collision_parameters",
+        ]
+        required_gaps = [
+            "paper_faithful_explicit_rbd_baseline",
+            "paper_faithful_implicit_rbd_baseline",
+            "paper_faithful_mabd_rolling_cylinder",
+            "paper_comparable_timing",
+        ]
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 84",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 84 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 84 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 84 rolling/spinning implicit RBD source gate evidence",
+        )
+
+        self.assertIn("implicit RBD source gate", current)
+        self.assertIn(
+            "single_body_rolling_spinning_rbd_implicit_source_gate.json",
+            verified,
+        )
+        self.assertIn(
+            "source_audit_status = implicit_rbd_source_requirements_incomplete",
+            verified,
+        )
+        self.assertIn("paper_faithful_gate_passed = false", verified)
+        self.assertIn("paper_implicit_rbd_solver_details_missing_from_public_source", verified)
+        self.assertIn("full_experiment_claim_passed = false", verified)
+        for snippet in (
+            "paper-faithful implicit RBD",
+            "paper-faithful explicit RBD",
+            "paper-comparable timing",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "passed implicit RBD gate",
+            "paper-faithful implicit RBD result",
+            "paper-comparable timing result",
+            "completed rolling/spinning reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        verified_paths = set(validate_docs.REQUIRED_PATHS)
+        self.assertIn(
+            validate_docs.ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_REPORT_PATH,
+            verified_paths,
+        )
+
+        report = load_claim_report(
+            ROOT / validate_docs.ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_REPORT_PATH
+        )
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE84_ROLLING_IMPLICIT_RBD_SOURCE_GATE_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(report.baseline_lane, "rbd_implicit_source_gate")
+        self.assertEqual(report.solver_mode, "rolling_spinning_implicit_rbd_source_gate")
+        self.assertEqual(report.backend, "paper_source_audit")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.expected["required_source_parameters"], required_parameters)
+        self.assertEqual(report.expected["required_gate"], "paper_faithful_implicit_rbd_baseline")
+        self.assertFalse(report.expected["paper_comparable"])
+        self.assertFalse(report.expected["full_experiment_claim_passed"])
+        self.assertEqual(
+            report.observed["source_audit_status"],
+            "implicit_rbd_source_requirements_incomplete",
+        )
+        self.assertFalse(report.observed["paper_faithful_gate_passed"])
+        self.assertFalse(report.observed["paper_comparable"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(report.observed["missing_parameters"], required_parameters)
+        self.assertEqual(
+            report.observed["required_reproduction_gaps_remaining"],
+            required_gaps,
+        )
+        self.assertIn(
+            "paper_implicit_rbd_solver_details_missing_from_public_source",
+            report.observed["blocking_reasons"],
+        )
+        self.assertEqual(report.timing_distribution["status"], "not_measured")
+        self.assertEqual(report.timing_distribution["scope"], "source_gate_no_runtime")
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+        self.assertEqual(report.raw_outputs, {})
+        self.assertEqual(report.plot_paths, {})
+
+        actual_sha = validate_docs.sha256_file(
+            ROOT / validate_docs.ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_REPORT_PATH
+        )
+        self.assertEqual(
+            actual_sha,
+            validate_docs.PHASE84_ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_SHA256,
+        )
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        self.assertEqual(
+            audit["latest_update"]["phase_id"],
+            "phase84_rolling_implicit_rbd_source_gate",
+        )
+        self.assertEqual(audit["global_status"]["experiment_claims_passed"], 0)
+        gap_entry = next(
+            entry
+            for entry in audit["remaining_experiment_claims"]
+            if entry["claim_id"] == "experiment.single_body.rolling_spinning"
+        )
+        self.assertEqual(
+            gap_entry["rbd_implicit_source_gate_report_sha256"],
+            validate_docs.PHASE84_ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_SHA256,
+        )
+        self.assertEqual(
+            gap_entry["remaining_reproduction_gaps_after_phase84"],
+            required_gaps,
+        )
+        validate_docs.validate_phase84_record()
 
     def test_phase80_record_has_required_evidence_fields(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -8248,7 +8382,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn(
             (
                 "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74"
-                "/75/76/77/78/79/80/81/82/83 docs/provenance validation passed"
+                "/75/76/77/78/79/80/81/82/83/84 docs/provenance validation passed"
             ),
             result.stdout,
         )

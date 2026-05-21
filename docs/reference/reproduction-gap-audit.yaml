@@ -6,11 +6,11 @@ source_commit: "f83889adbec6402e0baa1b4c55db5962a224808d"
 source_commit_scope: "Initial Phase 60 audit source commit; later entries carry per-phase report commits and checksums."
 vendored_newton_commit: "96713fa965463b69c229a4d30582c733ff3526bb"
 latest_update:
-  phase_id: phase83_rolling_explicit_rbd_source_gate
+  phase_id: phase84_rolling_implicit_rbd_source_gate
   update_date: "2026-05-21"
-  source_commit: "bcb6202"
-  report: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json
-  report_sha256: "eb43b537e4bb92f1684a0b451efe924222819e4b1283c20f472326da2ae98c78"
+  source_commit: "b1fafc7"
+  report: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json
+  report_sha256: "0a17ce33534cf3624c8c734cbaf44306fd29bf6918d4503af32f66e532e43b02"
   status: incomplete
 paper:
   arxiv_id: "2603.08079"
@@ -96,6 +96,9 @@ remaining_experiment_claims:
     rbd_explicit_source_gate_report: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json
     rbd_explicit_source_gate_report_status: incomplete
     rbd_explicit_source_gate_report_sha256: "eb43b537e4bb92f1684a0b451efe924222819e4b1283c20f472326da2ae98c78"
+    rbd_implicit_source_gate_report: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json
+    rbd_implicit_source_gate_report_status: incomplete
+    rbd_implicit_source_gate_report_sha256: "0a17ce33534cf3624c8c734cbaf44306fd29bf6918d4503af32f66e532e43b02"
     remaining_missing_lanes_after_phase74:
       - rbd_explicit_baseline
       - mabd_newton
@@ -151,7 +154,12 @@ remaining_experiment_claims:
       - paper_faithful_implicit_rbd_baseline
       - paper_faithful_mabd_rolling_cylinder
       - paper_comparable_timing
-    next_action: "Replace development diagnostics with paper-faithful explicit RBD, implicit RBD, and M-ABD rolling-cylinder contact/friction evidence, then run a paper-comparable timing run before any rolling/spinning pass gate."
+    remaining_reproduction_gaps_after_phase84:
+      - paper_faithful_explicit_rbd_baseline
+      - paper_faithful_implicit_rbd_baseline
+      - paper_faithful_mabd_rolling_cylinder
+      - paper_comparable_timing
+    next_action: "Replace development diagnostics and source-gate audits with paper-faithful explicit RBD, implicit RBD, and M-ABD rolling-cylinder contact/friction evidence, then run a paper-comparable timing run before any rolling/spinning pass gate."
   - claim_id: experiment.single_body.spinning_box
     scene_id: single_body_spinning_box
     claim_status: intended
@@ -332,6 +340,9 @@ remaining_experiment_claims:
     committed_report_sha256: null
     next_action: "Source marker sequence and add IK keyframe reconstruction lane."
 current_evidence_reports:
+  - path: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json
+    status: incomplete
+    sha256: "0a17ce33534cf3624c8c734cbaf44306fd29bf6918d4503af32f66e532e43b02"
   - path: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json
     status: incomplete
     sha256: "eb43b537e4bb92f1684a0b451efe924222819e4b1283c20f472326da2ae98c78"
