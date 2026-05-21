@@ -67,6 +67,9 @@ from .single_body_reports import (
 from .spinning_box_development_comparison import (
     write_spinning_box_development_comparison_report,
 )
+from .spinning_box_affine_static_plane_contacts_rollout_candidate import (
+    write_spinning_box_affine_static_plane_contacts_rollout_candidate_report,
+)
 from .spinning_box_digitization import write_spinning_box_figure_curve_report
 from .t_handle_reports import (
     write_t_handle_mabd_newton_report,
@@ -784,6 +787,45 @@ def run_spinning_box_development_comparison(
         output_root=output_root,
     )
     report = write_spinning_box_development_comparison_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
+def run_spinning_box_affine_static_plane_contacts_rollout_candidate(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    config = load_spinning_box_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_spinning_box_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError(
+            "spinning_box_affine_static_plane_contacts_rollout_candidate "
+            "requires incomplete report status"
+        )
+    report_path = _resolve_output_path(
+        config.affine_static_plane_contacts_rollout_candidate.output_report,
+        output_path=output_path,
+        output_root=output_root,
+    )
+    report = write_spinning_box_affine_static_plane_contacts_rollout_candidate_report(
         report_path,
         config=config,
         source_commit=source_commit,
@@ -1670,6 +1712,7 @@ __all__ = [
     "run_spinning_box_contact_response",
     "run_spinning_box_decoupled_twist",
     "run_spinning_box_development_comparison",
+    "run_spinning_box_affine_static_plane_contacts_rollout_candidate",
     "run_spinning_box_experiment",
     "run_spinning_box_model_plane_constraint",
     "run_spinning_box_normal_constraint",

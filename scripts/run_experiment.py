@@ -36,6 +36,7 @@ from mabd_reproduction.experiment_runner import (
     run_rolling_spinning_rbd_no_slip_reference,
     run_rolling_spinning_timing_source_gate,
     run_spinning_box_affine_static_plane_contacts,
+    run_spinning_box_affine_static_plane_contacts_rollout_candidate,
     run_spinning_box_comparison,
     run_spinning_box_contacts_input,
     run_spinning_box_contact_response,
@@ -93,6 +94,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "rolling_spinning_rbd_no_slip_reference",
             "rolling_spinning_timing_source_gate",
             "spinning_box_affine_static_plane_contacts",
+            "spinning_box_affine_static_plane_contacts_rollout_candidate",
             "spinning_box_comparison",
             "spinning_box_contacts_input",
             "spinning_box_contact_response",
@@ -237,6 +239,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "spinning_box_affine_static_plane_contacts":
             result = run_spinning_box_affine_static_plane_contacts(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "spinning_box_affine_static_plane_contacts_rollout_candidate":
+            result = run_spinning_box_affine_static_plane_contacts_rollout_candidate(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,
