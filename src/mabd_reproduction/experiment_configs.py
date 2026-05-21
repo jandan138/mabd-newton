@@ -38,6 +38,18 @@ class SpinningBoxPaperHorizonConfig:
 
 
 @dataclass(frozen=True)
+class SpinningBoxDevelopmentComparisonConfig:
+    output_report: str
+    comparison_scope: str
+    paper_faithful: bool
+    duration_s: float
+    time_step_s: float
+    sample_count: int
+    initial_linear_velocity_m_s: np.ndarray
+    initial_angular_velocity_rad_s: np.ndarray
+
+
+@dataclass(frozen=True)
 class SpinningBoxRunConfig:
     schema_version: int
     claim_id: str
@@ -58,6 +70,7 @@ class SpinningBoxRunConfig:
     output_report: str
     thresholds: dict[str, float]
     paper_horizon: SpinningBoxPaperHorizonConfig
+    development_comparison: SpinningBoxDevelopmentComparisonConfig
 
 
 @dataclass(frozen=True)
@@ -405,6 +418,9 @@ PAPER_HORIZON_THRESHOLD_KEYS = frozenset(
         "max_affine_orthogonality_error",
         "max_residual_norm",
     }
+)
+SPINNING_BOX_DEVELOPMENT_COMPARISON_OUTPUT_REPORT = (
+    "reports/experiment_matrix/single_body_spinning_box_development_comparison.json"
 )
 ROLLING_SPINNING_TIMING_KEYS = frozenset(
     {
@@ -977,6 +993,38 @@ def _require_paper_horizon(data: dict[str, Any]) -> SpinningBoxPaperHorizonConfi
         figure_pdf_sha256=_require_str(horizon, "figure_pdf_sha256"),
         figure_text_source=_require_str(horizon, "figure_text_source"),
         thresholds=thresholds,
+    )
+
+
+def _require_spinning_box_development_comparison(
+    data: dict[str, Any],
+) -> SpinningBoxDevelopmentComparisonConfig:
+    section = _require_mapping(data, "development_comparison")
+    comparison_scope = _require_str(section, "comparison_scope")
+    if comparison_scope != "development_only":
+        raise ExperimentRunConfigError(
+            "development_comparison.comparison_scope must be development_only"
+        )
+    paper_faithful = _require_bool(section, "paper_faithful")
+    if paper_faithful:
+        raise ExperimentRunConfigError(
+            "development_comparison.paper_faithful must be false"
+        )
+    return SpinningBoxDevelopmentComparisonConfig(
+        output_report=_require_str(section, "output_report"),
+        comparison_scope=comparison_scope,
+        paper_faithful=paper_faithful,
+        duration_s=_require_positive_float(section, "duration_s"),
+        time_step_s=_require_positive_float(section, "time_step_s"),
+        sample_count=_require_positive_int(section, "sample_count"),
+        initial_linear_velocity_m_s=_require_vec3_array(
+            section,
+            "initial_linear_velocity_m_s",
+        ),
+        initial_angular_velocity_rad_s=_require_vec3_array(
+            section,
+            "initial_angular_velocity_rad_s",
+        ),
     )
 
 
@@ -2693,6 +2741,7 @@ def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
         output_report=_require_str(report, "output_report"),
         thresholds=_require_float_mapping(report, "thresholds"),
         paper_horizon=_require_paper_horizon(data),
+        development_comparison=_require_spinning_box_development_comparison(data),
     )
 
 
@@ -2808,6 +2857,58 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
     ):
         raise ExperimentRunConfigError(
             "paper_horizon.model_plane_constraint_output_report must be separate from lane reports"
+        )
+    development = config.development_comparison
+    development_report = development.output_report
+    development_report_path = Path(development_report)
+    if (
+        development_report_path.is_absolute()
+        or ".." in development_report_path.parts
+        or development_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or development_report_path.suffix != ".json"
+        or development_report != SPINNING_BOX_DEVELOPMENT_COMPARISON_OUTPUT_REPORT
+        or development_report
+        in (
+            config.output_report,
+            config.paper_horizon.output_report,
+            config.paper_horizon.contact_response_output_report,
+            config.paper_horizon.normal_constraint_output_report,
+            config.paper_horizon.model_plane_constraint_output_report,
+            config.paper_horizon.contacts_input_output_report,
+            config.paper_horizon.affine_static_plane_contacts_output_report,
+            config.paper_horizon.decoupled_twist_output_report,
+            config.paper_horizon.figure_curve_output_report,
+        )
+    ):
+        raise ExperimentRunConfigError(
+            "development_comparison.output_report must be the lane-specific "
+            "relative JSON report under reports/experiment_matrix"
+        )
+    if development.comparison_scope != "development_only":
+        raise ExperimentRunConfigError(
+            "development_comparison.comparison_scope must be development_only"
+        )
+    if development.paper_faithful:
+        raise ExperimentRunConfigError(
+            "development_comparison.paper_faithful must be false"
+        )
+    step_count_float = development.duration_s / development.time_step_s
+    step_count = round(step_count_float)
+    if not np.isclose(step_count_float, float(step_count), rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "development_comparison.duration_s must be divisible by time_step_s"
+        )
+    if development.sample_count < 2 or development.sample_count > step_count + 1:
+        raise ExperimentRunConfigError(
+            "development_comparison.sample_count must be in [2, step_count + 1]"
+        )
+    if not np.any(development.initial_linear_velocity_m_s):
+        raise ExperimentRunConfigError(
+            "development_comparison.initial_linear_velocity_m_s must be nonzero"
+        )
+    if not np.any(development.initial_angular_velocity_rad_s):
+        raise ExperimentRunConfigError(
+            "development_comparison.initial_angular_velocity_rad_s must be nonzero"
         )
 
 def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig:

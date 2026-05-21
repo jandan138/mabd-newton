@@ -44,6 +44,15 @@ paper_horizon:
     max_singular_value: 1.1
     max_affine_orthogonality_error: 1.0e-1
     max_residual_norm: 1.0e-6
+development_comparison:
+  output_report: reports/experiment_matrix/single_body_spinning_box_development_comparison.json
+  comparison_scope: development_only
+  paper_faithful: false
+  duration_s: 10.0
+  time_step_s: 0.01
+  sample_count: 101
+  initial_linear_velocity_m_s: [0.2, 0.0, 0.0]
+  initial_angular_velocity_rad_s: [0.0, 2.0, 0.0]
 simulation:
   time_step_s: 0.01
   step_count: 4

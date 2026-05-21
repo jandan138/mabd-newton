@@ -40,6 +40,7 @@ from mabd_reproduction.experiment_runner import (
     run_spinning_box_contacts_input,
     run_spinning_box_contact_response,
     run_spinning_box_decoupled_twist,
+    run_spinning_box_development_comparison,
     run_spinning_box_experiment,
     run_spinning_box_figure_curves,
     run_spinning_box_model_plane_constraint,
@@ -96,6 +97,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "spinning_box_contacts_input",
             "spinning_box_contact_response",
             "spinning_box_decoupled_twist",
+            "spinning_box_development_comparison",
             "spinning_box_figure_curves",
             "spinning_box_model_plane_constraint",
             "spinning_box_normal_constraint",
@@ -245,6 +247,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "spinning_box_decoupled_twist":
             result = run_spinning_box_decoupled_twist(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "spinning_box_development_comparison":
+            result = run_spinning_box_development_comparison(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,
