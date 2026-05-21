@@ -25,6 +25,7 @@ from mabd_reproduction.experiment_runner import (
     run_rolling_spinning_mabd_material_preflight,
     run_rolling_spinning_mabd_newton,
     run_rolling_spinning_mabd_rolling_contact_candidate,
+    run_rolling_spinning_mabd_source_gate,
     run_rolling_spinning_paper_timing_protocol,
     run_rolling_spinning_protocol,
     run_rolling_spinning_rbd_explicit_baseline,
@@ -78,6 +79,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "rolling_spinning_mabd_material_preflight",
             "rolling_spinning_mabd_newton",
             "rolling_spinning_mabd_rolling_contact_candidate",
+            "rolling_spinning_mabd_source_gate",
             "rolling_spinning_paper_faithful_gate_ledger",
             "rolling_spinning_paper_timing_protocol",
             "rolling_spinning_protocol",
@@ -479,6 +481,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "rolling_spinning_mabd_rolling_contact_candidate":
             result = run_rolling_spinning_mabd_rolling_contact_candidate(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "rolling_spinning_mabd_source_gate":
+            result = run_rolling_spinning_mabd_source_gate(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

@@ -19,6 +19,7 @@ from .experiment_configs import (
 from .paper_source_audit import (
     rolling_spinning_explicit_rbd_source_audit,
     rolling_spinning_implicit_rbd_source_audit,
+    rolling_spinning_mabd_source_audit,
 )
 from .reporting import ClaimReport, EvidenceStatus, load_claim_report, write_claim_report
 
@@ -148,6 +149,12 @@ ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_BLOCKING_REASONS = [
     "paper_faithful_implicit_rbd_baseline_missing",
     "paper_faithful_explicit_rbd_baseline_missing",
     "paper_faithful_mabd_collision_missing",
+    "paper_comparable_timing_missing",
+]
+ROLLING_SPINNING_MABD_SOURCE_GATE_BLOCKING_REASONS = [
+    "paper_faithful_mabd_collision_missing",
+    "paper_faithful_explicit_rbd_baseline_missing",
+    "paper_faithful_implicit_rbd_baseline_missing",
     "paper_comparable_timing_missing",
 ]
 ROLLING_SPINNING_PAPER_FAITHFUL_GATE_STATUS_INPUTS = {
@@ -2294,6 +2301,103 @@ def write_rolling_spinning_rbd_implicit_source_gate_report(
     return report
 
 
+def write_rolling_spinning_mabd_source_gate_report(
+    path: str | Path,
+    *,
+    config: RollingSpinningRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    gate_config = config.mabd_source_gate
+    source_audit = rolling_spinning_mabd_source_audit()
+    blocking_reasons = list(
+        dict.fromkeys(
+            [
+                *source_audit.blockers,
+                *ROLLING_SPINNING_MABD_SOURCE_GATE_BLOCKING_REASONS,
+            ]
+        )
+    )
+    current_evidence_reports = dict(gate_config.current_evidence_reports)
+    expected = {
+        "paper_claim_status": (
+            "fail-closed source gate only; the paper source must disclose the "
+            "rolling-cylinder M-ABD affine contact and collision setup before "
+            "this can be treated as a paper-faithful M-ABD rolling baseline"
+        ),
+        "source_lines": list(config.source_lines),
+        "config_path": ROLLING_SPINNING_CONFIG_PATH,
+        "canonical_python": CANONICAL_PYTHON,
+        "benchmark_body": config.performance.body,
+        "paper_step_count": config.performance.step_count,
+        "paper_time_step_s": config.performance.time_step_s,
+        "paper_total_simulation_time_ms": dict(
+            config.performance.paper_total_simulation_time_ms
+        ),
+        "paper_hardware_context": config.performance.paper_hardware_context,
+        "required_source_parameters": list(gate_config.required_source_parameters),
+        "required_gate": "paper_faithful_mabd_rolling_cylinder",
+        "required_gate_status": "passed",
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+    }
+    observed = {
+        "source_audit_status": source_audit.status,
+        "paper_faithful_gate_passed": False,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "missing_parameters": list(source_audit.missing_parameters),
+        "blocking_reasons": blocking_reasons,
+        "required_reproduction_gaps_remaining": list(
+            ROLLING_SPINNING_NO_SLIP_REQUIRED_REPRODUCTION_GAPS
+        ),
+        "current_evidence_reports": current_evidence_reports,
+        "current_evidence_summaries": {
+            key: _summarize_gate_input_report(report_path)
+            for key, report_path in current_evidence_reports.items()
+        },
+        "source_audit": source_audit.to_report(),
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={
+            "primitive_cylinder": "not_applicable_procedural",
+            "primitive_cube": "not_applicable_procedural",
+        },
+        solver_mode="rolling_spinning_mabd_source_gate",
+        backend="paper_source_audit",
+        baseline_lane="mabd_source_gate",
+        expected=expected,
+        observed=observed,
+        threshold={
+            "required_source_parameter_count": float(
+                len(gate_config.required_source_parameters)
+            )
+        },
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason=(
+            "Paper source audit only; public source does not provide enough "
+            "rolling-cylinder M-ABD affine contact and collision setup details "
+            "to pass the paper-faithful M-ABD rolling-cylinder gate"
+        ),
+        timing_distribution={
+            "status": "not_measured",
+            "paper_comparable": False,
+            "scope": "source_gate_no_runtime",
+        },
+        raw_outputs={},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 def write_rolling_spinning_paper_timing_protocol_report(
     path: str | Path,
     *,
@@ -2383,6 +2487,7 @@ __all__ = [
     "write_rolling_spinning_mabd_rolling_contact_candidate_report",
     "write_rolling_spinning_mabd_material_preflight_report",
     "write_rolling_spinning_mabd_newton_report",
+    "write_rolling_spinning_mabd_source_gate_report",
     "write_rolling_spinning_paper_faithful_gate_ledger_report",
     "write_rolling_spinning_paper_timing_protocol_report",
     "write_rolling_spinning_rbd_explicit_baseline_report",

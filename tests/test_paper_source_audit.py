@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from mabd_reproduction.paper_source_audit import (
+    rolling_spinning_mabd_source_audit,
     rolling_spinning_implicit_rbd_source_audit,
     rolling_spinning_explicit_rbd_source_audit,
     velocity_semantics_source_audit,
@@ -65,6 +66,83 @@ def _write_source_fixture(root: Path, *, omitted_file_text: str) -> None:
 
 
 class PaperSourceAuditTests(unittest.TestCase):
+    def test_rolling_spinning_mabd_source_audit_is_fail_closed(self) -> None:
+        audit = rolling_spinning_mabd_source_audit()
+        report = audit.to_report()
+
+        self.assertEqual(audit.source_root, "/tmp/mabd-paper/source")
+        self.assertEqual(audit.status, "mabd_source_requirements_incomplete")
+        self.assertEqual(
+            audit.file_hashes["sections/singleabd.tex"],
+            "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d",
+        )
+        self.assertEqual(
+            audit.file_hashes["sections/experiment.tex"],
+            "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f",
+        )
+
+        findings = audit.positive_findings
+        for key, snippet in (
+            ("rolling_cylinder_benchmark", "rolling cylinder"),
+            ("rolling_cylinder_step_count", "10K"),
+            ("rolling_cylinder_time_step", "h = 0.01~sec"),
+            ("corotated_abd_timing_context", "co-rotated"),
+            ("hardware_thread_context", "single thread"),
+        ):
+            self.assertTrue(findings[key]["present"])
+            self.assertIn(snippet, findings[key]["evidence_text"])
+
+        for missing in (
+            "rolling_cylinder_geometry",
+            "rolling_cylinder_mass_or_density",
+            "rolling_cylinder_initial_state",
+            "mabd_affine_body_discretization",
+            "mabd_rolling_contact_friction_model",
+            "mabd_collision_parameters",
+        ):
+            self.assertIn(missing, audit.missing_parameters)
+
+        for blocker in (
+            "rolling_cylinder_geometry_parameters_missing_from_public_source",
+            "rolling_cylinder_initial_state_missing_from_public_source",
+            "paper_mabd_affine_discretization_missing_from_public_source",
+            "paper_mabd_rolling_contact_friction_missing_from_public_source",
+            "paper_mabd_collision_parameters_missing_from_public_source",
+        ):
+            self.assertIn(blocker, audit.blockers)
+
+        self.assertEqual(report["status"], audit.status)
+        self.assertIn("positive_findings", report)
+        self.assertIn("absence_findings", report)
+        self.assertIn("missing_parameters", report)
+
+    def test_rolling_spinning_mabd_source_disclosure_triggers_manual_review(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as tmpdir:
+            source_root = Path(tmpdir) / "source"
+            _write_source_fixture(
+                source_root,
+                omitted_file_text=(
+                    "The rolling cylinder geometry radius is 0.5 m and half height is "
+                    "0.5 m. The rolling cylinder density is 1000 kg/m^3. The rolling "
+                    "cylinder initial linear velocity is [1, 0, 0] and initial angular "
+                    "velocity is [0, 0, -2]. The M-ABD affine body discretization uses "
+                    "four rest points with equal point masses. The M-ABD rolling contact "
+                    "friction model uses affine no-slip contact constraints with collision "
+                    "parameters ke kd kf mu."
+                ),
+            )
+
+            audit = rolling_spinning_mabd_source_audit(source_root)
+
+        self.assertEqual(audit.status, "mabd_source_mentions_require_manual_review")
+        self.assertNotIn(
+            "paper_mabd_affine_discretization_missing_from_public_source",
+            audit.blockers,
+        )
+        self.assertIn("mabd_source_disclosure_found", audit.blockers)
+
     def test_rolling_spinning_implicit_rbd_source_audit_is_fail_closed(self) -> None:
         audit = rolling_spinning_implicit_rbd_source_audit()
         report = audit.to_report()

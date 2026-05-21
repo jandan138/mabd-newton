@@ -631,6 +631,96 @@ class ExperimentRunConfigTests(unittest.TestCase):
         ):
             validate_rolling_spinning_config_against_matrix(invalid, matrix)
 
+    def test_rolling_spinning_mabd_source_gate_is_fail_closed(self) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        lane = config.mabd_source_gate
+
+        self.assertEqual(
+            lane.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json",
+        )
+        self.assertEqual(
+            lane.required_source_parameters,
+            (
+                "rolling_cylinder_geometry",
+                "rolling_cylinder_mass_or_density",
+                "rolling_cylinder_initial_state",
+                "mabd_affine_body_discretization",
+                "mabd_rolling_contact_friction_model",
+                "mabd_collision_parameters",
+            ),
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["mabd_newton"],
+            config.mabd_newton.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["mabd_material_preflight"],
+            config.mabd_material_preflight.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["mabd_rolling_contact_candidate"],
+            config.mabd_rolling_contact_candidate.output_report,
+        )
+        self.assertEqual(
+            config.required_missing_lanes,
+            ("rbd_implicit_baseline", "rbd_explicit_baseline"),
+        )
+
+        validate_rolling_spinning_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            config.mabd_newton.output_report,
+            config.rbd_implicit_source_gate.output_report,
+            "/tmp/single_body_rolling_spinning_mabd_source_gate.json",
+            "reports/not_matrix/single_body_rolling_spinning_mabd_source_gate.json",
+            "../reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json",
+            "reports/experiment_matrix/not_the_rolling_spinning_mabd_source_gate.json",
+            "reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    mabd_source_gate=replace(
+                        config.mabd_source_gate,
+                        output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "mabd_source_gate.output_report",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid = replace(
+            config,
+            mabd_source_gate=replace(
+                config.mabd_source_gate,
+                required_source_parameters=lane.required_source_parameters[:-1],
+            ),
+        )
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "mabd_source_gate.required_source_parameters",
+        ):
+            validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid = replace(
+            config,
+            mabd_source_gate=replace(
+                config.mabd_source_gate,
+                current_evidence_reports={},
+            ),
+        )
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "mabd_source_gate.current_evidence_reports",
+        ):
+            validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
     def test_rolling_spinning_rbd_no_slip_reference_rejects_bad_contracts(self) -> None:
         config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")

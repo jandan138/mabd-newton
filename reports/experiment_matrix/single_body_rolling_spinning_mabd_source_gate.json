@@ -1,0 +1,351 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "paper_source_audit",
+  "baseline_lane": "mabd_source_gate",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "canonical_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "config_path": "configs/experiments/single_body_rolling_spinning.yaml",
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "fail-closed source gate only; the paper source must disclose the rolling-cylinder M-ABD affine contact and collision setup before this can be treated as a paper-faithful M-ABD rolling baseline",
+    "paper_comparable": false,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_step_count": 10000,
+    "paper_time_step_s": 0.01,
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "required_gate": "paper_faithful_mabd_rolling_cylinder",
+    "required_gate_status": "passed",
+    "required_source_parameters": [
+      "rolling_cylinder_geometry",
+      "rolling_cylinder_mass_or_density",
+      "rolling_cylinder_initial_state",
+      "mabd_affine_body_discretization",
+      "mabd_rolling_contact_friction_model",
+      "mabd_collision_parameters"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ]
+  },
+  "failure_reason": "Paper source audit only; public source does not provide enough rolling-cylinder M-ABD affine contact and collision setup details to pass the paper-faithful M-ABD rolling-cylinder gate",
+  "observed": {
+    "blocking_reasons": [
+      "rolling_cylinder_geometry_parameters_missing_from_public_source",
+      "rolling_cylinder_initial_state_missing_from_public_source",
+      "paper_mabd_affine_discretization_missing_from_public_source",
+      "paper_mabd_rolling_contact_friction_missing_from_public_source",
+      "paper_mabd_collision_parameters_missing_from_public_source",
+      "paper_faithful_mabd_collision_missing",
+      "paper_faithful_explicit_rbd_baseline_missing",
+      "paper_faithful_implicit_rbd_baseline_missing",
+      "paper_comparable_timing_missing"
+    ],
+    "current_evidence_reports": {
+      "mabd_material_preflight": "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json",
+      "mabd_newton": "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json",
+      "mabd_rolling_contact_candidate": "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json"
+    },
+    "current_evidence_summaries": {
+      "mabd_material_preflight": {
+        "baseline_lane": "mabd_newton",
+        "full_experiment_claim_passed": false,
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json",
+        "solver_mode": "mabd_cpu_oracle_rolling_cylinder_material_preflight",
+        "status": "incomplete"
+      },
+      "mabd_newton": {
+        "baseline_lane": "mabd_newton",
+        "full_experiment_claim_passed": false,
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json",
+        "solver_mode": "mabd_cpu_oracle_rolling_cylinder_newton_lane",
+        "status": "incomplete"
+      },
+      "mabd_rolling_contact_candidate": {
+        "baseline_lane": "mabd_rolling_contact_candidate",
+        "full_experiment_claim_passed": false,
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+        "solver_mode": "newton_mabd_rolling_contact_world_constraint_candidate",
+        "status": "incomplete"
+      }
+    },
+    "full_experiment_claim_passed": false,
+    "missing_parameters": [
+      "rolling_cylinder_geometry",
+      "rolling_cylinder_mass_or_density",
+      "rolling_cylinder_initial_state",
+      "mabd_affine_body_discretization",
+      "mabd_rolling_contact_friction_model",
+      "mabd_collision_parameters"
+    ],
+    "paper_comparable": false,
+    "paper_faithful_gate_passed": false,
+    "required_reproduction_gaps_remaining": [
+      "paper_faithful_explicit_rbd_baseline",
+      "paper_faithful_implicit_rbd_baseline",
+      "paper_faithful_mabd_rolling_cylinder",
+      "paper_comparable_timing"
+    ],
+    "source_audit": {
+      "absence_findings": {
+        "rolling_spinning_mabd_parameter_search": {
+          "candidate_hits": [],
+          "context_hits": [
+            "arxiv.tex:167: \\title{M-ABD: Scalable, Efficient, and Robust Multi-Affine-Body Dynamics}",
+            "arxiv.tex:251: Simulating large-scale articulated assemblies poses a significant challenge due to the numerical stiffness and geometric complexity of jointed structures. Conventional rigid body solvers struggle with the high nonlinearity induced by rotation parameterization. This difficulty becomes more pronounced for multiple two-way-coupled bodies. This paper introduces a novel framework that leverages the linear kinematic mapping of Affine Body Dynamics (ABD). As ABD targets near-rigid objects, the constitutive variations of different materials become negligible, which justifies a co-rotational approach to isolate geometric nonlinearities of the system. This insight enables the use of constant system matrices that can be pre-factorized throughout the simulation, even with fully implicit integration schemes. To manage the high DOF counts of large-scale systems, we map primal body coordinates onto a compact dual space defined by minimal joint degrees of freedom. By solving the resulting KKT systems, our method ensures exact constraint enforcement and physically accurate motion propagation. We provide a suite of specialized solvers tailored for diverse joint topologies, including chains, trees, closed loops, and irregular networks. Experimental results show that our approach achieves interactive rates for systems with hundreds of thousands of bodies on a single CPU core, while maintaining excellent stability at large time steps.",
+            "arxiv.tex:283: This paper proposes an affine body dynamics (ABD) based framework that integrates multiple rigid/near-rigid links via kinematic joints. Such a multi-ABD system is designed based on a smart co-rotated formulation of a single affine body. This strategy makes an ABD system matrix pre-factorized even with the implict integration. We then generalize all the commonly-seen joint constraints to the affine coordinate using either a linear or a nonlinear formulation. When joint constraints are exactly enforced with KKT, we can project any complex multibody system into the dual space with minimized freedoms. As most articulated systems are well-structured, we exploit topological connections among joints to fast solve complex systems. The teaser figure reports a representative example of a large-scale multibody system consisting of $1,076,748$ links. Our method robustly simulates this system at $h = 10^{-2}~s$ using only one iteration for each time step. The simulation takes $904~ms$ only with a single CPU thread.",
+            "arxiv.tex:300: \\input{sections/singleabd}",
+            "arxiv.tex:302: \\input{sections_a/multiabd}",
+            "ref.bib:1: @article{ABD,",
+            "ref.bib:13: abstract = {Simulating stiff materials in applications where deformations are either not significant or else can safely be ignored is a fundamental task across fields. Rigid body modeling has thus long remained a critical tool and is, by far, the most popular simulation strategy currently employed for modeling stiff solids. At the same time, rigid body methods continue to pose a number of well known challenges and trade-offs including intersections, instabilities, inaccuracies, and/or slow performances that grow with contact-problem complexity. In this paper we revisit the stiff body problem and present ABD, a simple and highly effective affine body dynamics framework, which significantly improves state-of-the-art for simulating stiff-body dynamics. We trace the challenges in rigid-body methods to the necessity of linearizing piecewise-rigid trajectories and subsequent constraints. ABD instead relaxes the unnecessary (and unrealistic) constraint that each body's motion be exactly rigid with a stiff orthogonality potential, while preserving the rigid body model's key feature of a small coordinate representation. In doing so ABD replaces piecewise linearization with piecewise linear trajectories. This, in turn, combines the best of both worlds: compact coordinates ensure small, sparse system solves, while piecewise-linear trajectories enable efficient and accurate constraint (contact and joint) evaluations. Beginning with this simple foundation, ABD preserves all guarantees of the underlying IPC model we build it upon, e.g., solution convergence, guaranteed non-intersection, and accurate frictional contact. Over a wide range and scale of simulation problems we demonstrate that ABD brings orders of magnitude performance gains (two- to three-orders on the CPU and an order more when utilizing the GPU, obtaining 10, 000\\texttimes{} speedups) over prior IPC-based methods, while maintaining simulation quality and nonintersection of trajectories. At the same time ABD has comparable or faster timings when compared to state-of-the-art rigid body libraries optimized for performance without guarantees, and successfully and efficiently solves challenging simulation problems where both classes of prior rigid body simulation methods fail altogether.},",
+            "sections/conclusion.tex:2: This paper presents an efficient framework for simulating large-scale articulated systems. By separating geometric nonlinearity with a co-rotational formulation, we turn the ABD problem into a constant-matrix system, which can be pre-factorized even with implicit integration. Our analysis of joint constraints in the affine coordinate space provides both linear and nonlinear constraint models, which allows the simulation to capture complex mechanical interactions accurately. To handle different mechanical structures, we developed a collection of specialized solvers, including a block-tridiagonal solver, a generalized Featherstone algorithm, a low-dimensional approximation for kinetic loops, and a bidirectional Gauss-Seidel optimizer for dense joint networks. By projecting the problem into a minimal-DOF dual space, it is possible to solve the KKT on a single-threaded CPU at a scale not previously achieved. We believe our method offers a novel and reliable solution for many demanding tasks in embodied AI, mechanical design, and interactive graphics.",
+            "sections/conclusion.tex:4: Our method also has limitations. While all the equality constraints induced by joints are exactly and robustly processed with KKT, inequality constraints remain a challenge. If two bodies are about to colliding with each other, it is possible to employ collision barriers~\\cite{IPC} to resolve the collision. However, doing so puts nonlinear off-diagonal entries in the primal matrix, and our pre-factorized per-body solve is less helpful. In order to fully exploit the co-rotated ABD model, we plan to generalize the proposed primal-dual algorithm for inequality constraints. This strategy will need to pivot active primal DOFs, and the key problem is how to fast identify the right set of DOFs to be activated (i.e., converting to equality constraints). Our method solves the dual matrix using Newton's method on the CPU. It is also possible to use GPU-based solvers to further accelerate the computation. This is particularly useful for large-scale molecular simulations such as the protein example in Fig.~\\ref{fig:protein}.",
+            "sections/experiment.tex:38: We implemented the M-ABD framework on a desktop equipped with an \\texttt{AMD} \\texttt{9950X3D} CPU, using Eigen~\\cite{eigenweb} and MKL~\\cite{wang2014intel} for linear algebra operations. We specifically target a single-thread CPU implementation, as multibody simulations in tasks like large-scale data synthesis for robotic training are typically parallelized across multiple independent instances. For complex systems with massive joint networks, the dual solver can be further accelerated via GPU parallelization. Nevertheless, this is not the scope of this paper. The statistics of the experimental setup and timing information is reported in Tab.~\\ref{tab:stats}. Please refer to the supplementary video for additional animation results.",
+            "sections/experiment.tex:44: We compare ABD (solid curves) against an implicit RBD baseline (dashed curves) for a cube with initial $\\bm p_0=[100, 0, 0]^\\top~{kg\\,m/s}$ and $\\bm L_0=[0, 100, 0]^\\top~{kg\\,m^2/s}$. Co-rotated ABD formulation closely matches the behavior of an implicit RBD.}",
+            "sections/experiment.tex:49: We first quantitatively analyze the accuracy and reliability of the co-rotated ABD model for single stiff object simulation. We monitor the linear momentum, angular momentum, and total energy to validate that our method matches expected physical results under several standard benchmarks.",
+            "sections/experiment.tex:51: In Fig.~\\ref{fig:cube}, we compare our co-rotated ABD with a standard implicit RBD baseline using a single cube moving on a frictionless surface. The size of the cube is $0.1~m$ ($\\rho=10^3 \\text{ kg/m}^3, E=10^9 \\text{ Pa}, \\nu=0.3$) with initial momenta $\\bm p_0=[100, 0, 0]^\\top$ and $\\bm L_0=[0, 100, 0]^\\top$. To initialize the motion, we compute the target spatial twist $\\bm V_0 = [\\bm\\omega_0^\\top, \\bm v_0^\\top]^\\top$ and map it to ABD generalized velocities via Eq.~\\eqref{eq:module1-G-twist}. Similarly, external spatial wrenches $\\bm W_{ext} = [\\bm{\\tau}_{ext}^\\top, \\bm f_{ext}^\\top]^\\top$ are converted to ABD generalized forces $\\bm f_{A, ext}$ using Eq.~\\eqref{eq:module1-wrench-map}. Following the principle of virtual work, the equivalent spatial wrench can be obtained as:",
+            "sections/experiment.tex:55: The variations of the momentum are plotted in the figure. We observe that linear momentum is preserved for all step sizes, while angular momentum shows dissipation that increases with $h$. Our ABD method matches the RBD baseline, and the conservation improves as $h$ decreases. This confirms that affine linearization does not violate the D'Alembert principle. The error mainly comes from the numerical damping of the time integrator.",
+            "sections/experiment.tex:61: Our co-rotated ABD integrator accurately reproduces the intermediate-axis instability per the intermediate-axis theorem. Left: We plot the body-frame angular velocity along the intermediate principal axis, which undergoes periodic sign flips. Right: We plot the energy loss over time, which increases during the rapid flipping events and remains nearly constant during the quasi-steady spinning phases between flips.}",
+            "sections/experiment.tex:73: In another benchmark shown in Fig.~\\ref{fig:T-handle}, we use a T-handle model to evaluate how well the co-rotated ABD formulation captures the coupling among rotational DOFs. In a zero-gravity environment, we initialize the body with a nonzero angular velocity aligned with its intermediate principal axis. According to the intermediate-axis theorem~\\cite{goldstein1950classical}, the T-handle should undergo periodic flipping. We set the initial angular speed to $\\omega_0=3~{rad/s}$ and introduce a subtle asymmetry in the mass distribution. The motion is simulated using various time step sizes and compared against the reference, which is the result obtained with the implicit RBD solver using fourth-order Runge-Kutta (RK4) integration at $h=10^{-4}~s$. Similar to Fig.~\\ref{fig:spinning_top}, the co-rotation ABD formula closely matches implicit RBD simulations. Yet, our method is over $30\\%$ faster.",
+            "sections/experiment.tex:75: In Fig.~\\ref{fig:spinning_top}, we test a heavy top with a fixed pivot to see if our ABD method captures classic gyroscopic effects like precession and nutation. The motion is driven by gravity, with the top initialized with a $5^\\circ$ tilt and an angular speed of $10~rad/s$. As in Fig~\\ref{fig:T-handle}, the reference is from a high-accuracy RK4 integration ($h=10^{-4}~s$). ABD accurately reproduces the expected motion and converges to the reference as $h$ decreases. Notably, ABD shows less sensitivity to the time step size than the implicit RBD baseline, which suffers from more significant waveform distortion at coarser steps.",
+            "sections/experiment.tex:81: We simulate a physical pendulum with a fixed pivot, released from a horizontal configuration with zero initial velocity under gravity. Top: We plot the pendulum angle over time, where the reference curve is from the elliptic-integral (Eq.~\\ref{eq:elliptic}). Bottom: We plot the magnitude of the joint force over time, which varies periodically and peaks near the turning points of the swing. As the time step decreases, both the angle trajectory and the joint-force waveform produced by ABD better match the reference. Larger time steps lead to accumulated phase drift.}",
+            "sections/experiment.tex:86: In Fig.~\\ref{fig:pendulum}, we simulate a physical pendulum starting from a horizontal position. The pendulum swings freely under gravity, and we compare our ABD method and an implicit RBD baseline against the analytic solution based on elliptic integrals of:",
+            "sections/experiment.tex:146: \\subsection{Complex multi-ABD systems}",
+            "sections/experiment.tex:147: Our next set of experiments focuses on evaluating the proposed multi-ABD algorithm using the dual KKT solve under complex articulations and a large number of links.",
+            "sections/experiment.tex:152: \\caption{\\textbf{Tree as a multibody system.} We simulate a willow tree ($21$K links, top) and a pear tree ($29$K links, bottom) under winds. Our ABD-ABA framework handles these branched structures with a single iteration per step, requiring approximately $20~ms$ of computation time per frame on a single CPU thread. The resulting animation is high-quality and realistic. }",
+            "sections/experiment.tex:160: \\caption{\\textbf{A multi-ABD cloak.}",
+            "sections/experiment.tex:174: We simulate the interaction between a multi-ABD net and a Neo-Hookean Armadillo. Our method handles the strong coupling between articulated constraints and volumetric elasticity. With CP coordinate, ABD-based system can be seamlessly coupled with FEM models.}",
+            "sections/experiment.tex:184: Our ABD-ABA framework generalizes joint chain systems to multi-level topologies, allowing it to handle large-scale, complex joint hierarchies (Sec.~\\ref{subsec:tree}). Fig.~\\ref{fig:tree} showcases this with a willow tree ($21$K links) and a pear tree ($29$K links). To build these models, we extract skeletal graphs from the tree geometries (as highlighted in the figure) and organize the links by branching depth for efficient traversal. Each joint includes penalty energies to model real-world branch compliance. A prescribed wind field applies aerodynamic loads, which are accumulated as external wrenches and mapped to generalized forces in ABD coordinates. Our solver advances the state at $h = 10^{-2}$ s using only a single iteration per step. The simulation takes approximately $20~ms$ per step for these models, which provides an alternative approach to real-time simulation of complex plants.",
+            "sections/experiment.tex:202: ABD formulation shares the same underlying framework as FEM (finite element method). The control tetrahedron of an affine body essentially makes it a single-element model. Therefore, ABD-based multibody systems naturally integrate with deformable body simulations. Fig.~\\ref{fig:armadillo} demonstrates the coupling between a multi-ABD net and a Neo-Hookean Armadillo. In this example, we drop the Armadillo onto the net and then twist the boundary anchors to induce shear and torsion. This example highlights the stability of our solver under strong coupling between articulated constraints and volumetric elasticity.",
+            "sections/experiment.tex:217: \\caption{\\textbf{Multi-body ABD for Embodied AI.}",
+            "sections/experiment.tex:218: We integrate our ABD solver into a standard robotics pipeline to perform pick-and-place tasks. Even when allocated limited computational resources, specifically a single iteration per step, our method maintains the joint integrity and contact stability required for training and testing Embodied AI agents. The solver robustly handles the transition from planned motion to contact-rich interaction as objects are grasped, transported, and stacked.",
+            "sections/experiment.tex:224: A motivation for our ABD-based multibody solver is to provide an efficient and robust algorithm for Embodied AI training and testing. In many large-scale or real-time applications, each simulation scene is allocated with limited computational resources. Our framework is designed to maintain physical stability and constraint integrity even under these constraints, using minimal solver iterations and large time steps. This robustness allows for the reliable evaluation of agents across diverse, contact-rich environments without the numerical failures that often plague traditional simulators in resource-constrained scenarios. To this end, Fig.~\\ref{fig:pick} showcases this efficiency in a robotics context. We integrate our ABD framework with inverse kinematics (IK) and motion planning to drive a Franka Panda manipulator through pick-and-place tasks. Our solver handles joint actuation and contact interactions between the gripper and objects using a single iteration per step. The results show that the arm reliably executes grasping and transport while objects remain stable during stacking and settling.",
+            "sections/experiment.tex:229: \\caption{\\textbf{Protein unfolding.} A polypeptide backbone is modeled as an articulated chain of rigid links connected by ball joints parameterized by the dihedral angles $\\phi$ and $\\psi$, which yields a rigid-link abstraction of backbone motion. Given a sparse time sequence of marker observations $\\{\\bm y_t\\}$ (e.g., $\\mathrm{C}_\\alpha$ positions), we solve an IK problem to recover generalized coordinates $\\bm q_t$ at the observed frames, and we then roll out the ABD dynamics between these IK keyframes to obtain a temporally continuous backbone motion.",
+            "sections/experiment.tex:237: To reconstruct the motion of a viral protein undergoing a large-scale conformational change, we solve for IK keyframes from sparse observations and roll out multi-ABD dynamics to recover a continuous trajectory. This procedure produces a smooth animation that fills the gaps between temporally sparse markers. The recovered motion maintains the folded topology and structural coherence without any discontinuities or numerical fragmentation. This result illustrates that the proposed ABD-based multibody framework is a versatile tool for simulating complex articulated systems across different scientific domains, including the study of large-scale structural transitions in biological macromolecules.",
+            "sections/introduction.tex:4: Affine Body Dynamics~\\cite{ABD} serves as a more versatile alternative. By expanding the kinematic space from 6 DOFs to 12 DOFs, ABD replaces nonlinear rotations with a linear mapping. This linearity ensures that the Jacobian remains constant w.r.t. the body's spatial coordinates, whereas the nonlinear rigidity is enabled with material stiffness. The resultant material nonlinearity requires the re-assembly and factorization of the system matrix at every iteration. As the kinematic space is expanded to 12 DOFs, ABD inevitably incurs higher computational costs than the RBD model.",
+            "sections/introduction.tex:6: We propose a scalable multibody simulation framework based on a dedicated numerical treatment of ABD. Our approach leverages a key observation: high material stiffness suppresses \\emph{constitutive nonlinearity}, and the key challenge lies in the \\emph{geometric nonlinearity}. Fortunately, it is known that difficulty can be resolved effectively through a co-rotational formulation~\\cite{muller2004interactive}. By extracting the body's rotation, we land a constant system matrix that can be pre-factorized even using an implicit time integration scheme. This strategy serves as the core building block of our framework.",
+            "sections/introduction.tex:8: We provide a detailed analysis of commonly used joint constraints under the affine coordinate, and detail their possible linear and/or nonlinear formulations. For multibody systems consisting of a large number of stiff components, rather than resorting to penalty-based constraint approximation, we exactly enforce joint constraints via the KKT form to ensure accuracy and stability of the simulation. Since each body's primal system is pre-factorized, projecting the global primal problem onto the dual space becomes highly efficient. By adopting a semi-linearization for each joint with minimal DOFs, we reach a dual problem whose dimension is significantly smaller than that of the original primal version. We propose efficient algorithms for different mechanical structures, including a block-tridiagonal solver, an extension of the Featherstone algorithm~\\cite{featherstone2008rigid} for ABD-based multibody systems, a low-dimensional inverse approximation when kinetic loops exist, and a bidirectional Gauss-Seidel optimizer for dense joint networks.",
+            "sections/related.tex:19: Our articulated ABD formulation complements this literature by targeting scenarios in which rigid-link connectivity, exact joint enforcement, and large-scale constraint propagation dominate the computational cost.",
+            "sections/related.tex:38: Affine Body Dynamics (ABD) represents each rigid body with a $12$-DoF affine generalized coordinate and enforces rigidity via an orthogonality energy, while benefiting from Euclidean trajectories that simplify continuous collision detection and contact handling in collision-heavy scenes \\cite{ABD}.",
+            "sections/singleabd.tex:2: To make our exposition self-contained, we start with a brief review of RBD~\\cite{baraff1997introduction} and ABD~\\cite{ABD} for a single rigid or near-rigid object. Classic RBD defines the position of any material point as $\\bm{x}_i = \\bm{R}\\bar{\\bm{x}}_i + \\bm{t}$ for a given rotation matrix $\\bm{R}$ and translation $\\bm{t}$. Here, $\\bm{x}_i$ and $\\bar{\\bm{x}}_i$ denote the displaced and rest-shape positions of point $i$. In other words, the rigidity of the object is \\emph{kinematically} prescribed.",
+            "sections/singleabd.tex:7: \\subsection{ABD Kinematics}",
+            "sections/singleabd.tex:8: ABD allows the object to deform under a uniform linear transformation $\\bm{A}(t)$ and a translation $\\bm{t}(t)$ such that:",
+            "sections/singleabd.tex:9: \\begin{equation}\\label{eq:abd}",
+            "sections/singleabd.tex:13: \\begin{equation}\\label{eq:Eabd}",
+            "sections/singleabd.tex:16: $\\Psi$ is the energy density function, and many known hyperelastic models can be used as long as they are rotation-invariant. For instance, the vanilla ABD~\\cite{ABD} used a simple polynomial energy of:",
+            "sections/singleabd.tex:23: \\begin{equation}\\label{eq:abd_dof}",
+            "sections/singleabd.tex:28: At the other end of the spectrum, ABD needs six more DOFs than RBD, which doubles the size of the system matrix. At each time step, we need to assemble and factorize a $12 \\times 12$ system matrix. This is notably slower than an RBD system. Therefore, it is often believed that the multi-ABD framework is less scalable than the multi-RBD framework, especially when there exists a large number of interconnected stiff objects/links.",
+            "sections/singleabd.tex:33: \\subsection{ABD Dynamics}",
+            "sections/singleabd.tex:56: \\begin{equation}\\label{eq:newton_abd}",
+            "sections/singleabd.tex:61: \\subsection{A Co-rotated Formula}",
+            "sections/singleabd.tex:62: Eq.~\\eqref{eq:newton_abd} solves a $12 \\times 12$ linear system at each Newton step. Both its assembly and solve are considerably more expensive than its RBD counterpart. We show that it is possible to completely resolve the limitation and have ABD reclaim a performance lead over RBD via a co-rotated formulation.",
+            "sections/singleabd.tex:64: Both RBD and ABD are nonlinear. Nevertheless, their sources of the nonlinearity are drastically different. Specifically, the nonlinearity of RBD lies in the map between the rigid coordinate and nodal positions. In contrast, the nonlinearity of ABD stems from the geometric nonlinearity of the stiff material i.e., the requirement of being rotation-invariant.",
+            "sections/singleabd.tex:77: For a whatever rotation $\\bm{R}$, it is easy to see $\\bm{R} \\bm{x}_i  = (\\bm{RA}) \\bm{\\bar{x}}_i + \\bm{R} \\bm{t} $ by left-multiplying $\\bm{R}$ at both sides of Eq.~\\eqref{eq:abd}. This leads to:",
+            "sections/singleabd.tex:82: \\begin{equation}\\label{eq:abd_r}",
+            "sections/singleabd.tex:85: Eq.~\\eqref{eq:abd_r} reveals an important feature of ABD: the spatial coordinate $\\bm{x}$ and generalized coordinate $\\bm{q}$ co-rotate i.e., with $\\operatorname{diag}_N (\\bm{R})$ and $\\operatorname{diag}_4 (\\bm{R})$ under the same global rotation.",
+            "sections/singleabd.tex:99: Eq.~\\eqref{eq:newton_abd} can be re-written as:",
+            "sections/singleabd.tex:109: where $\\bm{F}_e \\in \\mathbb{R}^{3 \\times 3}$ is the deformation gradient of the element. $\\partial \\bm{F}_e/\\partial \\bm{x}_e$ is a constant and sparse 3rd tensor for the linear tetrahedron (e.g., see~\\cite{kim2020dynamic}). For an ABD mesh, we have $\\bm{F}_e = \\bm{A}$ making $\\partial \\Psi/ \\partial \\bm{F}_e = \\partial \\Psi/ \\partial \\bm{A}$ constant across all the elements. As a result, the double contraction can be moved out of the summation sign. $\\bar{\\bm{J}} \\in \\mathbb{R}^{12 \\times 12}$ is volume-weighted Jacobian, which can be pre-computed. It converts the aggregated spatial force $\\bm{f} \\in \\mathbb{R}^{12}$ to the affine coordinate $\\bm{f}_A$. Therefore, the complexity of computing the r.h.s. of Eq.~\\eqref{eq:reduced_newton} is independent of the mesh resolution.",
+            "sections/singleabd.tex:111: Because of the small deformation prior, we opt for the linear material model for $\\Psi$. The affine energy used in~\\cite{ABD} i.e., Eq.~\\eqref{eq:Eabd} can also be used, but it fails to incorporate both Lam\\'e parameters ($\\mu$, $\\lambda$). The simplification of linear elasticity gives:",
+            "sections/singleabd.tex:120: \\subsection{Single-object ABD}",
+            "sections/singleabd.tex:121: The final system for a single-body ABD now becomes:",
+            "sections/singleabd.tex:122: \\begin{equation}\\label{eq:abd_final}",
+            "sections/singleabd.tex:125: Eq.~\\eqref{eq:abd_final} features a constant $\\bar{\\bm{H}}_A$, which is pre-factorized. In other words, we avoid any matrix factorization, even with an implicit time integration.",
+            "sections/singleabd.tex:127: As the system matrix is pre-factorized, the polar decomposition that extracts the rotation component from the affine coordinate $\\bm{q}$ i.e., Eq.~\\eqref{eq:polar} becomes a major computational hurdle. We want to remind that simulating ABD using Eq.~\\eqref{eq:abd_final} is already highly efficient and much faster than implicit RBD. Nevertheless, we can further push the performance by skipping Eq.~\\eqref{eq:polar} and replacing it with a simple normalization operation. As the object is highly stiff, $\\bm{A} \\approx \\bm{R}$ is already close to a rotation matrix, when $\\bm{R}\\bm{a}$ rotates a vector $\\bm{a}$, instead of computing $\\bm{R}$ out of $\\bm{A}(\\bm{q})$, we only enforce $\\|\\bm{A} \\bm{a}\\| = \\| \\bm{a}\\|$ to make sure $\\bm{A}$ preserves the length of $\\bm{a}$ such that:",
+            "sections/singleabd.tex:131: By skipping the polar decomposition with Eq.~\\eqref{eq:len_preserving}, the ABD simulation procedure only involves lightweight level 1 and 2 BLAS operations, making implicit ABD outperform both implicit and explicit RBD. The pseudo code for one Newton iteration of a single object ABD is summarized in Alg.~\\ref{alg:abd}.",
+            "sections/singleabd.tex:156: \\caption{One Newton-step ABD integration}\\label{alg:abd}",
+            "sections/singleabd.tex:162: \\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}",
+            "sections/singleabd.tex:172: A simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$."
+          ],
+          "query_terms": [
+            "rolling cylinder geometry",
+            "rolling cylinder radius",
+            "rolling cylinder half height",
+            "rolling cylinder density",
+            "rolling cylinder mass",
+            "rolling cylinder initial position",
+            "rolling cylinder initial linear velocity",
+            "rolling cylinder initial angular velocity",
+            "M-ABD affine body discretization",
+            "affine body discretization",
+            "rest points",
+            "point masses",
+            "M-ABD rolling contact friction model",
+            "affine no-slip contact constraints",
+            "M-ABD collision parameters",
+            "collision parameters",
+            "ke kd kf mu"
+          ],
+          "scanned_text_path_count": 12,
+          "searched_source_path_count": 37,
+          "status": "no_paper_faithful_mabd_source_parameters_found",
+          "usable_parameter_disclosures": []
+        }
+      },
+      "blockers": [
+        "rolling_cylinder_geometry_parameters_missing_from_public_source",
+        "rolling_cylinder_initial_state_missing_from_public_source",
+        "paper_mabd_affine_discretization_missing_from_public_source",
+        "paper_mabd_rolling_contact_friction_missing_from_public_source",
+        "paper_mabd_collision_parameters_missing_from_public_source"
+      ],
+      "file_hashes": {
+        "sections/experiment.tex": "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f",
+        "sections/singleabd.tex": "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d"
+      },
+      "missing_parameters": [
+        "rolling_cylinder_geometry",
+        "rolling_cylinder_mass_or_density",
+        "rolling_cylinder_initial_state",
+        "mabd_affine_body_discretization",
+        "mabd_rolling_contact_friction_model",
+        "mabd_collision_parameters"
+      ],
+      "positive_findings": {
+        "corotated_abd_timing_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "corotated_abd_timing_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "hardware_thread_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "hardware_thread_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "rolling_cylinder_benchmark": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "rolling_cylinder_benchmark",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "rolling_cylinder_step_count": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "rolling_cylinder_step_count",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "rolling_cylinder_time_step": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "rolling_cylinder_time_step",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "single_body_cube_not_rolling_source_context": {
+          "evidence_text": "\\subsection{Single-body comparison}\nWe first quantitatively analyze the accuracy and reliability of the co-rotated ABD model for single stiff object simulation. We monitor the linear momentum, angular momentum, and total energy to validate that our method matches expected physical results under several standard benchmarks.\n\nIn Fig.~\\ref{fig:cube}, we compare our co-rotated ABD with a standard implicit RBD baseline using a single cube moving on a frictionless surface. The size of the cube is $0.1~m$ ($\\rho=10^3 \\text{ kg/m}^3, E=10^9 \\text{ Pa}, \\nu=0.3$) with initial momenta $\\bm p_0=[100, 0, 0]^\\top$ and $\\bm L_0=[0, 100, 0]^\\top$. To initialize the motion, we compute the target spatial twist $\\bm V_0 = [\\bm\\omega_0^\\top, \\bm v_0^\\top]^\\top$ and map it to ABD generalized velocities via Eq.~\\eqref{eq:module1-G-twist}. Similarly, external spatial wrenches $\\bm W_{ext} = [\\bm{\\tau}_{ext}^\\top, \\bm f_{ext}^\\top]^\\top$ are converted to ABD generalized forces $\\bm f_{A, ext}$ using Eq.~\\eqref{eq:module1-wrench-map}. Following the principle of virtual work, the equivalent spatial wrench can be obtained as:\n\\begin{equation}\n\\bm W_{ext}=\\bm E(\\bm A)^\\top \\bm f_{A,ext}.\n\\end{equation}\nThe variations of the momentum are plotted in the figure. We observe that linear momentum is preserved for all step sizes, while angular momentum shows dissipation that increases with $h$. Our ABD method matches the RBD baseline, and the conservation improves as $h$ decreases. This confirms that affine linearization does not violate the D'Alembert principle. The error mainly comes from the numerical damping of the time integrator.",
+          "key": "single_body_cube_not_rolling_source_context",
+          "line_end": 55,
+          "line_start": 48,
+          "path": "sections/experiment.tex",
+          "present": true
+        }
+      },
+      "scanned_tex_paths": [
+        "arxiv.tex",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "scanned_text_paths": [
+        "00README.json",
+        "ACM-Reference-Format.bst",
+        "acmart.cls",
+        "arxiv.tex",
+        "ref.bib",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "source_root": "/tmp/mabd-paper/source",
+      "source_tree_paths": [
+        "00README.json",
+        "ACM-Reference-Format.bst",
+        "acm-jdslogo.png",
+        "acmart.cls",
+        "arxiv.tex",
+        "images/Performance/performance.pdf",
+        "images/T-handle/T-handle.pdf",
+        "images/arm/arm_compressed.pdf",
+        "images/armadillo/armadillo.pdf",
+        "images/chain/chain.pdf",
+        "images/cp/cp.pdf",
+        "images/cube/roll_cube.pdf",
+        "images/dual_mat/dual_mat.pdf",
+        "images/end_mass/hammer.pdf",
+        "images/hinge/hinge.pdf",
+        "images/hinge/hinge2.pdf",
+        "images/hinge/translation.pdf",
+        "images/hinge/universal.pdf",
+        "images/joints/joints.pdf",
+        "images/large_net.pdf",
+        "images/net_cloth/net_cloth.pdf",
+        "images/net_cylinder.pdf",
+        "images/net_hang/net_hang.pdf",
+        "images/protein/protein.pdf",
+        "images/ragdolls/ragdolls.pdf",
+        "images/simple_pendulum/simple_pendulum.pdf",
+        "images/spinning_top/spinning_top.pdf",
+        "images/teaser/teaser2.pdf",
+        "images/willow/willow.pdf",
+        "ref.bib",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "status": "mabd_source_requirements_incomplete"
+    },
+    "source_audit_status": "mabd_source_requirements_incomplete"
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "rolling_spinning_mabd_source_gate",
+  "source_commit": "fadd6ad",
+  "status": "incomplete",
+  "threshold": {
+    "required_source_parameter_count": 6.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "source_gate_no_runtime",
+    "status": "not_measured"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

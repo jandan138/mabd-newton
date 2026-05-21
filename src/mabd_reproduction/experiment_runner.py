@@ -43,6 +43,7 @@ from .rolling_spinning_reports import (
     write_rolling_spinning_mabd_material_preflight_report,
     write_rolling_spinning_mabd_newton_report,
     write_rolling_spinning_mabd_rolling_contact_candidate_report,
+    write_rolling_spinning_mabd_source_gate_report,
     write_rolling_spinning_paper_timing_protocol_report,
     write_rolling_spinning_protocol_report,
     write_rolling_spinning_rbd_explicit_baseline_report,
@@ -513,6 +514,45 @@ def run_rolling_spinning_rbd_implicit_source_gate(
         output_root=output_root,
     )
     report = write_rolling_spinning_rbd_implicit_source_gate_report(
+        report_path,
+        config=config,
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    return ExperimentRunResult(
+        claim_id=report.claim_id,
+        scene_id=report.scene_id,
+        status=report.status,
+        report_path=report_path,
+        report=report,
+    )
+
+
+def run_rolling_spinning_mabd_source_gate(
+    *,
+    config_path: str | Path,
+    matrix_path: str | Path,
+    source_commit: str,
+    vendored_newton_commit: str,
+    output_path: str | Path | None = None,
+    output_root: str | Path | None = None,
+    paper_source_version: str = "2603.08079v2",
+) -> ExperimentRunResult:
+    config = load_rolling_spinning_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_rolling_spinning_config_against_matrix(config, matrix)
+    if config.report_status != EvidenceStatus.INCOMPLETE:
+        raise ValueError(
+            "Phase 85 rolling/spinning M-ABD source gate "
+            "requires incomplete report status"
+        )
+    report_path = _resolve_output_path(
+        config.mabd_source_gate.output_report,
+        output_path=output_path,
+        output_root=output_root,
+    )
+    report = write_rolling_spinning_mabd_source_gate_report(
         report_path,
         config=config,
         source_commit=source_commit,
@@ -1537,6 +1577,7 @@ __all__ = [
     "run_rolling_spinning_mabd_material_preflight",
     "run_rolling_spinning_mabd_newton",
     "run_rolling_spinning_mabd_rolling_contact_candidate",
+    "run_rolling_spinning_mabd_source_gate",
     "run_rolling_spinning_paper_timing_protocol",
     "run_rolling_spinning_protocol",
     "run_rolling_spinning_rbd_explicit_baseline",
