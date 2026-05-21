@@ -38,6 +38,7 @@ from mabd_reproduction.experiment_runner import (
     run_spinning_box_affine_static_plane_contacts,
     run_spinning_box_affine_static_plane_contacts_rollout_candidate,
     run_spinning_box_comparison,
+    run_spinning_box_contact_collision_gate_candidate,
     run_spinning_box_contacts_input,
     run_spinning_box_contact_response,
     run_spinning_box_decoupled_twist,
@@ -96,6 +97,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "spinning_box_affine_static_plane_contacts",
             "spinning_box_affine_static_plane_contacts_rollout_candidate",
             "spinning_box_comparison",
+            "spinning_box_contact_collision_gate_candidate",
             "spinning_box_contacts_input",
             "spinning_box_contact_response",
             "spinning_box_decoupled_twist",
@@ -249,6 +251,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "spinning_box_affine_static_plane_contacts_rollout_candidate":
             result = run_spinning_box_affine_static_plane_contacts_rollout_candidate(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "spinning_box_contact_collision_gate_candidate":
+            result = run_spinning_box_contact_collision_gate_candidate(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

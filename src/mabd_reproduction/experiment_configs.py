@@ -64,6 +64,20 @@ class SpinningBoxAffineStaticPlaneContactsRolloutCandidateConfig:
 
 
 @dataclass(frozen=True)
+class SpinningBoxContactCollisionGateCandidateConfig:
+    output_report: str
+    gate_scope: str
+    paper_faithful: bool
+    duration_s: float
+    time_step_s: float
+    sample_count: int
+    initial_linear_velocity_m_s: np.ndarray
+    initial_angular_velocity_rad_s: np.ndarray
+    contact_constraint_mode: str
+    thresholds: dict[str, float]
+
+
+@dataclass(frozen=True)
 class SpinningBoxRunConfig:
     schema_version: int
     claim_id: str
@@ -88,6 +102,7 @@ class SpinningBoxRunConfig:
     affine_static_plane_contacts_rollout_candidate: (
         SpinningBoxAffineStaticPlaneContactsRolloutCandidateConfig
     )
+    contact_collision_gate_candidate: SpinningBoxContactCollisionGateCandidateConfig
 
 
 @dataclass(frozen=True)
@@ -442,6 +457,10 @@ SPINNING_BOX_DEVELOPMENT_COMPARISON_OUTPUT_REPORT = (
 SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_OUTPUT_REPORT = (
     "reports/experiment_matrix/"
     "single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json"
+)
+SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_OUTPUT_REPORT = (
+    "reports/experiment_matrix/"
+    "single_body_spinning_box_contact_collision_gate_candidate.json"
 )
 ROLLING_SPINNING_TIMING_KEYS = frozenset(
     {
@@ -1071,6 +1090,46 @@ def _require_spinning_box_affine_static_plane_contacts_rollout_candidate(
     return SpinningBoxAffineStaticPlaneContactsRolloutCandidateConfig(
         output_report=_require_str(section, "output_report"),
         rollout_scope=rollout_scope,
+        paper_faithful=paper_faithful,
+        duration_s=_require_positive_float(section, "duration_s"),
+        time_step_s=_require_positive_float(section, "time_step_s"),
+        sample_count=_require_positive_int(section, "sample_count"),
+        initial_linear_velocity_m_s=_require_vec3_array(
+            section,
+            "initial_linear_velocity_m_s",
+        ),
+        initial_angular_velocity_rad_s=_require_vec3_array(
+            section,
+            "initial_angular_velocity_rad_s",
+        ),
+        contact_constraint_mode=contact_constraint_mode,
+        thresholds=_require_float_mapping(section, "thresholds"),
+    )
+
+
+def _require_spinning_box_contact_collision_gate_candidate(
+    data: dict[str, Any],
+) -> SpinningBoxContactCollisionGateCandidateConfig:
+    section = _require_mapping(data, "contact_collision_gate_candidate")
+    gate_scope = _require_str(section, "gate_scope")
+    if gate_scope != "single_body_spinning_box_contact_collision_candidate":
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.gate_scope must be "
+            "single_body_spinning_box_contact_collision_candidate"
+        )
+    paper_faithful = _require_bool(section, "paper_faithful")
+    if paper_faithful:
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.paper_faithful must be false"
+        )
+    contact_constraint_mode = _require_str(section, "contact_constraint_mode")
+    if contact_constraint_mode != "unilateral_plane":
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.contact_constraint_mode must be unilateral_plane"
+        )
+    return SpinningBoxContactCollisionGateCandidateConfig(
+        output_report=_require_str(section, "output_report"),
+        gate_scope=gate_scope,
         paper_faithful=paper_faithful,
         duration_s=_require_positive_float(section, "duration_s"),
         time_step_s=_require_positive_float(section, "time_step_s"),
@@ -2805,6 +2864,9 @@ def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
         affine_static_plane_contacts_rollout_candidate=(
             _require_spinning_box_affine_static_plane_contacts_rollout_candidate(data)
         ),
+        contact_collision_gate_candidate=(
+            _require_spinning_box_contact_collision_gate_candidate(data)
+        ),
     )
 
 
@@ -3040,6 +3102,71 @@ def validate_spinning_box_config_against_matrix(config: SpinningBoxRunConfig, ma
         raise ExperimentRunConfigError(
             "affine_static_plane_contacts_rollout_candidate.initial_angular_velocity_rad_s "
             "must be nonzero"
+        )
+
+    contact_gate = config.contact_collision_gate_candidate
+    contact_gate_report = contact_gate.output_report
+    contact_gate_report_path = Path(contact_gate_report)
+    if (
+        contact_gate_report_path.is_absolute()
+        or ".." in contact_gate_report_path.parts
+        or contact_gate_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or contact_gate_report_path.suffix != ".json"
+        or contact_gate_report != SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_OUTPUT_REPORT
+        or contact_gate_report
+        in (
+            config.output_report,
+            config.paper_horizon.output_report,
+            config.paper_horizon.contact_response_output_report,
+            config.paper_horizon.normal_constraint_output_report,
+            config.paper_horizon.model_plane_constraint_output_report,
+            config.paper_horizon.contacts_input_output_report,
+            config.paper_horizon.affine_static_plane_contacts_output_report,
+            config.paper_horizon.decoupled_twist_output_report,
+            config.paper_horizon.figure_curve_output_report,
+            config.development_comparison.output_report,
+            config.affine_static_plane_contacts_rollout_candidate.output_report,
+        )
+    ):
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.output_report must be the "
+            "lane-specific relative JSON report under reports/experiment_matrix"
+        )
+    if contact_gate.gate_scope != "single_body_spinning_box_contact_collision_candidate":
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.gate_scope must be "
+            "single_body_spinning_box_contact_collision_candidate"
+        )
+    if contact_gate.paper_faithful:
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.paper_faithful must be false"
+        )
+    if contact_gate.contact_constraint_mode != "unilateral_plane":
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.contact_constraint_mode must be unilateral_plane"
+        )
+    contact_gate_step_count_float = contact_gate.duration_s / contact_gate.time_step_s
+    contact_gate_step_count = round(contact_gate_step_count_float)
+    if not np.isclose(
+        contact_gate_step_count_float,
+        float(contact_gate_step_count),
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.duration_s must be divisible by time_step_s"
+        )
+    if contact_gate.sample_count < 2 or contact_gate.sample_count > contact_gate_step_count + 1:
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.sample_count must be in [2, step_count + 1]"
+        )
+    if not np.any(contact_gate.initial_linear_velocity_m_s):
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.initial_linear_velocity_m_s must be nonzero"
+        )
+    if not np.any(contact_gate.initial_angular_velocity_rad_s):
+        raise ExperimentRunConfigError(
+            "contact_collision_gate_candidate.initial_angular_velocity_rad_s must be nonzero"
         )
 
 def load_physical_pendulum_config(path: str | Path) -> PhysicalPendulumRunConfig:

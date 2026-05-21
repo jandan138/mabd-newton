@@ -1013,6 +1013,79 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
         self.assertEqual(result.plane_constraint_accepted_count, 1)
         self.assertEqual(result.plane_constraint_skipped_count, 0)
 
+    def test_dense_cpu_step_rejects_tensile_unilateral_plane_constraint(self) -> None:
+        q = _identity_q((0.0, 0.2, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.0, 1.0, 0.0])
+        dt = 0.05
+        free = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(bodies=[_body()]),
+        )
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body()],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=np.zeros(3),
+                        plane_normal=np.array([0.0, 1.0, 0.0]),
+                        plane_offset=0.0,
+                        unilateral=True,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+
+        np.testing.assert_allclose(result.q[0], free.q[0], atol=1.0e-10)
+        np.testing.assert_allclose(result.qd[0], free.qd[0], atol=1.0e-10)
+        self.assertEqual(result.unilateral_plane_constraint_requested_count, 1)
+        self.assertEqual(result.unilateral_plane_constraint_accepted_count, 0)
+        self.assertEqual(result.unilateral_plane_constraint_rejected_count, 1)
+        self.assertEqual(result.unilateral_plane_constraint_skipped_count, 0)
+
+    def test_dense_cpu_step_keeps_compressive_unilateral_plane_constraint(self) -> None:
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.0, -1.0, 0.0])
+        dt = 0.05
+        rest_point = np.zeros(3)
+
+        result = mabd.solve_cpu_oracle_step(
+            q=[q],
+            qd=[qd],
+            dt=dt,
+            config=mabd.MABDCPUOracleConfig(
+                bodies=[_body()],
+                plane_constraints=[
+                    mabd.MABDCPUOraclePlaneConstraint(
+                        body=0,
+                        rest_point=rest_point,
+                        plane_normal=np.array([0.0, 1.0, 0.0]),
+                        plane_offset=0.0,
+                        unilateral=True,
+                    )
+                ],
+                topology="dense",
+            ),
+        )
+
+        constrained_point = mabd.point_jacobian(rest_point) @ result.q[0]
+        self.assertGreaterEqual(float(constrained_point[1]), -1.0e-10)
+        self.assertEqual(result.dlambda.shape, (1,))
+        self.assertLessEqual(float(result.dlambda[0]), 1.0e-12)
+        self.assertEqual(result.unilateral_plane_constraint_requested_count, 1)
+        self.assertEqual(result.unilateral_plane_constraint_accepted_count, 1)
+        self.assertEqual(result.unilateral_plane_constraint_rejected_count, 0)
+        self.assertEqual(result.unilateral_plane_constraint_skipped_count, 0)
+
     def test_dense_cpu_step_plane_constraint_supports_polar_increment_map(self) -> None:
         theta = 0.35
         A = np.array(
@@ -1771,6 +1844,44 @@ class MABDPhase4SolverStepTests(unittest.TestCase):
             solver.last_contacts_input_summary.scope,
             "diagnostic_only_static_geometry_world_constraints",
         )
+
+    def test_solver_step_can_convert_contacts_to_unilateral_plane_constraints(self) -> None:
+        model, box_shape, plane_shape = _mabd_model_with_box_and_static_plane()
+        solver = SolverMABD(model)
+        solver.configure_cpu_oracle(
+            mabd.MABDCPUOracleConfig(
+                bodies=[_model_path_body(young_modulus=1.0)],
+                contact_constraint_mode="unilateral_plane",
+                topology="dense",
+            )
+        )
+        q = _identity_q((0.0, -0.1, 0.0))
+        qd = np.zeros(12)
+        qd[9:12] = np.array([0.0, -1.0, 0.0])
+        state = model.state()
+        _assign_mabd_state(state, q, qd)
+        contacts = _contacts_with_one_rigid_row(
+            shape0=box_shape,
+            shape1=plane_shape,
+            point0=(0.25, 0.0, 0.0),
+            point1=(0.25, 0.0, 0.0),
+            normal=(0.0, 1.0, 0.0),
+        )
+
+        solver.step(state, state, None, contacts, 0.05)
+
+        summary = solver.last_contacts_input_summary
+        self.assertEqual(summary.contact_constraint_mode, "unilateral_plane")
+        self.assertEqual(
+            summary.policy,
+            "rigid_contacts_to_unilateral_point_plane_constraints_diagnostic",
+        )
+        self.assertEqual(summary.generated_plane_constraint_count, 1)
+        self.assertEqual(summary.generated_world_constraint_count, 0)
+        self.assertEqual(summary.skipped_contact_count, 0)
+        self.assertEqual(solver.last_step_result.unilateral_plane_constraint_requested_count, 1)
+        self.assertEqual(solver.last_step_result.unilateral_plane_constraint_accepted_count, 1)
+        self.assertEqual(solver.last_step_result.unilateral_plane_constraint_rejected_count, 0)
 
     def test_solver_step_flips_contact_normal_when_mabd_body_is_shape1(self) -> None:
         model, box_shape, plane_shape = _mabd_model_with_box_and_static_plane()

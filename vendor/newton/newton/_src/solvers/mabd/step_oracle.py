@@ -63,6 +63,7 @@ class MABDCPUOraclePlaneConstraint:
     plane_normal: np.ndarray
     plane_offset: float
     active: bool = True
+    unilateral: bool = False
 
 
 @dataclass(frozen=True)
@@ -92,6 +93,23 @@ class MABDCPUOracleStepResult:
     plane_constraint_requested_count: int = 0
     plane_constraint_accepted_count: int = 0
     plane_constraint_skipped_count: int = 0
+    unilateral_plane_constraint_requested_count: int = 0
+    unilateral_plane_constraint_accepted_count: int = 0
+    unilateral_plane_constraint_rejected_count: int = 0
+    unilateral_plane_constraint_skipped_count: int = 0
+
+
+@dataclass(frozen=True)
+class _DenseConstraintSolve:
+    dq: np.ndarray
+    dlambda: np.ndarray
+    residual_norm: float
+    accepted_plane_count: int
+    skipped_plane_count: int
+    accepted_plane_indices: tuple[int, ...]
+
+
+_UNILATERAL_TENSILE_TOLERANCE = 1.0e-10
 
 
 def _as_q_blocks(values: Any, name: str) -> tuple[np.ndarray, ...]:
@@ -176,8 +194,8 @@ def _validate_config(config: MABDCPUOracleConfig, body_count: int) -> tuple[MABD
             raise TypeError(f"config.bodies[{body_id}].precompute must be SingleBodyABDPrecompute")
         if body.rotation_mode not in {"none", "polar", "no_polar"}:
             raise ValueError("rotation_mode must be one of 'none', 'polar', or 'no_polar'")
-    if str(config.contact_constraint_mode) not in {"plane", "world"}:
-        raise ValueError("contact_constraint_mode must be one of 'plane' or 'world'")
+    if str(config.contact_constraint_mode) not in {"plane", "world", "unilateral_plane"}:
+        raise ValueError("contact_constraint_mode must be one of 'plane', 'world', or 'unilateral_plane'")
     constraints = tuple(config.constraints)
     for constraint_id, constraint in enumerate(constraints):
         if not 0 <= int(constraint.body_a) < body_count or not 0 <= int(constraint.body_b) < body_count:
@@ -362,11 +380,13 @@ def _world_constraint_blocks(
 def _plane_constraint_blocks(
     q: tuple[np.ndarray, ...],
     config: MABDCPUOracleConfig,
-) -> tuple[list[int], list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+) -> tuple[list[int], list[np.ndarray], list[np.ndarray], list[np.ndarray], list[bool], list[int]]:
     bodies: list[int] = []
     gradients: list[np.ndarray] = []
     lower_rhs_blocks: list[np.ndarray] = []
     residuals: list[np.ndarray] = []
+    unilateral: list[bool] = []
+    source_indices: list[int] = []
     for constraint_id, constraint in enumerate(config.plane_constraints):
         if not bool(constraint.active):
             continue
@@ -377,7 +397,9 @@ def _plane_constraint_blocks(
         gradients.append(gradient)
         lower_rhs_blocks.append(-residual if config.residual_correction else np.zeros_like(residual))
         residuals.append(residual)
-    return bodies, gradients, lower_rhs_blocks, residuals
+        unilateral.append(bool(constraint.unilateral))
+        source_indices.append(constraint_id)
+    return bodies, gradients, lower_rhs_blocks, residuals, unilateral, source_indices
 
 
 def _block_diag_hessians(blocks: tuple[np.ndarray, ...]) -> np.ndarray:
@@ -402,7 +424,9 @@ def _assemble_dense_dual_inputs_with_world_constraints(
     plane_gradients: list[np.ndarray],
     plane_lower_rhs_blocks: list[np.ndarray],
     increment_maps: tuple[np.ndarray, ...],
-) -> tuple[TopologyDualInputs, int, int]:
+    plane_source_indices: list[int] | None = None,
+    return_plane_source_indices: bool = False,
+) -> tuple[TopologyDualInputs, int, int] | tuple[TopologyDualInputs, int, int, tuple[int, ...]]:
     dim = hessians[0].shape[0]
     H = _block_diag_hessians(hessians)
     f = np.concatenate(body_forces)
@@ -459,7 +483,10 @@ def _assemble_dense_dual_inputs_with_world_constraints(
 
     accepted_plane_count = 0
     skipped_plane_count = 0
-    for body, gradient, lower_rhs in zip(
+    accepted_plane_source_indices: list[int] = []
+    source_indices = plane_source_indices if plane_source_indices is not None else list(range(len(plane_bodies)))
+    for plane_source, body, gradient, lower_rhs in zip(
+        source_indices,
         plane_bodies,
         plane_gradients,
         plane_lower_rhs_blocks,
@@ -473,12 +500,13 @@ def _assemble_dense_dual_inputs_with_world_constraints(
             skipped_plane_count += 1
             continue
         accepted_plane_count += 1
+        accepted_plane_source_indices.append(int(plane_source))
     J = np.vstack(rows)
     lower_rhs = np.concatenate(lower_blocks)
     inv_h_f = np.linalg.solve(H, f)
     dual_matrix = J @ np.linalg.solve(H, J.T)
     dual_rhs = J @ inv_h_f - lower_rhs
-    return TopologyDualInputs(
+    inputs = TopologyDualInputs(
         H=H,
         J=J,
         f=f,
@@ -486,7 +514,82 @@ def _assemble_dense_dual_inputs_with_world_constraints(
         dual_matrix=dual_matrix,
         dual_rhs=dual_rhs,
         edge_slices=edge_slices,
-    ), accepted_plane_count, skipped_plane_count
+    )
+    if return_plane_source_indices:
+        return inputs, accepted_plane_count, skipped_plane_count, tuple(accepted_plane_source_indices)
+    return inputs, accepted_plane_count, skipped_plane_count
+
+
+def _solve_dense_constraint_system(
+    hessians: tuple[np.ndarray, ...],
+    body_edges: list[tuple[int, int]],
+    body_gradients: list[tuple[np.ndarray, np.ndarray]],
+    body_forces: tuple[np.ndarray, ...],
+    body_lower_rhs_blocks: list[np.ndarray],
+    world_bodies: list[int],
+    world_gradients: list[np.ndarray],
+    world_lower_rhs_blocks: list[np.ndarray],
+    plane_bodies: list[int],
+    plane_gradients: list[np.ndarray],
+    plane_lower_rhs_blocks: list[np.ndarray],
+    active_plane_indices: list[int],
+    increment_maps: tuple[np.ndarray, ...],
+) -> _DenseConstraintSolve:
+    active_plane_bodies = [plane_bodies[index] for index in active_plane_indices]
+    active_plane_gradients = [plane_gradients[index] for index in active_plane_indices]
+    active_plane_lower_rhs_blocks = [plane_lower_rhs_blocks[index] for index in active_plane_indices]
+    if world_bodies or active_plane_bodies:
+        inputs, accepted_plane_count, skipped_plane_count, accepted_plane_indices = (
+            _assemble_dense_dual_inputs_with_world_constraints(
+                hessians,
+                body_edges,
+                body_gradients,
+                body_forces,
+                body_lower_rhs_blocks,
+                world_bodies,
+                world_gradients,
+                world_lower_rhs_blocks,
+                active_plane_bodies,
+                active_plane_gradients,
+                active_plane_lower_rhs_blocks,
+                increment_maps,
+                plane_source_indices=active_plane_indices,
+                return_plane_source_indices=True,
+            )
+        )
+    elif body_edges:
+        local_gradients = tuple(
+            (grad_a @ increment_maps[body_a], grad_b @ increment_maps[body_b])
+            for (body_a, body_b), (grad_a, grad_b) in zip(body_edges, body_gradients, strict=True)
+        )
+        inputs = assemble_topology_dual_inputs(hessians, body_edges, local_gradients, body_forces, body_lower_rhs_blocks)
+        accepted_plane_count = 0
+        skipped_plane_count = 0
+        accepted_plane_indices = ()
+    else:
+        H = _block_diag_hessians(hessians)
+        f = np.concatenate(body_forces)
+        dq = np.linalg.solve(H, f)
+        residual_norm = float(np.linalg.norm(H @ dq - f))
+        return _DenseConstraintSolve(
+            dq=dq,
+            dlambda=np.zeros(0, dtype=float),
+            residual_norm=residual_norm,
+            accepted_plane_count=0,
+            skipped_plane_count=0,
+            accepted_plane_indices=(),
+        )
+
+    dense = solve_dense_dual_kkt(inputs.H, inputs.J, inputs.f, lower_rhs=inputs.lower_rhs)
+    residual_norm = float(np.linalg.norm(inputs.dual_matrix @ dense.dlambda - inputs.dual_rhs))
+    return _DenseConstraintSolve(
+        dq=dense.dq,
+        dlambda=dense.dlambda,
+        residual_norm=residual_norm,
+        accepted_plane_count=accepted_plane_count,
+        skipped_plane_count=skipped_plane_count,
+        accepted_plane_indices=tuple(accepted_plane_indices),
+    )
 
 
 def _solve_constrained_step(
@@ -499,7 +602,14 @@ def _solve_constrained_step(
 ) -> MABDCPUOracleStepResult:
     edges, gradients, lower_rhs_blocks, _residuals = _constraint_blocks(q, config)
     world_bodies, world_gradients, world_lower_rhs_blocks, _world_residuals = _world_constraint_blocks(q, config)
-    plane_bodies, plane_gradients, plane_lower_rhs_blocks, _plane_residuals = _plane_constraint_blocks(q, config)
+    (
+        plane_bodies,
+        plane_gradients,
+        plane_lower_rhs_blocks,
+        _plane_residuals,
+        plane_unilateral_flags,
+        _plane_source_indices,
+    ) = _plane_constraint_blocks(q, config)
     topology = str(config.topology)
     if (world_bodies or plane_bodies) and topology != "dense":
         raise ValueError("world and plane constraints currently require topology='dense'")
@@ -517,10 +627,10 @@ def _solve_constrained_step(
         raise NotImplementedError("constrained rotated CPU oracle steps require topology='dense'")
 
     if topology == "dense":
-        accepted_plane_count = 0
-        skipped_plane_count = 0
-        if world_bodies:
-            inputs, accepted_plane_count, skipped_plane_count = _assemble_dense_dual_inputs_with_world_constraints(
+        active_plane_indices = list(range(len(plane_bodies)))
+        unilateral_rejected_count = 0
+        while True:
+            dense = _solve_dense_constraint_system(
                 hessians,
                 edges,
                 gradients,
@@ -532,52 +642,60 @@ def _solve_constrained_step(
                 plane_bodies,
                 plane_gradients,
                 plane_lower_rhs_blocks,
+                active_plane_indices,
                 increment_maps,
             )
-        elif plane_bodies:
-            inputs, accepted_plane_count, skipped_plane_count = _assemble_dense_dual_inputs_with_world_constraints(
-                hessians,
-                edges,
-                gradients,
-                rhs,
-                lower_rhs_blocks,
-                world_bodies,
-                world_gradients,
-                world_lower_rhs_blocks,
-                plane_bodies,
-                plane_gradients,
-                plane_lower_rhs_blocks,
-                increment_maps,
-            )
-        else:
-            local_gradients = tuple(
-                (grad_a @ increment_maps[body_a], grad_b @ increment_maps[body_b])
-                for (body_a, body_b), (grad_a, grad_b) in zip(edges, gradients, strict=True)
-            )
-            inputs = assemble_topology_dual_inputs(hessians, edges, local_gradients, rhs, lower_rhs_blocks)
-        dense = solve_dense_dual_kkt(inputs.H, inputs.J, inputs.f, lower_rhs=inputs.lower_rhs)
+            accepted_plane_indices = dense.accepted_plane_indices
+            plane_lambda_start = len(dense.dlambda) - len(accepted_plane_indices)
+            tensile_plane_indices = [
+                plane_index
+                for lambda_offset, plane_index in enumerate(accepted_plane_indices)
+                if plane_unilateral_flags[plane_index]
+                and float(dense.dlambda[plane_lambda_start + lambda_offset]) > _UNILATERAL_TENSILE_TOLERANCE
+            ]
+            if not tensile_plane_indices:
+                break
+            rejected = set(tensile_plane_indices)
+            active_plane_indices = [plane_index for plane_index in active_plane_indices if plane_index not in rejected]
+            unilateral_rejected_count += len(tensile_plane_indices)
         dq = dense.dq
         dlambda = dense.dlambda
-        residual_norm = float(np.linalg.norm(inputs.dual_matrix @ dlambda - inputs.dual_rhs))
+        residual_norm = dense.residual_norm
+        accepted_plane_count = dense.accepted_plane_count
+        skipped_plane_count = dense.skipped_plane_count
+        final_active_plane_indices = tuple(active_plane_indices)
+        final_accepted_plane_indices = dense.accepted_plane_indices
         result_topology = "dense"
     elif topology == "chain":
         accepted_plane_count = 0
         skipped_plane_count = 0
+        unilateral_rejected_count = 0
+        final_active_plane_indices = tuple(range(len(plane_bodies)))
+        final_accepted_plane_indices = ()
         topo = solve_chain_block_tridiagonal_kkt(hessians, edges, gradients, rhs, lower_rhs_blocks)
         dq, dlambda, residual_norm, result_topology = topo.dq, topo.dlambda, topo.residual_norm, topo.topology
     elif topology == "tree":
         accepted_plane_count = 0
         skipped_plane_count = 0
+        unilateral_rejected_count = 0
+        final_active_plane_indices = tuple(range(len(plane_bodies)))
+        final_accepted_plane_indices = ()
         topo = solve_tree_elimination_kkt(hessians, edges, gradients, rhs, lower_rhs_blocks)
         dq, dlambda, residual_norm, result_topology = topo.dq, topo.dlambda, topo.residual_norm, topo.topology
     elif topology == "single_loop":
         accepted_plane_count = 0
         skipped_plane_count = 0
+        unilateral_rejected_count = 0
+        final_active_plane_indices = tuple(range(len(plane_bodies)))
+        final_accepted_plane_indices = ()
         topo = solve_loop_schur_complement_kkt(hessians, edges, gradients, rhs, lower_rhs_blocks)
         dq, dlambda, residual_norm, result_topology = topo.dq, topo.dlambda, topo.residual_norm, topo.topology
     elif topology == "general_graph":
         accepted_plane_count = 0
         skipped_plane_count = 0
+        unilateral_rejected_count = 0
+        final_active_plane_indices = tuple(range(len(plane_bodies)))
+        final_accepted_plane_indices = ()
         topo = solve_graph_block_gauss_seidel_kkt(
             hessians,
             edges,
@@ -604,12 +722,28 @@ def _solve_constrained_step(
         - _as_vec3(constraint.world_point, "world_point")
         for constraint in config.world_constraints
     )
-    _plane_bodies_after, _plane_gradients_after, _plane_lower_after, plane_residual_after = _plane_constraint_blocks(
+    (
+        _plane_bodies_after,
+        _plane_gradients_after,
+        _plane_lower_after,
+        plane_residual_after,
+        _plane_unilateral_after,
+        _plane_source_after,
+    ) = _plane_constraint_blocks(
         q_next,
         config,
     )
-    residual_after.extend(plane_residual_after)
+    final_active_plane_index_set = set(final_active_plane_indices)
+    residual_after.extend(
+        residual
+        for plane_index, residual in enumerate(plane_residual_after)
+        if plane_index in final_active_plane_index_set
+    )
     constraint_norm = float(np.linalg.norm(np.concatenate(residual_after))) if residual_after else 0.0
+    unilateral_requested_count = sum(1 for flag in plane_unilateral_flags if flag)
+    unilateral_accepted_count = sum(1 for index in final_accepted_plane_indices if plane_unilateral_flags[index])
+    unilateral_active_count = sum(1 for index in final_active_plane_indices if plane_unilateral_flags[index])
+    unilateral_skipped_count = unilateral_active_count - unilateral_accepted_count
     return MABDCPUOracleStepResult(
         q=q_next,
         qd=qd_next,
@@ -621,6 +755,10 @@ def _solve_constrained_step(
         plane_constraint_requested_count=len(plane_bodies),
         plane_constraint_accepted_count=accepted_plane_count,
         plane_constraint_skipped_count=skipped_plane_count,
+        unilateral_plane_constraint_requested_count=unilateral_requested_count,
+        unilateral_plane_constraint_accepted_count=unilateral_accepted_count,
+        unilateral_plane_constraint_rejected_count=unilateral_rejected_count,
+        unilateral_plane_constraint_skipped_count=unilateral_skipped_count,
     )
 
 

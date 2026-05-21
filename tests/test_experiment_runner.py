@@ -71,6 +71,20 @@ class ExperimentRunnerTests(unittest.TestCase):
         path.write_text(yaml.safe_dump(config), encoding="utf-8")
         return path
 
+    def _write_short_spinning_box_contact_collision_gate_candidate_config(
+        self,
+        tmpdir: str,
+    ) -> Path:
+        config = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+        config["contact_collision_gate_candidate"]["duration_s"] = 0.02
+        config["contact_collision_gate_candidate"]["sample_count"] = 3
+        path = (
+            Path(tmpdir)
+            / "single_body_spinning_box_short_contact_collision_gate_candidate.yaml"
+        )
+        path.write_text(yaml.safe_dump(config), encoding="utf-8")
+        return path
+
     def _write_short_rolling_spinning_rbd_config(self, tmpdir: str) -> Path:
         config = yaml.safe_load(ROLLING_SPINNING_CONFIG_PATH.read_text(encoding="utf-8"))
         config["rbd_implicit_baseline"]["step_count"] = 4
@@ -2163,6 +2177,89 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertFalse(loaded.timing_distribution["paper_comparable"])
         self.assertEqual(loaded.plot_paths, {})
         self.assertIn("affine static-plane contacts rollout candidate", loaded.failure_reason)
+
+    def test_run_spinning_box_contact_collision_gate_candidate_writes_report(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_spinning_box_contact_collision_gate_candidate,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_spinning_box_contact_collision_gate_candidate_config(
+                tmpdir
+            )
+            output_path = Path(tmpdir) / "spinning_box_contact_collision_gate_candidate.json"
+            result = run_spinning_box_contact_collision_gate_candidate(
+                config_path=config_path,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(
+            loaded.baseline_lane,
+            "spinning_box_contact_collision_gate_candidate",
+        )
+        self.assertEqual(
+            loaded.solver_mode,
+            "solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        )
+        self.assertEqual(
+            loaded.backend,
+            "cpu_newton_solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        )
+        self.assertEqual(
+            loaded.observed["candidate_status"],
+            "contact_collision_gate_candidate_recorded",
+        )
+        self.assertEqual(
+            loaded.observed["gate_scope"],
+            "single_body_spinning_box_contact_collision_candidate",
+        )
+        self.assertEqual(
+            loaded.observed["contact_constraint_policy"],
+            "free_predict_detect_static_plane_contacts_then_unilateral_constrained_step",
+        )
+        self.assertEqual(
+            loaded.observed["unilateral_contact_policy"],
+            "dense_cpu_active_set_drop_tensile_plane_rows",
+        )
+        self.assertFalse(loaded.observed["paper_faithful"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertFalse(loaded.observed["comparison_pass_gate_enabled"])
+        self.assertEqual(loaded.observed["duration_s"], 0.02)
+        self.assertEqual(loaded.observed["time_step_s"], 0.01)
+        self.assertEqual(loaded.observed["step_count"], 2)
+        self.assertEqual(loaded.observed["sample_count"], 3)
+        self.assertEqual(loaded.observed["contact_constraint_mode"], "unilateral_plane")
+        self.assertIn("phase88_rollout_candidate_report", loaded.observed)
+        self.assertIn("phase88_rollout_candidate_sha256", loaded.observed)
+        self.assertIn("max_unilateral_plane_requested_count", loaded.observed)
+        self.assertIn("max_unilateral_plane_accepted_count", loaded.observed)
+        self.assertIn("max_unilateral_plane_rejected_count", loaded.observed)
+        self.assertIn("max_unilateral_plane_skipped_count", loaded.observed)
+        self.assertEqual(len(loaded.observed["trajectory_samples"]), 3)
+        self.assertIn(
+            "unilateral_static_plane_contact_not_paper_faithful",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_faithful_affine_collision_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertEqual(loaded.raw_outputs["trajectory"], "embedded_compact_samples")
+        self.assertEqual(loaded.timing_distribution["scope"], "local_cpu_wall_clock_not_paper_comparable")
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(loaded.plot_paths, {})
+        self.assertIn("contact/collision gate candidate", loaded.failure_reason)
 
     def test_run_spinning_box_contact_response_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_contact_response
@@ -4806,6 +4903,61 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(
             loaded.observed["candidate_status"],
             "affine_static_plane_contacts_rollout_candidate_recorded",
+        )
+
+    def test_run_experiment_cli_writes_spinning_box_contact_collision_gate_candidate_report(
+        self,
+    ) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            config_path = self._write_short_spinning_box_contact_collision_gate_candidate_config(
+                tmpdir
+            )
+            output_path = Path(tmpdir) / "contact_collision_gate_candidate_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "spinning_box_contact_collision_gate_candidate",
+                    "--config",
+                    str(config_path),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(
+            summary["baseline_lane"],
+            "spinning_box_contact_collision_gate_candidate",
+        )
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(
+            loaded.solver_mode,
+            "solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        )
+        self.assertEqual(
+            loaded.observed["candidate_status"],
+            "contact_collision_gate_candidate_recorded",
         )
 
     def test_run_experiment_cli_comparison_requires_input_reports(self) -> None:

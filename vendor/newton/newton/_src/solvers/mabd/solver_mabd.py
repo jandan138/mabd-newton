@@ -336,8 +336,8 @@ class SolverMABD(SolverBase):
         generated_plane: list[MABDCPUOraclePlaneConstraint] = []
         skipped_count = overflow_count
         contact_mode = str(mode)
-        if contact_mode not in {"plane", "world"}:
-            raise ValueError("contact_constraint_mode must be one of 'plane' or 'world'")
+        if contact_mode not in {"plane", "world", "unilateral_plane"}:
+            raise ValueError("contact_constraint_mode must be one of 'plane', 'world', or 'unilateral_plane'")
 
         if rows_read > 0:
             if self.model.shape_body is None:
@@ -404,19 +404,19 @@ class SolverMABD(SolverBase):
                             rest_point=np.asarray(rest_point, dtype=float),
                             plane_normal=np.asarray(plane_normal, dtype=float),
                             plane_offset=float(np.dot(plane_normal, plane_point)),
+                            unilateral=contact_mode == "unilateral_plane",
                         )
                     )
 
-        policy = (
-            "rigid_contacts_to_point_world_constraints_diagnostic"
-            if contact_mode == "world"
-            else "rigid_contacts_to_point_plane_constraints_diagnostic"
-        )
-        scope = (
-            "diagnostic_only_static_geometry_world_constraints"
-            if contact_mode == "world"
-            else "diagnostic_only_static_geometry_plane_constraints"
-        )
+        if contact_mode == "world":
+            policy = "rigid_contacts_to_point_world_constraints_diagnostic"
+            scope = "diagnostic_only_static_geometry_world_constraints"
+        elif contact_mode == "unilateral_plane":
+            policy = "rigid_contacts_to_unilateral_point_plane_constraints_diagnostic"
+            scope = "diagnostic_only_static_geometry_unilateral_plane_constraints"
+        else:
+            policy = "rigid_contacts_to_point_plane_constraints_diagnostic"
+            scope = "diagnostic_only_static_geometry_plane_constraints"
         self.last_contacts_input_summary = MABDContactsInputSummary(
             policy=policy,
             rigid_contact_count=reported_count,

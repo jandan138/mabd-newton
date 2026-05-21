@@ -365,6 +365,113 @@ class ExperimentRunConfigTests(unittest.TestCase):
             ):
                 load_spinning_box_config(path)
 
+    def test_spinning_box_contact_collision_gate_candidate_config_is_fail_closed(
+        self,
+    ) -> None:
+        config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        validate_spinning_box_config_against_matrix(config, matrix)
+
+        candidate = config.contact_collision_gate_candidate
+        self.assertEqual(
+            candidate.output_report,
+            "reports/experiment_matrix/"
+            "single_body_spinning_box_contact_collision_gate_candidate.json",
+        )
+        self.assertEqual(candidate.gate_scope, "single_body_spinning_box_contact_collision_candidate")
+        self.assertFalse(candidate.paper_faithful)
+        self.assertEqual(candidate.duration_s, 10.0)
+        self.assertEqual(candidate.time_step_s, 0.01)
+        self.assertEqual(candidate.sample_count, 101)
+        np.testing.assert_allclose(
+            candidate.initial_linear_velocity_m_s,
+            [0.2, -0.1, 0.0],
+        )
+        np.testing.assert_allclose(
+            candidate.initial_angular_velocity_rad_s,
+            [0.0, 2.0, 0.0],
+        )
+        self.assertEqual(candidate.contact_constraint_mode, "unilateral_plane")
+        self.assertIn("max_unilateral_plane_rejected_count", candidate.thresholds)
+
+        source = self._config_mapping()
+        source["contact_collision_gate_candidate"] = {
+            "output_report": (
+                "reports/experiment_matrix/"
+                "single_body_spinning_box_contact_collision_gate_candidate.json"
+            ),
+            "gate_scope": "single_body_spinning_box_contact_collision_candidate",
+            "paper_faithful": False,
+            "duration_s": 10.0,
+            "time_step_s": 0.01,
+            "sample_count": 101,
+            "initial_linear_velocity_m_s": [0.2, -0.1, 0.0],
+            "initial_angular_velocity_rad_s": [0.0, 2.0, 0.0],
+            "contact_constraint_mode": "unilateral_plane",
+            "thresholds": {
+                "max_contacts_input_overflow_count": 0,
+                "max_constraint_residual_norm": 1.0e-6,
+                "max_relative_total_energy_drift": 1.0e-1,
+                "max_runtime_wall_time_ms": 60000.0,
+                "max_unilateral_plane_rejected_count": 1000,
+            },
+        }
+        invalid_paths = (
+            source["report"]["output_report"],
+            source["paper_horizon"]["output_report"],
+            source["paper_horizon"]["affine_static_plane_contacts_output_report"],
+            source["development_comparison"]["output_report"],
+            source["affine_static_plane_contacts_rollout_candidate"]["output_report"],
+            "/tmp/single_body_spinning_box_contact_collision_gate_candidate.json",
+            "reports/not_matrix/single_body_spinning_box_contact_collision_gate_candidate.json",
+            "../reports/experiment_matrix/single_body_spinning_box_contact_collision_gate_candidate.json",
+            "reports/experiment_matrix/not_the_spinning_box_contact_collision_gate_candidate.json",
+            "reports/experiment_matrix/single_body_spinning_box_contact_collision_gate_candidate.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = deepcopy(source)
+                invalid["contact_collision_gate_candidate"]["output_report"] = invalid_path
+                with TemporaryDirectory() as tmpdir:
+                    path = self._write_config(tmpdir, invalid)
+                    with self.assertRaisesRegex(
+                        ExperimentRunConfigError,
+                        "contact_collision_gate_candidate.output_report",
+                    ):
+                        bad_config = load_spinning_box_config(path)
+                        validate_spinning_box_config_against_matrix(bad_config, matrix)
+
+        invalid = deepcopy(source)
+        invalid["contact_collision_gate_candidate"]["gate_scope"] = "development_only"
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, invalid)
+            with self.assertRaisesRegex(
+                ExperimentRunConfigError,
+                "contact_collision_gate_candidate.gate_scope",
+            ):
+                load_spinning_box_config(path)
+
+        invalid = deepcopy(source)
+        invalid["contact_collision_gate_candidate"]["paper_faithful"] = True
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, invalid)
+            with self.assertRaisesRegex(
+                ExperimentRunConfigError,
+                "contact_collision_gate_candidate.paper_faithful",
+            ):
+                load_spinning_box_config(path)
+
+        invalid = deepcopy(source)
+        invalid["contact_collision_gate_candidate"]["contact_constraint_mode"] = "plane"
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, invalid)
+            with self.assertRaisesRegex(
+                ExperimentRunConfigError,
+                "contact_collision_gate_candidate.contact_constraint_mode",
+            ):
+                load_spinning_box_config(path)
+
     def test_rolling_spinning_config_is_machine_checkable(self) -> None:
         config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
 
