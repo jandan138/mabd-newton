@@ -34,6 +34,7 @@ from mabd_reproduction.experiment_runner import (
     run_rolling_spinning_rbd_implicit_baseline,
     run_rolling_spinning_rbd_implicit_source_gate,
     run_rolling_spinning_rbd_no_slip_reference,
+    run_rolling_spinning_timing_source_gate,
     run_spinning_box_affine_static_plane_contacts,
     run_spinning_box_comparison,
     run_spinning_box_contacts_input,
@@ -89,6 +90,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "rolling_spinning_rbd_implicit_baseline",
             "rolling_spinning_rbd_implicit_source_gate",
             "rolling_spinning_rbd_no_slip_reference",
+            "rolling_spinning_timing_source_gate",
             "spinning_box_affine_static_plane_contacts",
             "spinning_box_comparison",
             "spinning_box_contacts_input",
@@ -511,6 +513,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.lane == "rolling_spinning_paper_timing_protocol":
             result = run_rolling_spinning_paper_timing_protocol(
+                config_path=Path(args.config),
+                matrix_path=Path(args.matrix),
+                output_path=Path(args.output) if args.output else None,
+                output_root=Path(args.output_root) if args.output_root else None,
+                source_commit=args.source_commit,
+                vendored_newton_commit=args.vendored_newton_commit,
+                paper_source_version=args.paper_source_version,
+            )
+        elif args.lane == "rolling_spinning_timing_source_gate":
+            result = run_rolling_spinning_timing_source_gate(
                 config_path=Path(args.config),
                 matrix_path=Path(args.matrix),
                 output_path=Path(args.output) if args.output else None,

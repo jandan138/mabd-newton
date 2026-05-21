@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-85 docs and provenance contracts."""
+"""Validate Phase 0-86 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -180,6 +180,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-21-phase83-rolling-explicit-rbd-source-gate.md",
     "docs/records/2026-05-21-phase84-rolling-implicit-rbd-source-gate.md",
     "docs/records/2026-05-21-phase85-rolling-mabd-source-gate.md",
+    "docs/records/2026-05-21-phase86-rolling-timing-source-gate.md",
     "docs/records/2026-05-20-after-phase76-completion-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
@@ -289,6 +290,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-21-mabd-phase84-rolling-implicit-rbd-source-gate.md",
     "docs/superpowers/specs/2026-05-21-phase85-rolling-mabd-source-gate-design.md",
     "docs/superpowers/plans/2026-05-21-mabd-phase85-rolling-mabd-source-gate.md",
+    "docs/superpowers/specs/2026-05-21-phase86-rolling-timing-source-gate-design.md",
+    "docs/superpowers/plans/2026-05-21-mabd-phase86-rolling-timing-source-gate.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -313,6 +316,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json",
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json",
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json",
+    "reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -399,6 +403,7 @@ PHASE82_ROLLING_PAPER_FAITHFUL_GATE_LEDGER_COMMIT = "cf4e6ba"
 PHASE83_ROLLING_EXPLICIT_RBD_SOURCE_GATE_COMMIT = "bcb6202"
 PHASE84_ROLLING_IMPLICIT_RBD_SOURCE_GATE_COMMIT = "b1fafc7"
 PHASE85_ROLLING_MABD_SOURCE_GATE_COMMIT = "fadd6ad"
+PHASE86_ROLLING_TIMING_SOURCE_GATE_COMMIT = "62ed764"
 ROLLING_SPINNING_REPORT_PATH = (
     "reports/experiment_matrix/single_body_rolling_spinning.json"
 )
@@ -443,6 +448,10 @@ ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_REPORT_PATH = (
 ROLLING_SPINNING_MABD_SOURCE_GATE_REPORT_PATH = (
     "reports/experiment_matrix/"
     "single_body_rolling_spinning_mabd_source_gate.json"
+)
+ROLLING_SPINNING_TIMING_SOURCE_GATE_REPORT_PATH = (
+    "reports/experiment_matrix/"
+    "single_body_rolling_spinning_timing_source_gate.json"
 )
 ROLLING_SPINNING_TIMING_PROTOCOL_INPUT_REPORTS = (
     ROLLING_SPINNING_REPORT_PATH,
@@ -549,6 +558,9 @@ PHASE84_ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_SHA256 = (
 )
 PHASE85_ROLLING_SPINNING_MABD_SOURCE_GATE_SHA256 = (
     "36b468396aa8a768fc66006cbf2a190ceef1e9dcc807c4bd7b8e317a2d7deb4f"
+)
+PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256 = (
+    "5215b20a92c514a48d13f23c9ee046c3d38c302dd64ec9afc36a86cdd93a6845"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -14904,6 +14916,7 @@ def validate_phase78_record() -> None:
         "phase83_rolling_explicit_rbd_source_gate",
         "phase84_rolling_implicit_rbd_source_gate",
         "phase85_rolling_mabd_source_gate",
+        "phase86_rolling_timing_source_gate",
     ):
         fail("Phase 78 gap audit latest_update must point at Phase 78 or a later rolling update")
 
@@ -15199,6 +15212,7 @@ def validate_phase79_record() -> None:
         "phase83_rolling_explicit_rbd_source_gate",
         "phase84_rolling_implicit_rbd_source_gate",
         "phase85_rolling_mabd_source_gate",
+        "phase86_rolling_timing_source_gate",
     ):
         fail("Phase 79 gap audit latest_update must point at Phase 79 or a later rolling update")
 
@@ -15503,6 +15517,7 @@ def validate_phase80_record() -> None:
         "phase83_rolling_explicit_rbd_source_gate",
         "phase84_rolling_implicit_rbd_source_gate",
         "phase85_rolling_mabd_source_gate",
+        "phase86_rolling_timing_source_gate",
     ):
         fail("Phase 80 gap audit latest_update must point at Phase 80 or later rolling update")
     if latest_update.get("phase_id") == "phase80_rolling_explicit_no_slip_candidate":
@@ -15816,6 +15831,7 @@ def validate_phase81_record() -> None:
         "phase83_rolling_explicit_rbd_source_gate",
         "phase84_rolling_implicit_rbd_source_gate",
         "phase85_rolling_mabd_source_gate",
+        "phase86_rolling_timing_source_gate",
     ):
         fail("Phase 81 gap audit latest_update must point at Phase 81 or a later rolling update")
 
@@ -16097,6 +16113,7 @@ def validate_phase82_record() -> None:
         "phase83_rolling_explicit_rbd_source_gate",
         "phase84_rolling_implicit_rbd_source_gate",
         "phase85_rolling_mabd_source_gate",
+        "phase86_rolling_timing_source_gate",
     ):
         fail("Phase 82 gap audit latest_update must point at Phase 82 or a later rolling update")
     global_status = audit.get("global_status")
@@ -16402,6 +16419,7 @@ def validate_phase83_record() -> None:
     elif latest_phase not in (
         "phase84_rolling_implicit_rbd_source_gate",
         "phase85_rolling_mabd_source_gate",
+        "phase86_rolling_timing_source_gate",
     ):
         fail("Phase 83 gap audit latest_update must point at Phase 83 or a later rolling update")
     global_status = audit.get("global_status")
@@ -16703,7 +16721,10 @@ def validate_phase84_record() -> None:
         for key, expected_value in expected_latest_update.items():
             if latest_update.get(key) != expected_value:
                 fail(f"Phase 84 gap audit latest_update {key} changed")
-    elif latest_phase != "phase85_rolling_mabd_source_gate":
+    elif latest_phase not in (
+        "phase85_rolling_mabd_source_gate",
+        "phase86_rolling_timing_source_gate",
+    ):
         fail("Phase 84 gap audit latest_update must point at Phase 84 or a later rolling update")
     global_status = audit.get("global_status")
     if not isinstance(global_status, dict):
@@ -16998,17 +17019,21 @@ def validate_phase85_record() -> None:
     latest_update = audit.get("latest_update")
     if not isinstance(latest_update, dict):
         fail("Phase 85 gap audit missing latest_update provenance")
-    expected_latest_update = {
-        "phase_id": "phase85_rolling_mabd_source_gate",
-        "update_date": "2026-05-21",
-        "source_commit": PHASE85_ROLLING_MABD_SOURCE_GATE_COMMIT,
-        "report": ROLLING_SPINNING_MABD_SOURCE_GATE_REPORT_PATH,
-        "report_sha256": PHASE85_ROLLING_SPINNING_MABD_SOURCE_GATE_SHA256,
-        "status": "incomplete",
-    }
-    for key, expected_value in expected_latest_update.items():
-        if latest_update.get(key) != expected_value:
-            fail(f"Phase 85 gap audit latest_update {key} changed")
+    latest_phase = latest_update.get("phase_id")
+    if latest_phase == "phase85_rolling_mabd_source_gate":
+        expected_latest_update = {
+            "phase_id": "phase85_rolling_mabd_source_gate",
+            "update_date": "2026-05-21",
+            "source_commit": PHASE85_ROLLING_MABD_SOURCE_GATE_COMMIT,
+            "report": ROLLING_SPINNING_MABD_SOURCE_GATE_REPORT_PATH,
+            "report_sha256": PHASE85_ROLLING_SPINNING_MABD_SOURCE_GATE_SHA256,
+            "status": "incomplete",
+        }
+        for key, expected_value in expected_latest_update.items():
+            if latest_update.get(key) != expected_value:
+                fail(f"Phase 85 gap audit latest_update {key} changed")
+    elif latest_phase != "phase86_rolling_timing_source_gate":
+        fail("Phase 85 gap audit latest_update must point at Phase 85 or a later rolling update")
     global_status = audit.get("global_status")
     if not isinstance(global_status, dict):
         fail("Phase 85 gap audit missing global status")
@@ -17077,6 +17102,307 @@ def validate_phase85_record() -> None:
                 fail("Phase 85 must keep rolling/spinning experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 85 must not pass experiment.* claims")
+
+
+def validate_phase86_record() -> None:
+    record_path = (
+        ROOT
+        / "docs/records/2026-05-21-phase86-rolling-timing-source-gate.md"
+    )
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-21-phase86-rolling-timing-source-gate-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/2026-05-21-mabd-phase86-rolling-timing-source-gate.md"
+    )
+    report_path = ROOT / ROLLING_SPINNING_TIMING_SOURCE_GATE_REPORT_PATH
+    config_path = ROOT / "configs/experiments/single_body_rolling_spinning.yaml"
+    matrix_path = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
+    required_parameters = [
+        "exact_cpu_model",
+        "single_thread_enforcement",
+        "compiler_and_blas_configuration",
+        "timing_repetition_or_warmup_policy",
+        "paper_faithful_lane_runtime_inputs",
+        "measurement_timer_scope",
+    ]
+    required_gaps = [
+        "paper_faithful_explicit_rbd_baseline",
+        "paper_faithful_implicit_rbd_baseline",
+        "paper_faithful_mabd_rolling_cylinder",
+        "paper_comparable_timing",
+    ]
+    evidence_reports = {
+        "timing_protocol": ROLLING_SPINNING_TIMING_PROTOCOL_REPORT_PATH,
+        "rbd_explicit_source_gate": ROLLING_SPINNING_RBD_EXPLICIT_SOURCE_GATE_REPORT_PATH,
+        "rbd_implicit_source_gate": ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_REPORT_PATH,
+        "mabd_source_gate": ROLLING_SPINNING_MABD_SOURCE_GATE_REPORT_PATH,
+    }
+
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary = " ".join(boundary_text.split())
+
+    for snippet in (
+        "incomplete_timing_source_gate_recorded",
+        PHASE86_ROLLING_TIMING_SOURCE_GATE_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        str(MABD_PYTHON),
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "rolling_spinning_timing_source_gate",
+        ROLLING_SPINNING_TIMING_SOURCE_GATE_REPORT_PATH,
+        PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256,
+        "paper_source_audit",
+        "status = incomplete",
+        "source_audit_status = timing_source_requirements_incomplete",
+        "paper_timing_gate_passed = false",
+        "paper_comparable = false",
+        "full_experiment_claim_passed = false",
+        "timing_distribution.status = not_measured",
+        "timing_distribution.scope = source_gate_no_runtime",
+        "paper_timing_exact_cpu_model_missing_from_public_source",
+        "paper_timing_measurement_protocol_missing_from_public_source",
+        "paper_faithful_runtime_inputs_missing_from_current_evidence",
+        "does not prove paper-comparable timing",
+        "No experiment.* claim is passed.",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in text:
+            fail(f"Phase 86 record missing required evidence field: {snippet}")
+    for parameter in required_parameters:
+        if parameter not in text:
+            fail(f"Phase 86 record missing required parameter: {parameter}")
+    for forbidden in (
+        "experiment.single_body.rolling_spinning passed",
+        "paper-comparable timing passed",
+        "paper_timing_gate_passed = true",
+        "source_audit_status = timing_source_mentions_require_manual_review",
+    ):
+        if forbidden in text:
+            fail(f"Phase 86 record overclaims unsupported evidence: {forbidden}")
+
+    for snippet in (
+        "Phase 86 Rolling Timing Source Gate Design",
+        "timing_source_gate",
+        "paper_timing_gate_passed = false",
+        "timing_source_requirements_incomplete",
+        "paper_timing_exact_cpu_model_missing_from_public_source",
+        "paper_timing_measurement_protocol_missing_from_public_source",
+        "source_gate_no_runtime",
+        "No `experiment.*` claim is passed.",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 86 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 86 Rolling Timing Source Gate Implementation Plan",
+        "run_rolling_spinning_timing_source_gate",
+        "rolling_spinning_timing_source_gate",
+        "baseline_lane=\"timing_source_gate\"",
+        "source_gate_no_runtime",
+        PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256,
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 86 plan missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 86 rolling/spinning timing source gate",
+        "source_audit_status = timing_source_requirements_incomplete",
+        "paper_timing_gate_passed = false",
+        "does not verify paper-comparable timing",
+        "must not be described as a passed timing gate",
+    ):
+        if snippet not in normalized_boundary:
+            fail(f"Phase 86 claim boundary missing: {snippet}")
+
+    config = load_rolling_spinning_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_rolling_spinning_config_against_matrix(config, matrix)
+    lane = config.timing_source_gate
+    if lane.output_report != ROLLING_SPINNING_TIMING_SOURCE_GATE_REPORT_PATH:
+        fail("Phase 86 timing source gate output report changed")
+    if list(lane.required_source_parameters) != required_parameters:
+        fail("Phase 86 timing source parameters changed")
+    if dict(lane.current_evidence_reports) != evidence_reports:
+        fail("Phase 86 timing source gate evidence reports changed")
+    if config.required_missing_lanes != ("rbd_implicit_baseline", "rbd_explicit_baseline"):
+        fail("Phase 86 must not alter rolling/spinning required_missing_lanes")
+
+    report = load_claim_report(report_path)
+    if report.source_commit != PHASE86_ROLLING_TIMING_SOURCE_GATE_COMMIT:
+        fail("Phase 86 report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 86 report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 86 report vendored Newton commit changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 86 report paper source version changed")
+    if report.claim_id != "experiment.single_body.rolling_spinning":
+        fail("Phase 86 report claim_id changed")
+    if report.scene_id != "single_body_rolling_spinning":
+        fail("Phase 86 report scene_id changed")
+    if report.baseline_lane != "timing_source_gate":
+        fail("Phase 86 report baseline lane changed")
+    if report.solver_mode != "rolling_spinning_timing_source_gate":
+        fail("Phase 86 report solver mode changed")
+    if report.backend != "paper_source_audit":
+        fail("Phase 86 report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 86 report must remain incomplete")
+    if report.expected.get("required_source_parameters") != required_parameters:
+        fail("Phase 86 expected source parameters changed")
+    if report.expected.get("required_gate") != "paper_comparable_timing":
+        fail("Phase 86 expected required gate changed")
+    if report.expected.get("required_gate_status") != "passed":
+        fail("Phase 86 expected gate pass requirement changed")
+    if report.expected.get("paper_comparable") is not False:
+        fail("Phase 86 expected paper_comparable must be false")
+    if report.expected.get("full_experiment_claim_passed") is not False:
+        fail("Phase 86 expected full experiment pass flag must be false")
+
+    observed = report.observed
+    if observed.get("source_audit_status") != "timing_source_requirements_incomplete":
+        fail("Phase 86 source audit status changed")
+    if observed.get("paper_timing_gate_passed") is not False:
+        fail("Phase 86 timing source gate must remain fail-closed")
+    if observed.get("paper_comparable") is not False:
+        fail("Phase 86 observed paper_comparable must be false")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 86 observed full experiment pass flag must be false")
+    if observed.get("missing_parameters") != required_parameters:
+        fail("Phase 86 missing source parameter list changed")
+    if observed.get("required_reproduction_gaps_remaining") != required_gaps:
+        fail("Phase 86 remaining reproduction gaps changed")
+    if observed.get("current_evidence_reports") != evidence_reports:
+        fail("Phase 86 current evidence report mapping changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 86 blocking_reasons must be a list")
+    for blocker in (
+        "paper_timing_exact_cpu_model_missing_from_public_source",
+        "paper_timing_single_thread_enforcement_missing_from_public_source",
+        "paper_timing_build_configuration_missing_from_public_source",
+        "paper_timing_measurement_protocol_missing_from_public_source",
+        "paper_faithful_runtime_inputs_missing_from_current_evidence",
+        "paper_comparable_timing_missing",
+        "paper_hardware_mismatch",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 86 blocker missing: {blocker}")
+    source_audit = observed.get("source_audit")
+    if not isinstance(source_audit, dict):
+        fail("Phase 86 source audit payload missing")
+    if source_audit.get("status") != "timing_source_requirements_incomplete":
+        fail("Phase 86 embedded source audit status changed")
+    if source_audit.get("missing_parameters") != required_parameters:
+        fail("Phase 86 embedded source audit missing parameters changed")
+
+    if report.timing_distribution.get("status") != "not_measured":
+        fail("Phase 86 timing status changed")
+    if report.timing_distribution.get("scope") != "source_gate_no_runtime":
+        fail("Phase 86 timing scope changed")
+    if report.timing_distribution.get("paper_comparable") is not False:
+        fail("Phase 86 timing distribution must be non-paper-comparable")
+    if report.threshold.get("required_source_parameter_count") != 6.0:
+        fail("Phase 86 source parameter count changed")
+    if report.raw_outputs != {}:
+        fail("Phase 86 raw output contract changed")
+    if report.plot_paths != {}:
+        fail("Phase 86 must not commit plot artifacts")
+
+    actual_hash = sha256_file(report_path)
+    if actual_hash != PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256:
+        fail("Phase 86 timing source gate report sha256 changed")
+    if PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256 not in text:
+        fail("Phase 86 record report sha256 mismatch")
+
+    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
+    latest_update = audit.get("latest_update")
+    if not isinstance(latest_update, dict):
+        fail("Phase 86 gap audit missing latest_update provenance")
+    expected_latest_update = {
+        "phase_id": "phase86_rolling_timing_source_gate",
+        "update_date": "2026-05-21",
+        "source_commit": PHASE86_ROLLING_TIMING_SOURCE_GATE_COMMIT,
+        "report": ROLLING_SPINNING_TIMING_SOURCE_GATE_REPORT_PATH,
+        "report_sha256": PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256,
+        "status": "incomplete",
+    }
+    for key, expected_value in expected_latest_update.items():
+        if latest_update.get(key) != expected_value:
+            fail(f"Phase 86 gap audit latest_update {key} changed")
+    global_status = audit.get("global_status")
+    if not isinstance(global_status, dict):
+        fail("Phase 86 gap audit missing global status")
+    if global_status.get("experiment_claims_passed") != 0:
+        fail("Phase 86 must not pass experiment claims")
+    if global_status.get("full_reproduction_complete") is not False:
+        fail("Phase 86 must not mark full reproduction complete")
+
+    entries = audit.get("remaining_experiment_claims")
+    if not isinstance(entries, list):
+        fail("Phase 86 gap audit missing remaining_experiment_claims")
+    rolling_entry = next(
+        (
+            entry
+            for entry in entries
+            if isinstance(entry, dict)
+            and entry.get("claim_id") == "experiment.single_body.rolling_spinning"
+        ),
+        None,
+    )
+    if rolling_entry is None:
+        fail("Phase 86 gap audit missing rolling/spinning entry")
+    if (
+        rolling_entry.get("timing_source_gate_report")
+        != ROLLING_SPINNING_TIMING_SOURCE_GATE_REPORT_PATH
+    ):
+        fail("Phase 86 gap audit missing timing source gate report path")
+    if rolling_entry.get("timing_source_gate_report_status") != "incomplete":
+        fail("Phase 86 gap audit timing source gate report status changed")
+    if (
+        rolling_entry.get("timing_source_gate_report_sha256")
+        != PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256
+    ):
+        fail("Phase 86 gap audit timing source gate report sha changed")
+    if rolling_entry.get("remaining_reproduction_gaps_after_phase86") != required_gaps:
+        fail("Phase 86 gap audit reproduction gap list changed")
+
+    report_entries = audit.get("current_evidence_reports")
+    if not isinstance(report_entries, list):
+        fail("Phase 86 gap audit missing current_evidence_reports")
+    gate_entry = next(
+        (
+            entry
+            for entry in report_entries
+            if isinstance(entry, dict)
+            and entry.get("path") == ROLLING_SPINNING_TIMING_SOURCE_GATE_REPORT_PATH
+        ),
+        None,
+    )
+    if gate_entry is None:
+        fail("Phase 86 gap audit missing timing source gate evidence entry")
+    if gate_entry.get("status") != "incomplete":
+        fail("Phase 86 gap audit timing source gate entry status changed")
+    if gate_entry.get("sha256") != PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256:
+        fail("Phase 86 gap audit timing source gate entry sha changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.rolling_spinning":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 86 must keep rolling/spinning experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 86 must not pass experiment.* claims")
 
 
 def validate_after_phase76_completion_audit() -> None:
@@ -19067,6 +19393,7 @@ def main() -> int:
     validate_phase83_record()
     validate_phase84_record()
     validate_phase85_record()
+    validate_phase86_record()
     validate_after_phase76_completion_audit()
     validate_paper_claims()
     validate_experiment_contracts()
@@ -19074,7 +19401,7 @@ def main() -> int:
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81/82/83/84/85 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81/82/83/84/85/86 "
         "docs/provenance validation passed"
     )
     return 0

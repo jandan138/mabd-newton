@@ -1178,6 +1178,95 @@ class ExperimentRunConfigTests(unittest.TestCase):
                 ):
                     validate_rolling_spinning_config_against_matrix(invalid, matrix)
 
+    def test_rolling_spinning_timing_source_gate_is_fail_closed(self) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        lane = config.timing_source_gate
+
+        self.assertEqual(
+            lane.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json",
+        )
+        self.assertEqual(
+            lane.required_source_parameters,
+            (
+                "exact_cpu_model",
+                "single_thread_enforcement",
+                "compiler_and_blas_configuration",
+                "timing_repetition_or_warmup_policy",
+                "paper_faithful_lane_runtime_inputs",
+                "measurement_timer_scope",
+            ),
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["timing_protocol"],
+            config.paper_timing_protocol.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["rbd_explicit_source_gate"],
+            config.rbd_explicit_source_gate.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["rbd_implicit_source_gate"],
+            config.rbd_implicit_source_gate.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["mabd_source_gate"],
+            config.mabd_source_gate.output_report,
+        )
+        validate_rolling_spinning_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            config.paper_timing_protocol.output_report,
+            config.mabd_source_gate.output_report,
+            "/tmp/single_body_rolling_spinning_timing_source_gate.json",
+            "reports/not_matrix/single_body_rolling_spinning_timing_source_gate.json",
+            "../reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json",
+            "reports/experiment_matrix/not_the_rolling_spinning_timing_source_gate.json",
+            "reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    timing_source_gate=replace(
+                        config.timing_source_gate,
+                        output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "timing_source_gate.output_report",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid = replace(
+            config,
+            timing_source_gate=replace(
+                config.timing_source_gate,
+                required_source_parameters=lane.required_source_parameters[:-1],
+            ),
+        )
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "timing_source_gate.required_source_parameters",
+        ):
+            validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid = replace(
+            config,
+            timing_source_gate=replace(
+                config.timing_source_gate,
+                current_evidence_reports={},
+            ),
+        )
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "timing_source_gate.current_evidence_reports",
+        ):
+            validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
     def test_rolling_spinning_rbd_explicit_baseline_report_path_must_be_lane_specific(
         self,
     ) -> None:

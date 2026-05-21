@@ -6,11 +6,11 @@ source_commit: "f83889adbec6402e0baa1b4c55db5962a224808d"
 source_commit_scope: "Initial Phase 60 audit source commit; later entries carry per-phase report commits and checksums."
 vendored_newton_commit: "96713fa965463b69c229a4d30582c733ff3526bb"
 latest_update:
-  phase_id: phase85_rolling_mabd_source_gate
+  phase_id: phase86_rolling_timing_source_gate
   update_date: "2026-05-21"
-  source_commit: "fadd6ad"
-  report: reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json
-  report_sha256: "36b468396aa8a768fc66006cbf2a190ceef1e9dcc807c4bd7b8e317a2d7deb4f"
+  source_commit: "62ed764"
+  report: reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json
+  report_sha256: "5215b20a92c514a48d13f23c9ee046c3d38c302dd64ec9afc36a86cdd93a6845"
   status: incomplete
 paper:
   arxiv_id: "2603.08079"
@@ -102,6 +102,9 @@ remaining_experiment_claims:
     mabd_source_gate_report: reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json
     mabd_source_gate_report_status: incomplete
     mabd_source_gate_report_sha256: "36b468396aa8a768fc66006cbf2a190ceef1e9dcc807c4bd7b8e317a2d7deb4f"
+    timing_source_gate_report: reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json
+    timing_source_gate_report_status: incomplete
+    timing_source_gate_report_sha256: "5215b20a92c514a48d13f23c9ee046c3d38c302dd64ec9afc36a86cdd93a6845"
     remaining_missing_lanes_after_phase74:
       - rbd_explicit_baseline
       - mabd_newton
@@ -163,6 +166,11 @@ remaining_experiment_claims:
       - paper_faithful_mabd_rolling_cylinder
       - paper_comparable_timing
     remaining_reproduction_gaps_after_phase85:
+      - paper_faithful_explicit_rbd_baseline
+      - paper_faithful_implicit_rbd_baseline
+      - paper_faithful_mabd_rolling_cylinder
+      - paper_comparable_timing
+    remaining_reproduction_gaps_after_phase86:
       - paper_faithful_explicit_rbd_baseline
       - paper_faithful_implicit_rbd_baseline
       - paper_faithful_mabd_rolling_cylinder
@@ -348,6 +356,9 @@ remaining_experiment_claims:
     committed_report_sha256: null
     next_action: "Source marker sequence and add IK keyframe reconstruction lane."
 current_evidence_reports:
+  - path: reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json
+    status: incomplete
+    sha256: "5215b20a92c514a48d13f23c9ee046c3d38c302dd64ec9afc36a86cdd93a6845"
   - path: reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json
     status: incomplete
     sha256: "36b468396aa8a768fc66006cbf2a190ceef1e9dcc807c4bd7b8e317a2d7deb4f"

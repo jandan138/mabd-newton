@@ -1223,6 +1223,31 @@
   paper-faithful implicit RBD result, paper-comparable timing result,
   performance pass, comparative baseline pass, completed rolling/spinning
   reproduction, full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 86 rolling/spinning timing source gate
+  evidence with the Phase 86 record.
+- Phase 86 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json`
+  exists as an incomplete report-only paper source/runtime audit, records
+  `rolling_spinning_timing_source_gate`,
+  `source_audit_status = timing_source_requirements_incomplete`,
+  `paper_timing_gate_passed = false`, `paper_comparable = false`, all six
+  missing timing source/runtime parameters, the blockers
+  `paper_timing_exact_cpu_model_missing_from_public_source`,
+  `paper_timing_measurement_protocol_missing_from_public_source`, and
+  `paper_faithful_runtime_inputs_missing_from_current_evidence`, all four
+  remaining rolling/spinning reproduction gaps, and
+  `full_experiment_claim_passed = false`.
+- Phase 86 does not verify paper-comparable timing, same-hardware paper
+  timing, single-thread timing enforcement, paper-faithful runtime inputs,
+  paper-faithful explicit RBD, paper-faithful implicit RBD, paper-faithful
+  M-ABD rolling-cylinder behavior, completed rolling/spinning reproduction,
+  full paper reproduction, or any passed `experiment.*` claim.
+- Phase 86 rolling/spinning timing source gate evidence must not be described
+  as a passed timing gate, paper-comparable timing result, same-hardware timing
+  result, performance pass, paper-faithful explicit RBD result, paper-faithful
+  implicit RBD result, paper-faithful M-ABD rolling-cylinder result,
+  comparative baseline pass, completed rolling/spinning reproduction, full
+  paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1656,6 +1681,14 @@
   implicit RBD result, not paper-comparable timing evidence, not a completed
   rolling/spinning reproduction, not comparative baseline pass evidence, not
   full paper reproduction, and not any passed `experiment.*` claim.
+- Phase 86 rolling/spinning timing source gate evidence is not a passed timing
+  gate, not paper-comparable timing evidence, not same-hardware timing
+  evidence, not single-thread enforcement evidence, not paper-faithful runtime
+  input evidence, not a paper-faithful explicit RBD result, not a
+  paper-faithful implicit RBD result, not a paper-faithful M-ABD
+  rolling-cylinder result, not a completed rolling/spinning reproduction, not
+  comparative baseline pass evidence, not full paper reproduction, and not any
+  passed `experiment.*` claim.
 - The project implements generic inequality-constrained M-ABD KKT.
 - Scene-script affine control force assembly is a full robot-control or
   closed-loop actuation reproduction.

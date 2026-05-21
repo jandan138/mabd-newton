@@ -1,0 +1,290 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "paper_source_audit",
+  "baseline_lane": "timing_source_gate",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "canonical_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "config_path": "configs/experiments/single_body_rolling_spinning.yaml",
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "fail-closed timing source gate only; the paper source and local records must disclose exact hardware, thread enforcement, build configuration, measurement protocol, and paper-faithful lane runtime inputs before timing can be treated as paper-comparable",
+    "paper_comparable": false,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_step_count": 10000,
+    "paper_time_step_s": 0.01,
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "required_gate": "paper_comparable_timing",
+    "required_gate_status": "passed",
+    "required_source_parameters": [
+      "exact_cpu_model",
+      "single_thread_enforcement",
+      "compiler_and_blas_configuration",
+      "timing_repetition_or_warmup_policy",
+      "paper_faithful_lane_runtime_inputs",
+      "measurement_timer_scope"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ]
+  },
+  "failure_reason": "Paper timing source gate only; public source and current evidence do not provide enough exact hardware, thread enforcement, build, measurement, and paper-faithful runtime-input details to pass the paper-comparable timing gate",
+  "observed": {
+    "blocking_reasons": [
+      "paper_timing_exact_cpu_model_missing_from_public_source",
+      "paper_timing_single_thread_enforcement_missing_from_public_source",
+      "paper_timing_build_configuration_missing_from_public_source",
+      "paper_timing_measurement_protocol_missing_from_public_source",
+      "paper_faithful_runtime_inputs_missing_from_current_evidence",
+      "paper_comparable_timing_missing",
+      "paper_hardware_mismatch",
+      "paper_single_thread_protocol_not_enforced",
+      "paper_faithful_explicit_rbd_baseline_missing",
+      "paper_faithful_implicit_rbd_baseline_missing",
+      "paper_faithful_mabd_collision_missing"
+    ],
+    "current_evidence_reports": {
+      "mabd_source_gate": "reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json",
+      "rbd_explicit_source_gate": "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json",
+      "rbd_implicit_source_gate": "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json",
+      "timing_protocol": "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json"
+    },
+    "current_evidence_summaries": {
+      "mabd_source_gate": {
+        "baseline_lane": "mabd_source_gate",
+        "full_experiment_claim_passed": false,
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json",
+        "solver_mode": "rolling_spinning_mabd_source_gate",
+        "status": "incomplete"
+      },
+      "rbd_explicit_source_gate": {
+        "baseline_lane": "rbd_explicit_source_gate",
+        "full_experiment_claim_passed": false,
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json",
+        "solver_mode": "rolling_spinning_explicit_rbd_source_gate",
+        "status": "incomplete"
+      },
+      "rbd_implicit_source_gate": {
+        "baseline_lane": "rbd_implicit_source_gate",
+        "full_experiment_claim_passed": false,
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json",
+        "solver_mode": "rolling_spinning_implicit_rbd_source_gate",
+        "status": "incomplete"
+      },
+      "timing_protocol": {
+        "baseline_lane": "paper_timing_protocol",
+        "full_experiment_claim_passed": false,
+        "paper_comparable": false,
+        "path": "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json",
+        "solver_mode": "rolling_spinning_paper_timing_protocol_audit",
+        "status": "incomplete"
+      }
+    },
+    "full_experiment_claim_passed": false,
+    "missing_parameters": [
+      "exact_cpu_model",
+      "single_thread_enforcement",
+      "compiler_and_blas_configuration",
+      "timing_repetition_or_warmup_policy",
+      "paper_faithful_lane_runtime_inputs",
+      "measurement_timer_scope"
+    ],
+    "paper_comparable": false,
+    "paper_timing_gate_passed": false,
+    "required_reproduction_gaps_remaining": [
+      "paper_faithful_explicit_rbd_baseline",
+      "paper_faithful_implicit_rbd_baseline",
+      "paper_faithful_mabd_rolling_cylinder",
+      "paper_comparable_timing"
+    ],
+    "source_audit": {
+      "absence_findings": {
+        "rolling_spinning_timing_parameter_search": {
+          "candidate_hits": [],
+          "context_hits": [
+            "sections/experiment.tex:135: Fig.~\\ref{fig:hanging_net} shows a $10\\times 10$ network of ball joints consisting of $280$ links. We use a relatively aggressive time step of $h=1/30~s$ to test robustness among various multibody frameworks. In this test, our method uses only one iteration per step, while PhysX uses $10$, and MuJoCo (equality constraint)/Bullet use $30$. Our method exactly enforces all joint constraints, preserving the net's geometry under gravity. On the other hand, all three other methods show visible gaps at the joints, indicating inaccurate constraint enforcement under these settings. VQ~\\cite{VersatileQuaternion} solves the global system implicitly using Newton's method. It also yields high-quality results. Nevertheless, the matrix assembly and factorization make VQ much slower. In this example, our method uses less than $1~ms$ to finish one time step, while VQ needs $27~ms$. VQ quickly becomes prohibitive for large-scale instances such as the one shown in Figs.~\\ref{fig:huge_chain} or \\ref{fig:bignet_cylinder}.",
+            "sections/singleabd.tex:162: \\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}",
+            "sections/singleabd.tex:172: A simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$."
+          ],
+          "query_terms": [
+            "exact CPU model",
+            "i7 CPU model",
+            "single thread enforcement",
+            "taskset",
+            "OMP_NUM_THREADS",
+            "MKL_NUM_THREADS",
+            "compiler and BLAS configuration",
+            "Eigen MKL compiler flags",
+            "timing repetition",
+            "warmup policy",
+            "measured repeats",
+            "paper faithful lane runtime inputs",
+            "measurement timer scope",
+            "total simulation stepping"
+          ],
+          "scanned_text_path_count": 12,
+          "searched_source_path_count": 37,
+          "status": "no_paper_comparable_timing_source_parameters_found",
+          "usable_parameter_disclosures": []
+        }
+      },
+      "blockers": [
+        "paper_timing_exact_cpu_model_missing_from_public_source",
+        "paper_timing_single_thread_enforcement_missing_from_public_source",
+        "paper_timing_build_configuration_missing_from_public_source",
+        "paper_timing_measurement_protocol_missing_from_public_source",
+        "paper_faithful_runtime_inputs_missing_from_current_evidence"
+      ],
+      "file_hashes": {
+        "sections/experiment.tex": "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f",
+        "sections/singleabd.tex": "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d"
+      },
+      "missing_parameters": [
+        "exact_cpu_model",
+        "single_thread_enforcement",
+        "compiler_and_blas_configuration",
+        "timing_repetition_or_warmup_policy",
+        "paper_faithful_lane_runtime_inputs",
+        "measurement_timer_scope"
+      ],
+      "positive_findings": {
+        "hardware_thread_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "hardware_thread_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "paper_step_count_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "paper_step_count_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "paper_time_step_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "paper_time_step_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "paper_timing_values_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "paper_timing_values_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        },
+        "rolling_cylinder_timing_context": {
+          "evidence_text": "\\caption{\\textbf{Performance comparison ABD vs. RBD.}~~We simulate a rolling cylinder for $10$K steps and compare the total simulation using several variations of RBD and ABD. As visualized on the right, the vanilla implicit ABD is the least efficient ($161~ms$) as it needs to assemble and solve a $12 \\times 12$ matrix for each iteration. It is much slower than implicit RBD ($44~ms$) and explicit RBD ($32~ms$). With our co-rotated formulation, the system matrix for implicit ABD is pre-factorized, which significantly reduces the computation time from $161~ms$ to $34~ms$. By skipping polar decomposition, the performance of (implicit) ABD reaches $27~ms$, which is over $20\\%$ faster than explicit RBD. The experiment is tested on an i7 CPU with single thread.}\\label{fig:performance}\n\\Description{}\n\\end{figure}\n\n\n\n\n\n\n\nA simple benchmark test is reported in Fig.~\\ref{fig:performance}, where we simulate a rigid rolling cylinder for $10K$ step (with $h = 0.01~sec$) with ABD and RBD. The vanilla implicit ABD i.e., the original algorithm proposed in~\\cite{ABD} uses $161~ms$, while implicit and explicit RBD need $44~ms$ and $32~ms$, respectively. Our co-rotated ABD (with polar decomposition) takes $34~ms$, which is nearly as fast as explicit RBD already. Skipping polar decomposition further shortens the total computation time to $27~ms$.",
+          "key": "rolling_cylinder_timing_context",
+          "line_end": 172,
+          "line_start": 162,
+          "path": "sections/singleabd.tex",
+          "present": true
+        }
+      },
+      "scanned_tex_paths": [
+        "arxiv.tex",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "scanned_text_paths": [
+        "00README.json",
+        "ACM-Reference-Format.bst",
+        "acmart.cls",
+        "arxiv.tex",
+        "ref.bib",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "source_root": "/tmp/mabd-paper/source",
+      "source_tree_paths": [
+        "00README.json",
+        "ACM-Reference-Format.bst",
+        "acm-jdslogo.png",
+        "acmart.cls",
+        "arxiv.tex",
+        "images/Performance/performance.pdf",
+        "images/T-handle/T-handle.pdf",
+        "images/arm/arm_compressed.pdf",
+        "images/armadillo/armadillo.pdf",
+        "images/chain/chain.pdf",
+        "images/cp/cp.pdf",
+        "images/cube/roll_cube.pdf",
+        "images/dual_mat/dual_mat.pdf",
+        "images/end_mass/hammer.pdf",
+        "images/hinge/hinge.pdf",
+        "images/hinge/hinge2.pdf",
+        "images/hinge/translation.pdf",
+        "images/hinge/universal.pdf",
+        "images/joints/joints.pdf",
+        "images/large_net.pdf",
+        "images/net_cloth/net_cloth.pdf",
+        "images/net_cylinder.pdf",
+        "images/net_hang/net_hang.pdf",
+        "images/protein/protein.pdf",
+        "images/ragdolls/ragdolls.pdf",
+        "images/simple_pendulum/simple_pendulum.pdf",
+        "images/spinning_top/spinning_top.pdf",
+        "images/teaser/teaser2.pdf",
+        "images/willow/willow.pdf",
+        "ref.bib",
+        "sections/conclusion.tex",
+        "sections/experiment.tex",
+        "sections/introduction.tex",
+        "sections/related.tex",
+        "sections/singleabd.tex",
+        "sections/solver.tex",
+        "sections_a/multiabd.tex"
+      ],
+      "status": "timing_source_requirements_incomplete"
+    },
+    "source_audit_status": "timing_source_requirements_incomplete"
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "rolling_spinning_timing_source_gate",
+  "source_commit": "62ed764",
+  "status": "incomplete",
+  "threshold": {
+    "required_source_parameter_count": 6.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "source_gate_no_runtime",
+    "status": "not_measured"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

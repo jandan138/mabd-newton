@@ -265,6 +265,20 @@ mabd_source_gate:
     mabd_newton: reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json
     mabd_material_preflight: reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json
     mabd_rolling_contact_candidate: reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json
+timing_source_gate:
+  output_report: reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json
+  required_source_parameters:
+    - exact_cpu_model
+    - single_thread_enforcement
+    - compiler_and_blas_configuration
+    - timing_repetition_or_warmup_policy
+    - paper_faithful_lane_runtime_inputs
+    - measurement_timer_scope
+  current_evidence_reports:
+    timing_protocol: reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json
+    rbd_explicit_source_gate: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json
+    rbd_implicit_source_gate: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json
+    mabd_source_gate: reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json
 paper_faithful_gate_ledger:
   output_report: reports/experiment_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.json
   required_gates:

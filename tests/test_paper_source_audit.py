@@ -8,6 +8,7 @@ from mabd_reproduction.paper_source_audit import (
     rolling_spinning_mabd_source_audit,
     rolling_spinning_implicit_rbd_source_audit,
     rolling_spinning_explicit_rbd_source_audit,
+    rolling_spinning_timing_source_audit,
     velocity_semantics_source_audit,
 )
 
@@ -66,6 +67,83 @@ def _write_source_fixture(root: Path, *, omitted_file_text: str) -> None:
 
 
 class PaperSourceAuditTests(unittest.TestCase):
+    def test_rolling_spinning_timing_source_audit_is_fail_closed(self) -> None:
+        audit = rolling_spinning_timing_source_audit()
+        report = audit.to_report()
+
+        self.assertEqual(audit.source_root, "/tmp/mabd-paper/source")
+        self.assertEqual(audit.status, "timing_source_requirements_incomplete")
+        self.assertEqual(
+            audit.file_hashes["sections/singleabd.tex"],
+            "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d",
+        )
+        self.assertEqual(
+            audit.file_hashes["sections/experiment.tex"],
+            "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f",
+        )
+
+        findings = audit.positive_findings
+        for key, snippet in (
+            ("rolling_cylinder_timing_context", "rolling cylinder"),
+            ("paper_step_count_context", "10K"),
+            ("paper_time_step_context", "h = 0.01~sec"),
+            ("paper_timing_values_context", "27~ms"),
+            ("hardware_thread_context", "single thread"),
+        ):
+            self.assertTrue(findings[key]["present"])
+            self.assertIn(snippet, findings[key]["evidence_text"])
+
+        for missing in (
+            "exact_cpu_model",
+            "single_thread_enforcement",
+            "compiler_and_blas_configuration",
+            "timing_repetition_or_warmup_policy",
+            "paper_faithful_lane_runtime_inputs",
+            "measurement_timer_scope",
+        ):
+            self.assertIn(missing, audit.missing_parameters)
+
+        for blocker in (
+            "paper_timing_exact_cpu_model_missing_from_public_source",
+            "paper_timing_single_thread_enforcement_missing_from_public_source",
+            "paper_timing_build_configuration_missing_from_public_source",
+            "paper_timing_measurement_protocol_missing_from_public_source",
+            "paper_faithful_runtime_inputs_missing_from_current_evidence",
+        ):
+            self.assertIn(blocker, audit.blockers)
+
+        self.assertEqual(report["status"], audit.status)
+        self.assertIn("positive_findings", report)
+        self.assertIn("absence_findings", report)
+        self.assertIn("missing_parameters", report)
+
+    def test_rolling_spinning_timing_source_disclosure_triggers_manual_review(
+        self,
+    ) -> None:
+        with TemporaryDirectory() as tmpdir:
+            source_root = Path(tmpdir) / "source"
+            _write_source_fixture(
+                source_root,
+                omitted_file_text=(
+                    "The rolling cylinder timing exact CPU model is Intel i7-12700K. "
+                    "Single thread enforcement uses taskset with one MKL thread. The "
+                    "compiler and BLAS configuration is clang release with Eigen and "
+                    "MKL. The timing repetition or warmup policy uses 10 warmups and "
+                    "100 measured repeats. Paper faithful lane runtime inputs are "
+                    "identical across ABD and RBD. The measurement timer scope covers "
+                    "only total simulation stepping."
+                ),
+            )
+
+            audit = rolling_spinning_timing_source_audit(source_root)
+
+        self.assertEqual(audit.status, "timing_source_mentions_require_manual_review")
+        self.assertNotIn(
+            "paper_timing_exact_cpu_model_missing_from_public_source",
+            audit.blockers,
+        )
+        self.assertIn("timing_source_disclosure_found", audit.blockers)
+
     def test_rolling_spinning_mabd_source_audit_is_fail_closed(self) -> None:
         audit = rolling_spinning_mabd_source_audit()
         report = audit.to_report()

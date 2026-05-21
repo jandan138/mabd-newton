@@ -147,6 +147,13 @@ class RollingSpinningMABDSourceGateConfig:
 
 
 @dataclass(frozen=True)
+class RollingSpinningTimingSourceGateConfig:
+    output_report: str
+    required_source_parameters: tuple[str, ...]
+    current_evidence_reports: dict[str, str]
+
+
+@dataclass(frozen=True)
 class RollingSpinningRunConfig:
     schema_version: int
     claim_id: str
@@ -169,6 +176,7 @@ class RollingSpinningRunConfig:
     rbd_explicit_source_gate: RollingSpinningExplicitRBDSourceGateConfig
     rbd_implicit_source_gate: RollingSpinningImplicitRBDSourceGateConfig
     mabd_source_gate: RollingSpinningMABDSourceGateConfig
+    timing_source_gate: RollingSpinningTimingSourceGateConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -453,6 +461,10 @@ ROLLING_SPINNING_MABD_SOURCE_GATE_OUTPUT_REPORT = (
     "reports/experiment_matrix/"
     "single_body_rolling_spinning_mabd_source_gate.json"
 )
+ROLLING_SPINNING_TIMING_SOURCE_GATE_OUTPUT_REPORT = (
+    "reports/experiment_matrix/"
+    "single_body_rolling_spinning_timing_source_gate.json"
+)
 ROLLING_SPINNING_TIMING_PROTOCOL_INPUT_REPORTS = (
     "reports/experiment_matrix/single_body_rolling_spinning.json",
     ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT,
@@ -515,6 +527,20 @@ ROLLING_SPINNING_MABD_SOURCE_GATE_CURRENT_EVIDENCE_REPORTS = {
     "mabd_rolling_contact_candidate": (
         ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_OUTPUT_REPORT
     ),
+}
+ROLLING_SPINNING_TIMING_SOURCE_GATE_REQUIRED_SOURCE_PARAMETERS = (
+    "exact_cpu_model",
+    "single_thread_enforcement",
+    "compiler_and_blas_configuration",
+    "timing_repetition_or_warmup_policy",
+    "paper_faithful_lane_runtime_inputs",
+    "measurement_timer_scope",
+)
+ROLLING_SPINNING_TIMING_SOURCE_GATE_CURRENT_EVIDENCE_REPORTS = {
+    "timing_protocol": ROLLING_SPINNING_TIMING_PROTOCOL_OUTPUT_REPORT,
+    "rbd_explicit_source_gate": ROLLING_SPINNING_RBD_EXPLICIT_SOURCE_GATE_OUTPUT_REPORT,
+    "rbd_implicit_source_gate": ROLLING_SPINNING_RBD_IMPLICIT_SOURCE_GATE_OUTPUT_REPORT,
+    "mabd_source_gate": ROLLING_SPINNING_MABD_SOURCE_GATE_OUTPUT_REPORT,
 }
 ROLLING_SPINNING_RBD_CONTACT_KEYS = frozenset({"ke", "kd", "kf", "mu", "gap"})
 ROLLING_SPINNING_RBD_THRESHOLD_KEYS = frozenset(
@@ -1184,6 +1210,17 @@ def _require_rolling_spinning_mabd_source_gate(
     )
 
 
+def _require_rolling_spinning_timing_source_gate(
+    data: dict[str, Any],
+) -> RollingSpinningTimingSourceGateConfig:
+    section = _require_mapping(data, "timing_source_gate")
+    return RollingSpinningTimingSourceGateConfig(
+        output_report=_require_str(section, "output_report"),
+        required_source_parameters=_require_str_tuple(section, "required_source_parameters"),
+        current_evidence_reports=_require_str_mapping(section, "current_evidence_reports"),
+    )
+
+
 def _require_physical_pendulum_reference(
     data: dict[str, Any],
 ) -> PhysicalPendulumReferenceConfig:
@@ -1755,6 +1792,7 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
             _require_rolling_spinning_rbd_implicit_source_gate(data)
         ),
         mabd_source_gate=_require_rolling_spinning_mabd_source_gate(data),
+        timing_source_gate=_require_rolling_spinning_timing_source_gate(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -2489,6 +2527,64 @@ def validate_rolling_spinning_config_against_matrix(
                 "relative JSON reports under reports/experiment_matrix"
             )
 
+    timing_source_gate = config.timing_source_gate
+    timing_source_gate_report = timing_source_gate.output_report
+    timing_source_gate_report_path = Path(timing_source_gate_report)
+    if (
+        timing_source_gate_report_path.is_absolute()
+        or ".." in timing_source_gate_report_path.parts
+        or timing_source_gate_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or timing_source_gate_report_path.suffix != ".json"
+        or timing_source_gate_report != ROLLING_SPINNING_TIMING_SOURCE_GATE_OUTPUT_REPORT
+        or timing_source_gate_report
+        in (
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.rbd_no_slip_reference.output_report,
+            config.rbd_explicit_no_slip_candidate.output_report,
+            config.mabd_newton.output_report,
+            config.mabd_material_preflight.output_report,
+            config.mabd_rolling_contact_candidate.output_report,
+            config.paper_timing_protocol.output_report,
+            config.rbd_explicit_source_gate.output_report,
+            config.rbd_implicit_source_gate.output_report,
+            config.mabd_source_gate.output_report,
+        )
+    ):
+        raise ExperimentRunConfigError(
+            "timing_source_gate.output_report must be the lane-specific "
+            "relative JSON report under reports/experiment_matrix"
+        )
+    if (
+        timing_source_gate.required_source_parameters
+        != ROLLING_SPINNING_TIMING_SOURCE_GATE_REQUIRED_SOURCE_PARAMETERS
+    ):
+        raise ExperimentRunConfigError(
+            "timing_source_gate.required_source_parameters must list the "
+            "paper source/runtime parameters needed for paper-comparable timing"
+        )
+    if (
+        timing_source_gate.current_evidence_reports
+        != ROLLING_SPINNING_TIMING_SOURCE_GATE_CURRENT_EVIDENCE_REPORTS
+    ):
+        raise ExperimentRunConfigError(
+            "timing_source_gate.current_evidence_reports must reference "
+            "the current incomplete timing and source-gate evidence reports"
+        )
+    for evidence_path in timing_source_gate.current_evidence_reports.values():
+        report_path = Path(evidence_path)
+        if (
+            report_path.is_absolute()
+            or ".." in report_path.parts
+            or report_path.parent.as_posix() != "reports/experiment_matrix"
+            or report_path.suffix != ".json"
+        ):
+            raise ExperimentRunConfigError(
+                "timing_source_gate.current_evidence_reports must be "
+                "relative JSON reports under reports/experiment_matrix"
+            )
+
     gate_ledger = config.paper_faithful_gate_ledger
     gate_ledger_report = gate_ledger.output_report
     gate_ledger_report_path = Path(gate_ledger_report)
@@ -2513,6 +2609,7 @@ def validate_rolling_spinning_config_against_matrix(
             config.rbd_explicit_source_gate.output_report,
             config.rbd_implicit_source_gate.output_report,
             config.mabd_source_gate.output_report,
+            config.timing_source_gate.output_report,
         )
     ):
         raise ExperimentRunConfigError(
