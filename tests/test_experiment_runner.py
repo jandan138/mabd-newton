@@ -1024,6 +1024,71 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.raw_outputs, {})
         self.assertEqual(loaded.plot_paths, {})
 
+    def test_run_rolling_spinning_rbd_explicit_source_gate_writes_report(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_rolling_spinning_rbd_explicit_source_gate,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_rbd_explicit_source_gate.json"
+            result = run_rolling_spinning_rbd_explicit_source_gate(
+                config_path=ROLLING_SPINNING_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(result.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "rbd_explicit_source_gate")
+        self.assertEqual(
+            loaded.solver_mode,
+            "rolling_spinning_explicit_rbd_source_gate",
+        )
+        self.assertEqual(loaded.backend, "paper_source_audit")
+        self.assertEqual(loaded.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(
+            loaded.observed["source_audit_status"],
+            "explicit_rbd_source_requirements_incomplete",
+        )
+        self.assertFalse(loaded.observed["paper_faithful_gate_passed"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(
+            loaded.observed["missing_parameters"],
+            [
+                "rolling_cylinder_geometry",
+                "rolling_cylinder_mass_or_density",
+                "rolling_cylinder_initial_state",
+                "rolling_cylinder_contact_friction_model",
+                "explicit_rbd_integrator_details",
+                "explicit_rbd_collision_parameters",
+            ],
+        )
+        self.assertIn(
+            "paper_explicit_rbd_solver_details_missing_from_public_source",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "paper_faithful_explicit_rbd_baseline_missing",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertEqual(
+            loaded.timing_distribution["status"],
+            "not_measured",
+        )
+        self.assertEqual(
+            loaded.timing_distribution["scope"],
+            "source_gate_no_runtime",
+        )
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(loaded.raw_outputs, {})
+        self.assertEqual(loaded.plot_paths, {})
+
     def test_run_rolling_spinning_paper_timing_protocol_writes_report(
         self,
     ) -> None:
@@ -1379,6 +1444,54 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
         self.assertEqual(payload["status"], "incomplete")
         self.assertEqual(payload["baseline_lane"], "paper_faithful_gate_ledger")
+
+    def test_run_experiment_cli_runs_rolling_spinning_rbd_explicit_source_gate_lane(
+        self,
+    ) -> None:
+        import json
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_rbd_explicit_source_gate.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rolling_spinning_rbd_explicit_source_gate",
+                    "--config",
+                    str(ROLLING_SPINNING_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "test-source",
+                    "--vendored-newton-commit",
+                    "test-newton",
+                ],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertEqual(payload["status"], "incomplete")
+        self.assertEqual(payload["baseline_lane"], "rbd_explicit_source_gate")
+        self.assertEqual(
+            loaded.solver_mode,
+            "rolling_spinning_explicit_rbd_source_gate",
+        )
+        self.assertEqual(loaded.backend, "paper_source_audit")
+        self.assertFalse(loaded.observed["paper_faithful_gate_passed"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertEqual(loaded.timing_distribution["status"], "not_measured")
 
     def test_run_experiment_cli_runs_rolling_spinning_rbd_no_slip_reference_lane(
         self,

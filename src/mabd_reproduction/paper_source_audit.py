@@ -35,6 +35,24 @@ PHYSICAL_PENDULUM_AUDITED_FILE_HASHES = {
     ),
 }
 
+ROLLING_SPINNING_EXPLICIT_RBD_AUDITED_FILE_HASHES = {
+    "sections/singleabd.tex": (
+        "0f18165cba13d358a07c67a652e728170abecd7372b5ba905ff2b4a5950a3e8d"
+    ),
+    "sections/experiment.tex": (
+        "c5927183fe4e3f1c1c1617e5b10b7e9006da6a9eac537e891cb1dac03d58dd0f"
+    ),
+}
+
+ROLLING_SPINNING_EXPLICIT_RBD_REQUIRED_SOURCE_PARAMETERS = (
+    "rolling_cylinder_geometry",
+    "rolling_cylinder_mass_or_density",
+    "rolling_cylinder_initial_state",
+    "rolling_cylinder_contact_friction_model",
+    "explicit_rbd_integrator_details",
+    "explicit_rbd_collision_parameters",
+)
+
 
 @dataclass(frozen=True)
 class PaperSourceFinding:
@@ -100,6 +118,34 @@ class PhysicalPendulumGeometrySourceAudit:
             "positive_findings": dict(self.positive_findings),
             "absence_findings": dict(self.absence_findings),
             "figure_pdf": dict(self.figure_pdf),
+            "missing_parameters": list(self.missing_parameters),
+            "blockers": list(self.blockers),
+            "status": self.status,
+        }
+
+
+@dataclass(frozen=True)
+class RollingSpinningExplicitRBDSourceAudit:
+    source_root: str
+    file_hashes: dict[str, str]
+    source_tree_paths: tuple[str, ...]
+    scanned_text_paths: tuple[str, ...]
+    scanned_tex_paths: tuple[str, ...]
+    positive_findings: dict[str, dict[str, object]]
+    absence_findings: dict[str, dict[str, object]]
+    missing_parameters: tuple[str, ...]
+    blockers: tuple[str, ...]
+    status: str
+
+    def to_report(self) -> dict[str, object]:
+        return {
+            "source_root": self.source_root,
+            "file_hashes": dict(self.file_hashes),
+            "source_tree_paths": list(self.source_tree_paths),
+            "scanned_text_paths": list(self.scanned_text_paths),
+            "scanned_tex_paths": list(self.scanned_tex_paths),
+            "positive_findings": dict(self.positive_findings),
+            "absence_findings": dict(self.absence_findings),
             "missing_parameters": list(self.missing_parameters),
             "blockers": list(self.blockers),
             "status": self.status,
@@ -509,6 +555,212 @@ def physical_pendulum_geometry_source_audit(
     )
 
 
+def _rolling_spinning_explicit_rbd_absence_findings(
+    *,
+    source_root: Path,
+    source_tree_paths: tuple[str, ...],
+    scanned_text_paths: tuple[str, ...],
+) -> dict[str, dict[str, object]]:
+    query_terms = (
+        "rolling cylinder geometry",
+        "rolling cylinder radius",
+        "rolling cylinder half height",
+        "rolling cylinder density",
+        "rolling cylinder mass",
+        "rolling cylinder initial position",
+        "rolling cylinder initial linear velocity",
+        "rolling cylinder initial angular velocity",
+        "rolling cylinder contact friction model",
+        "rolling cylinder collision parameters",
+        "no-slip",
+        "explicit RBD integrator",
+        "explicit Euler",
+        "collision parameters",
+        "ke kd kf mu",
+    )
+    context_terms = (
+        "rolling cylinder",
+        "explicit RBD",
+        "implicit RBD",
+        "single thread",
+        "10K",
+        "h = 0.01",
+    )
+    context_hits = list(
+        _scan_text_assets_for_patterns(source_root, scanned_text_paths, context_terms)
+    )
+    candidate_hits = list(
+        _scan_text_assets_for_patterns(source_root, scanned_text_paths, query_terms)
+    )
+    parameter_terms = (
+        "geometry",
+        "radius",
+        "half height",
+        "density",
+        "mass",
+        "initial position",
+        "initial linear velocity",
+        "initial angular velocity",
+        "contact friction model",
+        "collision parameters",
+        "no-slip",
+        "explicit rbd integrator",
+        "explicit euler",
+        "ke kd kf mu",
+    )
+    usable_parameter_disclosures = [
+        hit
+        for hit in candidate_hits
+        if "rolling cylinder" in hit.lower()
+        and any(term in hit.lower() for term in parameter_terms)
+    ]
+    return {
+        "rolling_spinning_explicit_rbd_parameter_search": {
+            "status": "no_paper_faithful_explicit_rbd_source_parameters_found",
+            "query_terms": list(query_terms),
+            "searched_source_path_count": len(source_tree_paths),
+            "scanned_text_path_count": len(scanned_text_paths),
+            "context_hits": context_hits[:64],
+            "candidate_hits": candidate_hits[:64],
+            "usable_parameter_disclosures": usable_parameter_disclosures[:64],
+        }
+    }
+
+
+def rolling_spinning_explicit_rbd_source_audit(
+    source_root: Path = DEFAULT_PAPER_SOURCE_ROOT,
+) -> RollingSpinningExplicitRBDSourceAudit:
+    source_root = Path(source_root)
+    if not source_root.exists():
+        raise FileNotFoundError(
+            f"paper source root does not exist: {source_root}; "
+            "extract the paper source to /tmp/mabd-paper/source before running this audit"
+        )
+
+    file_hashes = _required_file_hashes(
+        source_root,
+        ROLLING_SPINNING_EXPLICIT_RBD_AUDITED_FILE_HASHES,
+    )
+    source_tree_paths = _discover_source_tree_paths(source_root)
+    scanned_text_paths = _discover_text_paths(source_tree_paths)
+    scanned_tex_paths = _discover_tex_paths(source_root)
+    absence_findings = _rolling_spinning_explicit_rbd_absence_findings(
+        source_root=source_root,
+        source_tree_paths=source_tree_paths,
+        scanned_text_paths=scanned_text_paths,
+    )
+    positive_findings = {
+        finding.key: finding.to_report()
+        for finding in (
+            _line_window_finding(
+                source_root=source_root,
+                key="rolling_cylinder_benchmark",
+                relative_path="sections/singleabd.tex",
+                line_start=162,
+                line_end=172,
+                required_snippets=("rolling cylinder",),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="rolling_cylinder_step_count",
+                relative_path="sections/singleabd.tex",
+                line_start=162,
+                line_end=172,
+                required_snippets=("10K",),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="rolling_cylinder_time_step",
+                relative_path="sections/singleabd.tex",
+                line_start=162,
+                line_end=172,
+                required_snippets=("h = 0.01~sec",),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="explicit_rbd_timing_context",
+                relative_path="sections/singleabd.tex",
+                line_start=162,
+                line_end=172,
+                required_snippets=("explicit RBD", "32~ms"),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="hardware_thread_context",
+                relative_path="sections/singleabd.tex",
+                line_start=162,
+                line_end=172,
+                required_snippets=("i7 CPU", "single thread"),
+            ),
+            _line_window_finding(
+                source_root=source_root,
+                key="single_body_cube_not_rolling_source_context",
+                relative_path="sections/experiment.tex",
+                line_start=48,
+                line_end=55,
+                required_snippets=("single cube", "implicit RBD baseline"),
+            ),
+        )
+    }
+
+    usable_parameter_disclosures = absence_findings[
+        "rolling_spinning_explicit_rbd_parameter_search"
+    ]["usable_parameter_disclosures"]
+    missing_parameters = (
+        ()
+        if usable_parameter_disclosures
+        else ROLLING_SPINNING_EXPLICIT_RBD_REQUIRED_SOURCE_PARAMETERS
+    )
+    blockers = (
+        (
+            "explicit_rbd_source_disclosure_found",
+            "explicit_rbd_manual_source_review_required",
+        )
+        if usable_parameter_disclosures
+        else (
+            "rolling_cylinder_geometry_parameters_missing_from_public_source",
+            "rolling_cylinder_initial_state_missing_from_public_source",
+            "rolling_cylinder_contact_friction_model_missing_from_public_source",
+            "paper_explicit_rbd_solver_details_missing_from_public_source",
+            "paper_explicit_rbd_collision_parameters_missing_from_public_source",
+        )
+    )
+    hash_mismatches = tuple(
+        relative_path
+        for relative_path, expected in ROLLING_SPINNING_EXPLICIT_RBD_AUDITED_FILE_HASHES.items()
+        if file_hashes[relative_path] != expected
+    )
+    missing_positive_evidence = tuple(
+        key for key, finding in positive_findings.items() if not finding["present"]
+    )
+    if hash_mismatches:
+        blockers = (*blockers, "paper_source_hash_mismatch")
+    if missing_positive_evidence:
+        blockers = (*blockers, "paper_source_required_snippet_missing")
+    status = (
+        "explicit_rbd_source_mentions_require_manual_review"
+        if usable_parameter_disclosures
+        else (
+            "explicit_rbd_source_requirements_incomplete"
+            if not hash_mismatches and not missing_positive_evidence
+            else "explicit_rbd_source_changed_or_required_facts_missing"
+        )
+    )
+
+    return RollingSpinningExplicitRBDSourceAudit(
+        source_root=str(source_root),
+        file_hashes=file_hashes,
+        source_tree_paths=source_tree_paths,
+        scanned_text_paths=scanned_text_paths,
+        scanned_tex_paths=scanned_tex_paths,
+        positive_findings=positive_findings,
+        absence_findings=absence_findings,
+        missing_parameters=missing_parameters,
+        blockers=blockers,
+        status=status,
+    )
+
+
 def velocity_semantics_source_audit(
     source_root: Path = DEFAULT_PAPER_SOURCE_ROOT,
 ) -> VelocitySemanticsSourceAudit:
@@ -638,8 +890,12 @@ __all__ = [
     "PaperSourceFinding",
     "PHYSICAL_PENDULUM_AUDITED_FILE_HASHES",
     "PhysicalPendulumGeometrySourceAudit",
+    "ROLLING_SPINNING_EXPLICIT_RBD_AUDITED_FILE_HASHES",
+    "ROLLING_SPINNING_EXPLICIT_RBD_REQUIRED_SOURCE_PARAMETERS",
+    "RollingSpinningExplicitRBDSourceAudit",
     "VelocitySemanticsSourceAudit",
     "file_sha256",
     "physical_pendulum_geometry_source_audit",
+    "rolling_spinning_explicit_rbd_source_audit",
     "velocity_semantics_source_audit",
 ]

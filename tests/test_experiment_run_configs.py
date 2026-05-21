@@ -457,6 +457,96 @@ class ExperimentRunConfigTests(unittest.TestCase):
             ("rbd_implicit_baseline", "rbd_explicit_baseline"),
         )
 
+    def test_rolling_spinning_rbd_explicit_source_gate_is_fail_closed(
+        self,
+    ) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        lane = config.rbd_explicit_source_gate
+
+        self.assertEqual(
+            lane.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json",
+        )
+        self.assertEqual(
+            lane.required_source_parameters,
+            (
+                "rolling_cylinder_geometry",
+                "rolling_cylinder_mass_or_density",
+                "rolling_cylinder_initial_state",
+                "rolling_cylinder_contact_friction_model",
+                "explicit_rbd_integrator_details",
+                "explicit_rbd_collision_parameters",
+            ),
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["rbd_explicit_baseline"],
+            config.rbd_explicit_baseline.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["rbd_explicit_no_slip_candidate"],
+            config.rbd_explicit_no_slip_candidate.output_report,
+        )
+        self.assertEqual(
+            config.required_missing_lanes,
+            ("rbd_implicit_baseline", "rbd_explicit_baseline"),
+        )
+
+        validate_rolling_spinning_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.rbd_explicit_no_slip_candidate.output_report,
+            "/tmp/single_body_rolling_spinning_rbd_explicit_source_gate.json",
+            "reports/not_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json",
+            "../reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.json",
+            "reports/experiment_matrix/not_the_rolling_spinning_rbd_explicit_source_gate.json",
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_source_gate.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    rbd_explicit_source_gate=replace(
+                        config.rbd_explicit_source_gate,
+                        output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "rbd_explicit_source_gate.output_report",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid = replace(
+            config,
+            rbd_explicit_source_gate=replace(
+                config.rbd_explicit_source_gate,
+                required_source_parameters=lane.required_source_parameters[:-1],
+            ),
+        )
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "rbd_explicit_source_gate.required_source_parameters",
+        ):
+            validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid = replace(
+            config,
+            rbd_explicit_source_gate=replace(
+                config.rbd_explicit_source_gate,
+                current_evidence_reports={
+                    "rbd_explicit_no_slip_candidate": config.rbd_explicit_no_slip_candidate.output_report,
+                },
+            ),
+        )
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "rbd_explicit_source_gate.current_evidence_reports",
+        ):
+            validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
     def test_rolling_spinning_rbd_no_slip_reference_rejects_bad_contracts(self) -> None:
         config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
