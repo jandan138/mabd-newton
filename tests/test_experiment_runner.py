@@ -944,6 +944,86 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
         self.assertEqual(loaded.raw_outputs["time_series"], "not_written")
 
+    def test_run_rolling_spinning_paper_faithful_gate_ledger_writes_report(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_rolling_spinning_paper_faithful_gate_ledger,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_paper_faithful_gate_ledger.json"
+            result = run_rolling_spinning_paper_faithful_gate_ledger(
+                config_path=ROLLING_SPINNING_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(result.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "paper_faithful_gate_ledger")
+        self.assertEqual(loaded.solver_mode, "rolling_spinning_paper_faithful_gate_ledger")
+        self.assertEqual(loaded.backend, "report_gate_ledger")
+        self.assertFalse(loaded.expected["full_experiment_claim_passed"])
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(
+            loaded.expected["required_gates"],
+            [
+                "paper_faithful_explicit_rbd_baseline",
+                "paper_faithful_implicit_rbd_baseline",
+                "paper_faithful_mabd_rolling_cylinder",
+                "paper_comparable_timing",
+            ],
+        )
+        self.assertEqual(
+            loaded.observed["gate_ledger_status"],
+            "fail_closed_requirements_recorded",
+        )
+        gate_statuses = loaded.observed["gate_statuses"]
+        self.assertEqual(set(gate_statuses), set(loaded.expected["required_gates"]))
+        for gate_status in gate_statuses.values():
+            self.assertEqual(
+                gate_status["status"],
+                "missing_paper_faithful_evidence",
+            )
+        self.assertEqual(
+            gate_statuses["paper_faithful_explicit_rbd_baseline"][
+                "current_evidence_report"
+            ],
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json",
+        )
+        self.assertEqual(
+            gate_statuses["paper_faithful_implicit_rbd_baseline"][
+                "current_evidence_report"
+            ],
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+        )
+        self.assertEqual(
+            gate_statuses["paper_faithful_mabd_rolling_cylinder"][
+                "current_evidence_report"
+            ],
+            "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+        )
+        self.assertEqual(
+            gate_statuses["paper_comparable_timing"]["current_evidence_report"],
+            "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json",
+        )
+        self.assertEqual(
+            loaded.observed["required_reproduction_gaps_remaining"],
+            loaded.expected["required_gates"],
+        )
+        self.assertIn(
+            "rolling_spinning_paper_faithful_gate_ledger_not_pass_gate",
+            loaded.observed["blocking_reasons"],
+        )
+        self.assertEqual(loaded.timing_distribution["status"], "not_measured")
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(loaded.raw_outputs, {})
+        self.assertEqual(loaded.plot_paths, {})
+
     def test_run_rolling_spinning_paper_timing_protocol_writes_report(
         self,
     ) -> None:
@@ -1260,6 +1340,45 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
         self.assertEqual(payload["status"], "incomplete")
         self.assertEqual(payload["baseline_lane"], "mabd_rolling_contact_candidate")
+
+    def test_run_experiment_cli_runs_rolling_spinning_paper_faithful_gate_ledger_lane(
+        self,
+    ) -> None:
+        import json
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_paper_faithful_gate_ledger.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rolling_spinning_paper_faithful_gate_ledger",
+                    "--config",
+                    str(ROLLING_SPINNING_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "test-source",
+                    "--vendored-newton-commit",
+                    "test-newton",
+                ],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertEqual(payload["status"], "incomplete")
+        self.assertEqual(payload["baseline_lane"], "paper_faithful_gate_ledger")
 
     def test_run_experiment_cli_runs_rolling_spinning_rbd_no_slip_reference_lane(
         self,

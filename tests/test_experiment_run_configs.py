@@ -768,6 +768,102 @@ class ExperimentRunConfigTests(unittest.TestCase):
                 matrix,
             )
 
+    def test_rolling_spinning_paper_faithful_gate_ledger_is_fail_closed(
+        self,
+    ) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        lane = config.paper_faithful_gate_ledger
+
+        self.assertEqual(
+            lane.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.json",
+        )
+        self.assertEqual(
+            lane.required_gates,
+            (
+                "paper_faithful_explicit_rbd_baseline",
+                "paper_faithful_implicit_rbd_baseline",
+                "paper_faithful_mabd_rolling_cylinder",
+                "paper_comparable_timing",
+            ),
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["rbd_explicit_no_slip_candidate"],
+            config.rbd_explicit_no_slip_candidate.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["rbd_implicit_development"],
+            config.rbd_implicit_baseline.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["mabd_rolling_contact_candidate"],
+            config.mabd_rolling_contact_candidate.output_report,
+        )
+        self.assertEqual(
+            lane.current_evidence_reports["timing_protocol"],
+            config.paper_timing_protocol.output_report,
+        )
+
+        validate_rolling_spinning_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.rbd_explicit_no_slip_candidate.output_report,
+            config.mabd_rolling_contact_candidate.output_report,
+            config.paper_timing_protocol.output_report,
+            "/tmp/single_body_rolling_spinning_paper_faithful_gate_ledger.json",
+            "reports/not_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.json",
+            "../reports/experiment_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.json",
+            "reports/experiment_matrix/not_the_rolling_spinning_paper_faithful_gate_ledger.json",
+            "reports/experiment_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    paper_faithful_gate_ledger=replace(
+                        config.paper_faithful_gate_ledger,
+                        output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "paper_faithful_gate_ledger.output_report",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid = replace(
+            config,
+            paper_faithful_gate_ledger=replace(
+                config.paper_faithful_gate_ledger,
+                required_gates=lane.required_gates[:-1],
+            ),
+        )
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "paper_faithful_gate_ledger.required_gates",
+        ):
+            validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid = replace(
+            config,
+            paper_faithful_gate_ledger=replace(
+                config.paper_faithful_gate_ledger,
+                current_evidence_reports={
+                    **lane.current_evidence_reports,
+                    "timing_protocol": config.output_report,
+                },
+            ),
+        )
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "paper_faithful_gate_ledger.current_evidence_reports",
+        ):
+            validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
     def test_rolling_spinning_paper_timing_protocol_is_fail_closed(
         self,
     ) -> None:

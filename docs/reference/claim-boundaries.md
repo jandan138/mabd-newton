@@ -1123,6 +1123,33 @@
   paper-comparable timing result, performance pass, comparative baseline pass,
   completed rolling/spinning reproduction, full paper reproduction, or any
   passed `experiment.*` claim.
+- This repository contains Phase 82 rolling/spinning paper-faithful gate ledger
+  evidence with the Phase 82 record.
+- Phase 82 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.json`
+  exists as an incomplete report-only gate ledger, records
+  `rolling_spinning_paper_faithful_gate_ledger`,
+  `gate_ledger_status = fail_closed_requirements_recorded`,
+  `paper_comparable = false`, all four required gates
+  `paper_faithful_explicit_rbd_baseline`,
+  `paper_faithful_implicit_rbd_baseline`,
+  `paper_faithful_mabd_rolling_cylinder`, and
+  `paper_comparable_timing`, records every gate with
+  `paper_faithful_gate_passed = false` and
+  `status = missing_paper_faithful_evidence`, preserves all four remaining
+  rolling/spinning reproduction gaps, and
+  `full_experiment_claim_passed = false`.
+- Phase 82 does not verify paper-faithful explicit or implicit RBD,
+  paper-faithful affine M-ABD rolling contact/friction, paper-faithful
+  M-ABD rolling-cylinder collision, paper-comparable timing, same-hardware
+  paper timing, co-rotated ABD timing, completed rolling/spinning
+  reproduction, full paper reproduction, or any passed `experiment.*` claim.
+- Phase 82 rolling/spinning paper-faithful gate ledger evidence must not be
+  described as a passed gate, paper-faithful explicit RBD result,
+  paper-faithful implicit RBD result, paper-faithful M-ABD rolling-cylinder
+  result, paper-comparable timing result, performance pass, comparative
+  baseline pass, completed rolling/spinning reproduction, full paper
+  reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration
@@ -1526,6 +1553,12 @@
   a paper-faithful M-ABD rolling-cylinder result, not paper-faithful affine
   collision/contact, not rolling friction/no-slip evidence, not paper-faithful
   explicit or implicit RBD evidence, not co-rotated ABD timing evidence, not
+  paper-comparable timing evidence, not a completed rolling/spinning
+  reproduction, not comparative baseline pass evidence, not full paper
+  reproduction, and not any passed `experiment.*` claim.
+- Phase 82 rolling/spinning paper-faithful gate ledger evidence is not a passed
+  gate, not a paper-faithful explicit RBD result, not a paper-faithful implicit
+  RBD result, not a paper-faithful M-ABD rolling-cylinder result, not
   paper-comparable timing evidence, not a completed rolling/spinning
   reproduction, not comparative baseline pass evidence, not full paper
   reproduction, and not any passed `experiment.*` claim.

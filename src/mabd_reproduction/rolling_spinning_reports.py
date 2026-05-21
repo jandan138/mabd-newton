@@ -127,6 +127,35 @@ ROLLING_SPINNING_TIMING_PROTOCOL_BLOCKING_REASONS = [
     "paper_faithful_explicit_rbd_baseline_missing",
     "paper_faithful_implicit_rbd_baseline_missing",
 ]
+ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_BLOCKING_REASONS = [
+    "rolling_spinning_paper_faithful_gate_ledger_not_pass_gate",
+    "paper_faithful_explicit_rbd_baseline_missing",
+    "paper_faithful_implicit_rbd_baseline_missing",
+    "paper_faithful_mabd_collision_missing",
+    "paper_comparable_timing_missing",
+]
+ROLLING_SPINNING_PAPER_FAITHFUL_GATE_STATUS_INPUTS = {
+    "paper_faithful_explicit_rbd_baseline": {
+        "current_evidence_key": "rbd_explicit_no_slip_candidate",
+        "blocker": "paper_faithful_explicit_rbd_baseline_missing",
+        "required_evidence": "paper explicit RBD solver report with contact dynamics",
+    },
+    "paper_faithful_implicit_rbd_baseline": {
+        "current_evidence_key": "rbd_implicit_development",
+        "blocker": "paper_faithful_implicit_rbd_baseline_missing",
+        "required_evidence": "paper implicit RBD solver report with matching protocol",
+    },
+    "paper_faithful_mabd_rolling_cylinder": {
+        "current_evidence_key": "mabd_rolling_contact_candidate",
+        "blocker": "paper_faithful_mabd_collision_missing",
+        "required_evidence": "paper affine rolling contact/friction M-ABD report",
+    },
+    "paper_comparable_timing": {
+        "current_evidence_key": "timing_protocol",
+        "blocker": "paper_comparable_timing_missing",
+        "required_evidence": "paper-comparable i7 single-thread timing run",
+    },
+}
 ROLLING_SPINNING_MABD_NEWTON_API = [
     "ModelBuilder.add_shape_cylinder",
     "ModelBuilder.add_ground_plane",
@@ -1936,6 +1965,125 @@ def _summarize_timing_input_report(report_path: str) -> dict[str, object]:
     }
 
 
+def _summarize_gate_input_report(report_path: str) -> dict[str, object]:
+    try:
+        report = load_claim_report(report_path)
+    except FileNotFoundError:
+        return {
+            "path": report_path,
+            "status": "missing",
+            "baseline_lane": "missing",
+            "solver_mode": "missing",
+            "paper_comparable": False,
+            "full_experiment_claim_passed": False,
+        }
+    return {
+        "path": report_path,
+        "status": report.status.value,
+        "baseline_lane": report.baseline_lane,
+        "solver_mode": report.solver_mode,
+        "paper_comparable": bool(
+            report.observed.get(
+                "paper_comparable",
+                report.timing_distribution.get("paper_comparable", False),
+            )
+        ),
+        "full_experiment_claim_passed": bool(
+            report.observed.get("full_experiment_claim_passed", False)
+        ),
+    }
+
+
+def write_rolling_spinning_paper_faithful_gate_ledger_report(
+    path: str | Path,
+    *,
+    config: RollingSpinningRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    ledger_config = config.paper_faithful_gate_ledger
+    gate_statuses: dict[str, dict[str, object]] = {}
+    current_reports = dict(ledger_config.current_evidence_reports)
+    for gate_id in ledger_config.required_gates:
+        gate_input = ROLLING_SPINNING_PAPER_FAITHFUL_GATE_STATUS_INPUTS[gate_id]
+        evidence_key = str(gate_input["current_evidence_key"])
+        evidence_path = current_reports[evidence_key]
+        gate_statuses[gate_id] = {
+            "status": "missing_paper_faithful_evidence",
+            "required_status": "passed",
+            "required_evidence": str(gate_input["required_evidence"]),
+            "current_evidence_key": evidence_key,
+            "current_evidence_report": evidence_path,
+            "current_evidence_summary": _summarize_gate_input_report(evidence_path),
+            "blocker": str(gate_input["blocker"]),
+            "paper_faithful_gate_passed": False,
+        }
+
+    expected = {
+        "paper_claim_status": (
+            "fail-closed ledger only; all required rolling/spinning paper-faithful "
+            "gates must pass before the experiment claim can pass"
+        ),
+        "source_lines": list(config.source_lines),
+        "config_path": ROLLING_SPINNING_CONFIG_PATH,
+        "canonical_python": CANONICAL_PYTHON,
+        "benchmark_body": config.performance.body,
+        "paper_total_simulation_time_ms": dict(
+            config.performance.paper_total_simulation_time_ms
+        ),
+        "paper_hardware_context": config.performance.paper_hardware_context,
+        "required_gates": list(ledger_config.required_gates),
+        "required_gate_status": "passed",
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+    }
+    observed = {
+        "gate_ledger_status": "fail_closed_requirements_recorded",
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "required_reproduction_gaps_remaining": list(ledger_config.required_gates),
+        "gate_statuses": gate_statuses,
+        "current_evidence_reports": current_reports,
+        "blocking_reasons": list(
+            ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_BLOCKING_REASONS
+        ),
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={
+            "primitive_cylinder": "not_applicable_procedural",
+            "primitive_cube": "not_applicable_procedural",
+        },
+        solver_mode="rolling_spinning_paper_faithful_gate_ledger",
+        backend="report_gate_ledger",
+        baseline_lane="paper_faithful_gate_ledger",
+        expected=expected,
+        observed=observed,
+        threshold={"required_gate_count": float(len(ledger_config.required_gates))},
+        unit="json_report",
+        status=EvidenceStatus.INCOMPLETE,
+        failure_reason=(
+            "Fail-closed rolling/spinning gate ledger only; paper-faithful explicit "
+            "RBD, implicit RBD, M-ABD rolling-cylinder contact/friction, and "
+            "paper-comparable timing evidence remain missing"
+        ),
+        timing_distribution={
+            "status": "not_measured",
+            "paper_comparable": False,
+            "scope": "gate_ledger_no_runtime",
+        },
+        raw_outputs={},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 def write_rolling_spinning_paper_timing_protocol_report(
     path: str | Path,
     *,
@@ -2025,6 +2173,7 @@ __all__ = [
     "write_rolling_spinning_mabd_rolling_contact_candidate_report",
     "write_rolling_spinning_mabd_material_preflight_report",
     "write_rolling_spinning_mabd_newton_report",
+    "write_rolling_spinning_paper_faithful_gate_ledger_report",
     "write_rolling_spinning_paper_timing_protocol_report",
     "write_rolling_spinning_rbd_explicit_baseline_report",
     "write_rolling_spinning_rbd_explicit_no_slip_candidate_report",

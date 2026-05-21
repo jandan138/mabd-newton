@@ -1,0 +1,148 @@
+{
+  "asset_hashes": {
+    "primitive_cube": "not_applicable_procedural",
+    "primitive_cylinder": "not_applicable_procedural"
+  },
+  "backend": "report_gate_ledger",
+  "baseline_lane": "paper_faithful_gate_ledger",
+  "claim_id": "experiment.single_body.rolling_spinning",
+  "expected": {
+    "benchmark_body": "rolling_cylinder",
+    "canonical_python": "/cpfs/user/zhuzihou/conda-managed/envs/mabd-newton-py310/bin/python",
+    "config_path": "configs/experiments/single_body_rolling_spinning.yaml",
+    "full_experiment_claim_passed": false,
+    "paper_claim_status": "fail-closed ledger only; all required rolling/spinning paper-faithful gates must pass before the experiment claim can pass",
+    "paper_comparable": false,
+    "paper_hardware_context": "i7 CPU, single thread",
+    "paper_total_simulation_time_ms": {
+      "corotated_abd_with_polar": 34.0,
+      "corotated_abd_without_polar": 27.0,
+      "explicit_rbd": 32.0,
+      "implicit_rbd": 44.0,
+      "vanilla_implicit_abd": 161.0
+    },
+    "required_gate_status": "passed",
+    "required_gates": [
+      "paper_faithful_explicit_rbd_baseline",
+      "paper_faithful_implicit_rbd_baseline",
+      "paper_faithful_mabd_rolling_cylinder",
+      "paper_comparable_timing"
+    ],
+    "source_lines": [
+      "/tmp/mabd-paper/source/sections/singleabd.tex:162-172",
+      "/tmp/mabd-paper/source/sections/experiment.tex:48-55"
+    ]
+  },
+  "failure_reason": "Fail-closed rolling/spinning gate ledger only; paper-faithful explicit RBD, implicit RBD, M-ABD rolling-cylinder contact/friction, and paper-comparable timing evidence remain missing",
+  "observed": {
+    "blocking_reasons": [
+      "rolling_spinning_paper_faithful_gate_ledger_not_pass_gate",
+      "paper_faithful_explicit_rbd_baseline_missing",
+      "paper_faithful_implicit_rbd_baseline_missing",
+      "paper_faithful_mabd_collision_missing",
+      "paper_comparable_timing_missing"
+    ],
+    "current_evidence_reports": {
+      "mabd_rolling_contact_candidate": "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+      "rbd_explicit_no_slip_candidate": "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json",
+      "rbd_implicit_development": "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+      "timing_protocol": "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json"
+    },
+    "full_experiment_claim_passed": false,
+    "gate_ledger_status": "fail_closed_requirements_recorded",
+    "gate_statuses": {
+      "paper_comparable_timing": {
+        "blocker": "paper_comparable_timing_missing",
+        "current_evidence_key": "timing_protocol",
+        "current_evidence_report": "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json",
+        "current_evidence_summary": {
+          "baseline_lane": "paper_timing_protocol",
+          "full_experiment_claim_passed": false,
+          "paper_comparable": false,
+          "path": "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json",
+          "solver_mode": "rolling_spinning_paper_timing_protocol_audit",
+          "status": "incomplete"
+        },
+        "paper_faithful_gate_passed": false,
+        "required_evidence": "paper-comparable i7 single-thread timing run",
+        "required_status": "passed",
+        "status": "missing_paper_faithful_evidence"
+      },
+      "paper_faithful_explicit_rbd_baseline": {
+        "blocker": "paper_faithful_explicit_rbd_baseline_missing",
+        "current_evidence_key": "rbd_explicit_no_slip_candidate",
+        "current_evidence_report": "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json",
+        "current_evidence_summary": {
+          "baseline_lane": "rbd_explicit_no_slip_candidate",
+          "full_experiment_claim_passed": false,
+          "paper_comparable": false,
+          "path": "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json",
+          "solver_mode": "newton_explicit_no_slip_rolling_cylinder_candidate",
+          "status": "incomplete"
+        },
+        "paper_faithful_gate_passed": false,
+        "required_evidence": "paper explicit RBD solver report with contact dynamics",
+        "required_status": "passed",
+        "status": "missing_paper_faithful_evidence"
+      },
+      "paper_faithful_implicit_rbd_baseline": {
+        "blocker": "paper_faithful_implicit_rbd_baseline_missing",
+        "current_evidence_key": "rbd_implicit_development",
+        "current_evidence_report": "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+        "current_evidence_summary": {
+          "baseline_lane": "rbd_implicit_baseline",
+          "full_experiment_claim_passed": false,
+          "paper_comparable": false,
+          "path": "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json",
+          "solver_mode": "newton_semimplicit_rolling_cylinder_rbd_cpu_development",
+          "status": "incomplete"
+        },
+        "paper_faithful_gate_passed": false,
+        "required_evidence": "paper implicit RBD solver report with matching protocol",
+        "required_status": "passed",
+        "status": "missing_paper_faithful_evidence"
+      },
+      "paper_faithful_mabd_rolling_cylinder": {
+        "blocker": "paper_faithful_mabd_collision_missing",
+        "current_evidence_key": "mabd_rolling_contact_candidate",
+        "current_evidence_report": "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+        "current_evidence_summary": {
+          "baseline_lane": "mabd_rolling_contact_candidate",
+          "full_experiment_claim_passed": false,
+          "paper_comparable": false,
+          "path": "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+          "solver_mode": "newton_mabd_rolling_contact_world_constraint_candidate",
+          "status": "incomplete"
+        },
+        "paper_faithful_gate_passed": false,
+        "required_evidence": "paper affine rolling contact/friction M-ABD report",
+        "required_status": "passed",
+        "status": "missing_paper_faithful_evidence"
+      }
+    },
+    "paper_comparable": false,
+    "required_reproduction_gaps_remaining": [
+      "paper_faithful_explicit_rbd_baseline",
+      "paper_faithful_implicit_rbd_baseline",
+      "paper_faithful_mabd_rolling_cylinder",
+      "paper_comparable_timing"
+    ]
+  },
+  "paper_source_version": "2603.08079v2",
+  "plot_paths": {},
+  "raw_outputs": {},
+  "scene_id": "single_body_rolling_spinning",
+  "solver_mode": "rolling_spinning_paper_faithful_gate_ledger",
+  "source_commit": "cf4e6ba",
+  "status": "incomplete",
+  "threshold": {
+    "required_gate_count": 4.0
+  },
+  "timing_distribution": {
+    "paper_comparable": false,
+    "scope": "gate_ledger_no_runtime",
+    "status": "not_measured"
+  },
+  "unit": "json_report",
+  "vendored_newton_commit": "96713fa965463b69c229a4d30582c733ff3526bb"
+}

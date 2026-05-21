@@ -229,6 +229,18 @@ paper_timing_protocol:
     - reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json
     - reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json
   paper_comparable: false
+paper_faithful_gate_ledger:
+  output_report: reports/experiment_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.json
+  required_gates:
+    - paper_faithful_explicit_rbd_baseline
+    - paper_faithful_implicit_rbd_baseline
+    - paper_faithful_mabd_rolling_cylinder
+    - paper_comparable_timing
+  current_evidence_reports:
+    rbd_explicit_no_slip_candidate: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json
+    rbd_implicit_development: reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_baseline.json
+    mabd_rolling_contact_candidate: reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json
+    timing_protocol: reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json
 report:
   status: incomplete
   failure_reason: full paper claim requires paper-faithful rolling cylinder runtime benchmark plus implicit and explicit RBD baselines

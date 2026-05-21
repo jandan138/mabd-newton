@@ -176,6 +176,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-20-phase79-rolling-cylinder-no-slip-reference.md",
     "docs/records/2026-05-21-phase80-rolling-explicit-no-slip-candidate.md",
     "docs/records/2026-05-21-phase81-mabd-rolling-contact-candidate.md",
+    "docs/records/2026-05-21-phase82-rolling-paper-faithful-gate-ledger.md",
     "docs/records/2026-05-20-after-phase76-completion-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
@@ -277,6 +278,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-21-mabd-phase80-rolling-explicit-no-slip-candidate.md",
     "docs/superpowers/specs/2026-05-21-phase81-mabd-rolling-contact-candidate-design.md",
     "docs/superpowers/plans/2026-05-21-mabd-phase81-rolling-contact-candidate.md",
+    "docs/superpowers/specs/2026-05-21-phase82-rolling-paper-faithful-gate-ledger-design.md",
+    "docs/superpowers/plans/2026-05-21-mabd-phase82-rolling-paper-faithful-gate-ledger.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -297,6 +300,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_no_slip_reference.json",
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json",
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+    "reports/experiment_matrix/single_body_rolling_spinning_paper_faithful_gate_ledger.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -379,6 +383,7 @@ PHASE80_ROLLING_EXPLICIT_NO_SLIP_CANDIDATE_COMMIT = (
     "5c137ceae88affcef8c9774ebea7cbecfe9177bf"
 )
 PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT = "03733a3"
+PHASE82_ROLLING_PAPER_FAITHFUL_GATE_LEDGER_COMMIT = "cf4e6ba"
 ROLLING_SPINNING_REPORT_PATH = (
     "reports/experiment_matrix/single_body_rolling_spinning.json"
 )
@@ -407,6 +412,10 @@ ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH = (
 ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH = (
     "reports/experiment_matrix/"
     "single_body_rolling_spinning_mabd_rolling_contact_candidate.json"
+)
+ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH = (
+    "reports/experiment_matrix/"
+    "single_body_rolling_spinning_paper_faithful_gate_ledger.json"
 )
 ROLLING_SPINNING_TIMING_PROTOCOL_INPUT_REPORTS = (
     ROLLING_SPINNING_REPORT_PATH,
@@ -501,6 +510,9 @@ PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256 = (
 )
 PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256 = (
     "bfe53115cf544e66510305653adb098655b8fd24b45b78ffee5088303031b448"
+)
+PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256 = (
+    "76d4b5df92570ed6bedff2f902bd7e757de2cc3effaad41d72ba9d9ae1255a7d"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -14852,6 +14864,7 @@ def validate_phase78_record() -> None:
         "phase79_rolling_cylinder_no_slip_reference",
         "phase80_rolling_explicit_no_slip_candidate",
         "phase81_mabd_rolling_contact_candidate",
+        "phase82_rolling_paper_faithful_gate_ledger",
     ):
         fail("Phase 78 gap audit latest_update must point at Phase 78 or a later rolling update")
 
@@ -15143,6 +15156,7 @@ def validate_phase79_record() -> None:
     elif latest_phase not in (
         "phase80_rolling_explicit_no_slip_candidate",
         "phase81_mabd_rolling_contact_candidate",
+        "phase82_rolling_paper_faithful_gate_ledger",
     ):
         fail("Phase 79 gap audit latest_update must point at Phase 79 or a later rolling update")
 
@@ -15443,6 +15457,7 @@ def validate_phase80_record() -> None:
     if latest_update.get("phase_id") not in (
         "phase80_rolling_explicit_no_slip_candidate",
         "phase81_mabd_rolling_contact_candidate",
+        "phase82_rolling_paper_faithful_gate_ledger",
     ):
         fail("Phase 80 gap audit latest_update must point at Phase 80 or later rolling update")
     if latest_update.get("phase_id") == "phase80_rolling_explicit_no_slip_candidate":
@@ -15738,17 +15753,21 @@ def validate_phase81_record() -> None:
     latest_update = audit.get("latest_update")
     if not isinstance(latest_update, dict):
         fail("Phase 81 gap audit missing latest_update provenance")
-    expected_latest_update = {
-        "phase_id": "phase81_mabd_rolling_contact_candidate",
-        "update_date": "2026-05-21",
-        "source_commit": PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT,
-        "report": ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH,
-        "report_sha256": PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256,
-        "status": "incomplete",
-    }
-    for key, expected_value in expected_latest_update.items():
-        if latest_update.get(key) != expected_value:
-            fail(f"Phase 81 gap audit latest_update {key} changed")
+    latest_phase = latest_update.get("phase_id")
+    if latest_phase == "phase81_mabd_rolling_contact_candidate":
+        expected_latest_update = {
+            "phase_id": "phase81_mabd_rolling_contact_candidate",
+            "update_date": "2026-05-21",
+            "source_commit": PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT,
+            "report": ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH,
+            "report_sha256": PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256,
+            "status": "incomplete",
+        }
+        for key, expected_value in expected_latest_update.items():
+            if latest_update.get(key) != expected_value:
+                fail(f"Phase 81 gap audit latest_update {key} changed")
+    elif latest_phase != "phase82_rolling_paper_faithful_gate_ledger":
+        fail("Phase 81 gap audit latest_update must point at Phase 81 or a later rolling update")
 
     report_entries = audit.get("current_evidence_reports")
     if not isinstance(report_entries, list):
@@ -15784,6 +15803,312 @@ def validate_phase81_record() -> None:
                 fail("Phase 81 must keep rolling/spinning experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 81 must not pass experiment.* claims")
+
+
+def validate_phase82_record() -> None:
+    record_path = (
+        ROOT
+        / "docs/records/2026-05-21-phase82-rolling-paper-faithful-gate-ledger.md"
+    )
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-21-phase82-rolling-paper-faithful-gate-ledger-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/2026-05-21-mabd-phase82-rolling-paper-faithful-gate-ledger.md"
+    )
+    report_path = ROOT / ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH
+    config_path = ROOT / "configs/experiments/single_body_rolling_spinning.yaml"
+    matrix_path = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
+    required_gates = [
+        "paper_faithful_explicit_rbd_baseline",
+        "paper_faithful_implicit_rbd_baseline",
+        "paper_faithful_mabd_rolling_cylinder",
+        "paper_comparable_timing",
+    ]
+    evidence_reports = {
+        "rbd_explicit_no_slip_candidate": ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH,
+        "rbd_implicit_development": ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_REPORT_PATH,
+        "mabd_rolling_contact_candidate": ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH,
+        "timing_protocol": ROLLING_SPINNING_TIMING_PROTOCOL_REPORT_PATH,
+    }
+
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary = " ".join(boundary_text.split())
+
+    for snippet in (
+        "incomplete_paper_faithful_gate_ledger_recorded",
+        PHASE82_ROLLING_PAPER_FAITHFUL_GATE_LEDGER_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        str(MABD_PYTHON),
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "rolling_spinning_paper_faithful_gate_ledger",
+        ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH,
+        PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256,
+        "report_gate_ledger",
+        "status = incomplete",
+        "gate_ledger_status = fail_closed_requirements_recorded",
+        "paper_comparable = false",
+        "full_experiment_claim_passed = false",
+        "timing_distribution.status = not_measured",
+        "timing_distribution.scope = gate_ledger_no_runtime",
+        "status = missing_paper_faithful_evidence",
+        "paper_faithful_gate_passed = false",
+        "rolling_spinning_paper_faithful_gate_ledger_not_pass_gate",
+        "paper_faithful_explicit_rbd_baseline_missing",
+        "paper_faithful_implicit_rbd_baseline_missing",
+        "paper_faithful_mabd_collision_missing",
+        "paper_comparable_timing_missing",
+        "does not prove paper-faithful explicit RBD",
+        "No experiment.* claim is passed.",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in text:
+            fail(f"Phase 82 record missing required evidence field: {snippet}")
+    for gate in required_gates:
+        if gate not in text:
+            fail(f"Phase 82 record missing required gate: {gate}")
+    for forbidden in (
+        "experiment.single_body.rolling_spinning passed",
+        "paper-faithful explicit RBD passed",
+        "paper-faithful implicit RBD passed",
+        "paper-faithful M-ABD rolling-cylinder passed",
+        "paper-comparable timing passed",
+        "paper_faithful_gate_passed = true",
+    ):
+        if forbidden in text:
+            fail(f"Phase 82 record overclaims unsupported evidence: {forbidden}")
+
+    for snippet in (
+        "Phase 82 Rolling Paper-Faithful Gate Ledger Design",
+        "paper_faithful_gate_ledger",
+        "paper_faithful_gate_passed = false",
+        "status = missing_paper_faithful_evidence",
+        "rolling_spinning_paper_faithful_gate_ledger_not_pass_gate",
+        "timing_distribution.scope = gate_ledger_no_runtime",
+        "No `experiment.*` claim is passed.",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 82 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 82 Rolling Paper-Faithful Gate Ledger Implementation Plan",
+        "run_rolling_spinning_paper_faithful_gate_ledger",
+        "rolling_spinning_paper_faithful_gate_ledger",
+        "baseline_lane=\"paper_faithful_gate_ledger\"",
+        "gate_ledger_status",
+        "gate_ledger_no_runtime",
+        PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256,
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 82 plan missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 82 rolling/spinning paper-faithful gate ledger",
+        "gate_ledger_status = fail_closed_requirements_recorded",
+        "paper_faithful_gate_passed = false",
+        "status = missing_paper_faithful_evidence",
+        "does not verify paper-faithful explicit or implicit RBD",
+        "must not be described as a passed gate",
+    ):
+        if snippet not in normalized_boundary:
+            fail(f"Phase 82 claim boundary missing: {snippet}")
+
+    config = load_rolling_spinning_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_rolling_spinning_config_against_matrix(config, matrix)
+    lane = config.paper_faithful_gate_ledger
+    if lane.output_report != ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH:
+        fail("Phase 82 gate ledger output report changed")
+    if list(lane.required_gates) != required_gates:
+        fail("Phase 82 gate ledger required gates changed")
+    if dict(lane.current_evidence_reports) != evidence_reports:
+        fail("Phase 82 gate ledger current evidence reports changed")
+    if config.required_missing_lanes != ("rbd_implicit_baseline", "rbd_explicit_baseline"):
+        fail("Phase 82 must not alter rolling/spinning required_missing_lanes")
+
+    report = load_claim_report(report_path)
+    if report.source_commit != PHASE82_ROLLING_PAPER_FAITHFUL_GATE_LEDGER_COMMIT:
+        fail("Phase 82 report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 82 report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 82 report vendored Newton commit changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 82 report paper source version changed")
+    if report.claim_id != "experiment.single_body.rolling_spinning":
+        fail("Phase 82 report claim_id changed")
+    if report.scene_id != "single_body_rolling_spinning":
+        fail("Phase 82 report scene_id changed")
+    if report.baseline_lane != "paper_faithful_gate_ledger":
+        fail("Phase 82 report baseline lane changed")
+    if report.solver_mode != "rolling_spinning_paper_faithful_gate_ledger":
+        fail("Phase 82 report solver mode changed")
+    if report.backend != "report_gate_ledger":
+        fail("Phase 82 report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 82 report must remain incomplete")
+    if report.expected.get("required_gates") != required_gates:
+        fail("Phase 82 expected required gates changed")
+    if report.expected.get("required_gate_status") != "passed":
+        fail("Phase 82 expected gate pass requirement changed")
+    if report.expected.get("paper_comparable") is not False:
+        fail("Phase 82 expected paper_comparable must be false")
+    if report.expected.get("full_experiment_claim_passed") is not False:
+        fail("Phase 82 expected full experiment pass flag must be false")
+
+    observed = report.observed
+    if observed.get("gate_ledger_status") != "fail_closed_requirements_recorded":
+        fail("Phase 82 gate ledger status changed")
+    if observed.get("paper_comparable") is not False:
+        fail("Phase 82 observed paper_comparable must be false")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 82 observed full experiment pass flag must be false")
+    if observed.get("required_reproduction_gaps_remaining") != required_gates:
+        fail("Phase 82 remaining reproduction gaps changed")
+    if observed.get("current_evidence_reports") != evidence_reports:
+        fail("Phase 82 current evidence report mapping changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 82 blocking_reasons must be a list")
+    for blocker in (
+        "rolling_spinning_paper_faithful_gate_ledger_not_pass_gate",
+        "paper_faithful_explicit_rbd_baseline_missing",
+        "paper_faithful_implicit_rbd_baseline_missing",
+        "paper_faithful_mabd_collision_missing",
+        "paper_comparable_timing_missing",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 82 blocker missing: {blocker}")
+    gate_statuses = observed.get("gate_statuses")
+    if not isinstance(gate_statuses, dict):
+        fail("Phase 82 gate statuses must be a mapping")
+    for gate in required_gates:
+        gate_status = gate_statuses.get(gate)
+        if not isinstance(gate_status, dict):
+            fail(f"Phase 82 gate missing status record: {gate}")
+        if gate_status.get("status") != "missing_paper_faithful_evidence":
+            fail(f"Phase 82 gate status changed: {gate}")
+        if gate_status.get("required_status") != "passed":
+            fail(f"Phase 82 gate required status changed: {gate}")
+        if gate_status.get("paper_faithful_gate_passed") is not False:
+            fail(f"Phase 82 gate must remain fail-closed: {gate}")
+        current_summary = gate_status.get("current_evidence_summary")
+        if not isinstance(current_summary, dict):
+            fail(f"Phase 82 gate missing current evidence summary: {gate}")
+        if current_summary.get("status") != "incomplete":
+            fail(f"Phase 82 current evidence status changed: {gate}")
+        if current_summary.get("paper_comparable") is not False:
+            fail(f"Phase 82 current evidence paper_comparable changed: {gate}")
+        if current_summary.get("full_experiment_claim_passed") is not False:
+            fail(f"Phase 82 current evidence pass flag changed: {gate}")
+
+    if report.timing_distribution.get("status") != "not_measured":
+        fail("Phase 82 timing status changed")
+    if report.timing_distribution.get("scope") != "gate_ledger_no_runtime":
+        fail("Phase 82 timing scope changed")
+    if report.timing_distribution.get("paper_comparable") is not False:
+        fail("Phase 82 timing distribution must be non-paper-comparable")
+    if report.threshold.get("required_gate_count") != 4.0:
+        fail("Phase 82 required gate count changed")
+    if report.raw_outputs != {}:
+        fail("Phase 82 raw output contract changed")
+    if report.plot_paths != {}:
+        fail("Phase 82 must not commit plot artifacts")
+
+    actual_hash = sha256_file(report_path)
+    if actual_hash != PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256:
+        fail("Phase 82 paper-faithful gate ledger report sha256 changed")
+    if PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256 not in text:
+        fail("Phase 82 record report sha256 mismatch")
+
+    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
+    latest_update = audit.get("latest_update")
+    if not isinstance(latest_update, dict):
+        fail("Phase 82 gap audit missing latest_update provenance")
+    expected_latest_update = {
+        "phase_id": "phase82_rolling_paper_faithful_gate_ledger",
+        "update_date": "2026-05-21",
+        "source_commit": PHASE82_ROLLING_PAPER_FAITHFUL_GATE_LEDGER_COMMIT,
+        "report": ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH,
+        "report_sha256": PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256,
+        "status": "incomplete",
+    }
+    for key, expected_value in expected_latest_update.items():
+        if latest_update.get(key) != expected_value:
+            fail(f"Phase 82 gap audit latest_update {key} changed")
+    global_status = audit.get("global_status")
+    if not isinstance(global_status, dict):
+        fail("Phase 82 gap audit missing global status")
+    if global_status.get("experiment_claims_passed") != 0:
+        fail("Phase 82 must not pass experiment claims")
+    if global_status.get("full_reproduction_complete") is not False:
+        fail("Phase 82 must not mark full reproduction complete")
+
+    entries = audit.get("remaining_experiment_claims")
+    if not isinstance(entries, list):
+        fail("Phase 82 gap audit missing remaining_experiment_claims")
+    rolling_entry = next(
+        (
+            entry
+            for entry in entries
+            if isinstance(entry, dict)
+            and entry.get("claim_id") == "experiment.single_body.rolling_spinning"
+        ),
+        None,
+    )
+    if rolling_entry is None:
+        fail("Phase 82 gap audit missing rolling/spinning entry")
+    if (
+        rolling_entry.get("paper_faithful_gate_ledger_report")
+        != ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH
+    ):
+        fail("Phase 82 gap audit missing gate ledger report path")
+    if rolling_entry.get("paper_faithful_gate_ledger_report_status") != "incomplete":
+        fail("Phase 82 gap audit gate ledger report status changed")
+    if (
+        rolling_entry.get("paper_faithful_gate_ledger_report_sha256")
+        != PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256
+    ):
+        fail("Phase 82 gap audit gate ledger report sha changed")
+    if rolling_entry.get("remaining_reproduction_gaps_after_phase82") != required_gates:
+        fail("Phase 82 gap audit reproduction gap list changed")
+
+    report_entries = audit.get("current_evidence_reports")
+    if not isinstance(report_entries, list):
+        fail("Phase 82 gap audit missing current_evidence_reports")
+    ledger_entry = next(
+        (
+            entry
+            for entry in report_entries
+            if isinstance(entry, dict)
+            and entry.get("path") == ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH
+        ),
+        None,
+    )
+    if ledger_entry is None:
+        fail("Phase 82 gap audit missing gate ledger evidence entry")
+    if ledger_entry.get("status") != "incomplete":
+        fail("Phase 82 gap audit gate ledger entry status changed")
+    if ledger_entry.get("sha256") != PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256:
+        fail("Phase 82 gap audit gate ledger entry sha changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.rolling_spinning":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 82 must keep rolling/spinning experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 82 must not pass experiment.* claims")
 
 
 def validate_after_phase76_completion_audit() -> None:
@@ -17770,6 +18095,7 @@ def main() -> int:
     validate_phase79_record()
     validate_phase80_record()
     validate_phase81_record()
+    validate_phase82_record()
     validate_after_phase76_completion_audit()
     validate_paper_claims()
     validate_experiment_contracts()
@@ -17777,7 +18103,7 @@ def main() -> int:
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81/82 "
         "docs/provenance validation passed"
     )
     return 0

@@ -5077,16 +5077,16 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(
             audit["latest_update"],
             {
-                "phase_id": "phase81_mabd_rolling_contact_candidate",
+                "phase_id": "phase82_rolling_paper_faithful_gate_ledger",
                 "update_date": "2026-05-21",
                 "source_commit": (
-                    validate_docs.PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT
+                    validate_docs.PHASE82_ROLLING_PAPER_FAITHFUL_GATE_LEDGER_COMMIT
                 ),
                 "report": (
-                    validate_docs.ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH
+                    validate_docs.ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH
                 ),
                 "report_sha256": (
-                    validate_docs.PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256
+                    validate_docs.PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256
                 ),
                 "status": "incomplete",
             },
@@ -6018,7 +6018,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
         self.assertEqual(
             audit["latest_update"]["phase_id"],
-            "phase81_mabd_rolling_contact_candidate",
+            "phase82_rolling_paper_faithful_gate_ledger",
         )
         gap_entry = next(
             entry
@@ -6039,6 +6039,139 @@ class Phase0BootstrapTests(unittest.TestCase):
             ],
         )
         validate_docs.validate_phase81_record()
+
+    def test_phase82_rolling_paper_faithful_gate_ledger_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        required_gates = [
+            "paper_faithful_explicit_rbd_baseline",
+            "paper_faithful_implicit_rbd_baseline",
+            "paper_faithful_mabd_rolling_cylinder",
+            "paper_comparable_timing",
+        ]
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 82",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 82 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 82 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 82 rolling/spinning paper-faithful gate ledger evidence",
+        )
+
+        self.assertIn("paper-faithful gate ledger", current)
+        self.assertIn(
+            "single_body_rolling_spinning_paper_faithful_gate_ledger.json",
+            verified,
+        )
+        self.assertIn("gate_ledger_status = fail_closed_requirements_recorded", verified)
+        self.assertIn("paper_faithful_gate_passed = false", verified)
+        self.assertIn("status = missing_paper_faithful_evidence", verified)
+        self.assertIn("full_experiment_claim_passed = false", verified)
+        for snippet in (
+            "paper-faithful explicit or implicit RBD",
+            "paper-faithful affine M-ABD rolling contact/friction",
+            "paper-comparable timing",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "passed gate",
+            "paper-faithful explicit RBD result",
+            "paper-faithful implicit RBD result",
+            "paper-faithful M-ABD rolling-cylinder result",
+            "paper-comparable timing result",
+            "completed rolling/spinning reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        verified_paths = set(validate_docs.REQUIRED_PATHS)
+        self.assertIn(
+            validate_docs.ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH,
+            verified_paths,
+        )
+
+        report = load_claim_report(
+            ROOT / validate_docs.ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH
+        )
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE82_ROLLING_PAPER_FAITHFUL_GATE_LEDGER_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(report.baseline_lane, "paper_faithful_gate_ledger")
+        self.assertEqual(report.solver_mode, "rolling_spinning_paper_faithful_gate_ledger")
+        self.assertEqual(report.backend, "report_gate_ledger")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.expected["required_gates"], required_gates)
+        self.assertEqual(report.expected["required_gate_status"], "passed")
+        self.assertFalse(report.expected["paper_comparable"])
+        self.assertFalse(report.expected["full_experiment_claim_passed"])
+        self.assertEqual(
+            report.observed["gate_ledger_status"],
+            "fail_closed_requirements_recorded",
+        )
+        self.assertFalse(report.observed["paper_comparable"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(
+            report.observed["required_reproduction_gaps_remaining"],
+            required_gates,
+        )
+        self.assertIn(
+            "rolling_spinning_paper_faithful_gate_ledger_not_pass_gate",
+            report.observed["blocking_reasons"],
+        )
+        for gate in required_gates:
+            gate_status = report.observed["gate_statuses"][gate]
+            self.assertEqual(gate_status["status"], "missing_paper_faithful_evidence")
+            self.assertEqual(gate_status["required_status"], "passed")
+            self.assertFalse(gate_status["paper_faithful_gate_passed"])
+            self.assertEqual(gate_status["current_evidence_summary"]["status"], "incomplete")
+            self.assertFalse(gate_status["current_evidence_summary"]["paper_comparable"])
+            self.assertFalse(
+                gate_status["current_evidence_summary"]["full_experiment_claim_passed"]
+            )
+        self.assertEqual(report.timing_distribution["status"], "not_measured")
+        self.assertEqual(report.timing_distribution["scope"], "gate_ledger_no_runtime")
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+        self.assertEqual(report.raw_outputs, {})
+        self.assertEqual(report.plot_paths, {})
+
+        actual_sha = validate_docs.sha256_file(
+            ROOT / validate_docs.ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH
+        )
+        self.assertEqual(
+            actual_sha,
+            validate_docs.PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256,
+        )
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        self.assertEqual(
+            audit["latest_update"]["phase_id"],
+            "phase82_rolling_paper_faithful_gate_ledger",
+        )
+        self.assertEqual(audit["global_status"]["experiment_claims_passed"], 0)
+        gap_entry = next(
+            entry
+            for entry in audit["remaining_experiment_claims"]
+            if entry["claim_id"] == "experiment.single_body.rolling_spinning"
+        )
+        self.assertEqual(
+            gap_entry["paper_faithful_gate_ledger_report_sha256"],
+            validate_docs.PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256,
+        )
+        self.assertEqual(
+            gap_entry["remaining_reproduction_gaps_after_phase82"],
+            required_gates,
+        )
+        validate_docs.validate_phase82_record()
 
     def test_phase80_record_has_required_evidence_fields(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -6079,6 +6212,45 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE80", text)
         self.assertNotIn("phase80-working-tree", text)
+
+    def test_phase82_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT
+            / "docs/records/2026-05-21-phase82-rolling-paper-faithful-gate-ledger.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\nincomplete_paper_faithful_gate_ledger_recorded",
+            validate_docs.PHASE82_ROLLING_PAPER_FAITHFUL_GATE_LEDGER_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "rolling_spinning_paper_faithful_gate_ledger",
+            validate_docs.ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REPORT_PATH,
+            validate_docs.PHASE82_ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_SHA256,
+            "report_gate_ledger",
+            "status = incomplete",
+            "gate_ledger_status = fail_closed_requirements_recorded",
+            "paper_comparable = false",
+            "full_experiment_claim_passed = false",
+            "timing_distribution.status = not_measured",
+            "timing_distribution.scope = gate_ledger_no_runtime",
+            "status = missing_paper_faithful_evidence",
+            "paper_faithful_gate_passed = false",
+            "paper_faithful_explicit_rbd_baseline_missing",
+            "paper_faithful_implicit_rbd_baseline_missing",
+            "paper_faithful_mabd_collision_missing",
+            "paper_comparable_timing_missing",
+            "does not prove paper-faithful explicit RBD",
+            "No experiment.* claim is passed.",
+            "No `experiment.*` claim is passed",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE82", text)
+        self.assertNotIn("phase82-working-tree", text)
 
     def test_phase77_validator_requires_explicit_material_preflight_fields(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -7942,7 +8114,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn(
             (
                 "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74"
-                "/75/76/77/78/79/80/81 docs/provenance validation passed"
+                "/75/76/77/78/79/80/81/82 docs/provenance validation passed"
             ),
             result.stdout,
         )

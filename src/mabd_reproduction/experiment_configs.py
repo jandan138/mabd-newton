@@ -119,6 +119,13 @@ class RollingSpinningTimingProtocolConfig:
 
 
 @dataclass(frozen=True)
+class RollingSpinningPaperFaithfulGateLedgerConfig:
+    output_report: str
+    required_gates: tuple[str, ...]
+    current_evidence_reports: dict[str, str]
+
+
+@dataclass(frozen=True)
 class RollingSpinningRunConfig:
     schema_version: int
     claim_id: str
@@ -137,6 +144,7 @@ class RollingSpinningRunConfig:
     mabd_material_preflight: RollingSpinningMABDNewtonConfig
     mabd_rolling_contact_candidate: RollingSpinningMABDNewtonConfig
     paper_timing_protocol: RollingSpinningTimingProtocolConfig
+    paper_faithful_gate_ledger: RollingSpinningPaperFaithfulGateLedgerConfig
     report_status: EvidenceStatus
     failure_reason: str
     output_report: str
@@ -405,6 +413,10 @@ ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_OUTPUT_REPORT = (
 ROLLING_SPINNING_TIMING_PROTOCOL_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json"
 )
+ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_OUTPUT_REPORT = (
+    "reports/experiment_matrix/"
+    "single_body_rolling_spinning_paper_faithful_gate_ledger.json"
+)
 ROLLING_SPINNING_TIMING_PROTOCOL_INPUT_REPORTS = (
     "reports/experiment_matrix/single_body_rolling_spinning.json",
     ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT,
@@ -412,6 +424,22 @@ ROLLING_SPINNING_TIMING_PROTOCOL_INPUT_REPORTS = (
     ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT,
     ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_OUTPUT_REPORT,
 )
+ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REQUIRED_GATES = (
+    "paper_faithful_explicit_rbd_baseline",
+    "paper_faithful_implicit_rbd_baseline",
+    "paper_faithful_mabd_rolling_cylinder",
+    "paper_comparable_timing",
+)
+ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_CURRENT_EVIDENCE_REPORTS = {
+    "rbd_explicit_no_slip_candidate": (
+        ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_OUTPUT_REPORT
+    ),
+    "rbd_implicit_development": ROLLING_SPINNING_RBD_IMPLICIT_BASELINE_OUTPUT_REPORT,
+    "mabd_rolling_contact_candidate": (
+        ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_OUTPUT_REPORT
+    ),
+    "timing_protocol": ROLLING_SPINNING_TIMING_PROTOCOL_OUTPUT_REPORT,
+}
 ROLLING_SPINNING_RBD_CONTACT_KEYS = frozenset({"ke", "kd", "kf", "mu", "gap"})
 ROLLING_SPINNING_RBD_THRESHOLD_KEYS = frozenset(
     {
@@ -593,6 +621,18 @@ def _require_mapping(data: dict[str, Any], key: str) -> dict[str, Any]:
     if not isinstance(value, dict) or not value:
         raise ExperimentRunConfigError(f"{key} must be a non-empty mapping")
     return dict(value)
+
+
+def _require_str_mapping(data: dict[str, Any], key: str) -> dict[str, str]:
+    mapping = _require_mapping(data, key)
+    result: dict[str, str] = {}
+    for item_key, item_value in mapping.items():
+        if not isinstance(item_key, str) or not item_key:
+            raise ExperimentRunConfigError(f"{key} keys must be non-empty strings")
+        if not isinstance(item_value, str) or not item_value:
+            raise ExperimentRunConfigError(f"{key} values must be non-empty strings")
+        result[item_key] = item_value
+    return result
 
 
 def _require_float_mapping(data: dict[str, Any], key: str) -> dict[str, float]:
@@ -1021,6 +1061,17 @@ def _require_rolling_spinning_timing_protocol(
         output_report=_require_str(section, "output_report"),
         input_reports=_require_str_tuple(section, "input_reports"),
         paper_comparable=_require_bool(section, "paper_comparable"),
+    )
+
+
+def _require_rolling_spinning_paper_faithful_gate_ledger(
+    data: dict[str, Any],
+) -> RollingSpinningPaperFaithfulGateLedgerConfig:
+    section = _require_mapping(data, "paper_faithful_gate_ledger")
+    return RollingSpinningPaperFaithfulGateLedgerConfig(
+        output_report=_require_str(section, "output_report"),
+        required_gates=_require_str_tuple(section, "required_gates"),
+        current_evidence_reports=_require_str_mapping(section, "current_evidence_reports"),
     )
 
 
@@ -1585,6 +1636,9 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
             default_zero_stiffness_diagnostic=False,
         ),
         paper_timing_protocol=_require_rolling_spinning_timing_protocol(data),
+        paper_faithful_gate_ledger=(
+            _require_rolling_spinning_paper_faithful_gate_ledger(data)
+        ),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
         output_report=_require_str(report, "output_report"),
@@ -2150,6 +2204,62 @@ def validate_rolling_spinning_config_against_matrix(
         )
     if timing.paper_comparable:
         raise ExperimentRunConfigError("paper_timing_protocol.paper_comparable must be false")
+
+    gate_ledger = config.paper_faithful_gate_ledger
+    gate_ledger_report = gate_ledger.output_report
+    gate_ledger_report_path = Path(gate_ledger_report)
+    if (
+        gate_ledger_report_path.is_absolute()
+        or ".." in gate_ledger_report_path.parts
+        or gate_ledger_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or gate_ledger_report_path.suffix != ".json"
+        or gate_ledger_report
+        != ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_OUTPUT_REPORT
+        or gate_ledger_report
+        in (
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.rbd_no_slip_reference.output_report,
+            config.rbd_explicit_no_slip_candidate.output_report,
+            config.mabd_newton.output_report,
+            config.mabd_material_preflight.output_report,
+            config.mabd_rolling_contact_candidate.output_report,
+            config.paper_timing_protocol.output_report,
+        )
+    ):
+        raise ExperimentRunConfigError(
+            "paper_faithful_gate_ledger.output_report must be the lane-specific "
+            "relative JSON report under reports/experiment_matrix"
+        )
+    if (
+        gate_ledger.required_gates
+        != ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_REQUIRED_GATES
+    ):
+        raise ExperimentRunConfigError(
+            "paper_faithful_gate_ledger.required_gates must list the required "
+            "rolling/spinning paper-faithful evidence gates"
+        )
+    if (
+        gate_ledger.current_evidence_reports
+        != ROLLING_SPINNING_PAPER_FAITHFUL_GATE_LEDGER_CURRENT_EVIDENCE_REPORTS
+    ):
+        raise ExperimentRunConfigError(
+            "paper_faithful_gate_ledger.current_evidence_reports must reference "
+            "the current rolling/spinning incomplete evidence reports"
+        )
+    for evidence_path in gate_ledger.current_evidence_reports.values():
+        report_path = Path(evidence_path)
+        if (
+            report_path.is_absolute()
+            or ".." in report_path.parts
+            or report_path.parent.as_posix() != "reports/experiment_matrix"
+            or report_path.suffix != ".json"
+        ):
+            raise ExperimentRunConfigError(
+                "paper_faithful_gate_ledger.current_evidence_reports must be "
+                "relative JSON reports under reports/experiment_matrix"
+            )
 
 
 def load_spinning_box_config(path: str | Path) -> SpinningBoxRunConfig:
