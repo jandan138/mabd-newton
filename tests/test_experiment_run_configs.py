@@ -422,6 +422,41 @@ class ExperimentRunConfigTests(unittest.TestCase):
         self.assertIn("max_relative_energy_drift", lane.thresholds)
         self.assertIn("min_contact_count", lane.thresholds)
 
+    def test_rolling_spinning_rbd_explicit_no_slip_candidate_is_fail_closed(
+        self,
+    ) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        lane = config.rbd_explicit_no_slip_candidate
+
+        self.assertEqual(
+            lane.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json",
+        )
+        self.assertEqual(lane.radius_m, 0.5)
+        self.assertEqual(lane.half_height_m, 0.5)
+        self.assertEqual(lane.density_kg_m3, 1000.0)
+        self.assertEqual(lane.time_step_s, 0.01)
+        self.assertEqual(lane.step_count, 10000)
+        self.assertGreaterEqual(lane.sample_count, 3)
+        np.testing.assert_allclose(lane.initial_position_m, [0.0, lane.radius_m, 0.0])
+        np.testing.assert_allclose(lane.initial_linear_velocity_m_s, [1.0, 0.0, 0.0])
+        np.testing.assert_allclose(
+            lane.initial_angular_velocity_rad_s,
+            [0.0, 0.0, -2.0],
+        )
+        self.assertAlmostEqual(
+            lane.initial_linear_velocity_m_s[0]
+            + lane.radius_m * lane.initial_angular_velocity_rad_s[2],
+            0.0,
+            places=12,
+        )
+        self.assertEqual(lane.contact, config.rbd_explicit_baseline.contact)
+        self.assertEqual(lane.thresholds, config.rbd_no_slip_reference.thresholds)
+        self.assertEqual(
+            config.required_missing_lanes,
+            ("rbd_implicit_baseline", "rbd_explicit_baseline"),
+        )
+
     def test_rolling_spinning_rbd_no_slip_reference_rejects_bad_contracts(self) -> None:
         config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
         matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
@@ -483,6 +518,80 @@ class ExperimentRunConfigTests(unittest.TestCase):
         for expected_error, invalid_lane in invalid_lanes:
             with self.subTest(expected_error=expected_error):
                 invalid = replace(config, rbd_no_slip_reference=invalid_lane)
+                with self.assertRaisesRegex(ExperimentRunConfigError, expected_error):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+    def test_rolling_spinning_rbd_explicit_no_slip_candidate_rejects_bad_contracts(
+        self,
+    ) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        invalid_lanes = (
+            (
+                "output_report",
+                replace(
+                    config.rbd_explicit_no_slip_candidate,
+                    output_report=config.rbd_no_slip_reference.output_report,
+                ),
+            ),
+            (
+                "step_count",
+                replace(config.rbd_explicit_no_slip_candidate, step_count=9999),
+            ),
+            (
+                "sample_count",
+                replace(config.rbd_explicit_no_slip_candidate, sample_count=2),
+            ),
+            (
+                "initial_position_m",
+                replace(
+                    config.rbd_explicit_no_slip_candidate,
+                    initial_position_m=np.array([0.0, 0.6, 0.0]),
+                ),
+            ),
+            (
+                "initial_linear_velocity_m_s",
+                replace(
+                    config.rbd_explicit_no_slip_candidate,
+                    initial_linear_velocity_m_s=np.array([1.0, 0.1, 0.0]),
+                ),
+            ),
+            (
+                "initial_angular_velocity_rad_s",
+                replace(
+                    config.rbd_explicit_no_slip_candidate,
+                    initial_angular_velocity_rad_s=np.array([0.1, 0.0, -2.0]),
+                ),
+            ),
+            (
+                "initial velocities",
+                replace(
+                    config.rbd_explicit_no_slip_candidate,
+                    initial_angular_velocity_rad_s=np.array([0.0, 0.0, -1.0]),
+                ),
+            ),
+            (
+                "contact",
+                replace(
+                    config.rbd_explicit_no_slip_candidate,
+                    contact={**config.rbd_explicit_baseline.contact, "mu": 0.5},
+                ),
+            ),
+            (
+                "thresholds",
+                replace(
+                    config.rbd_explicit_no_slip_candidate,
+                    thresholds={
+                        **config.rbd_no_slip_reference.thresholds,
+                        "max_relative_energy_drift": 1.0e-9,
+                    },
+                ),
+            ),
+        )
+        for expected_error, invalid_lane in invalid_lanes:
+            with self.subTest(expected_error=expected_error):
+                invalid = replace(config, rbd_explicit_no_slip_candidate=invalid_lane)
                 with self.assertRaisesRegex(ExperimentRunConfigError, expected_error):
                     validate_rolling_spinning_config_against_matrix(invalid, matrix)
 

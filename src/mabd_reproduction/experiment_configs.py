@@ -131,6 +131,7 @@ class RollingSpinningRunConfig:
     rbd_implicit_baseline: RollingSpinningRBDBaselineConfig
     rbd_explicit_baseline: RollingSpinningRBDBaselineConfig
     rbd_no_slip_reference: RollingSpinningRBDBaselineConfig
+    rbd_explicit_no_slip_candidate: RollingSpinningRBDBaselineConfig
     mabd_newton: RollingSpinningMABDNewtonConfig
     mabd_material_preflight: RollingSpinningMABDNewtonConfig
     paper_timing_protocol: RollingSpinningTimingProtocolConfig
@@ -384,6 +385,10 @@ ROLLING_SPINNING_RBD_EXPLICIT_BASELINE_OUTPUT_REPORT = (
 )
 ROLLING_SPINNING_RBD_NO_SLIP_REFERENCE_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_no_slip_reference.json"
+)
+ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_OUTPUT_REPORT = (
+    "reports/experiment_matrix/"
+    "single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json"
 )
 ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json"
@@ -1537,6 +1542,10 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
             data,
             "rbd_no_slip_reference",
         ),
+        rbd_explicit_no_slip_candidate=_require_rolling_spinning_rbd_baseline(
+            data,
+            "rbd_explicit_no_slip_candidate",
+        ),
         mabd_newton=_require_rolling_spinning_mabd_newton(
             data,
             "mabd_newton",
@@ -1680,7 +1689,19 @@ def validate_rolling_spinning_config_against_matrix(
             config.rbd_explicit_baseline.output_report,
         ),
     )
+    validate_rbd_baseline(
+        config.rbd_explicit_no_slip_candidate,
+        field_name="rbd_explicit_no_slip_candidate",
+        expected_output_report=ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_OUTPUT_REPORT,
+        disallowed_reports=(
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.rbd_no_slip_reference.output_report,
+        ),
+    )
     reference = config.rbd_no_slip_reference
+    candidate = config.rbd_explicit_no_slip_candidate
     implicit = config.rbd_implicit_baseline
     if not np.isclose(reference.time_step_s, 0.01, rtol=0.0, atol=1.0e-15):
         raise ExperimentRunConfigError("rbd_no_slip_reference.time_step_s must be 0.01")
@@ -1730,6 +1751,75 @@ def validate_rolling_spinning_config_against_matrix(
         raise ExperimentRunConfigError(
             "rbd_no_slip_reference.density_kg_m3 must match rbd_implicit_baseline"
         )
+    if not np.isclose(candidate.time_step_s, 0.01, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.time_step_s must be 0.01"
+        )
+    if candidate.step_count != 10000:
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.step_count must be 10000"
+        )
+    if candidate.sample_count < 3:
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.sample_count must be at least 3"
+        )
+    if not np.allclose(
+        candidate.initial_position_m,
+        reference.initial_position_m,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.initial_position_m must match the no-slip reference"
+        )
+    if not np.allclose(
+        candidate.initial_linear_velocity_m_s,
+        reference.initial_linear_velocity_m_s,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.initial_linear_velocity_m_s must match the no-slip reference"
+        )
+    if not np.allclose(
+        candidate.initial_angular_velocity_rad_s,
+        reference.initial_angular_velocity_rad_s,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.initial_angular_velocity_rad_s must match the no-slip reference"
+        )
+    if not np.isclose(candidate.radius_m, reference.radius_m, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.radius_m must match the no-slip reference"
+        )
+    if not np.isclose(
+        candidate.half_height_m,
+        reference.half_height_m,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.half_height_m must match the no-slip reference"
+        )
+    if not np.isclose(
+        candidate.density_kg_m3,
+        reference.density_kg_m3,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.density_kg_m3 must match the no-slip reference"
+        )
+    if candidate.contact != config.rbd_explicit_baseline.contact:
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.contact must match rbd_explicit_baseline"
+        )
+    if candidate.thresholds != reference.thresholds:
+        raise ExperimentRunConfigError(
+            "rbd_explicit_no_slip_candidate.thresholds must match the no-slip reference"
+        )
 
     mabd_report = config.mabd_newton.output_report
     mabd_report_path = Path(mabd_report)
@@ -1744,6 +1834,8 @@ def validate_rolling_spinning_config_against_matrix(
             config.output_report,
             config.rbd_implicit_baseline.output_report,
             config.rbd_explicit_baseline.output_report,
+            config.rbd_no_slip_reference.output_report,
+            config.rbd_explicit_no_slip_candidate.output_report,
         )
     ):
         raise ExperimentRunConfigError(
@@ -1814,6 +1906,8 @@ def validate_rolling_spinning_config_against_matrix(
             config.output_report,
             config.rbd_implicit_baseline.output_report,
             config.rbd_explicit_baseline.output_report,
+            config.rbd_no_slip_reference.output_report,
+            config.rbd_explicit_no_slip_candidate.output_report,
             config.mabd_newton.output_report,
         )
     ):
@@ -1887,6 +1981,8 @@ def validate_rolling_spinning_config_against_matrix(
             config.output_report,
             config.rbd_implicit_baseline.output_report,
             config.rbd_explicit_baseline.output_report,
+            config.rbd_no_slip_reference.output_report,
+            config.rbd_explicit_no_slip_candidate.output_report,
             config.mabd_newton.output_report,
             config.mabd_material_preflight.output_report,
         )

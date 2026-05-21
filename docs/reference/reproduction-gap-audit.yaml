@@ -6,11 +6,11 @@ source_commit: "f83889adbec6402e0baa1b4c55db5962a224808d"
 source_commit_scope: "Initial Phase 60 audit source commit; later entries carry per-phase report commits and checksums."
 vendored_newton_commit: "96713fa965463b69c229a4d30582c733ff3526bb"
 latest_update:
-  phase_id: phase79_rolling_cylinder_no_slip_reference
-  update_date: "2026-05-20"
-  source_commit: "72be0f998f46f52cf0ca67d1c8c19fd94769436c"
-  report: reports/experiment_matrix/single_body_rolling_spinning_rbd_no_slip_reference.json
-  report_sha256: "e9c959b15054659cc27a2f1c81eeda2bba81a30265f5fedb6e1d350de27ff032"
+  phase_id: phase80_rolling_explicit_no_slip_candidate
+  update_date: "2026-05-21"
+  source_commit: "5c137ceae88affcef8c9774ebea7cbecfe9177bf"
+  report: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json
+  report_sha256: "6bf5707e67a98e2e4e79871d36968fc4aac34ac9cbe512978a324ea1ed5e93f3"
   status: incomplete
 paper:
   arxiv_id: "2603.08079"
@@ -84,6 +84,9 @@ remaining_experiment_claims:
     rbd_no_slip_reference_report: reports/experiment_matrix/single_body_rolling_spinning_rbd_no_slip_reference.json
     rbd_no_slip_reference_report_status: incomplete
     rbd_no_slip_reference_report_sha256: "e9c959b15054659cc27a2f1c81eeda2bba81a30265f5fedb6e1d350de27ff032"
+    rbd_explicit_no_slip_candidate_report: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json
+    rbd_explicit_no_slip_candidate_report_status: incomplete
+    rbd_explicit_no_slip_candidate_report_sha256: "6bf5707e67a98e2e4e79871d36968fc4aac34ac9cbe512978a324ea1ed5e93f3"
     remaining_missing_lanes_after_phase74:
       - rbd_explicit_baseline
       - mabd_newton
@@ -115,6 +118,11 @@ remaining_experiment_claims:
       - paper_faithful_mabd_rolling_cylinder
       - paper_comparable_timing
     remaining_reproduction_gaps_after_phase79:
+      - paper_faithful_explicit_rbd_baseline
+      - paper_faithful_implicit_rbd_baseline
+      - paper_faithful_mabd_rolling_cylinder
+      - paper_comparable_timing
+    remaining_reproduction_gaps_after_phase80:
       - paper_faithful_explicit_rbd_baseline
       - paper_faithful_implicit_rbd_baseline
       - paper_faithful_mabd_rolling_cylinder
@@ -300,6 +308,9 @@ remaining_experiment_claims:
     committed_report_sha256: null
     next_action: "Source marker sequence and add IK keyframe reconstruction lane."
 current_evidence_reports:
+  - path: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json
+    status: incomplete
+    sha256: "6bf5707e67a98e2e4e79871d36968fc4aac34ac9cbe512978a324ea1ed5e93f3"
   - path: reports/experiment_matrix/single_body_rolling_spinning_rbd_no_slip_reference.json
     status: incomplete
     sha256: "e9c959b15054659cc27a2f1c81eeda2bba81a30265f5fedb6e1d350de27ff032"

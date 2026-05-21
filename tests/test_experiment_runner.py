@@ -669,6 +669,97 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.raw_outputs, {})
         self.assertEqual(loaded.plot_paths, {})
 
+    def test_run_rolling_spinning_rbd_explicit_no_slip_candidate_writes_report(
+        self,
+    ) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_rolling_spinning_rbd_explicit_no_slip_candidate,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_explicit_no_slip_candidate.json"
+            result = run_rolling_spinning_rbd_explicit_no_slip_candidate(
+                config_path=ROLLING_SPINNING_CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(result.report_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "rbd_explicit_no_slip_candidate")
+        self.assertEqual(
+            loaded.solver_mode,
+            "newton_explicit_no_slip_rolling_cylinder_candidate",
+        )
+        self.assertEqual(loaded.backend, "cpu_numpy_projected_no_slip")
+        self.assertFalse(loaded.expected["paper_comparable"])
+        self.assertFalse(loaded.expected["full_experiment_claim_passed"])
+        self.assertEqual(
+            loaded.observed["candidate_status"],
+            "local_no_slip_projection_generated",
+        )
+        self.assertTrue(loaded.observed["local_runtime_measured"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(loaded.observed["threshold_violations"], [])
+        self.assertEqual(
+            loaded.observed["required_reproduction_gaps_remaining"],
+            [
+                "paper_faithful_explicit_rbd_baseline",
+                "paper_faithful_implicit_rbd_baseline",
+                "paper_faithful_mabd_rolling_cylinder",
+                "paper_comparable_timing",
+            ],
+        )
+        for blocker in (
+            "newton_explicit_no_slip_candidate_not_paper_explicit_rbd_solver",
+            "paper_rbd_solver_details_missing",
+            "paper_no_slip_condition_inferred",
+            "no_slip_projection_not_contact_dynamics",
+            "paper_faithful_explicit_rbd_baseline_missing",
+            "paper_faithful_implicit_rbd_baseline_missing",
+            "paper_faithful_mabd_collision_missing",
+            "paper_comparable_timing_missing",
+        ):
+            self.assertIn(blocker, loaded.observed["blocking_reasons"])
+        self.assertEqual(loaded.observed["step_count"], 10000)
+        self.assertEqual(loaded.observed["time_step_s"], 0.01)
+        self.assertEqual(loaded.observed["sample_count"], 7)
+        self.assertAlmostEqual(loaded.observed["final_position_m"][0], 100.0)
+        self.assertEqual(loaded.observed["final_linear_velocity_m_s"], [1.0, 0.0, 0.0])
+        self.assertEqual(
+            loaded.observed["final_angular_velocity_rad_s"],
+            [0.0, 0.0, -2.0],
+        )
+        self.assertLessEqual(
+            loaded.observed["no_slip_residual_m_s"],
+            loaded.threshold["max_no_slip_residual_m_s"],
+        )
+        self.assertLessEqual(
+            loaded.observed["center_height_drift_m"],
+            loaded.threshold["max_center_height_drift_m"],
+        )
+        self.assertLessEqual(
+            abs(loaded.observed["relative_energy_drift"]),
+            loaded.threshold["max_relative_energy_drift"],
+        )
+        self.assertGreater(loaded.timing_distribution["total_wall_time_ms"], 0.0)
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
+        self.assertEqual(
+            loaded.timing_distribution["scope"],
+            "local_no_slip_projection_not_paper_timing",
+        )
+        self.assertEqual(
+            loaded.timing_distribution["paper_explicit_rbd_total_simulation_time_ms"],
+            32.0,
+        )
+        self.assertEqual(loaded.raw_outputs, {})
+        self.assertEqual(loaded.plot_paths, {})
+
     def test_run_rolling_spinning_mabd_newton_writes_diagnostic_report(
         self,
     ) -> None:
@@ -1112,6 +1203,55 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertFalse(loaded.timing_distribution["paper_comparable"])
         self.assertEqual(loaded.timing_distribution["status"], "not_measured")
         self.assertNotIn("total_wall_time_ms", loaded.timing_distribution)
+
+    def test_run_experiment_cli_runs_rolling_spinning_rbd_explicit_no_slip_candidate_lane(
+        self,
+    ) -> None:
+        import json
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "rolling_spinning_explicit_no_slip_candidate.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "rolling_spinning_rbd_explicit_no_slip_candidate",
+                    "--config",
+                    str(ROLLING_SPINNING_CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "test-source",
+                    "--vendored-newton-commit",
+                    "test-newton",
+                ],
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["claim_id"], "experiment.single_body.rolling_spinning")
+        self.assertEqual(payload["status"], "incomplete")
+        self.assertEqual(payload["baseline_lane"], "rbd_explicit_no_slip_candidate")
+        self.assertEqual(
+            loaded.solver_mode,
+            "newton_explicit_no_slip_rolling_cylinder_candidate",
+        )
+        self.assertEqual(loaded.backend, "cpu_numpy_projected_no_slip")
+        self.assertTrue(loaded.observed["local_runtime_measured"])
+        self.assertFalse(loaded.observed["paper_comparable"])
+        self.assertGreater(loaded.timing_distribution["total_wall_time_ms"], 0.0)
+        self.assertFalse(loaded.timing_distribution["paper_comparable"])
 
     def test_run_experiment_cli_runs_rolling_spinning_paper_timing_protocol_lane(
         self,

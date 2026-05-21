@@ -1080,6 +1080,27 @@
   paper-comparable timing result, performance pass, comparative baseline pass,
   completed rolling/spinning reproduction, full paper reproduction, or any
   passed `experiment.*` claim.
+- This repository contains Phase 80 rolling-cylinder explicit no-slip
+  candidate evidence with the Phase 80 record.
+- Phase 80 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json`
+  exists as an incomplete CPU NumPy projected no-slip candidate report, records
+  10000 local explicit projection steps at `h = 0.01 sec`, records
+  `newton_explicit_no_slip_rolling_cylinder_candidate`,
+  `local_runtime_measured = true`, `paper_comparable = false`,
+  `paper_explicit_rbd_total_simulation_time_ms = 32.0`, zero threshold
+  violations for the local no-slip projection, all four remaining reproduction
+  gaps, and `full_experiment_claim_passed = false`.
+- Phase 80 does not verify paper-faithful explicit or implicit RBD,
+  paper-faithful M-ABD rolling-cylinder collision, rolling friction/no-slip
+  contact dynamics in Newton, paper-comparable timing, same-hardware paper
+  timing, co-rotated ABD timing, completed rolling/spinning reproduction, full
+  paper reproduction, or any passed `experiment.*` claim.
+- Phase 80 explicit no-slip candidate evidence must not be described as a
+  paper-faithful explicit RBD result, paper-faithful RBD result,
+  paper-faithful M-ABD rolling-cylinder result, paper-comparable timing result,
+  performance pass, comparative baseline pass, completed rolling/spinning
+  reproduction, full paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

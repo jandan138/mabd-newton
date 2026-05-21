@@ -5077,14 +5077,16 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(
             audit["latest_update"],
             {
-                "phase_id": "phase79_rolling_cylinder_no_slip_reference",
-                "update_date": "2026-05-20",
+                "phase_id": "phase80_rolling_explicit_no_slip_candidate",
+                "update_date": "2026-05-21",
                 "source_commit": (
-                    validate_docs.PHASE79_ROLLING_CYLINDER_NO_SLIP_REFERENCE_COMMIT
+                    validate_docs.PHASE80_ROLLING_EXPLICIT_NO_SLIP_CANDIDATE_COMMIT
                 ),
-                "report": validate_docs.ROLLING_SPINNING_RBD_NO_SLIP_REFERENCE_REPORT_PATH,
+                "report": (
+                    validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH
+                ),
                 "report_sha256": (
-                    validate_docs.PHASE79_ROLLING_SPINNING_RBD_NO_SLIP_REFERENCE_SHA256
+                    validate_docs.PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256
                 ),
                 "status": "incomplete",
             },
@@ -5772,6 +5774,176 @@ class Phase0BootstrapTests(unittest.TestCase):
             self.assertIn(snippet, text)
         self.assertNotIn("TO_BE_BACKFILLED_PHASE79", text)
         self.assertNotIn("phase79-working-tree", text)
+
+    def test_phase80_rolling_explicit_no_slip_candidate_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 80",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 80 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 80 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 80 explicit no-slip candidate evidence",
+        )
+
+        self.assertIn("explicit no-slip candidate", current)
+        self.assertIn("single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json", verified)
+        self.assertIn("local_runtime_measured = true", verified)
+        self.assertIn("paper_comparable = false", verified)
+        self.assertIn("full_experiment_claim_passed = false", verified)
+        for snippet in (
+            "paper-faithful explicit or implicit RBD",
+            "paper-faithful M-ABD rolling-cylinder collision",
+            "contact dynamics in Newton",
+            "paper-comparable timing",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "paper-faithful explicit RBD result",
+            "paper-faithful M-ABD rolling-cylinder result",
+            "paper-comparable timing result",
+            "comparative baseline pass",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        verified_paths = set(validate_docs.REQUIRED_PATHS)
+        self.assertIn(
+            validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH,
+            verified_paths,
+        )
+
+        report = load_claim_report(
+            ROOT / validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH
+        )
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE80_ROLLING_EXPLICIT_NO_SLIP_CANDIDATE_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(report.baseline_lane, "rbd_explicit_no_slip_candidate")
+        self.assertEqual(
+            report.solver_mode,
+            "newton_explicit_no_slip_rolling_cylinder_candidate",
+        )
+        self.assertEqual(report.backend, "cpu_numpy_projected_no_slip")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertFalse(report.expected["paper_comparable"])
+        self.assertFalse(report.expected["full_experiment_claim_passed"])
+        self.assertFalse(report.observed["paper_comparable"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(
+            report.observed["candidate_status"],
+            "local_no_slip_projection_generated",
+        )
+        self.assertTrue(report.observed["local_runtime_measured"])
+        self.assertEqual(report.observed["threshold_violations"], [])
+        self.assertAlmostEqual(report.observed["final_position_m"][0], 100.0)
+        self.assertLessEqual(
+            report.observed["no_slip_residual_m_s"],
+            report.threshold["max_no_slip_residual_m_s"],
+        )
+        self.assertLessEqual(
+            report.observed["center_height_drift_m"],
+            report.threshold["max_center_height_drift_m"],
+        )
+        self.assertLessEqual(
+            abs(report.observed["relative_energy_drift"]),
+            report.threshold["max_relative_energy_drift"],
+        )
+        self.assertEqual(len(report.observed["trajectory_samples"]), 7)
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+        self.assertEqual(
+            report.timing_distribution["scope"],
+            "local_no_slip_projection_not_paper_timing",
+        )
+        self.assertEqual(
+            report.timing_distribution["paper_explicit_rbd_total_simulation_time_ms"],
+            32.0,
+        )
+        self.assertGreater(report.timing_distribution["total_wall_time_ms"], 0.0)
+        self.assertEqual(report.raw_outputs, {})
+        self.assertEqual(report.plot_paths, {})
+
+        actual_sha = validate_docs.sha256_file(
+            ROOT / validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH
+        )
+        self.assertEqual(
+            actual_sha,
+            validate_docs.PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256,
+        )
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        gap_entry = next(
+            entry
+            for entry in audit["remaining_experiment_claims"]
+            if entry["claim_id"] == "experiment.single_body.rolling_spinning"
+        )
+        self.assertEqual(
+            gap_entry["rbd_explicit_no_slip_candidate_report_sha256"],
+            validate_docs.PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256,
+        )
+        self.assertEqual(
+            gap_entry["remaining_reproduction_gaps_after_phase80"],
+            [
+                "paper_faithful_explicit_rbd_baseline",
+                "paper_faithful_implicit_rbd_baseline",
+                "paper_faithful_mabd_rolling_cylinder",
+                "paper_comparable_timing",
+            ],
+        )
+        self.assertIn("paper-faithful explicit RBD", gap_entry["next_action"])
+        self.assertIn("paper-comparable timing", gap_entry["next_action"])
+        validate_docs.validate_phase80_record()
+
+    def test_phase80_record_has_required_evidence_fields(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        text = (
+            ROOT
+            / "docs/records/2026-05-21-phase80-rolling-explicit-no-slip-candidate.md"
+        ).read_text()
+
+        for snippet in (
+            "## Status\n\nincomplete_explicit_no_slip_candidate_recorded",
+            validate_docs.PHASE80_ROLLING_EXPLICIT_NO_SLIP_CANDIDATE_COMMIT,
+            "96713fa965463b69c229a4d30582c733ff3526bb",
+            "rolling_spinning_rbd_explicit_no_slip_candidate",
+            validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH,
+            validate_docs.PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256,
+            "newton_explicit_no_slip_rolling_cylinder_candidate",
+            "cpu_numpy_projected_no_slip",
+            "status = incomplete",
+            "paper_comparable = false",
+            "full_experiment_claim_passed = false",
+            "local_runtime_measured = true",
+            "timing_distribution.scope = local_no_slip_projection_not_paper_timing",
+            "newton_explicit_no_slip_candidate_not_paper_explicit_rbd_solver",
+            "paper_rbd_solver_details_missing",
+            "paper_no_slip_condition_inferred",
+            "no_slip_projection_not_contact_dynamics",
+            "paper_faithful_explicit_rbd_baseline_missing",
+            "paper_faithful_implicit_rbd_baseline_missing",
+            "paper_faithful_mabd_collision_missing",
+            "paper_comparable_timing_missing",
+            "does not prove paper-faithful explicit RBD",
+            "any passed `experiment.*` claim",
+            "mutates_reference_environment=false",
+            "uses_reference_python=false",
+            "uses_ambient_python=false",
+        ):
+            self.assertIn(snippet, text)
+        self.assertNotIn("TO_BE_BACKFILLED_PHASE80", text)
+        self.assertNotIn("phase80-working-tree", text)
 
     def test_phase77_validator_requires_explicit_material_preflight_fields(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -7635,7 +7807,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn(
             (
                 "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74"
-                "/75/76/77/78/79 docs/provenance validation passed"
+                "/75/76/77/78/79/80 docs/provenance validation passed"
             ),
             result.stdout,
         )

@@ -97,6 +97,29 @@ rbd_no_slip_reference:
     max_relative_energy_drift: 1.0e-12
     min_contact_count: 1.0
     max_runtime_wall_time_ms: 0.0
+rbd_explicit_no_slip_candidate:
+  output_report: reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json
+  radius_m: 0.5
+  half_height_m: 0.5
+  density_kg_m3: 1000.0
+  time_step_s: 0.01
+  step_count: 10000
+  sample_count: 7
+  initial_position_m: [0.0, 0.5, 0.0]
+  initial_linear_velocity_m_s: [1.0, 0.0, 0.0]
+  initial_angular_velocity_rad_s: [0.0, 0.0, -2.0]
+  gravity_m_s2: [0.0, -9.81, 0.0]
+  contact:
+    ke: 100000.0
+    kd: 1000.0
+    kf: 1000.0
+    mu: 1.0
+    gap: 0.02
+  thresholds:
+    max_no_slip_residual_m_s: 1.0e-12
+    max_relative_energy_drift: 1.0e-12
+    min_contact_count: 1.0
+    max_runtime_wall_time_ms: 0.0
 mabd_newton:
   output_report: reports/experiment_matrix/single_body_rolling_spinning_mabd_newton.json
   radius_m: 0.5
