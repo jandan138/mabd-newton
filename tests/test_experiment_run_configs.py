@@ -134,6 +134,23 @@ class ExperimentRunConfigTests(unittest.TestCase):
             "reports/experiment_matrix/single_body_spinning_box_figure_curves.json",
         )
         self.assertEqual(
+            config.development_comparison.output_report,
+            "reports/experiment_matrix/single_body_spinning_box_development_comparison.json",
+        )
+        self.assertEqual(config.development_comparison.comparison_scope, "development_only")
+        self.assertFalse(config.development_comparison.paper_faithful)
+        self.assertEqual(config.development_comparison.duration_s, 10.0)
+        self.assertEqual(config.development_comparison.time_step_s, 0.01)
+        self.assertEqual(config.development_comparison.sample_count, 101)
+        np.testing.assert_allclose(
+            config.development_comparison.initial_linear_velocity_m_s,
+            [0.2, 0.0, 0.0],
+        )
+        np.testing.assert_allclose(
+            config.development_comparison.initial_angular_velocity_rad_s,
+            [0.0, 2.0, 0.0],
+        )
+        self.assertEqual(
             config.paper_horizon.figure_pdf_sha256,
             "7669b062348324a3b0090cc9f44930655c83233a87f63389db9198b88f95ae80",
         )
@@ -173,6 +190,69 @@ class ExperimentRunConfigTests(unittest.TestCase):
         np.testing.assert_allclose(properties.angular_momentum_kg_m2_s, [0.0, 100.0, 0.0])
         self.assertIn("linear_momentum_error", config.thresholds)
         self.assertIn("angular_momentum_error", config.thresholds)
+
+    def test_spinning_box_development_comparison_config_is_development_only(self) -> None:
+        config = load_spinning_box_config(ROOT / "configs/experiments/single_body_spinning_box.yaml")
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+
+        validate_spinning_box_config_against_matrix(config, matrix)
+
+        source = self._config_mapping()
+        source["development_comparison"] = {
+            "output_report": (
+                "reports/experiment_matrix/"
+                "single_body_spinning_box_development_comparison.json"
+            ),
+            "comparison_scope": "development_only",
+            "paper_faithful": False,
+            "duration_s": 10.0,
+            "time_step_s": 0.01,
+            "sample_count": 101,
+            "initial_linear_velocity_m_s": [0.2, 0.0, 0.0],
+            "initial_angular_velocity_rad_s": [0.0, 2.0, 0.0],
+        }
+        invalid_paths = (
+            source["report"]["output_report"],
+            source["paper_horizon"]["output_report"],
+            source["paper_horizon"]["decoupled_twist_output_report"],
+            "/tmp/single_body_spinning_box_development_comparison.json",
+            "reports/not_matrix/single_body_spinning_box_development_comparison.json",
+            "../reports/experiment_matrix/single_body_spinning_box_development_comparison.json",
+            "reports/experiment_matrix/not_the_spinning_box_development_comparison.json",
+            "reports/experiment_matrix/single_body_spinning_box_development_comparison.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = deepcopy(source)
+                invalid["development_comparison"]["output_report"] = invalid_path
+                with TemporaryDirectory() as tmpdir:
+                    path = self._write_config(tmpdir, invalid)
+                    with self.assertRaisesRegex(
+                        ExperimentRunConfigError,
+                        "development_comparison.output_report",
+                    ):
+                        bad_config = load_spinning_box_config(path)
+                        validate_spinning_box_config_against_matrix(bad_config, matrix)
+
+        invalid = deepcopy(source)
+        invalid["development_comparison"]["comparison_scope"] = "paper_faithful"
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, invalid)
+            with self.assertRaisesRegex(
+                ExperimentRunConfigError,
+                "development_comparison.comparison_scope",
+            ):
+                load_spinning_box_config(path)
+
+        invalid = deepcopy(source)
+        invalid["development_comparison"]["paper_faithful"] = True
+        with TemporaryDirectory() as tmpdir:
+            path = self._write_config(tmpdir, invalid)
+            with self.assertRaisesRegex(
+                ExperimentRunConfigError,
+                "development_comparison.paper_faithful",
+            ):
+                load_spinning_box_config(path)
 
     def test_rolling_spinning_config_is_machine_checkable(self) -> None:
         config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)

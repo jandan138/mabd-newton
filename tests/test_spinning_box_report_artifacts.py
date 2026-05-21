@@ -34,6 +34,8 @@ REPORTS = {
     / "reports/experiment_matrix/single_body_spinning_box_contacts_input.json",
     "affine_static_plane_contacts": ROOT
     / "reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts.json",
+    "development_comparison": ROOT
+    / "reports/experiment_matrix/single_body_spinning_box_development_comparison.json",
 }
 
 
@@ -404,6 +406,60 @@ class SpinningBoxReportArtifactTests(unittest.TestCase):
         self.assertIn("mabd_kinematic_feasibility_blocker_recorded", blockers)
         self.assertNotIn("collision_detection_not_enabled_for_contacts_input", blockers)
         self.assertEqual(report.raw_outputs["time_series"], "compact_samples_only")
+
+    def test_development_comparison_report_records_10s_newton_mabd_rbd_internal_comparison(
+        self,
+    ) -> None:
+        report = self._load_reports()["development_comparison"]
+
+        self.assertEqual(report.baseline_lane, "spinning_box_development_comparison")
+        self.assertEqual(
+            report.solver_mode,
+            "spinning_box_newton_mabd_rbd_development_comparison",
+        )
+        self.assertEqual(report.backend, "cpu_newton_warp")
+        self.assertFalse(report.observed["paper_faithful"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(report.observed["comparison_scope"], "development_only")
+        self.assertEqual(
+            report.observed["comparison_status"],
+            "development_comparison_recorded",
+        )
+        self.assertEqual(report.observed["duration_s"], 10.0)
+        self.assertEqual(report.observed["time_step_s"], 0.01)
+        self.assertEqual(report.observed["step_count"], 1000)
+        self.assertEqual(report.observed["sample_count"], 101)
+        self.assertEqual(
+            report.observed["mabd_solver_name"],
+            "newton.solvers.SolverMABD",
+        )
+        self.assertEqual(
+            report.observed["rbd_solver_name"],
+            "newton.solvers.SolverSemiImplicit",
+        )
+        self.assertEqual(len(report.observed["trajectory_samples"]["mabd"]), 101)
+        self.assertEqual(len(report.observed["trajectory_samples"]["rbd"]), 101)
+        self.assertEqual(len(report.observed["energy_curve_samples"]), 101)
+        self.assertEqual(report.observed["energy_curve_samples"][-1]["time_s"], 10.0)
+        for metric in (
+            "final_position_delta_m",
+            "max_position_delta_m",
+            "final_energy_delta_j",
+            "max_energy_delta_j",
+            "final_linear_momentum_delta_norm",
+            "max_linear_momentum_delta_norm",
+            "final_angular_momentum_delta_norm",
+            "max_angular_momentum_delta_norm",
+        ):
+            _finite_scalar(report.observed["comparison_metrics"][metric])
+        self.assertIn(
+            "development_comparison_only",
+            report.observed["blocking_reasons"],
+        )
+        self.assertNotIn("lane_gate_status", report.observed)
+        self.assertEqual(report.raw_outputs["trajectory"], "embedded_compact_samples")
+        self.assertEqual(report.raw_outputs["energy_curve"], "embedded_energy_curve_samples")
+        self.assertEqual(report.plot_paths, {})
 
     def test_matrix_retains_spinning_box_blocked_status(self) -> None:
         matrix = yaml.safe_load(

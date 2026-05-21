@@ -1248,6 +1248,27 @@
   implicit RBD result, paper-faithful M-ABD rolling-cylinder result,
   comparative baseline pass, completed rolling/spinning reproduction, full
   paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 87 spinning-box development comparison
+  evidence with the Phase 87 record.
+- Phase 87 verifies that
+  `reports/experiment_matrix/single_body_spinning_box_development_comparison.json`
+  exists as an incomplete development-only Newton CPU/Warp comparison report,
+  records a 10 second `SolverMABD` rollout and a matching
+  `SolverSemiImplicit` rollout for `single_body_spinning_box`, embeds compact
+  trajectory samples and energy curve samples, records M-ABD vs RBD momentum,
+  energy, and position deltas, keeps
+  `comparison_scope = development_only`, `paper_faithful = false`,
+  `full_experiment_claim_passed = false`, and `paper_comparable = false`.
+- Phase 87 does not verify paper-faithful M-ABD spinning-box dynamics,
+  paper-faithful RBD spinning-box baseline behavior, paper collision handling,
+  paper parameter matching, paper-comparable timing, comparison pass gates, a
+  completed spinning-box reproduction, full paper reproduction, or any passed
+  `experiment.*` claim.
+- Phase 87 spinning-box development comparison evidence must not be described
+  as a paper-faithful spinning-box result, passed M-ABD lane, passed RBD
+  baseline, comparison pass gate, paper-comparable timing result, completed
+  spinning-box reproduction, full paper reproduction, or any passed
+  `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

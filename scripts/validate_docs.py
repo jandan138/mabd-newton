@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Phase 0-86 docs and provenance contracts."""
+"""Validate Phase 0-87 docs and provenance contracts."""
 
 from __future__ import annotations
 
@@ -181,6 +181,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-21-phase84-rolling-implicit-rbd-source-gate.md",
     "docs/records/2026-05-21-phase85-rolling-mabd-source-gate.md",
     "docs/records/2026-05-21-phase86-rolling-timing-source-gate.md",
+    "docs/records/2026-05-21-phase87-spinning-box-development-comparison.md",
     "docs/records/2026-05-20-after-phase76-completion-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
@@ -292,6 +293,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-21-mabd-phase85-rolling-mabd-source-gate.md",
     "docs/superpowers/specs/2026-05-21-phase86-rolling-timing-source-gate-design.md",
     "docs/superpowers/plans/2026-05-21-mabd-phase86-rolling-timing-source-gate.md",
+    "docs/superpowers/specs/2026-05-21-phase87-spinning-box-development-comparison-design.md",
+    "docs/superpowers/plans/2026-05-21-mabd-phase87-spinning-box-development-comparison.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -317,6 +320,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_implicit_source_gate.json",
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_source_gate.json",
     "reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json",
+    "reports/experiment_matrix/single_body_spinning_box_development_comparison.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -404,6 +408,7 @@ PHASE83_ROLLING_EXPLICIT_RBD_SOURCE_GATE_COMMIT = "bcb6202"
 PHASE84_ROLLING_IMPLICIT_RBD_SOURCE_GATE_COMMIT = "b1fafc7"
 PHASE85_ROLLING_MABD_SOURCE_GATE_COMMIT = "fadd6ad"
 PHASE86_ROLLING_TIMING_SOURCE_GATE_COMMIT = "62ed764"
+PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_COMMIT = "ce0c5bd"
 ROLLING_SPINNING_REPORT_PATH = (
     "reports/experiment_matrix/single_body_rolling_spinning.json"
 )
@@ -487,6 +492,9 @@ SPINNING_BOX_FIGURE_CURVES_REPORT_PATH = (
 SPINNING_BOX_COMPARISON_REPORT_PATH = (
     "reports/experiment_matrix/single_body_spinning_box_comparison.json"
 )
+SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH = (
+    "reports/experiment_matrix/single_body_spinning_box_development_comparison.json"
+)
 PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256 = (
     "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
 )
@@ -561,6 +569,9 @@ PHASE85_ROLLING_SPINNING_MABD_SOURCE_GATE_SHA256 = (
 )
 PHASE86_ROLLING_SPINNING_TIMING_SOURCE_GATE_SHA256 = (
     "5215b20a92c514a48d13f23c9ee046c3d38c302dd64ec9afc36a86cdd93a6845"
+)
+PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256 = (
+    "37d5dec0c0dbecf66c538ed0662cb19741af9cc22dea8f90ea7ecbdc749cca22"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -17405,6 +17416,323 @@ def validate_phase86_record() -> None:
             fail("Phase 86 must not pass experiment.* claims")
 
 
+def validate_phase87_record() -> None:
+    record_path = (
+        ROOT
+        / "docs/records/2026-05-21-phase87-spinning-box-development-comparison.md"
+    )
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/"
+        "2026-05-21-phase87-spinning-box-development-comparison-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/"
+        "2026-05-21-mabd-phase87-spinning-box-development-comparison.md"
+    )
+    report_path = ROOT / SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH
+    config_path = ROOT / "configs/experiments/single_body_spinning_box.yaml"
+    matrix_path = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
+    metric_names = (
+        "final_position_delta_m",
+        "max_position_delta_m",
+        "final_energy_delta_j",
+        "max_energy_delta_j",
+        "final_linear_momentum_delta_norm",
+        "max_linear_momentum_delta_norm",
+        "final_angular_momentum_delta_norm",
+        "max_angular_momentum_delta_norm",
+    )
+
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary = " ".join(boundary_text.split())
+
+    for snippet in (
+        "incomplete_development_comparison_recorded",
+        PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        str(MABD_PYTHON),
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "spinning_box_development_comparison",
+        SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH,
+        PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256,
+        "cpu_newton_warp",
+        "spinning_box_newton_mabd_rbd_development_comparison",
+        "status = incomplete",
+        "comparison_scope = development_only",
+        "comparison_status = development_comparison_recorded",
+        "paper_faithful = false",
+        "full_experiment_claim_passed = false",
+        "duration_s = 10.0",
+        "time_step_s = 0.01",
+        "step_count = 1000",
+        "sample_count = 101",
+        "newton.solvers.SolverMABD",
+        "newton.solvers.SolverSemiImplicit",
+        "timing_distribution.scope = local_cpu_wall_clock_not_paper_comparable",
+        "timing_distribution.paper_comparable = false",
+        "development comparison only",
+        "paper-faithful M-ABD spinning-box lane",
+        "No experiment.* claim is passed.",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in text:
+            fail(f"Phase 87 record missing required evidence field: {snippet}")
+    for metric_name in metric_names:
+        if metric_name not in text:
+            fail(f"Phase 87 record missing comparison metric: {metric_name}")
+    for forbidden in (
+        "experiment.single_body.spinning_box passed",
+        "paper_faithful = true",
+        "full_experiment_claim_passed = true",
+        "comparison pass gate enabled",
+    ):
+        if forbidden in text:
+            fail(f"Phase 87 record overclaims unsupported evidence: {forbidden}")
+
+    for snippet in (
+        "Phase 87 Spinning-Box Development Comparison Design",
+        "spinning_box_development_comparison",
+        "SolverMABD",
+        "SolverSemiImplicit",
+        "comparison_scope = development_only",
+        "paper_faithful = false",
+        "full_experiment_claim_passed = false",
+        "status = incomplete",
+        "timing_distribution.paper_comparable = false",
+        "observed.step_count = 1000",
+        "development_comparison_only",
+        "No `experiment.*` claim is passed.",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 87 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 87 Spinning-Box Development Comparison Implementation Plan",
+        "run_spinning_box_development_comparison",
+        "spinning_box_development_comparison",
+        "SolverMABD",
+        "SolverSemiImplicit",
+        "paper_faithful = false",
+        "full_experiment_claim_passed = false",
+        PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_COMMIT,
+        PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256,
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 87 plan missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 87 spinning-box development comparison evidence",
+        "10 second `SolverMABD` rollout",
+        "`SolverSemiImplicit` rollout",
+        "comparison_scope = development_only",
+        "paper_faithful = false",
+        "full_experiment_claim_passed = false",
+        "paper_comparable = false",
+        "does not verify paper-faithful M-ABD spinning-box dynamics",
+        "must not be described as a paper-faithful spinning-box result",
+    ):
+        if snippet not in normalized_boundary:
+            fail(f"Phase 87 claim boundary missing: {snippet}")
+
+    config = load_spinning_box_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_spinning_box_config_against_matrix(config, matrix)
+    lane = config.development_comparison
+    if lane.output_report != SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH:
+        fail("Phase 87 development comparison output report changed")
+    if lane.comparison_scope != "development_only":
+        fail("Phase 87 development comparison scope changed")
+    if lane.paper_faithful is not False:
+        fail("Phase 87 development comparison must remain non-paper-faithful")
+    if lane.duration_s != 10.0 or lane.time_step_s != 0.01:
+        fail("Phase 87 development comparison duration or time step changed")
+    if lane.sample_count != 101:
+        fail("Phase 87 development comparison sample count changed")
+    if not np.allclose(lane.initial_linear_velocity_m_s, [0.2, 0.0, 0.0]):
+        fail("Phase 87 development comparison linear velocity changed")
+    if not np.allclose(lane.initial_angular_velocity_rad_s, [0.0, 2.0, 0.0]):
+        fail("Phase 87 development comparison angular velocity changed")
+
+    report = load_claim_report(report_path)
+    if report.source_commit != PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_COMMIT:
+        fail("Phase 87 report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 87 report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 87 report vendored Newton commit changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 87 report paper source version changed")
+    if report.claim_id != "experiment.single_body.spinning_box":
+        fail("Phase 87 report claim_id changed")
+    if report.scene_id != "single_body_spinning_box":
+        fail("Phase 87 report scene_id changed")
+    if report.baseline_lane != "spinning_box_development_comparison":
+        fail("Phase 87 report baseline lane changed")
+    if report.solver_mode != "spinning_box_newton_mabd_rbd_development_comparison":
+        fail("Phase 87 report solver mode changed")
+    if report.backend != "cpu_newton_warp":
+        fail("Phase 87 report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 87 report must remain incomplete")
+    if report.expected.get("comparison_scope") != "development_only":
+        fail("Phase 87 expected comparison scope changed")
+    if report.expected.get("paper_faithful") is not False:
+        fail("Phase 87 expected paper_faithful must be false")
+    if report.expected.get("full_experiment_claim_passed") is not False:
+        fail("Phase 87 expected full experiment pass flag must be false")
+    if report.expected.get("duration_s") != 10.0:
+        fail("Phase 87 expected duration changed")
+    if report.expected.get("time_step_s") != 0.01:
+        fail("Phase 87 expected time step changed")
+    if report.expected.get("sample_count") != 101:
+        fail("Phase 87 expected sample count changed")
+
+    observed = report.observed
+    if observed.get("comparison_status") != "development_comparison_recorded":
+        fail("Phase 87 comparison status changed")
+    if observed.get("comparison_scope") != "development_only":
+        fail("Phase 87 observed comparison scope changed")
+    if observed.get("paper_faithful") is not False:
+        fail("Phase 87 observed paper_faithful must be false")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 87 observed full experiment pass flag must be false")
+    if observed.get("duration_s") != 10.0:
+        fail("Phase 87 observed duration changed")
+    if observed.get("time_step_s") != 0.01:
+        fail("Phase 87 observed time step changed")
+    if observed.get("step_count") != 1000:
+        fail("Phase 87 observed step count changed")
+    if observed.get("sample_count") != 101:
+        fail("Phase 87 observed sample count changed")
+    if observed.get("mabd_solver_name") != "newton.solvers.SolverMABD":
+        fail("Phase 87 M-ABD solver name changed")
+    if observed.get("rbd_solver_name") != "newton.solvers.SolverSemiImplicit":
+        fail("Phase 87 RBD solver name changed")
+    if "lane_gate_status" in observed:
+        fail("Phase 87 development comparison must not expose a lane gate")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 87 blocking_reasons must be a list")
+    for blocker in ("development_comparison_only", "paper_faithful_gate_not_evaluated"):
+        if blocker not in blockers:
+            fail(f"Phase 87 blocker missing: {blocker}")
+    metrics = observed.get("comparison_metrics")
+    if not isinstance(metrics, dict):
+        fail("Phase 87 comparison metrics missing")
+    for metric_name in metric_names:
+        value = metrics.get(metric_name)
+        if not isinstance(value, int | float) or not np.isfinite(float(value)):
+            fail(f"Phase 87 comparison metric invalid: {metric_name}")
+    trajectories = observed.get("trajectory_samples")
+    if not isinstance(trajectories, dict):
+        fail("Phase 87 trajectory samples missing")
+    if len(trajectories.get("mabd", [])) != 101:
+        fail("Phase 87 M-ABD trajectory sample count changed")
+    if len(trajectories.get("rbd", [])) != 101:
+        fail("Phase 87 RBD trajectory sample count changed")
+    energy_curve = observed.get("energy_curve_samples")
+    if not isinstance(energy_curve, list) or len(energy_curve) != 101:
+        fail("Phase 87 energy curve sample count changed")
+    if energy_curve[0].get("time_s") != 0.0 or energy_curve[-1].get("time_s") != 10.0:
+        fail("Phase 87 energy curve time range changed")
+    if "energy_delta_j" not in energy_curve[-1]:
+        fail("Phase 87 energy curve missing energy deltas")
+
+    if report.timing_distribution.get("scope") != "local_cpu_wall_clock_not_paper_comparable":
+        fail("Phase 87 timing scope changed")
+    if report.timing_distribution.get("paper_comparable") is not False:
+        fail("Phase 87 timing distribution must be non-paper-comparable")
+    if report.raw_outputs.get("trajectory") != "embedded_compact_samples":
+        fail("Phase 87 trajectory raw output marker changed")
+    if report.raw_outputs.get("energy_curve") != "embedded_energy_curve_samples":
+        fail("Phase 87 energy curve raw output marker changed")
+    if report.plot_paths != {}:
+        fail("Phase 87 must not commit plot artifacts")
+
+    actual_hash = sha256_file(report_path)
+    if actual_hash != PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256:
+        fail("Phase 87 development comparison report sha256 changed")
+    if PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256 not in text:
+        fail("Phase 87 record report sha256 mismatch")
+
+    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
+    global_status = audit.get("global_status")
+    if not isinstance(global_status, dict):
+        fail("Phase 87 gap audit missing global status")
+    if global_status.get("experiment_claims_passed") != 0:
+        fail("Phase 87 must not pass experiment claims")
+    if global_status.get("full_reproduction_complete") is not False:
+        fail("Phase 87 must not mark full reproduction complete")
+    entries = audit.get("remaining_experiment_claims")
+    if not isinstance(entries, list):
+        fail("Phase 87 gap audit missing remaining_experiment_claims")
+    spinning_entry = next(
+        (
+            entry
+            for entry in entries
+            if isinstance(entry, dict)
+            and entry.get("claim_id") == "experiment.single_body.spinning_box"
+        ),
+        None,
+    )
+    if spinning_entry is None:
+        fail("Phase 87 gap audit missing spinning-box entry")
+    if (
+        spinning_entry.get("development_comparison_report")
+        != SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH
+    ):
+        fail("Phase 87 gap audit missing development comparison report path")
+    if spinning_entry.get("development_comparison_report_status") != "incomplete":
+        fail("Phase 87 gap audit development comparison status changed")
+    if (
+        spinning_entry.get("development_comparison_report_sha256")
+        != PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256
+    ):
+        fail("Phase 87 gap audit development comparison sha changed")
+    if (
+        SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH
+        not in spinning_entry.get("related_reports", [])
+    ):
+        fail("Phase 87 gap audit related reports missing development comparison")
+
+    report_entries = audit.get("current_evidence_reports")
+    if not isinstance(report_entries, list):
+        fail("Phase 87 gap audit missing current_evidence_reports")
+    evidence_entry = next(
+        (
+            entry
+            for entry in report_entries
+            if isinstance(entry, dict)
+            and entry.get("path") == SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH
+        ),
+        None,
+    )
+    if evidence_entry is None:
+        fail("Phase 87 gap audit missing development comparison evidence entry")
+    if evidence_entry.get("status") != "incomplete":
+        fail("Phase 87 gap audit development comparison entry status changed")
+    if evidence_entry.get("sha256") != PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256:
+        fail("Phase 87 gap audit development comparison entry sha changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.spinning_box":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 87 must keep spinning-box experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 87 must not pass experiment.* claims")
+
+
 def validate_after_phase76_completion_audit() -> None:
     record_path = ROOT / "docs/records/2026-05-20-after-phase76-completion-audit.md"
     text = record_path.read_text(encoding="utf-8")
@@ -19394,6 +19722,7 @@ def main() -> int:
     validate_phase84_record()
     validate_phase85_record()
     validate_phase86_record()
+    validate_phase87_record()
     validate_after_phase76_completion_audit()
     validate_paper_claims()
     validate_experiment_contracts()
@@ -19401,7 +19730,7 @@ def main() -> int:
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81/82/83/84/85/86 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81/82/83/84/85/86/87 "
         "docs/provenance validation passed"
     )
     return 0

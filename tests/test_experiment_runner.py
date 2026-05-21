@@ -2021,6 +2021,61 @@ class ExperimentRunnerTests(unittest.TestCase):
                     vendored_newton_commit="test-newton",
                 )
 
+    def test_run_spinning_box_development_comparison_writes_report(self) -> None:
+        from mabd_reproduction.experiment_runner import (
+            run_spinning_box_development_comparison,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "spinning_box_development_comparison.json"
+            result = run_spinning_box_development_comparison(
+                config_path=CONFIG_PATH,
+                matrix_path=MATRIX_PATH,
+                output_path=output_path,
+                source_commit="test-source",
+                vendored_newton_commit="test-newton",
+            )
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(result.report_path, output_path)
+        self.assertEqual(result.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(result.status, EvidenceStatus.INCOMPLETE)
+        self.assertEqual(loaded.baseline_lane, "spinning_box_development_comparison")
+        self.assertEqual(
+            loaded.solver_mode,
+            "spinning_box_newton_mabd_rbd_development_comparison",
+        )
+        self.assertEqual(loaded.backend, "cpu_newton_warp")
+        self.assertEqual(loaded.observed["comparison_status"], "development_comparison_recorded")
+        self.assertFalse(loaded.observed["paper_faithful"])
+        self.assertFalse(loaded.observed["full_experiment_claim_passed"])
+        self.assertEqual(loaded.observed["duration_s"], 10.0)
+        self.assertEqual(loaded.observed["time_step_s"], 0.01)
+        self.assertEqual(loaded.observed["step_count"], 1000)
+        self.assertEqual(loaded.observed["sample_count"], 101)
+        self.assertEqual(
+            loaded.observed["mabd_solver_name"],
+            "newton.solvers.SolverMABD",
+        )
+        self.assertEqual(
+            loaded.observed["rbd_solver_name"],
+            "newton.solvers.SolverSemiImplicit",
+        )
+        self.assertIn("max_position_delta_m", loaded.observed["comparison_metrics"])
+        self.assertIn("max_energy_delta_j", loaded.observed["comparison_metrics"])
+        self.assertEqual(len(loaded.observed["trajectory_samples"]["mabd"]), 101)
+        self.assertEqual(len(loaded.observed["trajectory_samples"]["rbd"]), 101)
+        self.assertEqual(len(loaded.observed["energy_curve_samples"]), 101)
+        self.assertEqual(
+            loaded.observed["energy_curve_samples"][-1]["time_s"],
+            10.0,
+        )
+        self.assertNotIn("lane_gate_status", loaded.observed)
+        self.assertEqual(loaded.raw_outputs["trajectory"], "embedded_compact_samples")
+        self.assertEqual(loaded.raw_outputs["energy_curve"], "embedded_energy_curve_samples")
+        self.assertEqual(loaded.plot_paths, {})
+        self.assertIn("development comparison only", loaded.failure_reason)
+
     def test_run_spinning_box_contact_response_writes_explicit_output_report(self) -> None:
         from mabd_reproduction.experiment_runner import run_spinning_box_contact_response
 
@@ -4559,6 +4614,51 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(loaded.source_commit, "cli-source")
         self.assertTrue(loaded.observed["digitized_figure_reference_available"])
         self.assertEqual(loaded.raw_outputs["figure_curve_report"], figure_path.as_posix())
+
+    def test_run_experiment_cli_writes_spinning_box_development_comparison_report(
+        self,
+    ) -> None:
+        import json
+        import os
+        import subprocess
+        import sys
+
+        with TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "development_comparison_cli.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/run_experiment.py",
+                    "--lane",
+                    "spinning_box_development_comparison",
+                    "--config",
+                    str(CONFIG_PATH),
+                    "--matrix",
+                    str(MATRIX_PATH),
+                    "--output",
+                    str(output_path),
+                    "--source-commit",
+                    "cli-source",
+                    "--vendored-newton-commit",
+                    "cli-newton",
+                ],
+                cwd=ROOT,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}:{ROOT / 'vendor/newton'}"},
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            summary = json.loads(result.stdout)
+            loaded = load_claim_report(output_path)
+
+        self.assertEqual(summary["baseline_lane"], "spinning_box_development_comparison")
+        self.assertEqual(summary["status"], "incomplete")
+        self.assertEqual(loaded.source_commit, "cli-source")
+        self.assertEqual(
+            loaded.solver_mode,
+            "spinning_box_newton_mabd_rbd_development_comparison",
+        )
 
     def test_run_experiment_cli_comparison_requires_input_reports(self) -> None:
         import os

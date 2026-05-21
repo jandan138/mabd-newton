@@ -6744,6 +6744,119 @@ class Phase0BootstrapTests(unittest.TestCase):
         )
         validate_docs.validate_phase86_record()
 
+    def test_phase87_spinning_box_development_comparison_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 87",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 87 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 87 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 87 spinning-box development comparison evidence",
+        )
+
+        self.assertIn("spinning-box development comparison", current)
+        self.assertIn(
+            "single_body_spinning_box_development_comparison.json",
+            verified,
+        )
+        self.assertIn("10 second `SolverMABD` rollout", verified)
+        self.assertIn("`SolverSemiImplicit` rollout", verified)
+        self.assertIn("comparison_scope = development_only", verified)
+        self.assertIn("paper_faithful = false", verified)
+        self.assertIn("full_experiment_claim_passed = false", verified)
+        for snippet in (
+            "paper-faithful M-ABD spinning-box dynamics",
+            "paper-faithful RBD spinning-box baseline behavior",
+            "paper parameter matching",
+            "paper-comparable timing",
+            "comparison pass gates",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "paper-faithful spinning-box result",
+            "passed M-ABD lane",
+            "passed RBD baseline",
+            "comparison pass gate",
+            "completed spinning-box reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        verified_paths = set(validate_docs.REQUIRED_PATHS)
+        self.assertIn(
+            validate_docs.SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH,
+            verified_paths,
+        )
+
+        report = load_claim_report(
+            ROOT / validate_docs.SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH
+        )
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, validate_docs.VENDORED_NEWTON_COMMIT)
+        self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(report.scene_id, "single_body_spinning_box")
+        self.assertEqual(report.baseline_lane, "spinning_box_development_comparison")
+        self.assertEqual(
+            report.solver_mode,
+            "spinning_box_newton_mabd_rbd_development_comparison",
+        )
+        self.assertEqual(report.backend, "cpu_newton_warp")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(report.observed["comparison_scope"], "development_only")
+        self.assertEqual(
+            report.observed["comparison_status"],
+            "development_comparison_recorded",
+        )
+        self.assertFalse(report.observed["paper_faithful"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(report.observed["duration_s"], 10.0)
+        self.assertEqual(report.observed["time_step_s"], 0.01)
+        self.assertEqual(report.observed["step_count"], 1000)
+        self.assertEqual(report.observed["sample_count"], 101)
+        self.assertEqual(len(report.observed["trajectory_samples"]["mabd"]), 101)
+        self.assertEqual(len(report.observed["trajectory_samples"]["rbd"]), 101)
+        self.assertEqual(len(report.observed["energy_curve_samples"]), 101)
+        self.assertEqual(report.observed["energy_curve_samples"][-1]["time_s"], 10.0)
+        self.assertIn(
+            "max_energy_delta_j",
+            report.observed["comparison_metrics"],
+        )
+        self.assertNotIn("lane_gate_status", report.observed)
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+        self.assertEqual(report.plot_paths, {})
+
+        actual_sha = validate_docs.sha256_file(
+            ROOT / validate_docs.SPINNING_BOX_DEVELOPMENT_COMPARISON_REPORT_PATH
+        )
+        self.assertEqual(
+            actual_sha,
+            validate_docs.PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256,
+        )
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        self.assertEqual(audit["global_status"]["experiment_claims_passed"], 0)
+        gap_entry = next(
+            entry
+            for entry in audit["remaining_experiment_claims"]
+            if entry["claim_id"] == "experiment.single_body.spinning_box"
+        )
+        self.assertEqual(
+            gap_entry["development_comparison_report_sha256"],
+            validate_docs.PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256,
+        )
+        validate_docs.validate_phase87_record()
+
     def test_phase80_record_has_required_evidence_fields(self) -> None:
         import scripts.validate_docs as validate_docs
 
@@ -8685,7 +8798,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn(
             (
                 "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74"
-                "/75/76/77/78/79/80/81/82/83/84/85/86 docs/provenance validation passed"
+                "/75/76/77/78/79/80/81/82/83/84/85/86/87 docs/provenance validation passed"
             ),
             result.stdout,
         )
