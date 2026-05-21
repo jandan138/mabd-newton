@@ -1101,6 +1101,28 @@
   paper-faithful M-ABD rolling-cylinder result, paper-comparable timing result,
   performance pass, comparative baseline pass, completed rolling/spinning
   reproduction, full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 81 M-ABD rolling contact world-constraint
+  candidate evidence with the Phase 81 record.
+- Phase 81 verifies that
+  `reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json`
+  exists as an incomplete Newton `SolverMABD` CPU world-constraint contact
+  candidate report, records 10000 local steps at `h = 0.01 sec`, records
+  `contact_constraint_mode = world`, `generated_world_constraint_count_summary`
+  with `max = 1`, `generated_plane_constraint_count_summary` with `max = 0`,
+  `contacts_input_summary_source = last_contacts_input_summary`,
+  `local_runtime_measured = true`, `paper_comparable = false`, all four
+  remaining rolling/spinning reproduction gaps, and
+  `full_experiment_claim_passed = false`.
+- Phase 81 does not verify paper-faithful affine rolling contact/friction,
+  paper-faithful explicit or implicit RBD, paper-faithful M-ABD
+  rolling-cylinder collision, paper-comparable timing, same-hardware paper
+  timing, co-rotated ABD timing, completed rolling/spinning reproduction, full
+  paper reproduction, or any passed `experiment.*` claim.
+- Phase 81 M-ABD rolling contact candidate evidence must not be described as a
+  paper-faithful M-ABD rolling-cylinder result, paper-faithful contact result,
+  paper-comparable timing result, performance pass, comparative baseline pass,
+  completed rolling/spinning reproduction, full paper reproduction, or any
+  passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

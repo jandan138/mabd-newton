@@ -5077,16 +5077,16 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertEqual(
             audit["latest_update"],
             {
-                "phase_id": "phase80_rolling_explicit_no_slip_candidate",
+                "phase_id": "phase81_mabd_rolling_contact_candidate",
                 "update_date": "2026-05-21",
                 "source_commit": (
-                    validate_docs.PHASE80_ROLLING_EXPLICIT_NO_SLIP_CANDIDATE_COMMIT
+                    validate_docs.PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT
                 ),
                 "report": (
-                    validate_docs.ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH
+                    validate_docs.ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH
                 ),
                 "report_sha256": (
-                    validate_docs.PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256
+                    validate_docs.PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256
                 ),
                 "status": "incomplete",
             },
@@ -5904,6 +5904,141 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn("paper-faithful explicit RBD", gap_entry["next_action"])
         self.assertIn("paper-comparable timing", gap_entry["next_action"])
         validate_docs.validate_phase80_record()
+
+    def test_phase81_mabd_rolling_contact_candidate_artifact(self) -> None:
+        import scripts.validate_docs as validate_docs
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 81",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 81 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 81 does not verify",
+        )
+        forbidden = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 81 M-ABD rolling contact candidate evidence",
+        )
+
+        self.assertIn("world-constraint", current)
+        self.assertIn("single_body_rolling_spinning_mabd_rolling_contact_candidate.json", verified)
+        self.assertIn("contact_constraint_mode = world", verified)
+        self.assertIn("generated_world_constraint_count_summary", verified)
+        self.assertIn("full_experiment_claim_passed = false", verified)
+        for snippet in (
+            "paper-faithful affine rolling contact/friction",
+            "paper-faithful explicit or implicit RBD",
+            "paper-comparable timing",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+        for snippet in (
+            "paper-faithful M-ABD rolling-cylinder result",
+            "paper-faithful contact result",
+            "paper-comparable timing result",
+            "comparative baseline pass",
+            "full paper reproduction",
+        ):
+            self.assertIn(snippet, forbidden)
+
+        verified_paths = set(validate_docs.REQUIRED_PATHS)
+        self.assertIn(
+            validate_docs.ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH,
+            verified_paths,
+        )
+
+        report = load_claim_report(
+            ROOT / validate_docs.ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH
+        )
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, "96713fa965463b69c229a4d30582c733ff3526bb")
+        self.assertEqual(report.claim_id, "experiment.single_body.rolling_spinning")
+        self.assertEqual(report.baseline_lane, "mabd_rolling_contact_candidate")
+        self.assertEqual(
+            report.solver_mode,
+            "newton_mabd_rolling_contact_world_constraint_candidate",
+        )
+        self.assertEqual(report.backend, "cpu_newton_mabd_world_constraints")
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertFalse(report.expected["paper_comparable"])
+        self.assertFalse(report.expected["full_experiment_claim_passed"])
+        self.assertFalse(report.observed["paper_comparable"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertEqual(report.observed["contact_constraint_mode"], "world")
+        self.assertEqual(
+            report.observed["contacts_input_summary_source"],
+            "last_contacts_input_summary",
+        )
+        self.assertEqual(
+            report.observed["generated_world_constraint_count_summary"]["max"],
+            1,
+        )
+        self.assertEqual(
+            report.observed["generated_plane_constraint_count_summary"]["max"],
+            0,
+        )
+        self.assertIn(
+            "mabd_rolling_contact_candidate_not_paper_faithful",
+            report.observed["blocking_reasons"],
+        )
+        self.assertIn(
+            "diagnostic_world_constraints_not_paper_friction_law",
+            report.observed["blocking_reasons"],
+        )
+        self.assertEqual(
+            report.observed["required_reproduction_gaps_remaining"],
+            [
+                "paper_faithful_explicit_rbd_baseline",
+                "paper_faithful_implicit_rbd_baseline",
+                "paper_faithful_mabd_rolling_cylinder",
+                "paper_comparable_timing",
+            ],
+        )
+        self.assertIn(
+            "max_no_slip_residual_m_s",
+            report.observed["threshold_violations"],
+        )
+        self.assertEqual(report.raw_outputs, {"time_series": "not_written"})
+        self.assertEqual(report.plot_paths, {})
+
+        actual_sha = validate_docs.sha256_file(
+            ROOT / validate_docs.ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH
+        )
+        self.assertEqual(
+            actual_sha,
+            validate_docs.PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256,
+        )
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        self.assertEqual(
+            audit["latest_update"]["phase_id"],
+            "phase81_mabd_rolling_contact_candidate",
+        )
+        gap_entry = next(
+            entry
+            for entry in audit["remaining_experiment_claims"]
+            if entry["claim_id"] == "experiment.single_body.rolling_spinning"
+        )
+        self.assertEqual(
+            gap_entry["mabd_rolling_contact_candidate_report_sha256"],
+            validate_docs.PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256,
+        )
+        self.assertEqual(
+            gap_entry["remaining_reproduction_gaps_after_phase81"],
+            [
+                "paper_faithful_explicit_rbd_baseline",
+                "paper_faithful_implicit_rbd_baseline",
+                "paper_faithful_mabd_rolling_cylinder",
+                "paper_comparable_timing",
+            ],
+        )
+        validate_docs.validate_phase81_record()
 
     def test_phase80_record_has_required_evidence_fields(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -7807,7 +7942,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn(
             (
                 "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74"
-                "/75/76/77/78/79/80 docs/provenance validation passed"
+                "/75/76/77/78/79/80/81 docs/provenance validation passed"
             ),
             result.stdout,
         )

@@ -107,6 +107,7 @@ class RollingSpinningMABDNewtonConfig:
     initial_linear_velocity_m_s: np.ndarray
     initial_angular_velocity_rad_s: np.ndarray
     gravity_m_s2: np.ndarray
+    contact_constraint_mode: str
     thresholds: dict[str, float]
 
 
@@ -134,6 +135,7 @@ class RollingSpinningRunConfig:
     rbd_explicit_no_slip_candidate: RollingSpinningRBDBaselineConfig
     mabd_newton: RollingSpinningMABDNewtonConfig
     mabd_material_preflight: RollingSpinningMABDNewtonConfig
+    mabd_rolling_contact_candidate: RollingSpinningMABDNewtonConfig
     paper_timing_protocol: RollingSpinningTimingProtocolConfig
     report_status: EvidenceStatus
     failure_reason: str
@@ -396,6 +398,10 @@ ROLLING_SPINNING_MABD_NEWTON_OUTPUT_REPORT = (
 ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_mabd_material_preflight.json"
 )
+ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_OUTPUT_REPORT = (
+    "reports/experiment_matrix/"
+    "single_body_rolling_spinning_mabd_rolling_contact_candidate.json"
+)
 ROLLING_SPINNING_TIMING_PROTOCOL_OUTPUT_REPORT = (
     "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json"
 )
@@ -425,6 +431,7 @@ ROLLING_SPINNING_MABD_NEWTON_THRESHOLD_KEYS = frozenset(
         "max_runtime_wall_time_ms",
     }
 )
+ROLLING_SPINNING_MABD_CONTACT_CONSTRAINT_MODES = frozenset({"plane", "world"})
 
 PHYSICAL_PENDULUM_THRESHOLD_KEYS = frozenset(
     {
@@ -967,6 +974,15 @@ def _require_rolling_spinning_mabd_newton(
         if "zero_stiffness_diagnostic" in section
         else default_zero_stiffness_diagnostic
     )
+    contact_constraint_mode = (
+        _require_str(section, "contact_constraint_mode")
+        if "contact_constraint_mode" in section
+        else "plane"
+    )
+    if contact_constraint_mode not in ROLLING_SPINNING_MABD_CONTACT_CONSTRAINT_MODES:
+        raise ExperimentRunConfigError(
+            f"{key}.contact_constraint_mode must be plane or world"
+        )
     return RollingSpinningMABDNewtonConfig(
         output_report=_require_str(section, "output_report"),
         radius_m=_require_positive_float(section, "radius_m"),
@@ -992,6 +1008,7 @@ def _require_rolling_spinning_mabd_newton(
             "initial_angular_velocity_rad_s",
         ),
         gravity_m_s2=_require_negative_y_gravity_array(section, "gravity_m_s2"),
+        contact_constraint_mode=contact_constraint_mode,
         thresholds=thresholds,
     )
 
@@ -1560,6 +1577,13 @@ def load_rolling_spinning_config(path: str | Path) -> RollingSpinningRunConfig:
             default_poisson_ratio=0.3,
             default_zero_stiffness_diagnostic=False,
         ),
+        mabd_rolling_contact_candidate=_require_rolling_spinning_mabd_newton(
+            data,
+            "mabd_rolling_contact_candidate",
+            default_young_modulus_pa=1.0e9,
+            default_poisson_ratio=0.3,
+            default_zero_stiffness_diagnostic=False,
+        ),
         paper_timing_protocol=_require_rolling_spinning_timing_protocol(data),
         report_status=status,
         failure_reason=_require_str(report, "failure_reason"),
@@ -1967,6 +1991,134 @@ def validate_rolling_spinning_config_against_matrix(
             "mabd_material_preflight.zero_stiffness_diagnostic must be false"
         )
 
+    rolling_contact = config.mabd_rolling_contact_candidate
+    rolling_contact_report = rolling_contact.output_report
+    rolling_contact_report_path = Path(rolling_contact_report)
+    if (
+        rolling_contact_report_path.is_absolute()
+        or ".." in rolling_contact_report_path.parts
+        or rolling_contact_report_path.parent.as_posix() != "reports/experiment_matrix"
+        or rolling_contact_report_path.suffix != ".json"
+        or rolling_contact_report
+        != ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_OUTPUT_REPORT
+        or rolling_contact_report
+        in (
+            config.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            config.rbd_no_slip_reference.output_report,
+            config.rbd_explicit_no_slip_candidate.output_report,
+            config.mabd_newton.output_report,
+            config.mabd_material_preflight.output_report,
+        )
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.output_report must be the lane-specific "
+            "relative JSON report under reports/experiment_matrix"
+        )
+    if rolling_contact.time_step_s != config.performance.time_step_s:
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.time_step_s must match performance.time_step_s"
+        )
+    if rolling_contact.step_count > config.performance.step_count:
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.step_count must not exceed performance.step_count"
+        )
+    if rolling_contact.sample_count < 2:
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.sample_count must include initial and final samples"
+        )
+    expected_volume = (
+        np.pi * rolling_contact.radius_m**2 * (2.0 * rolling_contact.half_height_m)
+    )
+    if not np.isclose(rolling_contact.volume_m3, expected_volume, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.volume_m3 must match the configured cylinder volume"
+        )
+    expected_mass = rolling_contact.density_kg_m3 * rolling_contact.volume_m3
+    if not np.isclose(
+        float(np.sum(rolling_contact.point_masses_kg)),
+        expected_mass,
+        rtol=0.0,
+        atol=1.0e-9,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.point_masses_kg must sum to cylinder mass"
+        )
+    if not np.isclose(
+        rolling_contact.initial_position_m[1],
+        rolling_contact.radius_m,
+        rtol=0.0,
+        atol=1.0e-12,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.initial_position_m must place the cylinder on the plane"
+        )
+    expected_no_slip = (
+        rolling_contact.initial_linear_velocity_m_s[0]
+        + rolling_contact.initial_angular_velocity_rad_s[2] * rolling_contact.radius_m
+    )
+    if not np.isclose(expected_no_slip, 0.0, rtol=0.0, atol=1.0e-12):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate initial velocities must satisfy the no-slip diagnostic"
+        )
+    if rolling_contact.young_modulus_pa <= 0.0:
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.young_modulus_pa must be positive"
+        )
+    if rolling_contact.poisson_ratio <= -1.0 or rolling_contact.poisson_ratio >= 0.5:
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.poisson_ratio must be in (-1, 0.5)"
+        )
+    if rolling_contact.zero_stiffness_diagnostic:
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.zero_stiffness_diagnostic must be false"
+        )
+    if rolling_contact.contact_constraint_mode != "world":
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.contact_constraint_mode must be world"
+        )
+    if not np.isclose(rolling_contact.radius_m, material.radius_m, rtol=0.0, atol=1.0e-15):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.radius_m must match mabd_material_preflight"
+        )
+    if not np.isclose(
+        rolling_contact.half_height_m,
+        material.half_height_m,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.half_height_m must match mabd_material_preflight"
+        )
+    if not np.isclose(
+        rolling_contact.density_kg_m3,
+        material.density_kg_m3,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.density_kg_m3 must match mabd_material_preflight"
+        )
+    if not np.allclose(
+        rolling_contact.initial_linear_velocity_m_s,
+        material.initial_linear_velocity_m_s,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.initial_linear_velocity_m_s must match mabd_material_preflight"
+        )
+    if not np.allclose(
+        rolling_contact.initial_angular_velocity_rad_s,
+        material.initial_angular_velocity_rad_s,
+        rtol=0.0,
+        atol=1.0e-15,
+    ):
+        raise ExperimentRunConfigError(
+            "mabd_rolling_contact_candidate.initial_angular_velocity_rad_s must match mabd_material_preflight"
+        )
+
     timing = config.paper_timing_protocol
     timing_report = timing.output_report
     timing_report_path = Path(timing_report)
@@ -1985,6 +2137,7 @@ def validate_rolling_spinning_config_against_matrix(
             config.rbd_explicit_no_slip_candidate.output_report,
             config.mabd_newton.output_report,
             config.mabd_material_preflight.output_report,
+            config.mabd_rolling_contact_candidate.output_report,
         )
     ):
         raise ExperimentRunConfigError(

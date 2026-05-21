@@ -175,6 +175,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-20-phase78-rolling-spinning-timing-protocol.md",
     "docs/records/2026-05-20-phase79-rolling-cylinder-no-slip-reference.md",
     "docs/records/2026-05-21-phase80-rolling-explicit-no-slip-candidate.md",
+    "docs/records/2026-05-21-phase81-mabd-rolling-contact-candidate.md",
     "docs/records/2026-05-20-after-phase76-completion-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
@@ -274,6 +275,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-20-mabd-phase79-rolling-cylinder-no-slip-reference.md",
     "docs/superpowers/specs/2026-05-21-phase80-rolling-explicit-no-slip-candidate-design.md",
     "docs/superpowers/plans/2026-05-21-mabd-phase80-rolling-explicit-no-slip-candidate.md",
+    "docs/superpowers/specs/2026-05-21-phase81-mabd-rolling-contact-candidate-design.md",
+    "docs/superpowers/plans/2026-05-21-mabd-phase81-rolling-contact-candidate.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -293,6 +296,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_rolling_spinning_timing_protocol.json",
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_no_slip_reference.json",
     "reports/experiment_matrix/single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json",
+    "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -374,6 +378,7 @@ PHASE79_ROLLING_CYLINDER_NO_SLIP_REFERENCE_COMMIT = (
 PHASE80_ROLLING_EXPLICIT_NO_SLIP_CANDIDATE_COMMIT = (
     "5c137ceae88affcef8c9774ebea7cbecfe9177bf"
 )
+PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT = "03733a3"
 ROLLING_SPINNING_REPORT_PATH = (
     "reports/experiment_matrix/single_body_rolling_spinning.json"
 )
@@ -398,6 +403,10 @@ ROLLING_SPINNING_RBD_NO_SLIP_REFERENCE_REPORT_PATH = (
 ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH = (
     "reports/experiment_matrix/"
     "single_body_rolling_spinning_rbd_explicit_no_slip_candidate.json"
+)
+ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH = (
+    "reports/experiment_matrix/"
+    "single_body_rolling_spinning_mabd_rolling_contact_candidate.json"
 )
 ROLLING_SPINNING_TIMING_PROTOCOL_INPUT_REPORTS = (
     ROLLING_SPINNING_REPORT_PATH,
@@ -489,6 +498,9 @@ PHASE79_ROLLING_SPINNING_RBD_NO_SLIP_REFERENCE_SHA256 = (
 )
 PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256 = (
     "6bf5707e67a98e2e4e79871d36968fc4aac34ac9cbe512978a324ea1ed5e93f3"
+)
+PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256 = (
+    "bfe53115cf544e66510305653adb098655b8fd24b45b78ffee5088303031b448"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -14839,6 +14851,7 @@ def validate_phase78_record() -> None:
         "phase78_rolling_spinning_timing_protocol",
         "phase79_rolling_cylinder_no_slip_reference",
         "phase80_rolling_explicit_no_slip_candidate",
+        "phase81_mabd_rolling_contact_candidate",
     ):
         fail("Phase 78 gap audit latest_update must point at Phase 78 or a later rolling update")
 
@@ -15127,7 +15140,10 @@ def validate_phase79_record() -> None:
         for key, expected_value in expected_latest_update.items():
             if latest_update.get(key) != expected_value:
                 fail(f"Phase 79 gap audit latest_update {key} changed")
-    elif latest_phase != "phase80_rolling_explicit_no_slip_candidate":
+    elif latest_phase not in (
+        "phase80_rolling_explicit_no_slip_candidate",
+        "phase81_mabd_rolling_contact_candidate",
+    ):
         fail("Phase 79 gap audit latest_update must point at Phase 79 or a later rolling update")
 
     report_entries = audit.get("current_evidence_reports")
@@ -15424,17 +15440,23 @@ def validate_phase80_record() -> None:
     latest_update = audit.get("latest_update")
     if not isinstance(latest_update, dict):
         fail("Phase 80 gap audit missing latest_update provenance")
-    expected_latest_update = {
-        "phase_id": "phase80_rolling_explicit_no_slip_candidate",
-        "update_date": "2026-05-21",
-        "source_commit": PHASE80_ROLLING_EXPLICIT_NO_SLIP_CANDIDATE_COMMIT,
-        "report": ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH,
-        "report_sha256": PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256,
-        "status": "incomplete",
-    }
-    for key, expected_value in expected_latest_update.items():
-        if latest_update.get(key) != expected_value:
-            fail(f"Phase 80 gap audit latest_update {key} changed")
+    if latest_update.get("phase_id") not in (
+        "phase80_rolling_explicit_no_slip_candidate",
+        "phase81_mabd_rolling_contact_candidate",
+    ):
+        fail("Phase 80 gap audit latest_update must point at Phase 80 or later rolling update")
+    if latest_update.get("phase_id") == "phase80_rolling_explicit_no_slip_candidate":
+        expected_latest_update = {
+            "phase_id": "phase80_rolling_explicit_no_slip_candidate",
+            "update_date": "2026-05-21",
+            "source_commit": PHASE80_ROLLING_EXPLICIT_NO_SLIP_CANDIDATE_COMMIT,
+            "report": ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_REPORT_PATH,
+            "report_sha256": PHASE80_ROLLING_SPINNING_RBD_EXPLICIT_NO_SLIP_CANDIDATE_SHA256,
+            "status": "incomplete",
+        }
+        for key, expected_value in expected_latest_update.items():
+            if latest_update.get(key) != expected_value:
+                fail(f"Phase 80 gap audit latest_update {key} changed")
 
     report_entries = audit.get("current_evidence_reports")
     if not isinstance(report_entries, list):
@@ -15470,6 +15492,298 @@ def validate_phase80_record() -> None:
                 fail("Phase 80 must keep rolling/spinning experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 80 must not pass experiment.* claims")
+
+
+def validate_phase81_record() -> None:
+    record_path = ROOT / "docs/records/2026-05-21-phase81-mabd-rolling-contact-candidate.md"
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/2026-05-21-phase81-mabd-rolling-contact-candidate-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/2026-05-21-mabd-phase81-rolling-contact-candidate.md"
+    )
+    report_path = ROOT / ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH
+    config_path = ROOT / "configs/experiments/single_body_rolling_spinning.yaml"
+    matrix_path = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
+
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary = " ".join(boundary_text.split())
+
+    for snippet in (
+        "incomplete_mabd_rolling_contact_candidate_recorded",
+        PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        str(MABD_PYTHON),
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "rolling_spinning_mabd_rolling_contact_candidate",
+        ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH,
+        PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256,
+        "newton_mabd_rolling_contact_world_constraint_candidate",
+        "cpu_newton_mabd_world_constraints",
+        "status = incomplete",
+        "contact_constraint_mode = world",
+        "contacts_input_summary_source = last_contacts_input_summary",
+        "generated_world_constraint_count_summary.max = 1",
+        "generated_plane_constraint_count_summary.max = 0",
+        "paper_comparable = false",
+        "full_experiment_claim_passed = false",
+        "mabd_rolling_contact_candidate_not_paper_faithful",
+        "diagnostic_world_constraints_not_paper_friction_law",
+        "paper_affine_rolling_contact_details_missing",
+        "paper_faithful_explicit_rbd_baseline_missing",
+        "paper_faithful_implicit_rbd_baseline_missing",
+        "paper_comparable_timing_missing",
+        "does not prove paper-faithful affine rolling contact/friction",
+        "any passed `experiment.*` claim",
+    ):
+        if snippet not in text:
+            fail(f"Phase 81 record missing required evidence field: {snippet}")
+    for forbidden in (
+        "experiment.single_body.rolling_spinning passed",
+        "paper-faithful M-ABD rolling-cylinder passed",
+        "paper-comparable timing passed",
+    ):
+        if forbidden in text:
+            fail(f"Phase 81 record overclaims unsupported evidence: {forbidden}")
+
+    for snippet in (
+        "Phase 81 MABD Rolling Contact Candidate Design",
+        "mabd_rolling_contact_candidate",
+        'contact_constraint_mode = "world"',
+        "mabd_rolling_contact_candidate_not_paper_faithful",
+        "diagnostic_world_constraints_not_paper_friction_law",
+        "paper_affine_rolling_contact_details_missing",
+        "observed.generated_world_constraint_count_summary",
+        "raw_outputs.time_series = not_written",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 81 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 81 MABD Rolling Contact Candidate Implementation Plan",
+        "run_rolling_spinning_mabd_rolling_contact_candidate",
+        "rolling_spinning_mabd_rolling_contact_candidate",
+        "newton_mabd_rolling_contact_world_constraint_candidate",
+        "cpu_newton_mabd_world_constraints",
+        "generated_world_constraint_count_summary",
+        "contact_constraint_mode",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 81 plan missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 81 M-ABD rolling contact world-constraint candidate",
+        "contact_constraint_mode = world",
+        "generated_world_constraint_count_summary",
+        "generated_plane_constraint_count_summary",
+        "does not verify paper-faithful affine rolling contact/friction",
+        "must not be described as a paper-faithful M-ABD rolling-cylinder result",
+    ):
+        if snippet not in normalized_boundary:
+            fail(f"Phase 81 claim boundary missing: {snippet}")
+
+    config = load_rolling_spinning_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_rolling_spinning_config_against_matrix(config, matrix)
+    lane = config.mabd_rolling_contact_candidate
+    if lane.output_report != ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH:
+        fail("Phase 81 rolling contact candidate output report changed")
+    if lane.contact_constraint_mode != "world":
+        fail("Phase 81 rolling contact candidate must use world contact constraints")
+    if lane.step_count != 10000:
+        fail("Phase 81 rolling contact candidate step count changed")
+    if lane.time_step_s != 0.01:
+        fail("Phase 81 rolling contact candidate timestep changed")
+    if config.required_missing_lanes != ("rbd_implicit_baseline", "rbd_explicit_baseline"):
+        fail("Phase 81 must not alter rolling/spinning required_missing_lanes")
+
+    report = load_claim_report(report_path)
+    if report.source_commit != PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT:
+        fail("Phase 81 report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 81 report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 81 report vendored Newton commit changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 81 report paper source version changed")
+    if report.claim_id != "experiment.single_body.rolling_spinning":
+        fail("Phase 81 report claim_id changed")
+    if report.scene_id != "single_body_rolling_spinning":
+        fail("Phase 81 report scene_id changed")
+    if report.baseline_lane != "mabd_rolling_contact_candidate":
+        fail("Phase 81 report baseline lane changed")
+    if report.solver_mode != "newton_mabd_rolling_contact_world_constraint_candidate":
+        fail("Phase 81 report solver mode changed")
+    if report.backend != "cpu_newton_mabd_world_constraints":
+        fail("Phase 81 report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 81 report must remain incomplete")
+    if report.expected.get("paper_comparable") is not False:
+        fail("Phase 81 expected paper_comparable must be false")
+    if report.expected.get("full_experiment_claim_passed") is not False:
+        fail("Phase 81 expected full experiment pass flag must be false")
+
+    observed = report.observed
+    if observed.get("rolling_contact_candidate_status") != "world_constraint_candidate_incomplete":
+        fail("Phase 81 candidate status changed")
+    if observed.get("contact_constraint_mode") != "world":
+        fail("Phase 81 contact constraint mode changed")
+    if observed.get("contacts_input_summary_source") != "last_contacts_input_summary":
+        fail("Phase 81 contacts input summary source changed")
+    if observed.get("local_runtime_measured") is not True:
+        fail("Phase 81 candidate must record local runtime measurement")
+    if observed.get("paper_comparable") is not False:
+        fail("Phase 81 observed paper_comparable must be false")
+    if observed.get("full_experiment_claim_passed") is not False:
+        fail("Phase 81 observed full experiment pass flag must be false")
+    if observed.get("required_reproduction_gaps_remaining") != [
+        "paper_faithful_explicit_rbd_baseline",
+        "paper_faithful_implicit_rbd_baseline",
+        "paper_faithful_mabd_rolling_cylinder",
+        "paper_comparable_timing",
+    ]:
+        fail("Phase 81 remaining reproduction gaps changed")
+    world_summary = observed.get("generated_world_constraint_count_summary")
+    plane_summary = observed.get("generated_plane_constraint_count_summary")
+    if not isinstance(world_summary, dict) or world_summary.get("max") != 1:
+        fail("Phase 81 generated world constraint summary changed")
+    if not isinstance(plane_summary, dict) or plane_summary.get("max") != 0:
+        fail("Phase 81 generated plane constraint summary changed")
+    if observed.get("contact_count_summary", {}).get("max") != 1:
+        fail("Phase 81 contact count summary changed")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 81 blocking_reasons must be a list")
+    for blocker in (
+        "mabd_rolling_contact_candidate_not_paper_faithful",
+        "diagnostic_world_constraints_not_paper_friction_law",
+        "paper_affine_rolling_contact_details_missing",
+        "paper_faithful_explicit_rbd_baseline_missing",
+        "paper_faithful_implicit_rbd_baseline_missing",
+        "paper_comparable_timing_missing",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 81 blocker missing: {blocker}")
+    if observed.get("threshold_violations") != [
+        "max_no_slip_residual_m_s",
+        "max_runtime_wall_time_ms",
+    ]:
+        fail("Phase 81 local threshold violation set changed")
+    _require_finite_scalar(observed.get("no_slip_residual_m_s"), "Phase 81 no-slip residual")
+    _require_finite_scalar(
+        observed.get("max_constraint_residual_norm"),
+        "Phase 81 max constraint residual",
+    )
+    if report.raw_outputs != {"time_series": "not_written"}:
+        fail("Phase 81 raw output contract changed")
+    if report.plot_paths != {}:
+        fail("Phase 81 must not commit plot artifacts")
+    if report.timing_distribution.get("paper_comparable") is not False:
+        fail("Phase 81 timing distribution must be non-paper-comparable")
+    if report.timing_distribution.get("scope") != "local_cpu_wall_clock_not_paper_comparable":
+        fail("Phase 81 timing scope changed")
+    total_wall_time_ms = _require_finite_scalar(
+        report.timing_distribution.get("total_wall_time_ms"),
+        "Phase 81 total_wall_time_ms",
+    )
+    if total_wall_time_ms <= 0.0:
+        fail("Phase 81 total_wall_time_ms must be positive")
+
+    actual_hash = sha256_file(report_path)
+    if actual_hash != PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256:
+        fail("Phase 81 rolling contact candidate report sha256 changed")
+    if PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256 not in text:
+        fail("Phase 81 record report sha256 mismatch")
+
+    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
+    entries = audit.get("remaining_experiment_claims")
+    if not isinstance(entries, list):
+        fail("Phase 81 gap audit missing remaining_experiment_claims")
+    rolling_entry = next(
+        (
+            entry
+            for entry in entries
+            if isinstance(entry, dict)
+            and entry.get("claim_id") == "experiment.single_body.rolling_spinning"
+        ),
+        None,
+    )
+    if rolling_entry is None:
+        fail("Phase 81 gap audit missing rolling/spinning entry")
+    if (
+        rolling_entry.get("mabd_rolling_contact_candidate_report")
+        != ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH
+    ):
+        fail("Phase 81 gap audit missing rolling contact candidate report path")
+    if rolling_entry.get("mabd_rolling_contact_candidate_report_status") != "incomplete":
+        fail("Phase 81 gap audit rolling contact candidate report status changed")
+    if (
+        rolling_entry.get("mabd_rolling_contact_candidate_report_sha256")
+        != PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256
+    ):
+        fail("Phase 81 gap audit rolling contact candidate report sha changed")
+    if rolling_entry.get("remaining_reproduction_gaps_after_phase81") != [
+        "paper_faithful_explicit_rbd_baseline",
+        "paper_faithful_implicit_rbd_baseline",
+        "paper_faithful_mabd_rolling_cylinder",
+        "paper_comparable_timing",
+    ]:
+        fail("Phase 81 gap audit reproduction gap list changed")
+
+    latest_update = audit.get("latest_update")
+    if not isinstance(latest_update, dict):
+        fail("Phase 81 gap audit missing latest_update provenance")
+    expected_latest_update = {
+        "phase_id": "phase81_mabd_rolling_contact_candidate",
+        "update_date": "2026-05-21",
+        "source_commit": PHASE81_MABD_ROLLING_CONTACT_CANDIDATE_COMMIT,
+        "report": ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH,
+        "report_sha256": PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256,
+        "status": "incomplete",
+    }
+    for key, expected_value in expected_latest_update.items():
+        if latest_update.get(key) != expected_value:
+            fail(f"Phase 81 gap audit latest_update {key} changed")
+
+    report_entries = audit.get("current_evidence_reports")
+    if not isinstance(report_entries, list):
+        fail("Phase 81 gap audit missing current_evidence_reports")
+    candidate_entry = next(
+        (
+            entry
+            for entry in report_entries
+            if isinstance(entry, dict)
+            and entry.get("path") == ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REPORT_PATH
+        ),
+        None,
+    )
+    if candidate_entry is None:
+        fail("Phase 81 gap audit missing rolling contact candidate evidence entry")
+    if candidate_entry.get("status") != "incomplete":
+        fail("Phase 81 gap audit rolling contact candidate entry status changed")
+    if (
+        candidate_entry.get("sha256")
+        != PHASE81_ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_SHA256
+    ):
+        fail("Phase 81 gap audit rolling contact candidate entry sha changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.rolling_spinning":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 81 must keep rolling/spinning experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 81 must not pass experiment.* claims")
 
 
 def validate_after_phase76_completion_audit() -> None:
@@ -17455,6 +17769,7 @@ def main() -> int:
     validate_phase78_record()
     validate_phase79_record()
     validate_phase80_record()
+    validate_phase81_record()
     validate_after_phase76_completion_audit()
     validate_paper_claims()
     validate_experiment_contracts()
@@ -17462,7 +17777,7 @@ def main() -> int:
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81 "
         "docs/provenance validation passed"
     )
     return 0

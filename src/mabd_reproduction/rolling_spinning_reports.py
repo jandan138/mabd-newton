@@ -105,6 +105,20 @@ ROLLING_SPINNING_MABD_MATERIAL_PREFLIGHT_BLOCKING_REASONS = [
     "paper_faithful_implicit_rbd_baseline_missing",
     "paper_comparable_timing_missing",
 ]
+ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REQUIRED_REPRODUCTION_GAPS = [
+    "paper_faithful_explicit_rbd_baseline",
+    "paper_faithful_implicit_rbd_baseline",
+    "paper_faithful_mabd_rolling_cylinder",
+    "paper_comparable_timing",
+]
+ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_BLOCKING_REASONS = [
+    "mabd_rolling_contact_candidate_not_paper_faithful",
+    "diagnostic_world_constraints_not_paper_friction_law",
+    "paper_affine_rolling_contact_details_missing",
+    "paper_faithful_explicit_rbd_baseline_missing",
+    "paper_faithful_implicit_rbd_baseline_missing",
+    "paper_comparable_timing_missing",
+]
 ROLLING_SPINNING_TIMING_PROTOCOL_BLOCKING_REASONS = [
     "paper_comparable_timing_missing",
     "paper_hardware_mismatch",
@@ -207,6 +221,9 @@ class RollingCylinderMABDNewtonResult:
     static_plane_candidate_count: int
     static_plane_cylinder_shape_count: int
     static_plane_plane_shape_count: int
+    generated_world_constraint_count_summary: dict[str, int]
+    generated_plane_constraint_count_summary: dict[str, int]
+    contacts_input_summary_source: str
     total_wall_time_ms: float
     trajectory_samples: tuple[dict[str, object], ...]
 
@@ -241,6 +258,17 @@ def _rolling_cylinder_energy(
 def _sample_indices(step_count: int, sample_count: int) -> set[int]:
     count = min(sample_count, step_count + 1)
     return {int(round(value)) for value in np.linspace(0, step_count, count)}
+
+
+def _int_count_summary(counts: list[int]) -> dict[str, int]:
+    if not counts:
+        return {"initial": 0, "final": 0, "min": 0, "max": 0}
+    return {
+        "initial": counts[0],
+        "final": counts[-1],
+        "min": min(counts),
+        "max": max(counts),
+    }
 
 
 def _vec3(values: np.ndarray, wp_module: object) -> object:
@@ -844,6 +872,8 @@ def run_rolling_cylinder_mabd_newton(
     config: RollingSpinningMABDNewtonConfig,
 ) -> RollingCylinderMABDNewtonResult:
     contact_counts: list[int] = []
+    generated_world_constraint_counts: list[int] = []
+    generated_plane_constraint_counts: list[int] = []
     support_heights: list[float] = []
     shape_spreads: list[float] = []
     constraint_residuals: list[float] = []
@@ -851,6 +881,15 @@ def run_rolling_cylinder_mabd_newton(
     sample_steps = _sample_indices(config.step_count, config.sample_count)
 
     _model, solver, state = _rolling_cylinder_mabd_solver_model(config)
+    if config.contact_constraint_mode == "world":
+        solver.configure_cpu_oracle(
+            mabd.MABDCPUOracleConfig(
+                bodies=[solver._body_precompute_from_model_row(0)],
+                gravity=config.gravity_m_s2,
+                contact_constraint_mode="world",
+                topology="dense",
+            )
+        )
     q, qd = _rolling_mabd_initial_state(config)
     _assign_mabd_solver_state(state, q, qd)
     initial_energy = _rolling_mabd_energy(q, qd, config)
@@ -884,6 +923,17 @@ def run_rolling_cylinder_mabd_newton(
             if step_index == config.step_count:
                 break
             solver.step(state, state, None, contacts, config.time_step_s)
+            contacts_summary = solver.last_contacts_input_summary
+            if contacts_summary is None:
+                generated_world_constraint_counts.append(0)
+                generated_plane_constraint_counts.append(0)
+            else:
+                generated_world_constraint_counts.append(
+                    int(contacts_summary.generated_world_constraint_count)
+                )
+                generated_plane_constraint_counts.append(
+                    int(contacts_summary.generated_plane_constraint_count)
+                )
             if solver.last_step_result is not None:
                 latest_constraint_residual = float(
                     solver.last_step_result.constraint_residual_norm
@@ -950,6 +1000,13 @@ def run_rolling_cylinder_mabd_newton(
         static_plane_candidate_count=static_candidate_count,
         static_plane_cylinder_shape_count=static_cylinder_shape_count,
         static_plane_plane_shape_count=static_plane_shape_count,
+        generated_world_constraint_count_summary=_int_count_summary(
+            generated_world_constraint_counts
+        ),
+        generated_plane_constraint_count_summary=_int_count_summary(
+            generated_plane_constraint_counts
+        ),
+        contacts_input_summary_source="last_contacts_input_summary",
         total_wall_time_ms=total_wall_time_ms,
         trajectory_samples=tuple(trajectory_samples),
     )
@@ -1707,6 +1764,162 @@ def write_rolling_spinning_mabd_material_preflight_report(
     return report
 
 
+def write_rolling_spinning_mabd_rolling_contact_candidate_report(
+    path: str | Path,
+    *,
+    config: RollingSpinningRunConfig,
+    source_commit: str,
+    vendored_newton_commit: str,
+    paper_source_version: str = "2603.08079v2",
+) -> ClaimReport:
+    candidate_config = config.mabd_rolling_contact_candidate
+    result = run_rolling_cylinder_mabd_newton(candidate_config)
+    thresholds = candidate_config.thresholds
+    threshold_violations: list[str] = []
+    if result.no_slip_residual_m_s > thresholds["max_no_slip_residual_m_s"]:
+        threshold_violations.append("max_no_slip_residual_m_s")
+    if result.relative_energy_drift > thresholds["max_relative_energy_drift"]:
+        threshold_violations.append("max_relative_energy_drift")
+    if result.contact_count_summary["max"] < thresholds["min_contact_count"]:
+        threshold_violations.append("min_contact_count")
+    if result.max_affine_shape_spread_m > thresholds["max_affine_shape_spread_m"]:
+        threshold_violations.append("max_affine_shape_spread_m")
+    if result.max_constraint_residual_norm > thresholds["max_constraint_residual_norm"]:
+        threshold_violations.append("max_constraint_residual_norm")
+    if result.total_wall_time_ms > thresholds["max_runtime_wall_time_ms"]:
+        threshold_violations.append("max_runtime_wall_time_ms")
+
+    expected = {
+        "paper_claim_status": (
+            "M-ABD rolling-contact world-constraint candidate only; full paper "
+            "claim requires paper-faithful affine rolling contact/friction, RBD "
+            "baselines, and paper-comparable timing"
+        ),
+        "source_lines": list(config.source_lines),
+        "config_path": ROLLING_SPINNING_CONFIG_PATH,
+        "canonical_python": CANONICAL_PYTHON,
+        "benchmark_body": config.performance.body,
+        "paper_total_simulation_time_ms": dict(
+            config.performance.paper_total_simulation_time_ms
+        ),
+        "paper_hardware_context": config.performance.paper_hardware_context,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "known_source_gaps": [
+            "diagnostic world constraints are not the paper rolling friction law",
+            "paper affine rolling-cylinder contact details are still missing",
+            "paper-faithful explicit and implicit RBD baselines are not yet recorded",
+            "paper-comparable i7 single-thread timing protocol is not yet measured",
+        ],
+    }
+    observed = {
+        "rolling_contact_candidate_status": (
+            "world_constraint_candidate_incomplete"
+        ),
+        "lane_status": "incomplete_rolling_contact_candidate_generated",
+        "local_runtime_measured": True,
+        "paper_comparable": False,
+        "full_experiment_claim_passed": False,
+        "required_reproduction_gaps": list(
+            ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REQUIRED_REPRODUCTION_GAPS
+        ),
+        "required_reproduction_gaps_remaining": list(
+            ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_REQUIRED_REPRODUCTION_GAPS
+        ),
+        "blocking_reasons": list(
+            ROLLING_SPINNING_MABD_ROLLING_CONTACT_CANDIDATE_BLOCKING_REASONS
+        ),
+        "threshold_violations": threshold_violations,
+        "newton_api": list(ROLLING_SPINNING_MABD_NEWTON_API)
+        + [
+            "SolverMABD.configure_cpu_oracle",
+            "MABDCPUOracleConfig.contact_constraint_mode",
+            "SolverMABD.last_contacts_input_summary",
+        ],
+        "newton_device": "cpu",
+        "solver_name": "newton.solvers.SolverMABD",
+        "solver_scope": (
+            "mabd_affine_cylinder_static_plane_world_constraint_candidate_"
+            "not_paper_faithful"
+        ),
+        "contact_constraint_mode": candidate_config.contact_constraint_mode,
+        "contacts_input_summary_source": result.contacts_input_summary_source,
+        "generated_world_constraint_count_summary": dict(
+            result.generated_world_constraint_count_summary
+        ),
+        "generated_plane_constraint_count_summary": dict(
+            result.generated_plane_constraint_count_summary
+        ),
+        "young_modulus_pa": candidate_config.young_modulus_pa,
+        "poisson_ratio": candidate_config.poisson_ratio,
+        "zero_stiffness_diagnostic": candidate_config.zero_stiffness_diagnostic,
+        "step_count": result.step_count,
+        "time_step_s": result.time_step_s,
+        "radius_m": result.radius_m,
+        "half_height_m": result.half_height_m,
+        "density_kg_m3": result.density_kg_m3,
+        "mass_kg": result.mass_kg,
+        "volume_m3": result.volume_m3,
+        "rotation_mode": result.rotation_mode,
+        "rest_points_m": result.rest_points_m.tolist(),
+        "point_masses_kg": result.point_masses_kg.tolist(),
+        "initial_position_m": result.initial_position_m.tolist(),
+        "final_center_of_mass_m": result.final_center_of_mass_m.tolist(),
+        "final_linear_velocity_m_s": result.final_linear_velocity_m_s.tolist(),
+        "final_angular_velocity_rad_s": result.final_angular_velocity_rad_s.tolist(),
+        "initial_energy_j": result.initial_energy_j,
+        "final_energy_j": result.final_energy_j,
+        "energy_drift_j": result.energy_drift_j,
+        "relative_energy_drift": result.relative_energy_drift,
+        "no_slip_residual_m_s": result.no_slip_residual_m_s,
+        "min_support_height_m": result.min_support_height_m,
+        "max_support_penetration_m": result.max_support_penetration_m,
+        "max_affine_shape_spread_m": result.max_affine_shape_spread_m,
+        "max_constraint_residual_norm": result.max_constraint_residual_norm,
+        "contact_count_summary": dict(result.contact_count_summary),
+        "static_plane_collision_policy": result.static_plane_collision_policy,
+        "static_plane_collision_scope": result.static_plane_collision_scope,
+        "static_plane_candidate_count": result.static_plane_candidate_count,
+        "static_plane_cylinder_shape_count": result.static_plane_cylinder_shape_count,
+        "static_plane_plane_shape_count": result.static_plane_plane_shape_count,
+        "trajectory_samples": list(result.trajectory_samples),
+    }
+    report = ClaimReport(
+        claim_id=config.claim_id,
+        scene_id=config.scene_id,
+        asset_hashes={
+            "primitive_cylinder": "not_applicable_procedural",
+            "primitive_cube": "not_applicable_procedural",
+        },
+        solver_mode="newton_mabd_rolling_contact_world_constraint_candidate",
+        backend="cpu_newton_mabd_world_constraints",
+        baseline_lane="mabd_rolling_contact_candidate",
+        expected=expected,
+        observed=observed,
+        threshold=dict(thresholds),
+        unit="json_report",
+        status=result.status,
+        failure_reason=(
+            "SolverMABD world-constraint rolling-contact candidate only; paper-"
+            "faithful affine rolling contact/friction, RBD baselines, and "
+            "paper-comparable timing evidence remain missing"
+        ),
+        timing_distribution={
+            "total_wall_time_ms": result.total_wall_time_ms,
+            "step_count": result.step_count,
+            "paper_comparable": False,
+            "scope": "local_cpu_wall_clock_not_paper_comparable",
+        },
+        raw_outputs={"time_series": "not_written"},
+        plot_paths={},
+        source_commit=source_commit,
+        vendored_newton_commit=vendored_newton_commit,
+        paper_source_version=paper_source_version,
+    )
+    write_claim_report(report, path)
+    return report
+
+
 def _summarize_timing_input_report(report_path: str) -> dict[str, object]:
     report = load_claim_report(report_path)
     paper_comparable = report.observed.get(
@@ -1809,6 +2022,7 @@ __all__ = [
     "run_rolling_cylinder_rbd_explicit_no_slip_candidate",
     "run_rolling_cylinder_rbd_implicit_baseline",
     "run_rolling_cylinder_rbd_no_slip_reference",
+    "write_rolling_spinning_mabd_rolling_contact_candidate_report",
     "write_rolling_spinning_mabd_material_preflight_report",
     "write_rolling_spinning_mabd_newton_report",
     "write_rolling_spinning_paper_timing_protocol_report",

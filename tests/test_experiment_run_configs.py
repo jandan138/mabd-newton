@@ -690,6 +690,84 @@ class ExperimentRunConfigTests(unittest.TestCase):
                 ):
                     validate_rolling_spinning_config_against_matrix(invalid, matrix)
 
+    def test_rolling_spinning_mabd_rolling_contact_candidate_is_fail_closed(
+        self,
+    ) -> None:
+        config = load_rolling_spinning_config(ROLLING_SPINNING_CONFIG_PATH)
+        matrix = load_experiment_matrix(ROOT / "configs/experiments/paper_experiment_matrix.yaml")
+        lane = config.mabd_rolling_contact_candidate
+        material = config.mabd_material_preflight
+
+        self.assertEqual(
+            lane.output_report,
+            "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+        )
+        self.assertEqual(lane.contact_constraint_mode, "world")
+        self.assertEqual(lane.radius_m, material.radius_m)
+        self.assertEqual(lane.half_height_m, material.half_height_m)
+        self.assertEqual(lane.density_kg_m3, material.density_kg_m3)
+        self.assertEqual(lane.young_modulus_pa, material.young_modulus_pa)
+        self.assertEqual(lane.poisson_ratio, material.poisson_ratio)
+        self.assertFalse(lane.zero_stiffness_diagnostic)
+        self.assertEqual(lane.time_step_s, config.performance.time_step_s)
+        self.assertEqual(lane.step_count, material.step_count)
+        self.assertEqual(lane.sample_count, material.sample_count)
+        np.testing.assert_allclose(lane.rest_points_m, material.rest_points_m)
+        np.testing.assert_allclose(lane.point_masses_kg, material.point_masses_kg)
+        np.testing.assert_allclose(lane.initial_position_m, material.initial_position_m)
+        np.testing.assert_allclose(
+            lane.initial_linear_velocity_m_s,
+            material.initial_linear_velocity_m_s,
+        )
+        np.testing.assert_allclose(
+            lane.initial_angular_velocity_rad_s,
+            material.initial_angular_velocity_rad_s,
+        )
+        np.testing.assert_allclose(lane.gravity_m_s2, material.gravity_m_s2)
+        self.assertEqual(
+            config.required_missing_lanes,
+            ("rbd_implicit_baseline", "rbd_explicit_baseline"),
+        )
+
+        validate_rolling_spinning_config_against_matrix(config, matrix)
+
+        invalid_paths = (
+            config.output_report,
+            config.mabd_newton.output_report,
+            config.mabd_material_preflight.output_report,
+            config.rbd_implicit_baseline.output_report,
+            config.rbd_explicit_baseline.output_report,
+            "/tmp/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+            "reports/not_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+            "../reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.json",
+            "reports/experiment_matrix/not_the_rolling_spinning_mabd_rolling_contact_candidate.json",
+            "reports/experiment_matrix/single_body_rolling_spinning_mabd_rolling_contact_candidate.txt",
+        )
+        for invalid_path in invalid_paths:
+            with self.subTest(invalid_path=invalid_path):
+                invalid = replace(
+                    config,
+                    mabd_rolling_contact_candidate=replace(
+                        config.mabd_rolling_contact_candidate,
+                        output_report=invalid_path,
+                    ),
+                )
+                with self.assertRaisesRegex(
+                    ExperimentRunConfigError,
+                    "mabd_rolling_contact_candidate.output_report",
+                ):
+                    validate_rolling_spinning_config_against_matrix(invalid, matrix)
+
+        invalid_mode = replace(lane, contact_constraint_mode="plane")
+        with self.assertRaisesRegex(
+            ExperimentRunConfigError,
+            "mabd_rolling_contact_candidate.contact_constraint_mode",
+        ):
+            validate_rolling_spinning_config_against_matrix(
+                replace(config, mabd_rolling_contact_candidate=invalid_mode),
+                matrix,
+            )
+
     def test_rolling_spinning_paper_timing_protocol_is_fail_closed(
         self,
     ) -> None:
