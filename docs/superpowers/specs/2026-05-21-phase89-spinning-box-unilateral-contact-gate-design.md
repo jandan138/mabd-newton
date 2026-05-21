@@ -38,6 +38,8 @@ coverage beyond dense active-set row rejection, a passed M-ABD lane, a passed
 RBD baseline, paper-comparable timing, a comparison pass gate, or any passed
 `experiment.*` claim.
 
+No `experiment.*` claim is passed.
+
 ## Solver Contract
 
 `MABDCPUOraclePlaneConstraint` gains `unilateral: bool = False`.

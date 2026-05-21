@@ -1292,6 +1292,31 @@
   solver validation, passed M-ABD lane, passed RBD baseline, comparison pass
   gate, paper-comparable timing result, completed spinning-box reproduction,
   full paper reproduction, or any passed `experiment.*` claim.
+- This repository contains Phase 89 spinning-box unilateral static-plane
+  contact/collision gate candidate evidence with the Phase 89 record.
+- Phase 89 verifies that
+  `reports/experiment_matrix/single_body_spinning_box_contact_collision_gate_candidate.json`
+  exists as an incomplete Newton `SolverMABD` unilateral static-plane
+  contact/collision gate candidate report, records `contact_constraint_mode =
+  unilateral_plane`, `dense_cpu_active_set_drop_tensile_plane_rows`,
+  `SolverMABD.detect_static_plane_contacts`,
+  `SolverMABD.step(..., contacts=...)`, `newton.Contacts`, Phase 88 report
+  provenance, 101 compact trajectory samples over 10 seconds, unilateral plane
+  requested/accepted/rejected/skipped telemetry, and keeps `paper_faithful =
+  false`, `paper_comparable = false`, `full_experiment_claim_passed = false`,
+  and `comparison_pass_gate_enabled = false`.
+- Phase 89 does not verify paper-faithful affine contact/collision,
+  finite-plane clipping, body-body affine contact, a generic contact solver,
+  complementarity beyond dense diagnostic row rejection, barriers, friction,
+  restitution, CCD, paper-faithful M-ABD spinning-box dynamics,
+  paper-faithful RBD spinning-box baseline behavior, paper-comparable timing,
+  comparison pass gates, completed spinning-box reproduction, full paper
+  reproduction, or any passed `experiment.*` claim.
+- Phase 89 spinning-box unilateral contact/collision gate candidate evidence
+  must not be described as a paper-faithful affine collision result, contact
+  solver validation, passed M-ABD lane, passed RBD baseline, comparison pass
+  gate, paper-comparable timing result, completed spinning-box reproduction,
+  full paper reproduction, or any passed `experiment.*` claim.
 - This repository contains Phase 44 SolverMABD model-derived CPU body-config
   integration evidence after the Phase 44 record is created.
 - Phase 44 verifies model-derived `SolverMABD.step()` CPU oracle configuration

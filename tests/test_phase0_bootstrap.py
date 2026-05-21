@@ -80,6 +80,20 @@ class Phase0BootstrapTests(unittest.TestCase):
                 ),
                 "status": "incomplete",
             },
+            "phase89_spinning_box_contact_collision_gate_candidate": {
+                "phase_id": "phase89_spinning_box_contact_collision_gate_candidate",
+                "update_date": "2026-05-21",
+                "source_commit": (
+                    validate_docs.PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_COMMIT
+                ),
+                "report": (
+                    validate_docs.SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH
+                ),
+                "report_sha256": (
+                    validate_docs.PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256
+                ),
+                "status": "incomplete",
+            },
         }
         phase_id = latest_update["phase_id"]
         self.assertIn(phase_id, expected_updates)
@@ -6980,9 +6994,12 @@ class Phase0BootstrapTests(unittest.TestCase):
 
         audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
         self.assertEqual(audit["global_status"]["experiment_claims_passed"], 0)
-        self.assertEqual(
+        self.assertIn(
             audit["latest_update"]["phase_id"],
-            "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+            {
+                "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+                "phase89_spinning_box_contact_collision_gate_candidate",
+            },
         )
         gap_entry = next(
             entry
@@ -6994,6 +7011,118 @@ class Phase0BootstrapTests(unittest.TestCase):
             validate_docs.PHASE88_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_SHA256,
         )
         validate_docs.validate_phase88_record()
+
+    def test_phase89_spinning_box_contact_collision_gate_candidate_artifact(
+        self,
+    ) -> None:
+        import scripts.validate_docs as validate_docs
+
+        boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text()
+        current = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "This repository contains Phase 89",
+        )
+        verified = validate_docs.claim_boundary_bullet(boundary_text, "Phase 89 verifies")
+        non_claim = validate_docs.claim_boundary_bullet(
+            boundary_text,
+            "Phase 89 does not verify",
+        )
+
+        self.assertIn("unilateral static-plane contact/collision gate candidate", current)
+        self.assertIn(
+            "single_body_spinning_box_contact_collision_gate_candidate.json",
+            verified,
+        )
+        self.assertIn("unilateral_plane", verified)
+        self.assertIn("dense_cpu_active_set_drop_tensile_plane_rows", verified)
+        self.assertIn("paper_faithful = false", verified)
+        self.assertIn("comparison_pass_gate_enabled = false", verified)
+        for snippet in (
+            "paper-faithful affine contact/collision",
+            "body-body affine contact",
+            "friction",
+            "restitution",
+            "CCD",
+            "comparison pass gates",
+            "paper-comparable timing",
+            "any passed `experiment.*` claim",
+        ):
+            self.assertIn(snippet, non_claim)
+
+        verified_paths = set(validate_docs.REQUIRED_PATHS)
+        self.assertIn(
+            validate_docs.SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH,
+            verified_paths,
+        )
+
+        report = load_claim_report(
+            ROOT / validate_docs.SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH
+        )
+        self.assertEqual(
+            report.source_commit,
+            validate_docs.PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_COMMIT,
+        )
+        self.assertEqual(report.vendored_newton_commit, validate_docs.VENDORED_NEWTON_COMMIT)
+        self.assertEqual(report.claim_id, "experiment.single_body.spinning_box")
+        self.assertEqual(report.scene_id, "single_body_spinning_box")
+        self.assertEqual(report.baseline_lane, "spinning_box_contact_collision_gate_candidate")
+        self.assertEqual(
+            report.solver_mode,
+            "solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        )
+        self.assertEqual(
+            report.backend,
+            "cpu_newton_solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        )
+        self.assertEqual(report.status.value, "incomplete")
+        self.assertEqual(
+            report.observed["candidate_status"],
+            "contact_collision_gate_candidate_recorded",
+        )
+        self.assertEqual(report.observed["contact_constraint_mode"], "unilateral_plane")
+        self.assertFalse(report.observed["paper_faithful"])
+        self.assertFalse(report.observed["paper_comparable"])
+        self.assertFalse(report.observed["full_experiment_claim_passed"])
+        self.assertFalse(report.observed["comparison_pass_gate_enabled"])
+        self.assertEqual(report.observed["duration_s"], 10.0)
+        self.assertEqual(report.observed["time_step_s"], 0.01)
+        self.assertEqual(report.observed["step_count"], 1000)
+        self.assertEqual(report.observed["sample_count"], 101)
+        self.assertEqual(len(report.observed["trajectory_samples"]), 101)
+        self.assertEqual(report.observed["max_unilateral_plane_requested_count"], 4)
+        self.assertEqual(report.observed["max_unilateral_plane_accepted_count"], 3)
+        self.assertEqual(report.observed["max_unilateral_plane_rejected_count"], 0)
+        self.assertEqual(report.observed["max_unilateral_plane_skipped_count"], 1)
+        self.assertIn(
+            "unilateral_static_plane_contact_not_paper_faithful",
+            report.observed["blocking_reasons"],
+        )
+        self.assertNotIn("lane_gate_status", report.observed)
+
+        actual_sha = validate_docs.sha256_file(
+            ROOT / validate_docs.SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH
+        )
+        self.assertEqual(
+            actual_sha,
+            validate_docs.PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256,
+        )
+
+        audit = yaml.safe_load((ROOT / "docs/reference/reproduction-gap-audit.yaml").read_text())
+        self.assertEqual(audit["global_status"]["experiment_claims_passed"], 0)
+        self.assertEqual(
+            audit["latest_update"]["phase_id"],
+            "phase89_spinning_box_contact_collision_gate_candidate",
+        )
+        gap_entry = next(
+            entry
+            for entry in audit["remaining_experiment_claims"]
+            if entry["claim_id"] == "experiment.single_body.spinning_box"
+        )
+        self.assertEqual(
+            gap_entry["contact_collision_gate_candidate_report_sha256"],
+            validate_docs.PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256,
+        )
+        validate_docs.validate_phase89_record()
 
     def test_phase80_record_has_required_evidence_fields(self) -> None:
         import scripts.validate_docs as validate_docs
@@ -8936,7 +9065,7 @@ class Phase0BootstrapTests(unittest.TestCase):
         self.assertIn(
             (
                 "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74"
-                "/75/76/77/78/79/80/81/82/83/84/85/86/87/88 docs/provenance validation passed"
+                "/75/76/77/78/79/80/81/82/83/84/85/86/87/88/89 docs/provenance validation passed"
             ),
             result.stdout,
         )

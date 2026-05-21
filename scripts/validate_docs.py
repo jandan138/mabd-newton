@@ -183,6 +183,7 @@ REQUIRED_PATHS = (
     "docs/records/2026-05-21-phase86-rolling-timing-source-gate.md",
     "docs/records/2026-05-21-phase87-spinning-box-development-comparison.md",
     "docs/records/2026-05-21-phase88-spinning-box-contact-collision-candidate.md",
+    "docs/records/2026-05-21-phase89-spinning-box-unilateral-contact-gate.md",
     "docs/records/2026-05-20-after-phase76-completion-audit.md",
     "docs/superpowers/specs/2026-05-17-phase31-official-artifact-availability-design.md",
     "docs/superpowers/plans/2026-05-17-mabd-phase31-official-artifact-availability.md",
@@ -298,6 +299,8 @@ REQUIRED_PATHS = (
     "docs/superpowers/plans/2026-05-21-mabd-phase87-spinning-box-development-comparison.md",
     "docs/superpowers/specs/2026-05-21-phase88-spinning-box-contact-collision-candidate-design.md",
     "docs/superpowers/plans/2026-05-21-mabd-phase88-spinning-box-contact-collision-candidate.md",
+    "docs/superpowers/specs/2026-05-21-phase89-spinning-box-unilateral-contact-gate-design.md",
+    "docs/superpowers/plans/2026-05-21-mabd-phase89-spinning-box-unilateral-contact-gate.md",
     "reports/experiment_matrix/single_body_spinning_box.json",
     "reports/experiment_matrix/single_body_spinning_box_paper_horizon.json",
     "reports/experiment_matrix/single_body_spinning_box_contact_response.json",
@@ -325,6 +328,7 @@ REQUIRED_PATHS = (
     "reports/experiment_matrix/single_body_rolling_spinning_timing_source_gate.json",
     "reports/experiment_matrix/single_body_spinning_box_development_comparison.json",
     "reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json",
+    "reports/experiment_matrix/single_body_spinning_box_contact_collision_gate_candidate.json",
     "reports/experiment_matrix/single_body_physical_pendulum_analytic_reference.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_development.json",
     "reports/experiment_matrix/single_body_physical_pendulum_mabd_newton.json",
@@ -416,6 +420,7 @@ PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_COMMIT = "ce0c5bd"
 PHASE88_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_COMMIT = (
     "e96ff6d726019a3b974d54dbad2fe82c0698d6d0"
 )
+PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_COMMIT = "2b9d6e6"
 ROLLING_SPINNING_REPORT_PATH = (
     "reports/experiment_matrix/single_body_rolling_spinning.json"
 )
@@ -506,6 +511,10 @@ SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_REPORT_PATH = (
     "reports/experiment_matrix/"
     "single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json"
 )
+SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH = (
+    "reports/experiment_matrix/"
+    "single_body_spinning_box_contact_collision_gate_candidate.json"
+)
 PHASE60_SPINNING_BOX_PAPER_HORIZON_SHA256 = (
     "f6835a95c89bf7d017dae0bd5001e39ad3c4d1436c46af23c21243334c650957"
 )
@@ -586,6 +595,9 @@ PHASE87_SPINNING_BOX_DEVELOPMENT_COMPARISON_SHA256 = (
 )
 PHASE88_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_SHA256 = (
     "04b6057cfc02df5c690785645d3e3ee95821153796931a4c39ce3c434a29c4a2"
+)
+PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256 = (
+    "14b44280dcb8abcd6c33271d6a9ecb844197dccb23983ae5501e824e2f85b8ff"
 )
 PHASE44_REFERENCE_PYTHON = Path(
     "/cpfs/user/zhuzihou/conda-managed/envs/physics-primitive-newton-py310/bin/python"
@@ -14943,6 +14955,7 @@ def validate_phase78_record() -> None:
         "phase85_rolling_mabd_source_gate",
         "phase86_rolling_timing_source_gate",
         "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 78 gap audit latest_update must point at Phase 78 or a later accepted update")
 
@@ -15240,6 +15253,7 @@ def validate_phase79_record() -> None:
         "phase85_rolling_mabd_source_gate",
         "phase86_rolling_timing_source_gate",
         "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 79 gap audit latest_update must point at Phase 79 or a later accepted update")
 
@@ -15546,6 +15560,7 @@ def validate_phase80_record() -> None:
         "phase85_rolling_mabd_source_gate",
         "phase86_rolling_timing_source_gate",
         "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 80 gap audit latest_update must point at Phase 80 or a later accepted update")
     if latest_update.get("phase_id") == "phase80_rolling_explicit_no_slip_candidate":
@@ -15861,6 +15876,7 @@ def validate_phase81_record() -> None:
         "phase85_rolling_mabd_source_gate",
         "phase86_rolling_timing_source_gate",
         "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 81 gap audit latest_update must point at Phase 81 or a later accepted update")
 
@@ -16144,6 +16160,7 @@ def validate_phase82_record() -> None:
         "phase85_rolling_mabd_source_gate",
         "phase86_rolling_timing_source_gate",
         "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 82 gap audit latest_update must point at Phase 82 or a later accepted update")
     global_status = audit.get("global_status")
@@ -16451,6 +16468,7 @@ def validate_phase83_record() -> None:
         "phase85_rolling_mabd_source_gate",
         "phase86_rolling_timing_source_gate",
         "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 83 gap audit latest_update must point at Phase 83 or a later accepted update")
     global_status = audit.get("global_status")
@@ -16756,6 +16774,7 @@ def validate_phase84_record() -> None:
         "phase85_rolling_mabd_source_gate",
         "phase86_rolling_timing_source_gate",
         "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 84 gap audit latest_update must point at Phase 84 or a later accepted update")
     global_status = audit.get("global_status")
@@ -17067,6 +17086,7 @@ def validate_phase85_record() -> None:
     elif latest_phase not in (
         "phase86_rolling_timing_source_gate",
         "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 85 gap audit latest_update must point at Phase 85 or a later accepted update")
     global_status = audit.get("global_status")
@@ -17372,9 +17392,9 @@ def validate_phase86_record() -> None:
         for key, expected_value in expected_latest_update.items():
             if latest_update.get(key) != expected_value:
                 fail(f"Phase 86 gap audit latest_update {key} changed")
-    elif (
-        latest_phase
-        != "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate"
+    elif latest_phase not in (
+        "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate",
+        "phase89_spinning_box_contact_collision_gate_candidate",
     ):
         fail("Phase 86 gap audit latest_update must point at Phase 86 or a later update")
     global_status = audit.get("global_status")
@@ -18027,14 +18047,22 @@ def validate_phase88_record() -> None:
     latest = audit.get("latest_update")
     if not isinstance(latest, dict):
         fail("Phase 88 gap audit missing latest_update")
-    if latest.get("phase_id") != "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate":
+    latest_phase = latest.get("phase_id")
+    if latest_phase == "phase88_spinning_box_affine_static_plane_contacts_rollout_candidate":
+        if (
+            latest.get("source_commit")
+            != PHASE88_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_COMMIT
+        ):
+            fail("Phase 88 gap audit source commit changed")
+        if latest.get("report") != SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_REPORT_PATH:
+            fail("Phase 88 gap audit latest report path changed")
+        if (
+            latest.get("report_sha256")
+            != PHASE88_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_SHA256
+        ):
+            fail("Phase 88 gap audit latest report sha changed")
+    elif latest_phase != "phase89_spinning_box_contact_collision_gate_candidate":
         fail("Phase 88 gap audit latest phase changed")
-    if latest.get("source_commit") != PHASE88_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_COMMIT:
-        fail("Phase 88 gap audit source commit changed")
-    if latest.get("report") != SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_REPORT_PATH:
-        fail("Phase 88 gap audit latest report path changed")
-    if latest.get("report_sha256") != PHASE88_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_SHA256:
-        fail("Phase 88 gap audit latest report sha changed")
     global_status = audit.get("global_status")
     if not isinstance(global_status, dict):
         fail("Phase 88 gap audit missing global status")
@@ -18106,6 +18134,331 @@ def validate_phase88_record() -> None:
                 fail("Phase 88 must keep spinning-box experiment status intended")
         if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
             fail("Phase 88 must not pass experiment.* claims")
+
+
+def validate_phase89_record() -> None:
+    record_path = (
+        ROOT / "docs/records/2026-05-21-phase89-spinning-box-unilateral-contact-gate.md"
+    )
+    spec_path = (
+        ROOT
+        / "docs/superpowers/specs/"
+        "2026-05-21-phase89-spinning-box-unilateral-contact-gate-design.md"
+    )
+    plan_path = (
+        ROOT
+        / "docs/superpowers/plans/"
+        "2026-05-21-mabd-phase89-spinning-box-unilateral-contact-gate.md"
+    )
+    report_path = ROOT / SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH
+    config_path = ROOT / "configs/experiments/single_body_spinning_box.yaml"
+    matrix_path = ROOT / "configs/experiments/paper_experiment_matrix.yaml"
+
+    text = record_path.read_text(encoding="utf-8")
+    spec_text = spec_path.read_text(encoding="utf-8")
+    plan_text = plan_path.read_text(encoding="utf-8")
+    boundary_text = (ROOT / "docs/reference/claim-boundaries.md").read_text(encoding="utf-8")
+    normalized_boundary = " ".join(boundary_text.split())
+
+    for snippet in (
+        "incomplete_unilateral_contact_collision_gate_candidate_recorded",
+        PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_COMMIT,
+        VENDORED_NEWTON_COMMIT,
+        str(MABD_PYTHON),
+        "mutates_reference_environment=false",
+        "uses_reference_python=false",
+        "uses_ambient_python=false",
+        "spinning_box_contact_collision_gate_candidate",
+        SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH,
+        PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256,
+        "phase88_rollout_candidate_sha256 = 04b6057cfc02df5c690785645d3e3ee95821153796931a4c39ce3c434a29c4a2",
+        "cpu_newton_solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        "solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        "status = incomplete",
+        "gate_scope = single_body_spinning_box_contact_collision_candidate",
+        "candidate_status = contact_collision_gate_candidate_recorded",
+        "contact_constraint_mode = unilateral_plane",
+        "unilateral_contact_policy = dense_cpu_active_set_drop_tensile_plane_rows",
+        "paper_faithful = false",
+        "paper_comparable = false",
+        "full_experiment_claim_passed = false",
+        "comparison_pass_gate_enabled = false",
+        "duration_s = 10.0",
+        "time_step_s = 0.01",
+        "step_count = 1000",
+        "sample_count = 101",
+        "max_unilateral_plane_requested_count = 4",
+        "max_unilateral_plane_accepted_count = 3",
+        "max_unilateral_plane_rejected_count = 0",
+        "max_unilateral_plane_skipped_count = 1",
+        "threshold_violations = [`max_relative_total_energy_drift`]",
+        "No experiment.* claim is passed.",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in text:
+            fail(f"Phase 89 record missing required evidence field: {snippet}")
+    for forbidden in (
+        "paper_faithful = true",
+        "paper_comparable = true",
+        "full_experiment_claim_passed = true",
+        "comparison_pass_gate_enabled = true",
+        "experiment.single_body.spinning_box passed",
+        "lane_gate_status = passed",
+    ):
+        if forbidden in text:
+            fail(f"Phase 89 record overclaims unsupported evidence: {forbidden}")
+
+    for snippet in (
+        "Phase 89 Spinning-Box Unilateral Contact Gate Candidate Design",
+        "unilateral_plane",
+        "dense_cpu_active_set_drop_tensile_plane_rows",
+        "contact_collision_gate_candidate_recorded",
+        "paper_faithful = false",
+        "paper_comparable = false",
+        "full_experiment_claim_passed = false",
+        "comparison_pass_gate_enabled = false",
+        "No `experiment.*` claim is passed",
+    ):
+        if snippet not in spec_text:
+            fail(f"Phase 89 spec missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 89 Spinning-Box Unilateral Contact Gate Candidate Implementation Plan",
+        "contact_collision_gate_candidate",
+        "run_spinning_box_contact_collision_gate_candidate",
+        "unilateral_plane",
+        "paper_faithful = false",
+        "status = incomplete",
+    ):
+        if snippet not in plan_text:
+            fail(f"Phase 89 plan missing required boundary text: {snippet}")
+    for snippet in (
+        "Phase 89 spinning-box unilateral static-plane contact/collision gate candidate evidence",
+        "single_body_spinning_box_contact_collision_gate_candidate.json",
+        "contact_constraint_mode = unilateral_plane",
+        "dense_cpu_active_set_drop_tensile_plane_rows",
+        "paper_faithful = false",
+        "paper_comparable = false",
+        "full_experiment_claim_passed = false",
+        "comparison_pass_gate_enabled = false",
+        "does not verify paper-faithful affine contact/collision",
+    ):
+        if snippet not in normalized_boundary:
+            fail(f"Phase 89 claim boundary missing: {snippet}")
+
+    config = load_spinning_box_config(config_path)
+    matrix = load_experiment_matrix(matrix_path)
+    validate_spinning_box_config_against_matrix(config, matrix)
+    lane = config.contact_collision_gate_candidate
+    if lane.output_report != SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH:
+        fail("Phase 89 contact gate output report changed")
+    if lane.gate_scope != "single_body_spinning_box_contact_collision_candidate":
+        fail("Phase 89 contact gate scope changed")
+    if lane.paper_faithful is not False:
+        fail("Phase 89 contact gate must remain non-paper-faithful")
+    if lane.contact_constraint_mode != "unilateral_plane":
+        fail("Phase 89 contact gate mode changed")
+    if lane.duration_s != 10.0 or lane.time_step_s != 0.01:
+        fail("Phase 89 contact gate duration or time step changed")
+    if lane.sample_count != 101:
+        fail("Phase 89 contact gate sample count changed")
+    if not np.allclose(lane.initial_linear_velocity_m_s, [0.2, -0.1, 0.0]):
+        fail("Phase 89 contact gate linear velocity changed")
+    if not np.allclose(lane.initial_angular_velocity_rad_s, [0.0, 2.0, 0.0]):
+        fail("Phase 89 contact gate angular velocity changed")
+
+    report = load_claim_report(report_path)
+    if report.source_commit != PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_COMMIT:
+        fail("Phase 89 report source_commit changed")
+    if report.source_commit in PLACEHOLDER_SOURCE_COMMITS:
+        fail("Phase 89 report source_commit must not be a placeholder")
+    if report.vendored_newton_commit != VENDORED_NEWTON_COMMIT:
+        fail("Phase 89 report vendored Newton commit changed")
+    if report.paper_source_version != "2603.08079v2":
+        fail("Phase 89 report paper source version changed")
+    if report.claim_id != "experiment.single_body.spinning_box":
+        fail("Phase 89 report claim_id changed")
+    if report.scene_id != "single_body_spinning_box":
+        fail("Phase 89 report scene_id changed")
+    if report.baseline_lane != "spinning_box_contact_collision_gate_candidate":
+        fail("Phase 89 report baseline lane changed")
+    if report.solver_mode != "solver_mabd_unilateral_static_plane_contact_gate_candidate":
+        fail("Phase 89 report solver mode changed")
+    if report.backend != "cpu_newton_solver_mabd_unilateral_static_plane_contact_gate_candidate":
+        fail("Phase 89 report backend changed")
+    if report.status.value != "incomplete":
+        fail("Phase 89 report must remain incomplete")
+    for key in (
+        "paper_faithful",
+        "paper_comparable",
+        "full_experiment_claim_passed",
+        "comparison_pass_gate_enabled",
+    ):
+        if report.expected.get(key) is not False:
+            fail(f"Phase 89 expected {key} must be false")
+
+    observed = report.observed
+    if observed.get("candidate_status") != "contact_collision_gate_candidate_recorded":
+        fail("Phase 89 candidate status changed")
+    if observed.get("gate_scope") != "single_body_spinning_box_contact_collision_candidate":
+        fail("Phase 89 observed gate scope changed")
+    for key in (
+        "paper_faithful",
+        "paper_comparable",
+        "full_experiment_claim_passed",
+        "comparison_pass_gate_enabled",
+    ):
+        if observed.get(key) is not False:
+            fail(f"Phase 89 observed {key} must be false")
+    if observed.get("contact_constraint_policy") != (
+        "free_predict_detect_static_plane_contacts_then_unilateral_constrained_step"
+    ):
+        fail("Phase 89 contact constraint policy changed")
+    if observed.get("unilateral_contact_policy") != "dense_cpu_active_set_drop_tensile_plane_rows":
+        fail("Phase 89 unilateral contact policy changed")
+    if observed.get("contact_constraint_mode") != "unilateral_plane":
+        fail("Phase 89 observed contact constraint mode changed")
+    if observed.get("phase88_rollout_candidate_sha256") != (
+        PHASE88_SPINNING_BOX_AFFINE_STATIC_PLANE_CONTACTS_ROLLOUT_CANDIDATE_SHA256
+    ):
+        fail("Phase 89 Phase88 report linkage changed")
+    if observed.get("duration_s") != 10.0 or observed.get("time_step_s") != 0.01:
+        fail("Phase 89 observed duration or time step changed")
+    if observed.get("step_count") != 1000 or observed.get("sample_count") != 101:
+        fail("Phase 89 observed step/sample count changed")
+    samples = observed.get("trajectory_samples")
+    if not isinstance(samples, list) or len(samples) != 101:
+        fail("Phase 89 trajectory sample count changed")
+    if samples[0].get("time_s") != 0.0 or samples[-1].get("time_s") != 10.0:
+        fail("Phase 89 trajectory sample time range changed")
+    if observed.get("max_affine_static_plane_candidate_contact_count") != 4:
+        fail("Phase 89 max candidate contact count changed")
+    if observed.get("max_contacts_input_generated_plane_constraint_count") != 4:
+        fail("Phase 89 generated plane constraint count changed")
+    if observed.get("max_unilateral_plane_requested_count") != 4:
+        fail("Phase 89 unilateral requested count changed")
+    if observed.get("max_unilateral_plane_accepted_count") != 3:
+        fail("Phase 89 unilateral accepted count changed")
+    if observed.get("max_unilateral_plane_rejected_count") != 0:
+        fail("Phase 89 unilateral rejected count changed")
+    if observed.get("max_unilateral_plane_skipped_count") != 1:
+        fail("Phase 89 unilateral skipped count changed")
+    if "max_relative_total_energy_drift" not in observed.get("threshold_violations", []):
+        fail("Phase 89 expected energy drift threshold violation missing")
+    if "lane_gate_status" in observed:
+        fail("Phase 89 candidate must not expose a lane gate")
+    blockers = observed.get("blocking_reasons")
+    if not isinstance(blockers, list):
+        fail("Phase 89 blocking_reasons must be a list")
+    for blocker in (
+        "unilateral_static_plane_contact_not_paper_faithful",
+        "contact_collision_gate_candidate_thresholds_violated",
+        "paper_faithful_affine_collision_missing",
+        "body_body_affine_contact_missing",
+        "friction_restitution_ccd_missing",
+        "spinning_box_comparison_pass_gate_not_enabled",
+    ):
+        if blocker not in blockers:
+            fail(f"Phase 89 blocker missing: {blocker}")
+    if report.timing_distribution.get("scope") != "local_cpu_wall_clock_not_paper_comparable":
+        fail("Phase 89 timing scope changed")
+    if report.timing_distribution.get("paper_comparable") is not False:
+        fail("Phase 89 timing distribution must be non-paper-comparable")
+    if report.raw_outputs.get("trajectory") != "embedded_compact_samples":
+        fail("Phase 89 trajectory raw output marker changed")
+    if report.plot_paths != {}:
+        fail("Phase 89 must not commit plot artifacts")
+
+    actual_hash = sha256_file(report_path)
+    if actual_hash != PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256:
+        fail("Phase 89 contact gate report sha256 changed")
+    if PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256 not in text:
+        fail("Phase 89 record report sha256 mismatch")
+
+    audit = read_yaml(ROOT / "docs/reference/reproduction-gap-audit.yaml")
+    latest = audit.get("latest_update")
+    if not isinstance(latest, dict):
+        fail("Phase 89 gap audit missing latest_update")
+    expected_latest = {
+        "phase_id": "phase89_spinning_box_contact_collision_gate_candidate",
+        "update_date": "2026-05-21",
+        "source_commit": PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_COMMIT,
+        "report": SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH,
+        "report_sha256": PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256,
+        "status": "incomplete",
+    }
+    for key, expected_value in expected_latest.items():
+        if latest.get(key) != expected_value:
+            fail(f"Phase 89 gap audit latest_update {key} changed")
+    global_status = audit.get("global_status")
+    if not isinstance(global_status, dict):
+        fail("Phase 89 gap audit missing global status")
+    if global_status.get("experiment_claims_passed") != 0:
+        fail("Phase 89 must not pass experiment claims")
+    if global_status.get("full_reproduction_complete") is not False:
+        fail("Phase 89 must not mark full reproduction complete")
+    entries = audit.get("remaining_experiment_claims")
+    if not isinstance(entries, list):
+        fail("Phase 89 gap audit missing remaining_experiment_claims")
+    spinning_entry = next(
+        (
+            entry
+            for entry in entries
+            if isinstance(entry, dict)
+            and entry.get("claim_id") == "experiment.single_body.spinning_box"
+        ),
+        None,
+    )
+    if spinning_entry is None:
+        fail("Phase 89 gap audit missing spinning-box entry")
+    if (
+        spinning_entry.get("contact_collision_gate_candidate_report")
+        != SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH
+    ):
+        fail("Phase 89 gap audit missing contact gate report path")
+    if spinning_entry.get("contact_collision_gate_candidate_report_status") != "incomplete":
+        fail("Phase 89 gap audit contact gate status changed")
+    if (
+        spinning_entry.get("contact_collision_gate_candidate_report_sha256")
+        != PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256
+    ):
+        fail("Phase 89 gap audit contact gate sha changed")
+    if (
+        SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH
+        not in spinning_entry.get("related_reports", [])
+    ):
+        fail("Phase 89 gap audit related reports missing contact gate")
+
+    report_entries = audit.get("current_evidence_reports")
+    if not isinstance(report_entries, list):
+        fail("Phase 89 gap audit missing current_evidence_reports")
+    evidence_entry = next(
+        (
+            entry
+            for entry in report_entries
+            if isinstance(entry, dict)
+            and entry.get("path") == SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_REPORT_PATH
+        ),
+        None,
+    )
+    if evidence_entry is None:
+        fail("Phase 89 gap audit missing contact gate evidence entry")
+    if evidence_entry.get("status") != "incomplete":
+        fail("Phase 89 gap audit contact gate entry status changed")
+    if evidence_entry.get("sha256") != PHASE89_SPINNING_BOX_CONTACT_COLLISION_GATE_CANDIDATE_SHA256:
+        fail("Phase 89 gap audit contact gate entry sha changed")
+
+    claims = read_yaml(ROOT / "docs/reference/paper-claims.yaml").get("claims")
+    if not isinstance(claims, list):
+        fail("paper-claims.yaml missing claims list")
+    for claim in claims:
+        if not isinstance(claim, dict):
+            continue
+        claim_id = str(claim.get("claim_id", ""))
+        if claim_id == "experiment.single_body.spinning_box":
+            if claim.get("reproduction_status") != "intended":
+                fail("Phase 89 must keep spinning-box experiment status intended")
+        if claim_id.startswith("experiment.") and claim.get("reproduction_status") == "passed":
+            fail("Phase 89 must not pass experiment.* claims")
 
 
 def validate_after_phase76_completion_audit() -> None:
@@ -20099,6 +20452,7 @@ def main() -> int:
     validate_phase86_record()
     validate_phase87_record()
     validate_phase88_record()
+    validate_phase89_record()
     validate_after_phase76_completion_audit()
     validate_paper_claims()
     validate_experiment_contracts()
@@ -20106,7 +20460,7 @@ def main() -> int:
     validate_provenance()
     validate_newton_import()
     print(
-        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81/82/83/84/85/86/87/88 "
+        "Phase 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/76/77/78/79/80/81/82/83/84/85/86/87/88/89 "
         "docs/provenance validation passed"
     )
     return 0

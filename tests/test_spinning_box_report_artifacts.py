@@ -39,6 +39,9 @@ REPORTS = {
     "affine_static_plane_contacts_rollout_candidate": ROOT
     / "reports/experiment_matrix/"
     "single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json",
+    "contact_collision_gate_candidate": ROOT
+    / "reports/experiment_matrix/"
+    "single_body_spinning_box_contact_collision_gate_candidate.json",
 }
 
 
@@ -409,6 +412,83 @@ class SpinningBoxReportArtifactTests(unittest.TestCase):
         self.assertIn("mabd_kinematic_feasibility_blocker_recorded", blockers)
         self.assertNotIn("collision_detection_not_enabled_for_contacts_input", blockers)
         self.assertEqual(report.raw_outputs["time_series"], "compact_samples_only")
+
+    def test_contact_collision_gate_candidate_report_records_10s_unilateral_contact(
+        self,
+    ) -> None:
+        reports = self._load_reports()
+        report = reports["contact_collision_gate_candidate"]
+        phase88 = reports["affine_static_plane_contacts_rollout_candidate"]
+
+        self.assertEqual(report.baseline_lane, "spinning_box_contact_collision_gate_candidate")
+        self.assertEqual(
+            report.solver_mode,
+            "solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        )
+        self.assertEqual(
+            report.backend,
+            "cpu_newton_solver_mabd_unilateral_static_plane_contact_gate_candidate",
+        )
+        self.assertEqual(report.status, EvidenceStatus.INCOMPLETE)
+        observed = report.observed
+        self.assertEqual(
+            observed["candidate_status"],
+            "contact_collision_gate_candidate_recorded",
+        )
+        self.assertEqual(
+            observed["gate_scope"],
+            "single_body_spinning_box_contact_collision_candidate",
+        )
+        self.assertFalse(observed["paper_faithful"])
+        self.assertFalse(observed["paper_comparable"])
+        self.assertFalse(observed["full_experiment_claim_passed"])
+        self.assertFalse(observed["comparison_pass_gate_enabled"])
+        self.assertEqual(
+            observed["contact_constraint_policy"],
+            "free_predict_detect_static_plane_contacts_then_unilateral_constrained_step",
+        )
+        self.assertEqual(
+            observed["unilateral_contact_policy"],
+            "dense_cpu_active_set_drop_tensile_plane_rows",
+        )
+        self.assertEqual(observed["contact_constraint_mode"], "unilateral_plane")
+        self.assertEqual(observed["duration_s"], 10.0)
+        self.assertEqual(observed["time_step_s"], 0.01)
+        self.assertEqual(observed["step_count"], 1000)
+        self.assertEqual(observed["sample_count"], 101)
+        self.assertEqual(len(observed["trajectory_samples"]), 101)
+        self.assertEqual(observed["trajectory_samples"][0]["time_s"], 0.0)
+        self.assertEqual(observed["trajectory_samples"][-1]["time_s"], 10.0)
+        self.assertEqual(
+            observed["phase88_rollout_candidate_report"],
+            "reports/experiment_matrix/"
+            "single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json",
+        )
+        self.assertEqual(
+            observed["phase88_rollout_candidate_sha256"],
+            "04b6057cfc02df5c690785645d3e3ee95821153796931a4c39ce3c434a29c4a2",
+        )
+        self.assertEqual(phase88.status, EvidenceStatus.INCOMPLETE)
+        self.assertGreater(
+            observed["max_free_predicted_contact_penetration_m"],
+            observed["max_constrained_contact_penetration_m"],
+        )
+        self.assertEqual(observed["max_affine_static_plane_candidate_contact_count"], 4)
+        self.assertEqual(observed["max_contacts_input_generated_plane_constraint_count"], 4)
+        self.assertEqual(observed["max_unilateral_plane_requested_count"], 4)
+        self.assertEqual(observed["max_unilateral_plane_accepted_count"], 3)
+        self.assertEqual(observed["max_unilateral_plane_rejected_count"], 0)
+        self.assertEqual(observed["max_unilateral_plane_skipped_count"], 1)
+        self.assertIn("max_relative_total_energy_drift", observed["threshold_violations"])
+        blockers = observed["blocking_reasons"]
+        self.assertIn("unilateral_static_plane_contact_not_paper_faithful", blockers)
+        self.assertIn("paper_faithful_affine_collision_missing", blockers)
+        self.assertIn("body_body_affine_contact_missing", blockers)
+        self.assertIn("friction_restitution_ccd_missing", blockers)
+        self.assertNotIn("lane_gate_status", observed)
+        self.assertFalse(report.timing_distribution["paper_comparable"])
+        self.assertEqual(report.raw_outputs["trajectory"], "embedded_compact_samples")
+        self.assertEqual(report.plot_paths, {})
 
     def test_development_comparison_report_records_10s_newton_mabd_rbd_internal_comparison(
         self,

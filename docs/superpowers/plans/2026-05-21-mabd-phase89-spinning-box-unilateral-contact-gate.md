@@ -9,6 +9,8 @@
 candidate backed by an opt-in unilateral frictionless static-plane contact mode
 in Newton `SolverMABD`.
 
+The lane remains `status = incomplete` with `paper_faithful = false`.
+
 **Architecture:** Extend the dense CPU oracle with
 `MABDCPUOraclePlaneConstraint(unilateral=True)` and an active-set loop that
 drops tensile unilateral rows. Wire `SolverMABD` contact conversion through a
@@ -74,7 +76,8 @@ CPU oracle, YAML config validation, existing `ClaimReport` JSON reporting,
   rollout policy but configures `SolverMABD` with unilateral contacts and records
   unilateral row telemetry.
 - [x] Add runner and CLI lane
-  `spinning_box_contact_collision_gate_candidate`.
+  `spinning_box_contact_collision_gate_candidate` through
+  `run_spinning_box_contact_collision_gate_candidate`.
 - [x] Add config, runner, and CLI tests.
 
 ### Task 3: Phase89 Evidence And Validators
@@ -90,13 +93,13 @@ CPU oracle, YAML config validation, existing `ClaimReport` JSON reporting,
 - Modify: `tests/test_phase0_bootstrap.py`
 - Modify: `tests/test_spinning_box_report_artifacts.py`
 
-- [ ] Generate the report from the implementation source commit.
-- [ ] Record the report SHA256.
-- [ ] Add artifact tests requiring 10 seconds, 101 samples, unilateral telemetry,
+- [x] Generate the report from the implementation source commit.
+- [x] Record the report SHA256.
+- [x] Add artifact tests requiring 10 seconds, 101 samples, unilateral telemetry,
   Phase88 evidence linkage, and incomplete non-claim status.
-- [ ] Add `validate_phase89_record()` and include the record/spec/plan/report in
+- [x] Add `validate_phase89_record()` and include the record/spec/plan/report in
   `REQUIRED_PATHS`.
-- [ ] Update claim boundaries and gap audit without passing any `experiment.*`
+- [x] Update claim boundaries and gap audit without passing any `experiment.*`
   claim.
-- [ ] Run docs/provenance validation, targeted tests, full tests, whitespace,
+- [x] Run docs/provenance validation, targeted tests, full tests, whitespace,
   and vendored Newton import checks.

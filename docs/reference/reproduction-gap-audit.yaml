@@ -6,11 +6,11 @@ source_commit: "f83889adbec6402e0baa1b4c55db5962a224808d"
 source_commit_scope: "Initial Phase 60 audit source commit; later entries carry per-phase report commits and checksums."
 vendored_newton_commit: "96713fa965463b69c229a4d30582c733ff3526bb"
 latest_update:
-  phase_id: phase88_spinning_box_affine_static_plane_contacts_rollout_candidate
+  phase_id: phase89_spinning_box_contact_collision_gate_candidate
   update_date: "2026-05-21"
-  source_commit: "e96ff6d726019a3b974d54dbad2fe82c0698d6d0"
-  report: reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json
-  report_sha256: "04b6057cfc02df5c690785645d3e3ee95821153796931a4c39ce3c434a29c4a2"
+  source_commit: "2b9d6e6"
+  report: reports/experiment_matrix/single_body_spinning_box_contact_collision_gate_candidate.json
+  report_sha256: "14b44280dcb8abcd6c33271d6a9ecb844197dccb23983ae5501e824e2f85b8ff"
   status: incomplete
 paper:
   arxiv_id: "2603.08079"
@@ -192,13 +192,17 @@ remaining_experiment_claims:
     affine_static_plane_contacts_rollout_candidate_report: reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json
     affine_static_plane_contacts_rollout_candidate_report_status: incomplete
     affine_static_plane_contacts_rollout_candidate_report_sha256: "04b6057cfc02df5c690785645d3e3ee95821153796931a4c39ce3c434a29c4a2"
+    contact_collision_gate_candidate_report: reports/experiment_matrix/single_body_spinning_box_contact_collision_gate_candidate.json
+    contact_collision_gate_candidate_report_status: incomplete
+    contact_collision_gate_candidate_report_sha256: "14b44280dcb8abcd6c33271d6a9ecb844197dccb23983ae5501e824e2f85b8ff"
     related_reports:
       - reports/experiment_matrix/single_body_spinning_box_paper_horizon.json
       - reports/experiment_matrix/single_body_spinning_box_rbd_baseline.json
       - reports/experiment_matrix/single_body_spinning_box_comparison.json
       - reports/experiment_matrix/single_body_spinning_box_development_comparison.json
       - reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json
-    next_action: "Promote the affine static-plane contacts rollout candidate into solver-level paper-faithful contact/collision evidence, then compare against paper-faithful RBD baselines before any spinning-box pass gate."
+      - reports/experiment_matrix/single_body_spinning_box_contact_collision_gate_candidate.json
+    next_action: "Promote the unilateral static-plane contact/collision gate candidate into paper-faithful affine contact/collision evidence, then compare against paper-faithful RBD baselines before any spinning-box pass gate."
   - claim_id: experiment.single_body.t_handle
     scene_id: single_body_t_handle
     claim_status: intended
@@ -442,6 +446,9 @@ current_evidence_reports:
   - path: reports/experiment_matrix/single_body_spinning_box_affine_static_plane_contacts_rollout_candidate.json
     status: incomplete
     sha256: "04b6057cfc02df5c690785645d3e3ee95821153796931a4c39ce3c434a29c4a2"
+  - path: reports/experiment_matrix/single_body_spinning_box_contact_collision_gate_candidate.json
+    status: incomplete
+    sha256: "14b44280dcb8abcd6c33271d6a9ecb844197dccb23983ae5501e824e2f85b8ff"
   - path: reports/experiment_matrix/single_body_spinning_box_comparison.json
     status: incomplete
     sha256: "357676246e8d9fb1297966f2a698d6031610bb3fab9e814e51ddb671a04ad5b9"
